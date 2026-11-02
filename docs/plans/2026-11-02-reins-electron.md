@@ -32,15 +32,26 @@ Tooling (verified 2026-11-02, not yet exercised): `electron-vite` 6 on Vite 6 to
 
 ## Decision needed
 
-- **Rules grid writes.** The approved grid sets Allow, Ask or Deny per capability per CLI, but neither CLI stores a capability verdict. Claude Code stores concrete `permissions.allow/ask/deny` entries, a bare `Bash` deny overrides narrower allows, and a "mixed" cell has no single value to write. Options: (A) the segmented control writes one tool-wide rule (`Bash`, `Edit`, `Read`, `WebFetch`) after a preview of the rules it replaces, is disabled on "mixed" cells, and Undo restores the previous arrays; (B) the grid is display-only and edits happen on the concrete rules below it. Recommendation: A for cells with a faithful mapping, B everywhere else, decided after the Codex schema is read (task 0.1). Phase 5 is blocked on this.
+- **Rules grid writes.** The approved grid sets Allow, Ask or Deny per capability per CLI, but neither CLI stores a capability verdict.
+  - Claude Code stores concrete `permissions.allow/ask/deny` entries, a bare `Bash` deny overrides narrower allows, and a "mixed" cell has no single value to write.
+  - Codex (0.166, task 0.1) has two mutually exclusive models: legacy `sandbox_mode` plus `[sandbox_workspace_write]`, or `default_permissions` with `[permissions.<name>]` profiles. Network is set in different places in each. "Push and deploy" has no Codex setting; only a command-prefix rule in `~/.codex/rules/*.rules` can approximate it.
+  - Options: (A) on Claude Code, the segmented control writes one tool-wide rule (`Bash`, `Edit`, `Read`, `WebFetch`) after a preview of the rules it replaces, is disabled on "mixed" cells, and Undo restores the previous arrays; Codex cells are display-only and link to the real keys (`approval_policy`, `sandbox_mode`, `network_access`, project `trust_level`, rules); (B) the whole grid is display-only and edits happen on the concrete rules and keys below it.
+  - Recommendation: A, with Codex cells always display-only and a plain "unrestricted" state when the file has `sandbox_mode = "danger-full-access"` (this machine's setup). Phase 5 is blocked on this decision only.
 
 ## Tasks
 
-Phases 1 to 4 can start now. Phase 5 waits on 0.1 and the decision above. Phase 6 is unblocked (0.3 done).
+Phases 1 to 4 can start now. Phase 5 waits on the decision above (0.1 is done). Phase 6 is unblocked (0.3 done).
 
 ### Phase 0: verification spikes (evidence goes under each task)
 
-- [ ] 0.1 Read the real Codex permission schema (`config.toml` keys, per-project trust, rules files). Do not reuse the mock's `approval_policy`, `sandbox_mode`, `network_access`; they are mock data. Verifies the spec's first "to verify" item. Gates 5.
+- [x] 0.1 Codex permission schema, done 2026-11-02 (read-only research by a subagent against `codex-cli 0.166.0` and its config JSON schema at tag `rust-v0.166.0`; key names in the local `config.toml` and the 74 rules were spot-checked, the rest is as reported).
+  - Real keys: `approval_policy` (`on-request`, `never`, or a `granular` table; `untrusted` is retired), `sandbox_mode` (`read-only`, `workspace-write`, `danger-full-access`), `sandbox_workspace_write.{network_access, writable_roots}`, `approvals_reviewer`, `default_permissions` plus `[permissions.<name>.{filesystem,network}]`, `projects."<path>".trust_level`, `web_search`, `shell_environment_policy`, per-MCP `approval_mode`.
+  - The mock's `network_access` is wrong as a top-level key. `default_permissions` and `sandbox_mode` must not both be present; Reins picks one model per file and warns.
+  - Rules: `~/.codex/rules/*.rules` (Starlark `prefix_rule(... decision="allow|prompt|forbidden")`), project rules only for trusted projects; an `allow` means "runs outside the sandbox without a prompt".
+  - Precedence: CLI flags, project `.codex/config.toml`, profile file, `~/.codex/config.toml`, cloud, `/etc/codex`, defaults. Untrusted projects skip project-level `.codex/`.
+  - Capability mapping: Read and Edit are per path only in a `[permissions]` profile; Run commands only via rules and `approval_policy`; Network per profile; Push and deploy has no setting; Secrets only by `deny` globs (beta; issue openai/codex#22179 says an `.env` glob did not block `cat .env`, unverified on macOS in 0.166).
+  - Writing: there is no `codex config` subcommand; the file is 93 KB, mode 600, with 62 projects, 9 MCP servers and `[hooks.state.*]` tables that Codex itself rewrites, plus a `config.toml.bak`. Reins needs a format-preserving TOML editor (core only has a reader, `tomlFields`), a backup, an atomic write, mode 600 kept, and a re-parse after writing. Concurrent rewrites by a running Codex are unverified.
+  - This machine runs `approval_policy = "never"` with `sandbox_mode = "danger-full-access"`, so the Codex column would read "unrestricted" for file and network.
 - [ ] 0.2 In a throwaway `HOME`, write a skill, agent, hook and permission with `core/` and confirm a real `claude` and `codex` session honors each (AC2). Needs the owner: see Action needed.
 - [x] 0.3 Live session state, done 2026-11-02 (read-only research by a subagent; the paths, the 108 rollouts, the lock files and the `agent-world` file list were spot-checked, the rest is as reported and unverified on a live running turn).
   - Claude Code: `~/.claude/sessions/<pid>.json` is a status file (`status` idle, busy, shell). `statusUpdatedAt` goes stale during a long busy turn, so show age from the transcript's last write. A permission prompt is not distinguishable from `busy`.
@@ -77,13 +88,13 @@ Phases 1 to 4 can start now. Phase 5 waits on 0.1 and the decision above. Phase 
 - [ ] 4.3 Codex hook runs are not logged, so they render as "not measurable" with the reason on hover.
 - [ ] 4.4 Owner eye approval, then delete `web/` and the prototype notes in `AGENTS.md`.
 
-### Phase 5: Rules (UI gate; blocked on 0.1 and the decision)
+### Phase 5: Rules (UI gate; blocked on the decision)
 
-- [ ] 5.1 `core/rules.mjs`: read and write Claude Code permissions (global and per-project `settings.json`, `settings.local.json`) and the Codex keys confirmed in 0.1. Secret values (`env` and similar) are never read. Every write goes through the existing journal. Tests per cell and per CLI: file, key, and the Undo result.
+- [ ] 5.1 `core/rules.mjs`: read and write Claude Code permissions (global and per-project `settings.json`, `settings.local.json`); read the Codex keys and rules confirmed in 0.1 and write only what the decision allows, through a format-preserving TOML editor. Secret values (`env` and similar) are never read. Every write goes through the existing journal. Tests per cell and per CLI: file, key, and the Undo result.
 - [ ] 5.2 Capability grid, concrete rules list and scope selector as decided.
 - [ ] 5.3 Owner eye approval.
 
-### Phase 6: Activity (UI gate; blocked on 0.3)
+### Phase 6: Activity (UI gate; unblocked by 0.3)
 
 - [ ] 6.1 Port live-session parsing and metrics from `agent-world/` in the `model-lab` repo into `core/activity.mjs` (read-only on logs). Tests on fixture logs.
 - [ ] 6.2 Failed commands grouped with a count and one title form; file history with paths long enough to tell two files apart; junk-title fallback; worktree slug not shown as a project; "next run passed" never presented as a fix. Replay Studio findings from the spec.
@@ -118,6 +129,6 @@ Phases 1 to 4 can start now. Phase 5 waits on 0.1 and the decision above. Phase 
 
 - Checkout: `main` at `21a2a01`, working tree: `core/`, `mocks/`, `server.mjs`, `test.mjs`, `web/` untracked; this plan file new.
 - Observed: `npm test` 14 pass, 0 fail (2026-11-02, temp HOME). Mock for the chosen direction: `~/scratch/spacevibe-reins/b-matrix.html` (outside the repo).
-- Remaining: everything above. Blockers: the Rules-grid decision, 0.1 and 0.3.
+- Remaining: everything above. Blockers: the Rules-grid decision (0.1 and 0.3 are done).
 
 `/goal` Deliver the Reins Electron app per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-02-reins-electron.md phases 0 to 7 so that AC1 to AC6 hold, with every UI phase approved by the owner by eye, tests running only against temp HOME, and each task's evidence recorded under it; stop and ask at the Rules-grid decision, at owner-only steps, and before any push, merge or release.
