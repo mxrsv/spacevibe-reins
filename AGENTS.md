@@ -2,6 +2,42 @@
 
 # Reins
 
+## Swift app (current direction)
+
+The product is being rebuilt as a native SwiftUI app: [spec](docs/specs/2026-11-02-reins.md), [plan](docs/plans/2026-11-02-reins-swiftui.md). Everything below this section describes the superseded Electron app and the Node `core/`; it is deleted at plan task S8.3, not before.
+
+Stack: SwiftPM, swift-tools 6.0, Swift 5 language mode, macOS 15+, Command Line Tools only (no Xcode). Everything in this repo's Swift code, comments and tests is English.
+
+| Command                       | Purpose                                                                                                   |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `scripts/test.sh`             | All Swift tests against temporary folders. Look for `Test run with N tests ... passed`: N must be above 0 |
+| `scripts/build-app.sh`        | Release build, `build/Reins.app`, signature, `vtool` deployment-target print                              |
+| `scripts/dev.sh`              | Build, sign, relaunch. Opens a window and reads the real `~/.claude` and `~/.codex` unless the env points elsewhere |
+| `node scripts/make-golden.mjs [section]` | Rewrites `Tests/ReinsCoreTests/Fixtures` (synthetic HOME, manifest, `golden/*.json`, `zst/`) from the Node core. Rerun gives no diff |
+
+Layout: `Sources/CZstd` (vendored decompress-only zstd, see its README), `Sources/ReinsCore` (the engine; Foundation only, no UI import), `Sources/Reins` (the app), `Tests/ReinsCoreTests` (swift-testing; `Support/` has `TempHome` and `FixtureHome`).
+
+Toolchain rules (taken from `spacevibe-board`, re-verified here):
+
+- **B1. The deployment target is pinned.** The toolchain defaults to `arm64-apple-macosx28.0`; a binary built at that target refuses to launch on macOS 27 (`-10825`). `platforms: [.macOS(.v15)]` in [Package.swift](Package.swift) and `LSMinimumSystemVersion` 15.0 in [Resources/Info.plist](Resources/Info.plist) must agree. [`scripts/build-app.sh`](scripts/build-app.sh) prints `vtool -show-build-version` (expect `minos 15.0`).
+- **B2. Use `scripts/test.sh`, never bare `swift test`.** swift-testing lives in `Library/Developer/Frameworks` under the Command Line Tools; the script passes the framework and rpath flags and sets `REINS_TEST=1`. Bare `swift test` fails to compile (`no such module 'Testing'`) here and can run nothing elsewhere. XCTest is not available.
+- **B3. Bundle id `dev.spacevibe.reins` and the signing identity are load-bearing.** macOS keys folder consent (Documents, Desktop) on bundle id plus team. `build-app.sh` signs with the Developer ID identity when it is in the keychain (name overridable with `REINS_SIGNING_IDENTITY`), otherwise ad-hoc, which makes macOS ask again after each rebuild. Never change the bundle id as a drive-by.
+- **B4. Swift 5 language mode on every target, deliberately.** Do not flip a target to Swift 6 as a drive-by change.
+- **B5. zstd is vendored, never linked from the system.** macOS ships no usable libzstd (no header in the SDK, none in `/usr/lib`, no zstd in the Compression framework), and Homebrew's copy is absent on a clean Mac. [`Sources/CZstd`](Sources/CZstd/README.md) is an unmodified copy of facebook/zstd 1.5.7 `lib/` (decompress only, BSD); update it from a release tarball and change the version and checksum in its README.
+- **B6. Golden tests read the fixture at a fixed path.** Hook and project ids are hashes of absolute paths, so [`FixtureHome`](Tests/ReinsCoreTests/Support/FixtureHome.swift) materializes the tree at `/private/tmp/reins-fixture-home` (the path [`make-golden.mjs`](scripts/make-golden.mjs) ran the Node core on). That tree is read-only and shared; a test that writes uses `FixtureHome.materialize(into:)` or `TempHome`.
+
+Boundary rules for the Swift app (the Electron rules R1 to R6 below keep applying to the Node code until it is deleted):
+
+- **S-R1. Tests and agents never touch the real config.** Tests build a `TempHome` or use `FixtureHome`. [`Roots.resolve`](Sources/ReinsCore/Roots.swift) throws when `REINS_TEST=1` and a root, or the real path behind it (symlinks included), is under the real home from `getpwuid`; [`scripts/test.sh`](scripts/test.sh) sets that flag. `scripts/dev.sh` and the built app read the real `~/.claude` and `~/.codex`: set `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `REINS_HOME` to a temporary folder before testing a write by hand.
+- **S-R2. No real data in committed files.** Fixtures and goldens come from `scripts/fixture-home.mjs` (synthetic names only) through [`make-golden.mjs`](scripts/make-golden.mjs), which refuses a tree containing the real home path or user name; [`FixtureHomeTests`](Tests/ReinsCoreTests/FixtureHomeTests.swift) re-checks. Screenshots from a real config stay out of git (R2 above).
+- **S-R3. Secrets are never read into the UI or logged.** Errors from `OrderedJSON`, `TOMLReader` and `ZstdStream` carry a position or a fixed reason, never file content; keep it that way in new code.
+- **S-R4. The app never executes a hook or a recorded command.** The only processes it will start are the fixed `ps`, `lsof` and `kill` of the Activity engine, with the pid re-validated first.
+- **S-R5. The app opens no network listener and makes no request.** No updater, no crash reporter, no analytics.
+
+The Node `core/` is an oracle for parity and is deleted at plan task S8.3. Do not change its behavior to suit Swift; when a golden has to change, run `node scripts/make-golden.mjs`, read the diff and commit it with the test that needs it.
+
+## Electron app (superseded)
+
 Local app to see and control what Claude Code and Codex CLI are equipped with. Stack: Electron (main process in TypeScript) with a React, Tailwind CSS v4 and shadcn/ui (Base UI) renderer, built by electron-vite. The engine in [core/](core) is plain Node ESM (`.mjs`, JSDoc), unbundled.
 
 ## Common commands
