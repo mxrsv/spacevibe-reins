@@ -19,8 +19,9 @@ struct TokensBoard {
         self.period = period
         self.measure = measure
         self.pick = pick
-        buckets = query.buckets(period, pick: pick)
-        selected = selectedID.flatMap { id in buckets.first { $0.id == id } }
+        let all = query.buckets(period, pick: pick)
+        buckets = all
+        selected = selectedID.flatMap { id in all.first { $0.id == id } }
         span = query.span(period)
     }
 
