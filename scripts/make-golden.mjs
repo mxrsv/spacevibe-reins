@@ -19,7 +19,7 @@
 // Golden values must be plain JSON; order-insensitive lists should be sorted here so reruns give no diff.
 import { createHash } from 'node:crypto';
 import {
-  existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync,
+  existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir, userInfo } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
@@ -88,18 +88,25 @@ let materialized;
 async function home() {
   materialized ??= (() => {
     if (CANONICAL_ROOT !== '/private/tmp/reins-fixture-home') throw new Error('unexpected canonical root');
-    if (existsSync(CANONICAL_ROOT)) {
-      if (lstatSync(CANONICAL_ROOT).isSymbolicLink()) throw new Error(`${CANONICAL_ROOT} is a symlink`);
-      rmSync(CANONICAL_ROOT, { recursive: true, force: true });
-    }
     const manifest = JSON.parse(readFileSync(join(FIXTURES, 'manifest.json'), 'utf8'));
-    for (const [rel, mtime] of Object.entries(manifest.mtimes)) {
-      const target = join(CANONICAL_ROOT, rel);
-      put(target, readFileSync(join(FIXTURES, 'home', rel), 'utf8').replaceAll(TOKEN, CANONICAL_ROOT));
-      utimesSync(target, new Date(mtime), new Date(mtime));
+    const stampOf = (dir) => { try { return readFileSync(join(dir, '.fixture-stamp'), 'utf8'); } catch { return null; } };
+    // Reuse a tree that is already current: the Swift tests read the same folder, so it is replaced only when the
+    // fixtures changed, and then by a rename of a finished sibling folder, never by building in place.
+    if (stampOf(CANONICAL_ROOT) !== manifest.digest) {
+      const staging = mkdtempSync('/private/tmp/reins-fixture-home-');
+      for (const [rel, mtime] of Object.entries(manifest.mtimes)) {
+        const target = join(staging, rel);
+        put(target, readFileSync(join(FIXTURES, 'home', rel), 'utf8').replaceAll(TOKEN, CANONICAL_ROOT));
+        utimesSync(target, new Date(mtime), new Date(mtime));
+      }
+      mkdirSync(join(staging, '.reins'), { recursive: true });
+      writeFileSync(join(staging, '.fixture-stamp'), manifest.digest);
+      if (existsSync(CANONICAL_ROOT)) {
+        if (lstatSync(CANONICAL_ROOT).isSymbolicLink()) throw new Error(`${CANONICAL_ROOT} is a symlink`);
+        rmSync(CANONICAL_ROOT, { recursive: true, force: true });
+      }
+      renameSync(staging, CANONICAL_ROOT);
     }
-    mkdirSync(join(CANONICAL_ROOT, '.reins'), { recursive: true });
-    writeFileSync(join(CANONICAL_ROOT, '.fixture-stamp'), manifest.digest);
     // The data folder is separate on purpose: the Node scan writes usage-cache.json there.
     const data = mkdtempSync(join(tmpdir(), 'reins-golden-data-'));
     const r = roots({ HOME: CANONICAL_ROOT, CLAUDE_CONFIG_DIR: join(CANONICAL_ROOT, '.claude'), CODEX_HOME: join(CANONICAL_ROOT, '.codex'), REINS_HOME: data, REINS_TEST: '1' });

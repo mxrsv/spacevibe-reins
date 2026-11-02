@@ -31,6 +31,15 @@ public extension LogReader {
     func read(_ onLine: (Data) -> Void) throws -> LogReadResult { try read(onLine, onReset: {}) }
 }
 
+/// `st_mtimespec` on Darwin, `st_mtim` elsewhere.
+func modificationTime(_ info: stat) -> timespec {
+    #if canImport(Darwin)
+    return info.st_mtimespec
+    #else
+    return info.st_mtim
+    #endif
+}
+
 public enum LogReadError: Error, Equatable, Sendable {
     /// open, stat or read failed; the number is `errno`. Never carries file content.
     case cannotRead(errno: Int32)
@@ -120,7 +129,8 @@ public final class TailReader: LogReader {
             consume(buffer[0..<got], onLine, count: &result.lines)
         }
         result.size = size
-        result.modified = Date(timeIntervalSince1970: TimeInterval(info.st_mtimespec.tv_sec) + TimeInterval(info.st_mtimespec.tv_nsec) / 1e9)
+        let mtime = modificationTime(info)
+        result.modified = Date(timeIntervalSince1970: TimeInterval(mtime.tv_sec) + TimeInterval(mtime.tv_nsec) / 1e9)
         result.truncated = truncated
         result.invalidLines = invalidLines - invalidBefore
         result.oversizedLines = oversizedLines - oversizedBefore
@@ -192,8 +202,9 @@ public final class CompressedLogReader: LogReader {
         }
         var result = LogReadResult()
         result.size = Int(info.st_size)
-        result.modified = Date(timeIntervalSince1970: TimeInterval(info.st_mtimespec.tv_sec) + TimeInterval(info.st_mtimespec.tv_nsec) / 1e9)
-        let newStamp = "\(info.st_dev):\(info.st_ino):\(info.st_size):\(info.st_mtimespec.tv_sec).\(info.st_mtimespec.tv_nsec)"
+        let mtime = modificationTime(info)
+        result.modified = Date(timeIntervalSince1970: TimeInterval(mtime.tv_sec) + TimeInterval(mtime.tv_nsec) / 1e9)
+        let newStamp = "\(info.st_dev):\(info.st_ino):\(info.st_size):\(mtime.tv_sec).\(mtime.tv_nsec)"
         if newStamp == stamp {
             result.truncated = truncated
             return result
