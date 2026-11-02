@@ -3,7 +3,7 @@ import SwiftUI
 struct ReinsApp: App {
     @State private var appearance: AppearanceStore
     @State private var shell: ShellModel
-    @State private var toasts = ToastCenter()
+    @State private var env = AppEnvironment.shared
     private let mode = LaunchMode.current()
 
     init() {
@@ -21,7 +21,7 @@ struct ReinsApp: App {
                     ShellView()
                 }
             }
-            .reinsRoot(shell: shell, toasts: toasts)
+            .reinsRoot(shell: shell, toasts: env.toasts, env: env)
             .frame(minWidth: 960, minHeight: 600)
             .preferredColorScheme(appearance.choice.colorScheme)
         }

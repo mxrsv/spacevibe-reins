@@ -8,7 +8,7 @@ enum TabRegistry {
         [
             LoadoutStubTab(),
             RulesStubTab(),
-            ActivityStubTab(),
+            ActivityTab(),
         ]
     }
 }

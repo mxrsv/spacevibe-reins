@@ -17,14 +17,6 @@ final class RulesStubTab: ReinsTab {
     var content: AnyView { AnyView(StubScreen(text: "What each agent may do, per CLI: not built yet.")) }
 }
 
-@MainActor
-final class ActivityStubTab: ReinsTab {
-    let id = "activity"
-    let title = "Activity"
-    let systemImage = "waveform.path.ecg"
-    var content: AnyView { AnyView(StubScreen(text: "Running sessions, failed commands and file history: not built yet.")) }
-}
-
 private struct StubScreen: View {
     let text: String
 

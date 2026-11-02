@@ -15,6 +15,11 @@ enum ShotRenderer {
         NSApplication.shared.setActivationPolicy(.prohibited)
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            // The dev variables of scripts/dev-fixture.sh select the real Activity screen over the demo shell.
+            if ActivityShots.isRequested() {
+                try ActivityShots.run(into: directory)
+                exit(0)
+            }
             for choice in [AppearanceChoice.dark, .light] {
                 try write(shell(choice) { _, _ in }, name: "shell-loadout", choice: choice, to: directory)
                 try write(shell(choice) { shell, _ in shell.select("activity") }, name: "shell-activity", choice: choice, to: directory)
@@ -55,7 +60,7 @@ enum ShotRenderer {
         .reinsRoot(shell: shell, toasts: ToastCenter(announce: false))
     }
 
-    private static func write<V: View>(_ view: V, name: String, choice: AppearanceChoice, to directory: URL, fullHeight: Bool = false) throws {
+    static func write<V: View>(_ view: V, name: String, choice: AppearanceChoice, to directory: URL, fullHeight: Bool = false) throws {
         let renderer = ImageRenderer(content: view
             .environment(\.colorScheme, choice.colorScheme)
             .environment(\.isShotRendering, true))
