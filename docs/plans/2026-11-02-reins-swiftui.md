@@ -59,23 +59,23 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 
 ### Phase S2: engine, in parallel (each module compares to its goldens)
 
-- [ ] S2.1 Inventory: skills, agents, hooks of both CLIs, plugin ownership, dead hooks, project discovery (cwd from the newest logs plus Codex `[projects]`), the cell contract (`counted`, `pending`, `unmeasurable`, `missing`) and filter counts with dead hooks only under Dead.
-- [ ] S2.2 UsageScan: streaming JSONL and zstd reader, per-hook runs and errors (the `attachment.blockingError.command` shape), skill and agent counts, cache with a scan version, windows, runs off the main thread.
-- [ ] S2.3 Journal and Mutate: add, remove, copy between CLIs, undo with the same bytes, trash backups; install-from-source is out of the first cut.
-- [ ] S2.4 Rules: Claude `permissions.allow|ask|deny` read, add, remove, change verdict, capability grid and its mapping table, preview and set capability, refuse on `mixed`, all journaled; Codex reader (keys, profiles, trust, rules counts) with the secrets canary test.
-- [ ] S2.5 Activity: live sessions for both CLIs, failures grouped with `laterPass`, file history labels, titles and project names, pricing table (estimated cost), the UNMEASURABLE wording; `StopSession` after the S0.4 findings, with a confirmation contract (the UI asks, the engine only terminates a pid it re-validates).
+- [x] S2.1 Inventory: skills, agents, hooks of both CLIs, plugin ownership, dead hooks, project discovery (cwd from the newest logs plus Codex `[projects]`), the cell contract (`counted`, `pending`, `unmeasurable`, `missing`) and filter counts with dead hooks only under Dead. Done 2026-11-02 (commits 6f1e80a); golden parity with the Node core where the module has one.
+- [x] S2.2 UsageScan: streaming JSONL and zstd reader, per-hook runs and errors (the `attachment.blockingError.command` shape), skill and agent counts, cache with a scan version, windows, runs off the main thread. Done 2026-11-02 (commits 6f1e80a); golden parity with the Node core where the module has one.
+- [x] S2.3 Journal and Mutate: add, remove, copy between CLIs, undo with the same bytes, trash backups; install-from-source is out of the first cut. Done 2026-11-02 (commits caf4038, 6d02eee, c659943); golden parity with the Node core where the module has one.
+- [x] S2.4 Rules: Claude `permissions.allow|ask|deny` read, add, remove, change verdict, capability grid and its mapping table, preview and set capability, refuse on `mixed`, all journaled; Codex reader (keys, profiles, trust, rules counts) with the secrets canary test. Done 2026-11-02 (commits 67482db); golden parity with the Node core where the module has one.
+- [x] S2.5 Activity: live sessions for both CLIs, failures grouped with `laterPass`, file history labels, titles and project names, pricing table (estimated cost), the UNMEASURABLE wording; `StopSession` after the S0.4 findings, with a confirmation contract (the UI asks, the engine only terminates a pid it re-validates). Done 2026-11-02 (commits db88567); golden parity with the Node core where the module has one.
 
 ### Phase S3: shell and shared views (UI gate)
 
-- [ ] S3.1 Tokens (dark and light, `--claude`/`--codex` equivalents as `Color` constants and asset-free), `NavigationSplitView` sidebar with counts, top bar, hint bar, hidden-inset window.
-- [ ] S3.2 `⌘K` palette, toast with Undo wired to the journal, shared views: grouped list and row, CLI tag, segmented control, filter chip, `UsageCell` with the five states and legend, empty state, banner.
-- [ ] S3.3 Fixture-HOME launch for development (`scripts/dev.sh` with a synthetic home), screenshots to `~/scratch/spacevibe-reins/shots/`, owner eye approval.
+- [x] S3.1 Tokens (dark and light, `--claude`/`--codex` equivalents as `Color` constants and asset-free), `NavigationSplitView` sidebar with counts, top bar, hint bar, hidden-inset window. Done 2026-11-02 (commits 97307dc); golden parity with the Node core where the module has one.
+- [x] S3.2 `⌘K` palette, toast with Undo wired to the journal, shared views: grouped list and row, CLI tag, segmented control, filter chip, `UsageCell` with the five states and legend, empty state, banner. Done 2026-11-02 (commits 97307dc); golden parity with the Node core where the module has one.
+- [ ] S3.3 Fixture-HOME launch for development (`scripts/dev.sh` with a synthetic home), screenshots to `~/scratch/spacevibe-reins/shots/`, owner eye approval. Built (Activity commit bc3819e; `scripts/dev-fixture.sh`); owner eye approval pending.
 
 ### Phases S4 to S6: screens (UI gates, in parallel after S3)
 
-- [ ] S4 Loadout: Matrix table, filter chips, scope select, Add to CLI, remove, plugin and project rows read-only, scan progress, error and empty states. Eye approval.
-- [ ] S5 Rules: capability grid with confirm sheet, expandable concrete rules, scope selector, rule list with add, remove and change verdict, read-only Codex group and the unrestricted state. Eye approval.
-- [ ] S6 Activity: lanes per CLI, sessions, failures, file history, unmeasurable reasons on hover, Stop with confirmation, honest loading state while the first wide read runs. Eye approval.
+- [ ] S4 Loadout: Matrix table, filter chips, scope select, Add to CLI, remove, plugin and project rows read-only, scan progress, error and empty states. Eye approval. Built (commit 4a968ee); owner eye approval pending.
+- [ ] S5 Rules: capability grid with confirm sheet, expandable concrete rules, scope selector, rule list with add, remove and change verdict, read-only Codex group and the unrestricted state. Eye approval. Built (commit 694e39a); owner eye approval pending.
+- [ ] S6 Activity: lanes per CLI, sessions, failures, file history, unmeasurable reasons on hover, Stop with confirmation, honest loading state while the first wide read runs. Eye approval. Built (commit bc3819e); owner eye approval pending, Stop never run against a live process.
 
 ### Phase S6T: Tokens tab (added to the spec 2026-11-03, after S2 and S3)
 
@@ -103,6 +103,14 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 - [ ] S8.1 AC5: run the packaged app with the network off and open all four tabs.
 - [ ] S8.2 AC1: the owner times the permission task (find, remove, undo) under one minute.
 - [ ] S8.3 Parity reached: delete `core/`, `electron/`, the Electron renderer, `e2e/`, the Node build files and the Electron lines in `AGENTS.md` and `README.md`/`CHANGELOG.md` where they exist (D8, D12), after the owner agrees. Mark this plan historical (D1).
+
+## Progress log (2026-11-03)
+
+Built by parallel subagents; the orchestrator re-ran `scripts/test.sh` (267 tests, 28 suites, pass) and `swift build` after the last change. Figures not marked otherwise are the agents' reports.
+
+- Review (`review-change`, run `aeze29`, range `d366edc..694e39a`): correctness, tests and security-code all ran. Fixed in `887bc9c`, `a7a02d1`, `58fbb31`, `3d632fb`: fixtures hidden by a global gitignore; concurrent writes losing journal entries and edits (one process-wide recursive lock, unique temp names, a byte re-check before rename); project-scope symlink escape; symlinked Claude root; denied paths read as missing; unbounded TOML recursion; zstd memory (ring buffer, 512 MiB cap) and an exact-128-KB truncation bug; Rules confirmation bound to its scope; Loadout row, toast and double-click findings; test gaps for the pid guard, rollbacks and hook timeouts.
+- Debt accepted (optimize or harden later): trash backups of edited settings are never pruned and may hold `env` secrets; Undo trusts paths in `journal.json`; Stop takes a Claude pid from a writable status file (needs the confirmation click; the pid is re-checked by start time only); the fixture tree lives at the fixed path `/private/tmp/reins-fixture-home`; the write lock covers this process only (another process is caught by the byte re-check, with a small window before `rename`); failed-command text shown in Activity is not redacted (same as the Node core; owner decision pending); `Components/`, `Gallery/` and the Shell views were not reviewed; the app target has no unit tests (the Sparkle session added `Tests/ReinsTests`); no `NavigationSplitView`, so the sidebar cannot collapse; palette has no real combobox role.
+- Not verified: hover, focus ring, keyboard flow, VoiceOver, window drag, the real `Menu` and `TextField` in a live window, polling, Stop against a live process, TCC prompts (S0.3), Linux build (S0.6), `scripts/build-app.sh` after the Sparkle change (another session owns it), a clean-checkout test run after `887bc9c`.
 
 ## Acceptance map
 
