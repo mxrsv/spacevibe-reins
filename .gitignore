@@ -5,3 +5,7 @@ shots/
 .env.local
 out/
 release/
+.build/
+build/
+*.xcodeproj
+Package.resolved
