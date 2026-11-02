@@ -35,7 +35,7 @@ export function newState(cli, path) {
     cli, path, invalid: 0,
     id: null, cwd: null, startedAt: null, parent: false, worktreeOriginal: null,
     customTitle: null, aiTitle: null, firstPrompt: null,
-    model: 'unknown', metrics: {}, usageSeen: new Map(), cumulative: null, costState: null,
+    model: 'unknown', metrics: {}, usageSeen: new Map(), cumulative: null,
     status: null, pending: new Map(), questions: new Set(),
     bash: new Map(), editsPending: new Map(),
     failures: [], hookFailures: [], passes: new Map(), edits: [], legacyEdits: [], sawFileChange: false,
@@ -115,7 +115,7 @@ function claudeAssistant(st, r) {
   const m = r.message ?? {};
   if (typeof m.model === 'string' && m.model !== '<synthetic>') st.model = m.model;
   const at = atOf(r);
-  if (m.usage && !r.isSidechain) {
+  if (m.usage) {
     // Streaming blocks repeat the message usage, so keep the maximum per message id.
     const u = m.usage;
     const values = { input: count(u.input_tokens), output: count(u.output_tokens), cacheWrite: count(u.cache_creation_input_tokens), cacheRead: count(u.cache_read_input_tokens), cacheWriteLong: count(u.cache_creation?.ephemeral_1h_input_tokens) };
@@ -146,7 +146,7 @@ export function foldClaude(st, line) {
   const attachment = line.includes('"type":"attachment"');
   const wanted = resultLine || line.includes('"type":"user"') || line.includes('"type":"assistant"')
     || line.includes('"type":"ai-title"') || line.includes('"type":"custom-title"') || line.includes('"type":"worktree-state"')
-    || line.includes('"type":"cost-state"') || (attachment && (line.includes('hook_non_blocking_error') || line.includes('hook_blocking_error')));
+    || (attachment && (line.includes('hook_non_blocking_error') || line.includes('hook_blocking_error')));
   if (!wanted) return;
   let r;
   try { r = JSON.parse(line); } catch { st.invalid++; return; }
@@ -156,7 +156,6 @@ export function foldClaude(st, line) {
     case 'ai-title': st.aiTitle = r.aiTitle ?? st.aiTitle; return;
     case 'custom-title': st.customTitle = r.customTitle ?? st.customTitle; return;
     case 'worktree-state': st.worktreeOriginal = r.worktreeSession?.originalCwd ?? st.worktreeOriginal; return;
-    case 'cost-state': st.costState = r.modelUsage ?? st.costState; return;
     case 'attachment':
       if (r.attachment?.type === 'hook_non_blocking_error' || r.attachment?.type === 'hook_blocking_error') claudeHookFailure(st, r, r.attachment);
       return;

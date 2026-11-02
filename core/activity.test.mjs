@@ -211,7 +211,7 @@ test('Codex: process maps to its rollout by thread lock; state from the rollout 
     { pid: 4047, threadId: uuid(47) }, // lock held, rollout file does not exist yet
     { pid: 4048, threadId: null }, // live process with no lock at all
   ];
-  const a = await run(r, fakeProc({ threads }));
+  const a = await run(r, fakeProc({ threads, starts: { 4047: 'Mon Nov  2 11:00:00 2026' } }));
   const state = (n) => byId(a, uuid(n)).state;
   assert.equal(state(41), 'running');
   assert.equal(byId(a, uuid(41)).currentTool.name, 'exec_command');
@@ -226,6 +226,8 @@ test('Codex: process maps to its rollout by thread lock; state from the rollout 
   assert.equal(byId(a, uuid(46)), undefined);
   assert.equal(state(47), 'unmeasurable');
   assert.equal(byId(a, uuid(47)).reasonCode, 'codex-no-rollout');
+  assert.equal(byId(a, uuid(47)).ageMs, 3_600_000); // from the process start: no rollout exists yet
+  assert.equal(byId(a, uuid(47)).title, `2026-11-02 · ${uuid(47).slice(0, 8)}`);
   const bare = a.sessions.find((s) => s.id === 'pid:4048');
   assert.equal(bare.reasonCode, 'codex-no-rollout');
   assert.equal(byId(a, uuid(41)).lastWriteAgoMs, 2_000);
@@ -272,14 +274,38 @@ test('cost: estimated from logged tokens, deduplicated, and null when the model 
   assert.equal(estimateCost({ 'claude-sonnet-4-6[1m]': { input: 1_000_000 } }, { 'claude-sonnet-4-6': { input: 3, output: 0, cacheRead: 0, cacheWrite: 0, cacheWriteLong: 0 } }).usd, 3);
 });
 
-test('cost: a log too large to read in full uses the cumulative cost-state, never a partial sum', async () => {
+test('cost: a log too large to read in full gives no estimate rather than a partial sum', async () => {
   const { r } = sandbox();
   const c = cl('/work/app', sid(71));
   status(r, 71, { status: 'idle' });
-  const filler = Array.from({ length: 40 }, (_, i) => c.tool(`f${i}`, 'Read', { file_path: `/f/${i}` }, now - 100_000 + i, { usage: { input_tokens: 5 } }));
-  claudeLog(r, '/work/app', sid(71), [...filler, { type: 'cost-state', sessionId: sid(71), modelUsage: { 'claude-sonnet-4-6': { inputTokens: 1000, outputTokens: 2000, cacheReadInputTokens: 0, cacheCreationInputTokens: 0 } } }]);
+  const filler = Array.from({ length: 40 }, (_, i) => c.tool(`f${i}`, 'Read', { file_path: `/f/${i}` }, now - 100_000 + i, { usage: { input_tokens: 5, output_tokens: 5 } }));
+  claudeLog(r, '/work/app', sid(71), filler);
   const s = byId(await run(r, fakeProc({ alive: [71] }), { liveTailBytes: 1500 }), sid(71));
-  assert.ok(Math.abs(s.cost.usd - 0.033) < 1e-9);
+  assert.equal(s.cost, null);
+  assert.match(s.costNote, /too large/);
+});
+
+test('cost: subagent transcripts count toward the session cost', async () => {
+  const { r } = sandbox();
+  const c = cl('/work/app', sid(72));
+  status(r, 72, { status: 'idle' });
+  claudeLog(r, '/work/app', sid(72), [c.user('go', now - 9000), c.tool('m1', 'Read', { file_path: '/x' }, now - 8000, { usage: { input_tokens: 1_000_000 } })]);
+  const sub = { ...c.tool('s1', 'Read', { file_path: '/y' }, now - 7000, { usage: { output_tokens: 1_000_000 } }), isSidechain: true };
+  put(join(r.claude.logs, '-work-app', sid(72), 'subagents', 'agent-1.jsonl'), jsonl([sub]), 7000);
+  const s = byId(await run(r, fakeProc({ alive: [72] })), sid(72));
+  assert.ok(Math.abs(s.cost.usd - (3 + 15)) < 1e-9, String(s.cost?.usd)); // 1M input + 1M output at sonnet-4-6 prices
+});
+
+test('many subagent transcripts: the newest write decides liveness, not readdir order', async () => {
+  const { r } = sandbox();
+  const c = cl('/work/app', sid(73));
+  status(r, 73, { status: 'busy' });
+  claudeLog(r, '/work/app', sid(73), [c.user('go', now - 900_000), c.tool('t1', 'Agent', { description: 'delegate' }, now - 800_000)], 800_000);
+  const dir = join(r.claude.logs, '-work-app', sid(73), 'subagents');
+  for (let i = 0; i < 60; i++) put(join(dir, `agent-${String(i).padStart(2, '0')}.jsonl`), jsonl([{ type: 'user', isSidechain: true, message: { role: 'user', content: 'x' } }]), i === 59 ? 2_000 : 600_000);
+  const s = byId(await run(r, fakeProc({ alive: [73] })), sid(73));
+  assert.equal(s.lastWriteAgoMs, 2_000);
+  assert.equal(s.state, 'running'); // an open tool, but a subagent wrote 2 s ago
 });
 
 // ---- failures ----
@@ -390,7 +416,7 @@ test('older Codex rollouts that record patches only as tool text still give file
   const { r } = sandbox();
   const x = cx(uuid(111));
   const patch = '*** Begin Patch\n*** Update File: src/old.ts\n@@\n*** Add File: /abs/new.ts\n*** End Patch';
-  codexLog(r, uuid(111), [x.meta(now - 9000, '/work/app-a'), x.call(now - 8000, 'p1', 'custom_apply_patch', { patch })]);
+  codexLog(r, uuid(111), [x.meta(now - 9000, '/work/app-a'), { timestamp: iso(now - 8000), type: 'response_item', payload: { type: 'custom_tool_call', name: 'exec', call_id: 'p1', input: patch } }]);
   const files = (await run(r)).files;
   assert.deepEqual(files.map((f) => f.path).sort(), ['/abs/new.ts', '/work/app-a/src/old.ts']);
 });

@@ -177,19 +177,10 @@ function mergeMetrics(states) {
   return out;
 }
 
-// cost-state (Claude) keeps cumulative per-model tokens, which survives a tail-only read.
-const metricsFromCostState = (usage) => Object.fromEntries(Object.entries(usage ?? {}).map(([model, u]) => [model,
-  { input: u.inputTokens ?? 0, output: u.outputTokens ?? 0, cacheRead: u.cacheReadInputTokens ?? 0, cacheWrite: u.cacheCreationInputTokens ?? 0, cacheWriteLong: 0 }]));
-
+// A log read only from its tail has partial usage, and a partial sum would look like a real cost.
 function costFor(entries, prices) {
-  const truncated = entries.some((e) => e.truncated);
-  let metrics = mergeMetrics(entries.map((e) => e.st));
-  if (truncated) {
-    const fromState = entries[0].st.costState;
-    if (!fromState || entries[0].st.cli !== 'claude') return { cost: null, costNote: 'The log is too large to read in full, so no estimate.' };
-    metrics = metricsFromCostState(fromState);
-  }
-  const est = estimateCost(metrics, prices);
+  if (entries.some((e) => e.truncated)) return { cost: null, costNote: 'The log is too large to read in full, so no estimate.' };
+  const est = estimateCost(mergeMetrics(entries.map((e) => e.st)), prices);
   return est.usd == null ? { cost: null, costNote: est.note } : { cost: { usd: est.usd, estimated: true }, costNote: null };
 }
 
@@ -248,14 +239,14 @@ export async function readActivity(r, opts = {}) {
       // A reused pid has a different start time; two readings that disagree mean another process.
       if (started && started.replace(/\s+/g, ' ') !== String(s.procStart).replace(/\s+/g, ' ')) alive = false;
     }
-    claudeLive.push({ s, alive, main: index.claudeMain.get(s.sessionId) ?? null, subs: (index.claudeSubs.get(s.sessionId) ?? []).slice(0, MAX_SUBAGENT_LOGS) });
+    claudeLive.push({ s, alive, main: index.claudeMain.get(s.sessionId) ?? null, subs: (index.claudeSubs.get(s.sessionId) ?? []).sort((x, y) => y.mtimeMs - x.mtimeMs) });
   }
   const threads = await proc.codexThreads();
   const codexPids = new Set(threads.filter((t) => t.threadId).map((t) => t.pid));
 
   // 2. Which logs to fold: live ones in full, the rest only if recent.
   const live = new Set();
-  for (const c of claudeLive) for (const f of [c.main, ...c.subs]) if (f) live.add(f.path);
+  for (const c of claudeLive) for (const f of [c.main, ...c.subs.slice(0, MAX_SUBAGENT_LOGS)]) if (f) live.add(f.path);
   for (const t of threads) { const f = t.threadId && index.codexById.get(t.threadId); if (f) live.add(f.path); }
   const recent = index.files.filter((f) => f.mtimeMs >= now - historyDays * DAY_MS && !live.has(f.path))
     .sort((a, b) => b.mtimeMs - a.mtimeMs).slice(0, maxHistoryFiles);
@@ -280,7 +271,7 @@ export async function readActivity(r, opts = {}) {
     const lastWriteAgoMs = Math.max(0, now - written);
     if (!c.alive && lastWriteAgoMs > ENDED_KEEP_MS) continue;
     const startedAt = c.s.startedAt ?? st?.startedAt ?? null;
-    const subEntries = c.subs.map((f) => folded.get(f.path)).filter(Boolean);
+    const subEntries = c.subs.slice(0, MAX_SUBAGENT_LOGS).map((f) => folded.get(f.path)).filter(Boolean);
     sessions.push({
       cli: 'claude', id: c.s.sessionId, pid: c.s.pid,
       title: pickTitle([st?.customTitle, st?.aiTitle, c.s.nameSource === 'derived' ? null : c.s.name, st?.firstPrompt], { startedAt, id: c.s.sessionId }),
@@ -291,15 +282,17 @@ export async function readActivity(r, opts = {}) {
     });
   }
   const threadNames = codexThreadNames(r);
+  const utc = (text) => (text ? Date.parse(`${text} UTC`) || null : null);
   for (const t of threads) {
     const f = t.threadId ? index.codexById.get(t.threadId) : null;
     if (t.threadId && f && isChildRollout(f.path)) continue;
     if (!t.threadId && codexPids.has(t.pid)) continue;
     const e = f ? folded.get(f.path) : null;
     if (!e) {
+      const startedAt = utc(await proc.startOf?.(t.pid)); // the rollout does not exist yet, so the process start is the only clock
       sessions.push({
-        cli: 'codex', id: t.threadId ?? `pid:${t.pid}`, pid: t.pid, title: pickTitle([threadNames.get(t.threadId)], { startedAt: null, id: t.threadId ?? `pid ${t.pid}` }),
-        project: null, ...unmeasurable('codex-no-rollout'), ageMs: null, lastWriteAgoMs: null, cost: null, costNote: UNMEASURABLE['codex-no-rollout'],
+        cli: 'codex', id: t.threadId ?? `pid:${t.pid}`, pid: t.pid, title: pickTitle([threadNames.get(t.threadId)], { startedAt, id: t.threadId ?? `pid ${t.pid}` }),
+        project: null, ...unmeasurable('codex-no-rollout'), ageMs: startedAt ? Math.max(0, now - startedAt) : null, lastWriteAgoMs: null, cost: null, costNote: UNMEASURABLE['codex-no-rollout'],
       });
       continue;
     }
