@@ -50,9 +50,8 @@ final class ActivityLogState {
     var firstPrompt: String?
     var model = "unknown"
     var metrics = OrderedMap<Pricing.Usage>()
-    var claudeUsageSeen: [String: Pricing.Usage] = [:]
-    var codexTotalsSeen = Set<String>()
-    var cumulative: CodexTokens?
+    var claudeUsage = ClaudeUsageCounter()
+    var codexUsage = CodexUsageCounter()
     /// Codex only: "busy" after task_started, "idle" after task_complete or turn_aborted.
     var status: String?
     var pending = OrderedMap<ActivityPendingCall>()
@@ -67,52 +66,6 @@ final class ActivityLogState {
     var sawFileChange = false
 
     init(cli: ActivityCLI) { self.cli = cli }
-
-    struct CodexTokens {
-        var input = 0.0
-        var output = 0.0
-        var cacheRead = 0.0
-    }
-}
-
-// MARK: - JSON access with JavaScript semantics
-
-private extension JSONValue {
-    /// The member, or nil for a missing key or JSON null (what `??` treats as nullish).
-    func field(_ key: String) -> JSONValue? {
-        guard let v = self[key], v != .null else { return nil }
-        return v
-    }
-
-    var number: Double? { numberText.flatMap { Double($0) } }
-
-    /// JavaScript truthiness.
-    var truthy: Bool {
-        switch self {
-        case .null: return false
-        case .bool(let b): return b
-        case .number(let text): return Double(text).map { $0 != 0 && !$0.isNaN } ?? true
-        case .string(let s): return !s.isEmpty
-        case .array, .object: return true
-        }
-    }
-
-    /// `Number.isInteger`
-    var integer: Int? {
-        guard let d = number, d.isFinite, d == d.rounded(), abs(d) < 9e15 else { return nil }
-        return Int(d)
-    }
-}
-
-private extension Optional where Wrapped == JSONValue {
-    func field(_ key: String) -> JSONValue? { self?.field(key) }
-    var string: String? { self?.stringValue }
-    var truthy: Bool { self?.truthy ?? false }
-}
-
-private func count(_ v: JSONValue?) -> Double {
-    if let d = v?.number, d.isFinite, d >= 0 { return d }
-    return 0
 }
 
 private func atOf(_ r: JSONValue) -> Double {
@@ -284,25 +237,10 @@ enum ActivityFold {
         if let model = m.field("model")?.stringValue, model != "<synthetic>" { st.model = model }
         let at = atOf(r)
         if let u = m.field("usage"), u.truthy {
-            // Streaming blocks repeat the message usage, so keep the maximum per message id.
-            let values = Pricing.Usage(
-                input: count(u["input_tokens"]), output: count(u["output_tokens"]), cacheWrite: count(u["cache_creation_input_tokens"]),
-                cacheWriteLong: count(u.field("cache_creation").field("ephemeral_1h_input_tokens")), cacheRead: count(u["cache_read_input_tokens"])
-            )
             let messageId = m.field("id")?.stringValue ?? r.field("uuid")?.stringValue ?? "undefined"
-            let key = "\(st.model):\(messageId)"
-            let prev = st.claudeUsageSeen[key] ?? Pricing.Usage()
             var metric = st.metrics[st.model] ?? Pricing.Usage()
-            metric.input += max(0, values.input - prev.input)
-            metric.output += max(0, values.output - prev.output)
-            metric.cacheWrite += max(0, values.cacheWrite - prev.cacheWrite)
-            metric.cacheWriteLong += max(0, values.cacheWriteLong - prev.cacheWriteLong)
-            metric.cacheRead += max(0, values.cacheRead - prev.cacheRead)
+            metric.add(st.claudeUsage.add(u, key: "\(st.model):\(messageId)"))
             st.metrics[st.model] = metric
-            st.claudeUsageSeen[key] = Pricing.Usage(
-                input: max(values.input, prev.input), output: max(values.output, prev.output), cacheWrite: max(values.cacheWrite, prev.cacheWrite),
-                cacheWriteLong: max(values.cacheWriteLong, prev.cacheWriteLong), cacheRead: max(values.cacheRead, prev.cacheRead)
-            )
         }
         for b in m.field("content")?.arrayValue ?? [] {
             guard b.field("type")?.stringValue == "tool_use" else { continue }
@@ -372,41 +310,11 @@ enum ActivityFold {
 
     // MARK: Codex rollout
 
-    private static func codexTokens(_ u: JSONValue) -> ActivityLogState.CodexTokens {
-        ActivityLogState.CodexTokens(
-            input: count(u["input_tokens"]), output: count(u["output_tokens"]),
-            cacheRead: count(u.field("cached_input_tokens") ?? u.field("cache_read_input_tokens"))
-        )
-    }
-
-    private static func tokenText(_ d: Double) -> String { d == d.rounded() && abs(d) < 1e15 ? String(Int(d)) : String(d) }
-
     private static func codexUsage(_ st: ActivityLogState, _ info: JSONValue?, model: String) {
-        guard let u = info.field("total_token_usage"), u.truthy else { return }
-        let total = codexTokens(u)
-        // A rollout can interleave streams (an embedded reviewer has its own running total) and repeat a total, so a
-        // total already seen adds nothing, and the turn's own usage is trusted over the difference between two totals.
-        let seen = "\(tokenText(total.input)):\(tokenText(total.output)):\(tokenText(total.cacheRead))"
-        if st.codexTotalsSeen.contains(seen) { return }
-        st.codexTotalsSeen.insert(seen)
-        let prior = st.cumulative ?? ActivityLogState.CodexTokens()
-        let delta: ActivityLogState.CodexTokens
-        if let last = info.field("last_token_usage"), last.truthy {
-            delta = codexTokens(last)
-        } else {
-            delta = ActivityLogState.CodexTokens(
-                input: total.input >= prior.input ? total.input - prior.input : total.input,
-                output: total.output >= prior.output ? total.output - prior.output : total.output,
-                cacheRead: total.cacheRead >= prior.cacheRead ? total.cacheRead - prior.cacheRead : total.cacheRead
-            )
-        }
+        guard let delta = st.codexUsage.add(info) else { return }
         var metric = st.metrics[model] ?? Pricing.Usage()
-        // Codex input includes cached tokens and output includes reasoning tokens.
-        metric.input += max(0, delta.input - delta.cacheRead)
-        metric.cacheRead += delta.cacheRead
-        metric.output += delta.output
+        metric.add(delta)
         st.metrics[model] = metric
-        st.cumulative = total
     }
 
     private static func codexItem(_ st: ActivityLogState, _ item: JSONValue, at: Double) {
