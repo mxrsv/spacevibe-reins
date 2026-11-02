@@ -1,0 +1,5 @@
+default_permissions = "dev"
+approval_policy = { granular = { rules = true, sandbox_approval = false } }
+sandbox_workspace_write = { network_access = true, writable_roots = ["/work/x"] }
+[permissions.dev.network]
+enabled = false

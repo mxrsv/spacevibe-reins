@@ -1,0 +1,33 @@
+# comment
+approval_policy = "never"   # trailing comment
+sandbox_mode = "workspace-write"
+approvals_reviewer = "user"
+model = "demo-model"
+developer_instructions = """
+approval_policy = "on-request"
+[permissions.fake]
+"""
+
+[sandbox_workspace_write]
+network_access = false
+writable_roots = [
+  "/work/a",
+  "/work/b", # note
+]
+
+[projects."/work/app"]
+trust_level = "trusted"
+
+[projects."/work/weird]path"]
+trust_level = "untrusted"
+
+[projects]
+"/work/inline" = { trust_level = "trusted" }
+
+[mcp_servers.github]
+command = "npx"
+[mcp_servers.github.env]
+GITHUB_TOKEN = "canary-secret-9f3a1c"
+
+[shell_environment_policy]
+set = { API_KEY = "canary-secret-9f3a1c" }

@@ -1,0 +1,2 @@
+prefix_rule(pattern=["a"], decision="allow")
+prefix_rule(pattern=["b"], decision="forbidden")

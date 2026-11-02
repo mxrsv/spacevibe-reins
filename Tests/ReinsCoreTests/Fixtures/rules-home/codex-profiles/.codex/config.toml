@@ -1,0 +1,16 @@
+default_permissions = "dev"
+
+[approval_policy.granular]
+sandbox_approval = true
+rules = false
+
+[permissions.dev.filesystem]
+"/tmp" = "write"
+"~/.ssh" = "none"
+
+[permissions.dev.network]
+enabled = true
+mode = "limited"
+
+[permissions.strict.filesystem]
+"/" = "read"

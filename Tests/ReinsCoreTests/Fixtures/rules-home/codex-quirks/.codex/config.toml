@@ -1,0 +1,25 @@
+approval_policy = "on-request"
+approval_policy = "never"
+sandbox_mode = "read-only"
+
+[[hooks]]
+sandbox_mode = "danger-full-access"
+approval_policy = "untrusted"
+
+[permissions.quiet]
+
+[permissions.noisy.network]
+"bad key" = true
+ok-key = "yes"
+
+[projects."/work/one"]
+trust_level = "trusted"
+
+[projects."/work/one"]
+trust_level = "untrusted"
+
+[projects."/work/two"]
+note = "no trust level here"
+
+[sandbox_workspace_write]
+writable_roots = ["/work/y"]

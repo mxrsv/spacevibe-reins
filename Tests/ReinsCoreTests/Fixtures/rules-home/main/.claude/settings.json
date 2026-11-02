@@ -1,0 +1,24 @@
+{
+  "env": {
+    "API_TOKEN": "canary-secret-9f3a1c"
+  },
+  "apiKeyHelper": "echo canary-secret-9f3a1c",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "WebSearch",
+      "Bash(git status:*)",
+      "mcp__demo__lookup",
+      42,
+      "not a rule!"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Read(./.env)"
+    ],
+    "deny": [
+      "WebFetch(domain:blocked.example)"
+    ]
+  }
+}

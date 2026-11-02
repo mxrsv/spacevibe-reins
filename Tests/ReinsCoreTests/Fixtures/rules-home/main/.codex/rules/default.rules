@@ -1,0 +1,9 @@
+# prefix_rule(pattern=["x"], decision="forbidden")
+prefix_rule(pattern=["git", "status"], decision="allow")
+prefix_rule(
+  pattern=["rm"],
+  decision="forbidden",
+)
+prefix_rule(pattern=["curl", "canary-secret-9f3a1c"], decision="prompt")
+prefix_rule(pattern=["ls"])
+prefix_rule(pattern=["make"], decision="maybe")
