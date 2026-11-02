@@ -1,7 +1,7 @@
 # Reins: move to Electron and build the Matrix interface
 
 Spec: [2026-11-02-reins.md](../specs/2026-11-02-reins.md) (requirements, platform, interface, acceptance criteria AC1 to AC6).
-Status: in progress. Core, IPC, all four UI areas and Stop are built (2026-11-02); the UI waits for the owner's eye approval and is uncommitted. Written 2026-11-02.
+Status: superseded on 2026-11-02 by [the SwiftUI plan](2026-11-02-reins-swiftui.md) after the owner changed the platform. Kept as history; the UI and core work it records are the reference for the port. Last state: in progress. Core, IPC, all four UI areas and Stop are built (2026-11-02); the UI waits for the owner's eye approval and is uncommitted. Written 2026-11-02.
 
 ## Approach
 

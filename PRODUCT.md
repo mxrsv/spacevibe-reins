@@ -27,4 +27,4 @@ Generic AI dashboards, neon on black, gradients, card grids of icon + title + te
 Keyboard navigation, visible focus, WCAG AA, reduced motion. Offline, no account, no telemetry. Writes go only to the skill, agent, hook and permission locations of Claude Code and Codex; each write keeps a restorable copy. Plugin-owned items are read-only. Secret values in settings are never read or displayed.
 
 ## Distribution
-Public site and downloads: `reins.spacevibe.dev` (not live yet). The app is an Electron desktop app (macOS first) that opens no network listener; no user data passes through the site.
+Public site and downloads: `reins.spacevibe.dev` (not live yet). The app is a native macOS app (Swift and SwiftUI) that opens no network listener and makes no network request; no user data passes through the site.
