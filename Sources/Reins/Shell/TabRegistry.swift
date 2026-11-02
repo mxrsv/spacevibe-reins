@@ -7,7 +7,7 @@ enum TabRegistry {
     static func makeTabs() -> [any ReinsTab] {
         [
             LoadoutTab(),
-            RulesStubTab(),
+            RulesTab(),
             ActivityTab(),
         ]
     }

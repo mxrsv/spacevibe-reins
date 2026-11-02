@@ -63,11 +63,12 @@ final class AppEnvironment {
     /// Runs a write off the main thread. On success it shows a toast with `label` and an Undo that calls
     /// `Journal.undo` (also off the main thread); on failure it shows a danger toast with `ReinsError.message`.
     /// `afterChange` runs on the main actor after the write and again after an undo, so a screen can reload; it does
-    /// not run when the write failed.
-    func performWithUndo(label: String, afterChange: (@MainActor () -> Void)? = nil, _ work: @escaping @Sendable () throws -> JournalEntry) {
+    /// not run when the write failed. With `onFailure` the message goes there instead of a toast (a screen that shows the
+    /// error next to the control, such as the Rules add-rule row).
+    func performWithUndo(label: String, afterChange: (@MainActor () -> Void)? = nil, onFailure: (@MainActor (String) -> Void)? = nil, _ work: @escaping @Sendable () throws -> JournalEntry) {
         let roots: Roots
         do { roots = try requireRoots() } catch {
-            toasts.show(Self.message(error), tone: .danger)
+            if let onFailure { onFailure(Self.message(error)) } else { toasts.show(Self.message(error), tone: .danger) }
             return
         }
         Task { [weak self] in
@@ -78,7 +79,7 @@ final class AppEnvironment {
                 self.toasts.show(label, undo: { [weak self] in self?.undo(entry, roots: roots, label: label, afterChange: afterChange) })
                 afterChange?()
             case .failure(let error):
-                self.toasts.show(Self.message(error), tone: .danger)
+                if let onFailure { onFailure(Self.message(error)) } else { self.toasts.show(Self.message(error), tone: .danger) }
             }
         }
     }

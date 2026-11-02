@@ -20,6 +20,10 @@ enum ShotRenderer {
                 try LoadoutShots.run(into: directory)
                 exit(0)
             }
+            if RulesShots.isRequested() {
+                try RulesShots.run(into: directory)
+                exit(0)
+            }
             if ActivityShots.isRequested() {
                 try ActivityShots.run(into: directory)
                 exit(0)
@@ -31,6 +35,7 @@ enum ShotRenderer {
                 try write(shell(choice) { shell, _ in shell.openPalette() }, name: "shell-palette", choice: choice, to: directory)
                 try write(shell(choice) { shell, _ in shell.openPalette(query: "p") }, name: "shell-palette-filtered", choice: choice, to: directory)
                 try write(shell(choice) { _, toasts in toasts.show("Removed ponytail", undo: {}) }, name: "shell-toast", choice: choice, to: directory)
+                try write(shell(choice) { _, toasts in toasts.show("Reins 0.2.0 is available", action: UpdateController.viewAction {}) }, name: "shell-toast-update", choice: choice, to: directory)
                 try write(gallery(choice), name: "gallery", choice: choice, to: directory, fullHeight: true)
             }
         } catch {
