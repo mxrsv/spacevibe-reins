@@ -36,19 +36,24 @@ Tooling (verified 2026-11-02, not yet exercised): `electron-vite` 6 on Vite 6 to
 
 ## Tasks
 
-Phases 1 to 4 can start now. Phase 5 waits on 0.1 and the decision above. Phase 6 waits on 0.3.
+Phases 1 to 4 can start now. Phase 5 waits on 0.1 and the decision above. Phase 6 is unblocked (0.3 done).
 
 ### Phase 0: verification spikes (evidence goes under each task)
 
 - [ ] 0.1 Read the real Codex permission schema (`config.toml` keys, per-project trust, rules files). Do not reuse the mock's `approval_policy`, `sandbox_mode`, `network_access`; they are mock data. Verifies the spec's first "to verify" item. Gates 5.
 - [ ] 0.2 In a throwaway `HOME`, write a skill, agent, hook and permission with `core/` and confirm a real `claude` and `codex` session honors each (AC2). Needs the owner: see Action needed.
-- [ ] 0.3 Find how to read live Codex session state without a status file (log tail, process list). If it cannot be measured, Activity shows "not measurable" with the reason (AC4). Gates 6.
+- [x] 0.3 Live session state, done 2026-11-02 (read-only research by a subagent; the paths, the 108 rollouts, the lock files and the `agent-world` file list were spot-checked, the rest is as reported and unverified on a live running turn).
+  - Claude Code: `~/.claude/sessions/<pid>.json` is a status file (`status` idle, busy, shell). `statusUpdatedAt` goes stale during a long busy turn, so show age from the transcript's last write. A permission prompt is not distinguishable from `busy`.
+  - Codex: no status file. State comes from the rollout tail (`task_started`, `task_complete`, `turn_aborted`); the live `codex` process holds `~/.codex/thread-writer-locks/<threadId>.lock`, so `lsof` on the pid maps process to rollout exactly (better than `agent-world`'s cwd match; launch modes other than the CLI are unverified). The log has no heartbeat during a tool call, and approval waits are not recorded. A live process before its first prompt has no rollout.
+  - Cost: both CLIs log tokens; Codex `total_token_usage` has input including cached and output including reasoning; Claude usage must be deduplicated by `message.id`. Show it as "estimated, API-equivalent". Needs a maintained per-model price table (`agent-world/server/pricing.json` is a starting point).
+  - Portable from `agent-world/server/`: `tail-reader.js`, `session-state.js`, `live-metrics.js`, `pricing.json`; replace `codex-source.js` matching with the lock-fd mapping.
+  - UI wording for what cannot be measured is part of 6.3.
 - [ ] 0.4 Electron spike: run `scan()` through the `?modulePath` worker inside `electron-vite dev` and in a packaged build; record Electron's bundled Node version against the APIs `core/` uses. Gates 2.
 - [ ] 0.5 Audit `core/` for macOS-only assumptions. Evidence so far: no `process.platform` or `/Users/` paths in `core/*.mjs` (grep, 2026-11-02). Windows stays out of this plan.
 
 ### Phase 1: baseline and scaffold
 
-- [ ] 1.1 Baseline commit before any move: `core/`, `test.mjs`, `server.mjs`, `web/`. Check every path against `AGENTS.md` R2 first (no real-config fixtures, no `shots/`; `mocks/` holds `shots/` folders that `.gitignore` excludes, confirm nothing else real is inside). `npm test` is 14/14 on 2026-11-02. Commit with explicit paths.
+- [x] 1.1 Baseline commit before any move: `core/`, `test.mjs`, `server.mjs`, `web/`. Check every path against `AGENTS.md` R2 first (no real-config fixtures, no `shots/`; `mocks/` holds `shots/` folders that `.gitignore` excludes, confirm nothing else real is inside). `npm test` is 14/14 on 2026-11-02. Commit with explicit paths. Done 2026-11-02 as `96a7967`; `mocks/` stays untracked (scan clean) pending the owner's call.
 - [ ] 1.2 Scaffold electron-vite with React and TypeScript, then `shadcn init -b base -t vite`, Tailwind, and the test and lint scripts. Commit.
 - [ ] 1.3 Rewrite `AGENTS.md` (D8). These lines become false: "Node 24 stdlib, no build step, no dependencies"; the `npm start` port row; R5 (loopback server, `x-reins` header), replaced by an IPC rule; the CSP trap, which still applies if mock templates with inline `style=` are ported. Keep R1 to R4.
 - [ ] 1.4 Test guard for AC3: with `REINS_TEST=1`, `roots()` throws when a resolved root is under the real `os.userInfo().homedir`. A unit test proves it refuses.
