@@ -584,6 +584,7 @@ struct ActivityTests {
         let ps = [
             "  100 /Users/me/.local/bin/codex --no-daemon -c tui.animations=false",
             "  101 /Applications/Codex.app/codex app-server --listen stdio",
+            "  104 /Applications/Codex.app/codex mcp-server",
             "  102 /usr/bin/node /x/not-codex.js",
             "  103 codex",
         ].joined(separator: "\n")

@@ -54,6 +54,13 @@ public enum ProcessOutputParser {
         return pids
     }
 
+    /// The lock entries, then every other pid with no thread yet (before its first prompt a codex holds no lock).
+    /// A pid that holds a lock appears only through its locks, never also as a bare pid.
+    public static func merge(pids: [Int], locks: [CodexThread]) -> [CodexThread] {
+        let held = Set(locks.map(\.pid))
+        return locks + pids.filter { !held.contains($0) }.map { CodexThread(pid: $0, threadId: nil) }
+    }
+
     /// `lsof -Fpn` output to one entry per (pid, thread lock).
     public static func lockFds(fromLsof output: String) -> [CodexThread] {
         var out: [CodexThread] = []
@@ -97,9 +104,7 @@ public struct SystemProcessAdapter: ProcessAdapter {
         if pids.isEmpty { return [] }
         // lsof exits 1 when some of the pids are already gone but still prints the others, so its status is not checked.
         let lsof = await Self.run("/usr/sbin/lsof", ["-nP", "-Fpn", "-p", pids.map(String.init).joined(separator: ",")], timeout: 5)
-        let locks = ProcessOutputParser.lockFds(fromLsof: lsof?.stdout ?? "")
-        let held = Set(locks.map(\.pid))
-        return locks + pids.filter { !held.contains($0) }.map { CodexThread(pid: $0, threadId: nil) }
+        return ProcessOutputParser.merge(pids: pids, locks: ProcessOutputParser.lockFds(fromLsof: lsof?.stdout ?? ""))
     }
 
     public func terminate(pid: Int) async throws {

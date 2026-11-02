@@ -12,11 +12,17 @@ extension Inventory {
 
         for cli in InventoryCLI.allCases {
             let roots = cli == .claude ? r.claude : r.codex
-            guard InventoryFileIO.exists(roots.root.path) else { continue }
+            switch InventoryFileIO.presence(roots.root.path) {
+            case .missing: continue
+            case .unknown:
+                problems.append("\(roots.root.path) cannot be read, so its skills, agents and hooks cannot be shown.")
+                continue
+            case .present: break
+            }
             items += readSkills(in: roots.skills, cli: cli, owner: nil, project: nil, problems: &problems)
             items += readAgents(in: roots.agents, cli: cli, owner: nil, project: nil, problems: &problems)
             switch InventoryFileIO.readJSON(roots.hookFile) {
-            case .value(let config): hooks += parseHooks(from: config, cli: cli, owner: nil, sourceFile: roots.hookFile.path, project: nil)
+            case .value(let config): hooks += parseHooks(from: config, cli: cli, owner: nil, sourceFile: roots.hookFile.path, project: nil, problems: &problems)
             case .invalid: problems.append("\(roots.hookFile.path) is not valid JSON, so its hooks cannot be shown or changed.")
             case .tooLarge: problems.append("\(roots.hookFile.path) is too large to read, so its hooks cannot be shown.")
             case .unreadable: problems.append("\(roots.hookFile.path) cannot be read, so its hooks cannot be shown.")
@@ -31,18 +37,22 @@ extension Inventory {
             items += readAgents(in: base.appendingPathComponent("agents"), cli: .claude, owner: plugin.name, project: nil, problems: &problems)
             let hookFile = base.appendingPathComponent("hooks").appendingPathComponent("hooks.json")
             if case .value(let config) = InventoryFileIO.readJSON(hookFile) {
-                hooks += parseHooks(from: config, cli: .claude, owner: plugin.name, sourceFile: hookFile.path, project: nil)
+                hooks += parseHooks(from: config, cli: .claude, owner: plugin.name, sourceFile: hookFile.path, project: nil, problems: &problems)
             }
         }
 
         for path in discoverProjects(roots: r) {
             let dir = URL(fileURLWithPath: path, isDirectory: true).appendingPathComponent(".claude", isDirectory: true)
+            if InventoryFileIO.presence(dir.path) == .unknown {
+                problems.append("\(path) cannot be read, so its skills, agents and hooks cannot be shown.")
+                continue
+            }
             items += readSkills(in: dir.appendingPathComponent("skills"), cli: .claude, owner: nil, project: path, problems: &problems)
             items += readAgents(in: dir.appendingPathComponent("agents"), cli: .claude, owner: nil, project: path, problems: &problems)
             for name in ["settings.json", "settings.local.json"] {
                 let file = dir.appendingPathComponent(name)
                 switch InventoryFileIO.readJSON(file) {
-                case .value(let config): hooks += parseHooks(from: config, cli: .claude, owner: nil, sourceFile: file.path, project: path)
+                case .value(let config): hooks += parseHooks(from: config, cli: .claude, owner: nil, sourceFile: file.path, project: path, problems: &problems)
                 case .invalid: problems.append("\(file.path) is not valid JSON, so its hooks cannot be shown.")
                 case .tooLarge: problems.append("\(file.path) is too large to read, so its hooks cannot be shown.")
                 case .unreadable: problems.append("\(file.path) cannot be read, so its hooks cannot be shown.")
@@ -134,7 +144,7 @@ extension Inventory {
 
     // MARK: Hooks
 
-    private static func parseHooks(from config: JSONValue, cli: InventoryCLI, owner: String?, sourceFile: String, project: String?) -> [InventoryHook] {
+    private static func parseHooks(from config: JSONValue, cli: InventoryCLI, owner: String?, sourceFile: String, project: String?, problems: inout [String]) -> [InventoryHook] {
         var out: [InventoryHook] = []
         guard let events = config["hooks"]?.objectValue else { return out }
         // A duplicated key counts once, with the last value, as `JSON.parse` has it.
@@ -146,7 +156,13 @@ extension Inventory {
                 for hook in group["hooks"]?.arrayValue ?? [] {
                     guard let command = hook["command"]?.stringValue else { continue }
                     let paths = scriptPaths(command)
-                    let dead = !paths.isEmpty && !paths.contains { InventoryFileIO.exists($0) }
+                    // Dead only when every script is known to be gone: a script under a folder Reins cannot stat may well work.
+                    let presences = paths.map { InventoryFileIO.presence($0) }
+                    let dead = !paths.isEmpty && presences.allSatisfy { $0 == .missing }
+                    if presences.contains(.unknown) {
+                        let note = "A script named in \(sourceFile) cannot be checked, so its hook is not marked dead."
+                        if !problems.contains(note) { problems.append(note) }
+                    }
                     // A global id hashes owner, event, matcher and command. A project hook also hashes its file, so the same hook in two files has two ids.
                     let seed = "\(owner ?? "")|\(member.key)|\(matcher ?? "")|\(command)\(project == nil ? "" : "|\(sourceFile)")"
                     out.append(InventoryHook(

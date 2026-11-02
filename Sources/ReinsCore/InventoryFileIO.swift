@@ -30,7 +30,7 @@ enum InventoryFileIO {
 
     static func readJSON(_ url: URL) -> JSONFile {
         guard let handle = try? FileHandle(forReadingFrom: url) else {
-            return FileManager.default.fileExists(atPath: url.path) ? .unreadable : .missing
+            return presence(url.path) == .missing ? .missing : .unreadable
         }
         defer { try? handle.close() }
         guard let data = try? handle.read(upToCount: maxJSONBytes + 1) else { return .unreadable }
@@ -44,16 +44,22 @@ enum InventoryFileIO {
         ((try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []).sorted()
     }
 
-    /// The folder exists but cannot be listed (a denied folder reads as "not readable", never as empty).
+    /// The folder exists but cannot be listed, or a parent denies the lookup so nobody can tell (a denied folder reads as
+    /// "not readable", never as empty).
     static func isUnreadableFolder(_ url: URL) -> Bool {
-        guard isDirectory(url) else { return false }
-        return (try? FileManager.default.contentsOfDirectory(atPath: url.path)) == nil
+        switch presence(url.path) {
+        case .missing: return false
+        case .unknown: return true
+        case .present:
+            guard isDirectory(url) else { return false }
+            return (try? FileManager.default.contentsOfDirectory(atPath: url.path)) == nil
+        }
     }
 
-    /// Follows symlinks.
+    /// Follows symlinks. False for a path that cannot be statted: ask `presence` first when that matters.
     static func isDirectory(_ url: URL) -> Bool {
-        var isFolder: ObjCBool = false
-        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) && isFolder.boolValue
+        var info = stat()
+        return stat(url.path, &info) == 0 && (info.st_mode & S_IFMT) == S_IFDIR
     }
 
     /// Modification time in ms since 1970, following symlinks. Nil when the file cannot be statted.
@@ -68,7 +74,23 @@ enum InventoryFileIO {
         (try? FileManager.default.attributesOfItem(atPath: url.path))?[.type] as? FileAttributeType == .typeSymbolicLink
     }
 
-    static func exists(_ path: String) -> Bool { FileManager.default.fileExists(atPath: path) }
+    enum Presence: Equatable {
+        case present
+        /// ENOENT or ENOTDIR: nothing is there.
+        case missing
+        /// The lookup failed for another reason (EACCES, EPERM, ELOOP, ...): the path may well exist.
+        case unknown
+    }
+
+    /// `stat` following symlinks. Only ENOENT and ENOTDIR mean missing; a denied parent folder must not read as "gone".
+    static func presence(_ path: String) -> Presence {
+        var info = stat()
+        if stat(path, &info) == 0 { return .present }
+        return errno == ENOENT || errno == ENOTDIR ? .missing : .unknown
+    }
+
+    /// True only when the path is there. Use `presence` where "cannot check" needs its own answer.
+    static func exists(_ path: String) -> Bool { presence(path) == .present }
 
     /// `path.join`: components appended with single slashes.
     static func join(_ base: String, _ parts: String...) -> String {

@@ -4,7 +4,7 @@ import Foundation
 //  - the `cwd` in the head of the newest session logs of each folder under claude/projects (the folder name is a lossy
 //    encoding of the path and cannot be decoded), and
 //  - the `[projects."<path>"]` tables of Codex config.toml.
-// A path counts only if it still exists and has a `.claude` folder of its own. The home folder is skipped (its `.claude` is
+// A path counts only if it still exists (or cannot be checked: then it is listed and reported as not readable) and has a `.claude` folder of its own. The home folder is skipped (its `.claude` is
 // the global one), and so are paths inside `.claude/worktrees/` (copies of a project already listed).
 // Bounded: at most 3 log files per folder, 64 KB each, at most `Inventory.maxProjects` folders, newest first.
 // Trade-off: a project never opened with either CLI is not found, and one whose first records fall outside the first 64 KB
@@ -23,7 +23,9 @@ extension Inventory {
         for path in candidates {
             guard path.hasPrefix("/"), !path.contains("/.claude/worktrees/") else { continue }
             let dir = URL(fileURLWithPath: InventoryFileIO.join(path, ".claude"), isDirectory: true)
-            guard InventoryFileIO.isDirectory(dir), InventoryFileIO.realPath(dir.path) != globalClaude else { continue }
+            // A `.claude` that cannot be looked up (a denied parent) is kept: `read` reports the project as not readable.
+            let there = InventoryFileIO.isDirectory(dir) || InventoryFileIO.presence(dir.path) == .unknown
+            guard there, InventoryFileIO.realPath(dir.path) != globalClaude else { continue }
             let resolved = InventoryFileIO.normalize(path)
             if known.insert(resolved).inserted { seen.append(resolved) }
             if seen.count >= maxProjects { break }

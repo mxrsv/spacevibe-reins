@@ -183,7 +183,10 @@ public final class CompressedLogReader: LogReader {
     private let maxLineBytes: Int
     public private(set) var invalidLines = 0
     private var stamp: String?
+    private var tooLargeStamp: String?
     private var truncated = false
+    /// The most lines held at once during the last full read. Bounded by `maxBytes`, not by the file's line count.
+    private(set) var peakStoredLines = 0
 
     public init(url: URL, maxBytes: Int = .max, maxLineBytes: Int = TailReader.defaultMaxLineBytes) {
         self.url = url
@@ -209,35 +212,72 @@ public final class CompressedLogReader: LogReader {
             result.truncated = truncated
             return result
         }
+        // A bomb is not decompressed again on every poll: the same file fails the same way until it changes.
+        if newStamp == tooLargeStamp { throw ZstdError.tooLarge }
         if stamp != nil {
             onReset()
             result.didReset = true
         }
 
-        var kept: [Data] = []
-        var firstKept = 0
-        var keptBytes = 0
-        var dropped = false
+        // maxBytes counts UTF-8 bytes, like TailReader. core/tail-reader.mjs counts UTF-16 units; the two agree on ASCII logs.
+        var tail = LineTail(maxBytes: maxBytes)
         var invalid = 0
-        let oversized = try LogFiles.forEachLine(at: url, maxLineBytes: maxLineBytes) { line in
-            guard let first = line.first(where: { !TailReader.isBlank($0) }) else { return }
-            guard first == UInt8(ascii: "{"), line.last(where: { !TailReader.isBlank($0) }) == UInt8(ascii: "}") else { invalid += 1; return }
-            kept.append(line)
-            keptBytes += line.count
-            while keptBytes > maxBytes, kept.count - firstKept > 1 {
-                keptBytes -= kept[firstKept].count
-                firstKept += 1
-                dropped = true
+        let oversized: Int
+        do {
+            oversized = try LogFiles.forEachLine(at: url, maxLineBytes: maxLineBytes) { line in
+                guard let first = line.first(where: { !TailReader.isBlank($0) }) else { return }
+                guard first == UInt8(ascii: "{"), line.last(where: { !TailReader.isBlank($0) }) == UInt8(ascii: "}") else { invalid += 1; return }
+                tail.append(line)
             }
+        } catch ZstdError.tooLarge {
+            tooLargeStamp = newStamp
+            throw ZstdError.tooLarge
         }
-        kept[firstKept...].forEach(onLine)
+        tail.forEach(onLine)
+        // A dropped line over the cap counts as truncated, as in Node.
+        let didDrop = tail.dropped || oversized > 0
         stamp = newStamp
-        truncated = dropped
+        truncated = didDrop
         invalidLines += invalid
-        result.lines = kept.count - firstKept
+        peakStoredLines = tail.peakStored
+        result.lines = tail.count
         result.invalidLines = invalid
         result.oversizedLines = oversized
-        result.truncated = dropped
+        result.truncated = didDrop
         return result
     }
+}
+
+/// The last lines of a stream, up to about `maxBytes` (never fewer than one line). Evicted lines are released at once
+/// and the array is compacted, so memory follows `maxBytes` however many lines pass through.
+struct LineTail {
+    let maxBytes: Int
+    private var storage: [Data] = []
+    private var head = 0
+    private(set) var bytes = 0
+    private(set) var dropped = false
+    /// The most slots `storage` ever held, evicted ones included: what a test asserts to show memory stayed bounded.
+    private(set) var peakStored = 0
+
+    init(maxBytes: Int) { self.maxBytes = maxBytes }
+
+    var count: Int { storage.count - head }
+
+    mutating func append(_ line: Data) {
+        storage.append(line)
+        bytes += line.count
+        while bytes > maxBytes, count > 1 {
+            bytes -= storage[head].count
+            storage[head] = Data()
+            head += 1
+            dropped = true
+        }
+        if head >= 1024, head * 2 >= storage.count {
+            storage.removeFirst(head)
+            head = 0
+        }
+        peakStored = max(peakStored, storage.count)
+    }
+
+    func forEach(_ body: (Data) -> Void) { storage[head...].forEach(body) }
 }

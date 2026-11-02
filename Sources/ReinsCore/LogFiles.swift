@@ -35,17 +35,24 @@ public enum LogFiles {
         return out.sorted { $0.path < $1.path }
     }
 
+    /// Entries are joined onto `directory` as given, never resolved: callers count path components of the root they passed
+    /// (`Activity.listLogs`), and `contentsOfDirectory(at:)` would hand back symlink-resolved URLs and break that count.
     private static func collect(_ directory: URL, into out: inout [URL]) {
-        let keys: [URLResourceKey] = [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]
-        guard let entries = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: keys, options: []) else { return }
-        let names = Set(entries.map(\.lastPathComponent))
-        for entry in entries {
-            guard let values = try? entry.resourceValues(forKeys: Set(keys)), values.isSymbolicLink != true else { continue }
-            if values.isDirectory == true {
+        guard let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path) else { return }
+        let present = Set(names)
+        for name in names {
+            let entry = directory.appendingPathComponent(name)
+            var info = stat()
+            guard lstat(entry.path, &info) == 0 else { continue }
+            switch info.st_mode & S_IFMT {
+            case S_IFDIR:
                 collect(entry, into: &out)
-            } else if values.isRegularFile == true, let base = stripLogSuffix(entry.lastPathComponent) {
-                if isCompressed(entry), names.contains("\(base).jsonl") { continue }
+            case S_IFREG:
+                guard let base = stripLogSuffix(name) else { continue }
+                if isCompressed(entry), present.contains("\(base).jsonl") { continue }
                 out.append(entry)
+            default:
+                continue
             }
         }
     }

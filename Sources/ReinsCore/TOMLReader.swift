@@ -95,6 +95,10 @@ private struct TOMLParser {
     let b: [UInt8]
     var i = 0
     var skipped = 0
+    /// Arrays and inline tables currently open. Deeper than `maxDepth` the value is unreadable (nil), so the line is skipped
+    /// instead of recursing until the stack runs out. Real configs nest two or three levels.
+    var depth = 0
+    static let maxDepth = 64
     let lineStarts: [Int]
 
     init(bytes: [UInt8]) {
@@ -262,6 +266,9 @@ private struct TOMLParser {
     }
 
     private mutating func parseArray() -> TOMLValue? {
+        guard depth < Self.maxDepth else { return nil }
+        depth += 1
+        defer { depth -= 1 }
         i += 1
         var items: [TOMLValue] = []
         while true {
@@ -277,6 +284,9 @@ private struct TOMLParser {
     }
 
     private mutating func parseInlineTable() -> TOMLValue? {
+        guard depth < Self.maxDepth else { return nil }
+        depth += 1
+        defer { depth -= 1 }
         i += 1
         var pairs: [TOMLPair] = []
         while true {
