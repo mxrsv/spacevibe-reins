@@ -154,6 +154,8 @@ extension Mutate {
             default:
                 try fm.createDirectory(atPath: (destination as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
                 try fm.copyItem(atPath: source, toPath: destination)
+                // A copy is a new item: keep the source's content but not its age, so the new cell reads "not counted yet".
+                try fm.setAttributes([.modificationDate: Date()], ofItemAtPath: destination)
             }
         } catch let error as ReinsError {
             throw error

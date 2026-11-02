@@ -328,6 +328,20 @@ struct MutateTests {
         #expect(Inventory.read(roots: copy.roots).hooks.contains { $0.cli == .claude && $0.command == "echo stop-from-codex" })
     }
 
+    @Test("a copied skill is a new item: its files are not older than the copy")
+    func copiedSkillIsFresh() throws {
+        let copy = try Copy()
+        let source = try #require(Inventory.read(roots: copy.roots).items.first { $0.cli == .claude && $0.kind == .skill && $0.removable })
+        let old = Date(timeIntervalSince1970: 1_577_836_800)
+        let sourceFolder = URL(fileURLWithPath: source.path)
+        try FileManager.default.setAttributes([.modificationDate: old], ofItemAtPath: sourceFolder.appendingPathComponent("SKILL.md").path)
+        _ = try Mutate.copyToOther(roots: copy.roots, id: source.id)
+        let target = try #require(Inventory.read(roots: copy.roots).items.first { $0.cli == .codex && $0.name == source.name })
+        let attrs = try FileManager.default.attributesOfItem(atPath: URL(fileURLWithPath: target.path).appendingPathComponent("SKILL.md").path)
+        let modified = try #require(attrs[.modificationDate] as? Date)
+        #expect(Date().timeIntervalSince(modified) < 120)
+    }
+
     @Test("an agent keeps its quotes and backslashes through markdown and TOML")
     func agentRoundTrip() throws {
         let copy = try Copy()
