@@ -15,7 +15,7 @@
 // (hook ids, project ids): a golden made at a random temp path could never match.
 //
 // Adding a section (usage, rules, activity, ...): write `async function name(ctx)` that reads `await ctx.home()`
-// (the materialized HOME with its roots) and calls `ctx.writeGolden('name', value)`, then add it to SECTIONS.
+// (the materialized HOME with its roots) and calls `ctx.writeGolden('name', value)`, then add it to SECTIONS, or put it in scripts/golden/<name>.mjs (`export const name`, `export default`).
 // Golden values must be plain JSON; order-insensitive lists should be sorted here so reruns give no diff.
 import { createHash } from 'node:crypto';
 import {
@@ -23,6 +23,7 @@ import {
 } from 'node:fs';
 import { tmpdir, userInfo } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { zstdCompressSync } from 'node:zlib';
 import { attachUsage, filterCounts, readInventory, roots } from '../core/inventory.mjs';
 import { scan } from '../core/usage.mjs';
@@ -178,6 +179,15 @@ async function zstd() {
 }
 
 const SECTIONS = { tree, zstd, inventory };
+// Extra sections live one per file in scripts/golden/<name>.mjs (`export const name`, `export default async (ctx) => ...`)
+// so parallel work never edits the same line here.
+const extraDir = join(dirname(fileURLToPath(import.meta.url)), 'golden');
+if (existsSync(extraDir)) {
+  for (const f of readdirSync(extraDir).filter((x) => x.endsWith('.mjs')).sort()) {
+    const m = await import(pathToFileURL(join(extraDir, f)).href);
+    SECTIONS[m.name] = m.default;
+  }
+}
 
 const requested = process.argv.slice(2);
 const unknown = requested.filter((n) => !(n in SECTIONS));
