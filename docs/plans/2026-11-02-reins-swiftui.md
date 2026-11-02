@@ -79,10 +79,10 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 
 ### Phase S6T: Tokens tab (added to the spec 2026-11-03, after S2 and S3)
 
-- [ ] S6T.1 Direction: the owner picks one layout from the click-through mocks in `~/scratch/spacevibe-reins/` (`tokens-*.html`) and the spec records it. No UI code before this.
+- [x] S6T.1 Direction: the owner accepted D "Board" on 2026-11-03, shell unchanged; the spec records it. Mock: `~/scratch/spacevibe-reins/tokens-d-board.html`, with `mock-shell/tokens.css` and `tokens.js`.
 - [ ] S6T.2 `TokenLedger` in `ReinsCore`: fold token usage per hour, CLI, model and project using the same deduplication as Activity; normalize Codex input; persist the rollup under the app's data folder with mode 0600 and merge on rescan so a vanished log keeps its past days (unlike the usage cache, which drops entries for missing files, see `core/usage.mjs` `scan`). Tests against `TempHome`, including AC9.
 - [ ] S6T.5 Price table: add the logged models that have none today (`gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.5`, `claude-opus-5`, `claude-fable-5-1`, `claude-haiku-5-5` and the rest of the 4.21B of 24.57B tokens measured 2026-11-03) to `Pricing.swift` and `core/pricing.json` together, because a test compares them, each with its source and `fetchedAt`. A model that needs tier information stays unpriced on purpose. TokenTracker prices these names, so without this the estimate undercounts next to it.
-- [ ] S6T.3 Screen for the picked direction with loading, empty and unpriced-model states. Screenshots to `~/scratch/spacevibe-reins/shots/`.
+- [ ] S6T.3 Screen for Board with loading, empty and unpriced-model states. New shared pieces: a dismissible variant of `FilterChip`, the price table popover, and the provider and CLI marks as vector assets (sources: `spacevibe-bench/public/brand/providers`, `spacevibe-board/Resources/Brand`). Screenshots to `~/scratch/spacevibe-reins/shots/`.
 - [ ] S6T.4 AC8: compare with TokenTracker's `~/.tokentracker/tracker/queue.jsonl` on the owner's Mac, per local day, CLI and field; record the differences and causes here. Read-only, and the comparison output stays out of git.
 
 ### Phase S7: package
@@ -129,7 +129,7 @@ Built by parallel subagents; the orchestrator re-ran `scripts/test.sh` (267 test
 ## Action needed from the owner
 
 - S0.5 and the signal checks of S0.4: run a real `claude` and `codex` session (needs your logins).
-- Eye approval at S3.3, S4, S5, S6, S6T.3, the direction pick at S6T.1 and the AC1 timing at S8.2.
+- Eye approval at S3.3, S4, S5, S6, S6T.3, the AC1 timing at S8.2.
 - Tell any other session still working in this repository that the platform changed; commits to `main` on Electron after this point are reference only.
 
 ## Handoff
