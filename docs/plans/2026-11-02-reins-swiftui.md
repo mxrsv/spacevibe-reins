@@ -30,10 +30,11 @@ Parity method: `scripts/fixture-home.mjs` (kept as a dev tool) builds the synthe
 - Two targets, `ReinsCore` and `Reins`, so tests and later tools use the engine without the UI.
 - Order-preserving JSON editing is written by hand (`JSONSerialization` drops key order); unchanged files must round-trip byte for byte.
 - Codex TOML is read with a small reader and never written (Rules decision A from the Electron plan stands: Claude writes, Codex displays).
-- Old Codex logs are `.jsonl.zst`; Swift has no zstd in Foundation or Compression. Vendor a decompress-only zstd C target (BSD) unless spike S0.2 finds a system library that is safe to link.
+- Old Codex logs are `.jsonl.zst`; Swift has no zstd in Foundation or Compression. Vendor a decompress-only zstd C target (BSD); a system library is acceptable only if spike S0.2 shows it also builds on Linux and Windows.
 - Concurrency: scans and log reads run in actors off the main thread; the UI reads published snapshots. Nothing synchronous over logs runs on the main actor.
 - No sandbox, hardened runtime, Developer ID signing, notarization at release. Folder consent prompts (Documents, Desktop) are handled: a denied folder reads as "not readable", never as empty.
-- Windows is out. The Electron renderer in the working tree is not touched until the Swift app reaches parity; its screenshots under `~/scratch/spacevibe-reins/shots/` are the visual reference together with `b-matrix.html`.
+- Windows and Linux are not built now but stay possible (spec, Platform). Rules that keep the door open: `ReinsCore` imports Foundation only (no AppKit, no Darwin-only API, no `FSEvents`; a file watcher goes behind a protocol); every OS call lives in `ProcessAdapter`; the zstd decoder is the vendored C target, not a system library; a `reins-cli` target prints the engine's snapshots as JSON; `Package.swift` pins only `.macOS(.v15)`. Stop (R6) relies on SIGTERM and `ps`/`lsof`, so a Windows adapter is a separate design, not a port.
+- The Electron renderer in the working tree is not touched until the Swift app reaches parity; its screenshots under `~/scratch/spacevibe-reins/shots/` are the visual reference together with `b-matrix.html`.
 
 ## Tasks
 
@@ -46,6 +47,8 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 - [ ] S0.3 TCC: read a `<project>/.claude` folder under `~/Documents` from the signed app; record the prompt, the denied behavior and what survives a rebuild (signing identity per board rule B3).
 - [ ] S0.4 Process facts: `Process` with `ps`, `lsof` and `kill` (same lock-fd mapping as the Electron plan 0.3 evidence), and the signal behavior of both CLIs for Stop (spec "To verify"; needs a live session, see Action needed).
 - [ ] S0.5 Real-CLI check (AC2, owner): a skill, agent, hook and permission written by `ReinsCore` is honored by a real `claude` and `codex` on a throwaway config.
+
+- [ ] S0.6 Portability: `swift build` of a stub `ReinsCore` (one JSON read, one `Process` call) on Linux, in a container or CI. Record whether `swift-testing` runs there and whether Swift on Windows builds the same stub. Unverified today; this is the cheapest signal that the door is open. Repeat on Linux whenever `ReinsCore` gains a dependency.
 
 ### Phase S1: scaffold and shared plumbing
 
