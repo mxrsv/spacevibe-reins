@@ -19,8 +19,9 @@ struct LoadoutView {
 @MainActor
 @Observable
 final class LoadoutModel {
-    /// A second click on the same button inside this time is ignored, so one write cannot run twice.
-    static let writeGuard: Duration = .seconds(1.5)
+    /// A second click on the same button is ignored until the write has finished and at least this long has passed
+    /// (the row is still on screen until the re-read lands), so one write cannot run twice.
+    static let writeGuard: Duration = .milliseconds(500)
 
     let env: AppEnvironment
 
@@ -51,7 +52,9 @@ final class LoadoutModel {
     @ObservationIgnored private var buildsApplied = 0
     @ObservationIgnored private var readGeneration = 0
     @ObservationIgnored private var buildGeneration = 0
-    @ObservationIgnored private var inFlight = Set<String>()
+    /// Write guard key -> ticket of the write that holds it. Only that write's completion releases it.
+    @ObservationIgnored private var inFlight: [String: Int] = [:]
+    @ObservationIgnored private var guardTickets = 0
 
     init(env: AppEnvironment) { self.env = env }
 
@@ -192,22 +195,52 @@ final class LoadoutModel {
         }
     }
 
-    func removeDeadHooks(cli: InventoryCLI, count: Int) {
-        perform(guardKey: "remove-dead:\(cli.rawValue)", label: "Removed \(count) dead hooks from \(cli.uiKind.label)") { roots in
+    /// Writes that hold their double-click guard right now. Screenshots check it.
+    var guardedWrites: Int { inFlight.count }
+
+    /// The dead hooks `Mutate.removeDeadHooks` removes for this CLI: every one, not one per row (two files can share a row).
+    func deadHookCount(cli: InventoryCLI) -> Int {
+        raw?.hooks.filter { $0.cli == cli && $0.dead && $0.removable }.count ?? 0
+    }
+
+    func removeDeadHooks(cli: InventoryCLI) {
+        let count = deadHookCount(cli: cli)
+        let label = "Removed \(count) dead \(count == 1 ? "hook" : "hooks") from \(cli.uiKind.label)"
+        perform(guardKey: "remove-dead:\(cli.rawValue)", label: label) { roots in
             try Mutate.removeDeadHooks(roots: roots, cli: cli)
         }
     }
 
     private func perform(guardKey: String, label: String, _ work: @escaping @Sendable (Roots) throws -> JournalEntry) {
-        guard inFlight.insert(guardKey).inserted else { return }
-        Task {
-            try? await Task.sleep(for: Self.writeGuard)
-            inFlight.remove(guardKey)
-        }
+        guard inFlight[guardKey] == nil else { return }
         guard let roots = env.roots else {
             env.toasts.show(env.startupProblem ?? "The config folders could not be resolved.", tone: .danger)
             return
         }
-        env.performWithUndo(label: label, afterChange: { [weak self] in self?.reload() }) { try work(roots) }
+        guardTickets += 1
+        let ticket = guardTickets
+        inFlight[guardKey] = ticket
+        let started = ContinuousClock.now
+        env.performWithUndo(
+            label: label,
+            afterChange: { [weak self] in
+                self?.release(guardKey, ticket: ticket, since: started)
+                self?.reload()
+            },
+            onFailure: { [weak self] message in
+                self?.release(guardKey, ticket: ticket, since: started)
+                self?.env.toasts.show(message, tone: .danger)
+            }
+        ) { try work(roots) }
+    }
+
+    /// Frees the guard once the write finished, but not before `writeGuard` has passed. Undo reuses `afterChange`; its stale
+    /// ticket makes that a no-op.
+    private func release(_ key: String, ticket: Int, since started: ContinuousClock.Instant) {
+        Task {
+            let rest = Self.writeGuard - (ContinuousClock.now - started)
+            if rest > .zero { try? await Task.sleep(for: rest) }
+            if inFlight[key] == ticket { inFlight[key] = nil }
+        }
     }
 }

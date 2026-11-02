@@ -47,17 +47,30 @@ enum RulesWording {
 }
 
 /// A grid write waiting for the user's confirmation: what `previewSetCapability` says it replaces and writes.
+///
+/// It carries the scope the preview was made for, and the write goes to exactly that scope, never to whatever is selected
+/// when Confirm is pressed.
 struct RulesPending: Equatable {
     let preview: CapabilityPreview
+    let scope: RuleScope
     let scopeTitle: String
 
     var capability: Capability { preview.capability }
     var verdict: RuleVerdict { preview.verdict }
     var question: String { "\(RulesWording.setLabel(capability, verdict))?" }
-    var location: String { "In \(scopeTitle), \(preview.scopeLabel)." }
+    var location: String { "Writes to \(scopeTitle): \(preview.scopeLabel)." }
 
     /// The file already holds exactly what the write would produce.
     var isNoOp: Bool { Set(preview.replaces) == Set(preview.writes) }
+
+    /// What to tell the user instead of opening a confirmation for a write that changes nothing. The cell may still read
+    /// something else because a rule that stays wins, so the words come from the resulting state.
+    var noOpMessage: String {
+        if preview.resulting == CapabilityState(rawValue: verdict.rawValue) {
+            return "\(capability.label) already reads \(RulesWording.title(verdict)) here."
+        }
+        return "\(capability.label) stays \(RulesWording.stateLabel(preview.resulting)) here: a rule that stays in this file wins."
+    }
 
     /// A rule that is kept (for example a bare `Bash` ask under Push and deploy) still wins over what is written.
     var warning: String? {

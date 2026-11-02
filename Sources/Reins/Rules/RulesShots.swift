@@ -88,6 +88,10 @@ enum RulesShots {
             model.cancelPending()
             try reset()
 
+            // The confirmation belongs to the scope it was previewed for.
+            try boundScope(model, env: env, shot: { try shot($0) })
+            try reset()
+
             // A project scope, expanded.
             try select(model, name: "spacevibe-academy", file: .shared)
             model.setExpanded([.run])
@@ -150,6 +154,84 @@ enum RulesShots {
             }
             try reset()
         }
+    }
+
+    // MARK: Scope binding
+
+    /// Stale preview, vanished project, write target, the no-op wording and repeated rules, all on synthetic project files
+    /// that are put back byte for byte.
+    private static func boundScope(_ model: RulesModel, env: AppEnvironment, shot: (String) throws -> Void) throws {
+        guard let project = model.snapshot?.projects.first(where: { $0.name == "spacevibe-academy" }),
+              let bench = model.snapshot?.projects.first(where: { $0.name == "spacevibe-bench" }) else { throw ShotFailure(errorDescription: "no academy or bench project") }
+        let claudeDir = URL(fileURLWithPath: project.dir).appendingPathComponent(".claude")
+        let projectFile = claudeDir.appendingPathComponent("settings.json")
+        let globalFile = URL(fileURLWithPath: env.roots?.claude.root.path ?? "/nonexistent").appendingPathComponent("settings.json")
+        let projectBefore = try Data(contentsOf: projectFile)
+        let globalBefore = try Data(contentsOf: globalFile)
+        defer { try? projectBefore.write(to: projectFile) }
+
+        // 1. A preview that finishes after the scope changed must not open a dialog.
+        try select(model, name: project.name, file: .shared)
+        model.requestSet(.push, to: .allow)
+        model.select(.global)
+        try settle(model)
+        try check(model.pending == nil, "a preview that finishes after a scope switch opens no dialog")
+
+        // 2. The project vanishes at a refresh: the open dialog closes and nothing can write to Global.
+        try select(model, name: project.name, file: .shared)
+        try confirm(model, .push, .allow)
+        try check(model.pending?.scope == .project(project.dir), "the dialog holds the scope it was previewed for")
+        let hidden = project.dir + "/.claude-hidden"
+        try FileManager.default.moveItem(atPath: project.dir + "/.claude", toPath: hidden)
+        defer { try? FileManager.default.moveItem(atPath: hidden, toPath: project.dir + "/.claude") }
+        model.refresh()
+        try settle(model)
+        try check(model.snapshot?.selection == .global, "a refresh after the project vanished falls back to Global")
+        try check(model.pending == nil, "the dialog for the vanished project closed")
+        model.confirmPending()
+        try settle(model)
+        try check(try Data(contentsOf: globalFile) == globalBefore, "Global settings.json is unchanged")
+        try FileManager.default.moveItem(atPath: hidden, toPath: project.dir + "/.claude")
+        model.refresh()
+        try settle(model)
+
+        // 3. Confirm writes to the previewed project only.
+        try select(model, name: project.name, file: .shared)
+        try confirm(model, .push, .allow)
+        try check(model.pending?.location.contains("spacevibe-academy") == true, "the dialog names the scope it writes to")
+        try shot("confirm-scope")
+        model.confirmPending()
+        try wait("the write") { env.toasts.current?.message.hasPrefix("Set Push") == true }
+        try settle(model)
+        try check(try Data(contentsOf: projectFile) != projectBefore, "the previewed project file was written")
+        try check(try Data(contentsOf: globalFile) == globalBefore, "Global settings.json is still unchanged")
+
+        // 4. The file now holds the allow rules and a broader Ask wins: the click changes nothing, and says so.
+        try check(state(model, .push) == .ask, "the cell reads Ask because a broader rule wins")
+        model.requestSet(.push, to: .allow)
+        try wait("the no-op toast") { env.toasts.current?.message.contains("stays") == true }
+        try check(model.pending == nil, "a write that changes nothing opens no dialog")
+        try check(env.toasts.current?.message == "Push and deploy stays Ask here: a rule that stays in this file wins.", "the toast names the cell's real state")
+        try shot("noop")
+
+        // 5. A hand-edited file that repeats a rule: one row per entry.
+        let benchFile = URL(fileURLWithPath: bench.dir).appendingPathComponent(".claude/settings.json")
+        let benchBefore = try Data(contentsOf: benchFile)
+        defer { try? benchBefore.write(to: benchFile) }
+        guard var json = try JSONSerialization.jsonObject(with: benchBefore) as? [String: Any] else { throw ShotFailure(errorDescription: "bench settings is not an object") }
+        var permissions = json["permissions"] as? [String: Any] ?? [:]
+        permissions["allow"] = ((permissions["allow"] as? [String]) ?? []) + ["Bash(echo twice)", "Bash(echo twice)"]
+        json["permissions"] = permissions
+        try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]).write(to: benchFile)
+        env.toasts.dismiss()
+        try select(model, name: bench.name, file: .shared)
+        let twice = model.snapshot?.rules.filter { $0.rule == "Bash(echo twice)" } ?? []
+        try check(twice.count == 2 && twice[0].id == twice[1].id, "the repeated rule is listed twice with one id")
+        try shot("duplicate-rules")
+        try benchBefore.write(to: benchFile)
+        try projectBefore.write(to: projectFile)
+        model.refresh()
+        try settle(model)
     }
 
     // MARK: Steps

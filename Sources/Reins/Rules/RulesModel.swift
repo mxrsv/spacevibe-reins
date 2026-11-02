@@ -35,6 +35,9 @@ final class RulesModel {
     @ObservationIgnored weak var shell: ShellModel?
     @ObservationIgnored private var started = false
     @ObservationIgnored private var generation = 0
+    /// Bumped by every preview request and every scope switch, so a preview that finishes late is dropped.
+    @ObservationIgnored private var previewEpoch = 0
+    @ObservationIgnored private(set) var previewsInFlight = 0
     @ObservationIgnored private(set) var readsInFlight = 0
 
     init(env: AppEnvironment) { self.env = env }
@@ -42,7 +45,7 @@ final class RulesModel {
     var isLoading: Bool { snapshot == nil && failure == nil }
 
     /// Reads are done and nothing waits for the user. Screenshots wait for this.
-    var isSettled: Bool { snapshot != nil && readsInFlight == 0 && !isWriting }
+    var isSettled: Bool { snapshot != nil && readsInFlight == 0 && previewsInFlight == 0 && !isWriting }
 
     var badge: Int? { snapshot?.globalRuleCount }
 
@@ -86,8 +89,11 @@ final class RulesModel {
             switch outcome {
             case .success(let fresh):
                 snapshot = fresh
+                if selection != fresh.selection { previewEpoch += 1 }
                 selection = fresh.selection
                 failure = nil
+                // The confirmation was made for one scope; a refresh that moved the selection (the project is gone) closes it.
+                if let pending, pending.scope != fresh.selection.scope { self.pending = nil }
             case .failure(let error):
                 failure = AppEnvironment.message(error)
             }
@@ -99,6 +105,7 @@ final class RulesModel {
     func select(_ choice: RulesSelection) {
         guard choice != selection else { return }
         selection = choice
+        previewEpoch += 1
         pending = nil
         addError = nil
         reload(rediscover: false)
@@ -138,12 +145,24 @@ final class RulesModel {
         let scope = snapshot.selection.scope
         let store = snapshot.store(roots: roots)
         let title = snapshot.title
+        previewEpoch += 1
+        let epoch = previewEpoch
+        previewsInFlight += 1
         Task {
             let outcome = await Task.detached(priority: .userInitiated) {
                 Result { try RulesScopes.scrubbed(store: store, scope: scope) { try store.previewSetCapability(scope: scope, capability: capability, verdict: verdict) } }
             }.value
+            previewsInFlight -= 1
+            // The user switched scope (or asked again) while the engine was working: this answer is for a different page.
+            guard epoch == previewEpoch, selection.scope == scope else { return }
             switch outcome {
-            case .success(let preview): pending = RulesPending(preview: preview, scopeTitle: title)
+            case .success(let preview):
+                let change = RulesPending(preview: preview, scope: scope, scopeTitle: title)
+                if change.isNoOp {
+                    env.toasts.show(change.noOpMessage)
+                } else {
+                    pending = change
+                }
             case .failure(let error): env.toasts.show(AppEnvironment.message(error), tone: .danger)
             }
         }
@@ -151,16 +170,14 @@ final class RulesModel {
 
     func cancelPending() { pending = nil }
 
-    /// Writes what the confirmation listed, through `performWithUndo`. A write that would change nothing shows no success toast.
+    /// Writes what the confirmation listed, to the scope it was previewed for, through `performWithUndo`. A write that would
+    /// change nothing never opens the confirmation (`requestSet` says so in a toast instead).
     func confirmPending() {
         guard let change = pending, !isWriting else { return }
         pending = nil
-        if change.isNoOp {
-            env.toasts.show("\(change.capability.label) already reads \(RulesWording.title(change.verdict)) here.")
-            return
-        }
+        guard change.scope == selection.scope else { return }
         let (capability, verdict) = (change.capability, change.verdict)
-        write(label: RulesWording.setLabel(capability, verdict)) { store, scope in
+        write(label: RulesWording.setLabel(capability, verdict), scope: change.scope) { store, scope in
             try store.setCapability(scope: scope, capability: capability, verdict: verdict)
         }
     }
@@ -205,6 +222,7 @@ final class RulesModel {
     /// never a success toast.
     private func write(
         label: String,
+        scope target: RuleScope? = nil,
         clears submitted: String? = nil,
         onFailure: (@MainActor (String) -> Void)? = nil,
         _ work: @escaping @Sendable (RulesStore, RuleScope) throws -> JournalEntry?
@@ -215,7 +233,7 @@ final class RulesModel {
         }
         guard !isWriting else { return }
         isWriting = true
-        let scope = snapshot.selection.scope
+        let scope = target ?? snapshot.selection.scope
         let store = snapshot.store(roots: roots)
         env.performWithUndo(
             label: label,

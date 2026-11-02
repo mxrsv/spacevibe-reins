@@ -17,7 +17,8 @@ struct RulesList: View {
                 let rules = snapshot.rules(verdict)
                 if !rules.isEmpty {
                     SectionRow(RulesWording.groupTitle(verdict), count: rules.count)
-                    ForEach(rules, id: \.id) { item in
+                    // By offset: a hand-edited file can repeat a rule, and the engine's id is not unique then.
+                    ForEach(Array(rules.enumerated()), id: \.offset) { _, item in
                         RulesRuleRow(model: model, item: item)
                     }
                 }

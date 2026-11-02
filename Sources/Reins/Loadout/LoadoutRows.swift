@@ -30,7 +30,9 @@ enum LoadoutRows {
         var filterRows: [String: [FilterRow]] = [:]
         func add(_ member: LoadoutMember, key: String, filter: FilterRow) {
             if members[key] == nil { order.append(key) }
-            if members[key]?[member.cli] == nil { members[key, default: [:]][member.cli] = member }
+            // The last member per CLI and key, as `Inventory.attachUsage` builds the cells from: the row's actions and its cell
+            // then describe the same file.
+            members[key, default: [:]][member.cli] = member
             filterRows[key, default: []].append(filter)
         }
         for item in snapshot.items { add(.item(item), key: item.key, filter: FilterRow(item)) }
@@ -143,11 +145,6 @@ enum LoadoutRows {
     /// Why a row with nothing removable cannot be changed.
     static func readOnlyReason(_ row: LoadoutRow) -> String {
         row.project != nil ? "Read-only: project configuration" : "Read-only: owned by a plugin"
-    }
-
-    /// Dead, user-level hooks of one CLI that may be removed.
-    static func deadHooks(_ rows: [LoadoutRow], cli: InventoryCLI) -> [LoadoutRow] {
-        rows.filter { $0.project == nil && $0.flags.dead && $0.members[cli]?.removable == true }
     }
 }
 

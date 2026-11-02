@@ -18,14 +18,14 @@ extension LoadoutModel {
             }
         }
         for cli in InventoryCLI.allCases {
-            let dead = LoadoutRows.deadHooks(data.rows, cli: cli)
-            guard dead.count > 1 else { continue }
+            let count = deadHookCount(cli: cli)
+            guard count > 1 else { continue }
             out.append(PaletteEntry(
                 id: "loadout.remove-all-dead.\(cli.rawValue)",
-                title: "Remove all \(dead.count) dead hooks from \(cli.uiKind.label)",
+                title: "Remove all \(count) dead hooks from \(cli.uiKind.label)",
                 systemImage: "trash",
                 keywords: ["delete", "hooks", "script not found"]
-            ) { [weak self] in self?.removeDeadHooks(cli: cli, count: dead.count) })
+            ) { [weak self] in self?.removeDeadHooks(cli: cli) })
         }
         return out
     }
