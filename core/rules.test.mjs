@@ -436,3 +436,9 @@ test('a secret in settings never appears in any return value, error, label or jo
   assert.equal(readFileSync(join(s.home, '.reins/journal.json'), 'utf8').includes(CANARY), false);
   s.done();
 });
+
+test('a star specifier is wide for every tool, so Read(*) reads as allow', () => {
+  assert.equal(stateOf([rl('allow', 'Read(*)')], 'read'), 'allow');
+  assert.equal(stateOf([rl('allow', 'WebFetch(*)')], 'network'), 'allow');
+  assert.equal(stateOf([rl('allow', 'Edit(*)'), rl('deny', 'Edit(~/.ssh/**)')], 'edit'), 'mixed');
+});

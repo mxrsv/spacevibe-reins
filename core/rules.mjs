@@ -5,7 +5,7 @@
 //
 //   Rule shape                                       Capability   Role in the cell
 //   ------------------------------------------------ ------------ ----------------
-//   Read (bare, Read(), Read(<path>) is not bare)    Read files   wide
+//   Read (bare, Read(), Read(*); Read(<path>) is not)  Read files   wide
 //   Read(<path>)                                     Read files   narrow
 //   Read(<path>) naming .env (Read(./.env*))         Secrets      own
 //   Read (bare)                                      Secrets      wide (also hits .env)
@@ -126,7 +126,7 @@ export function listRules(r, scopes = [{ kind: 'global' }]) {
 // --- Capability grid (pure) ---
 
 function placements(p) {
-  const wide = p.specifier === null || (p.tool === 'Bash' && p.specifier.trim() === '*');
+  const wide = p.specifier === null || p.specifier.trim() === '*';
   switch (p.tool) {
     case 'Read':
       if (wide) return [['read', 'wide'], ['secrets', 'wide']];

@@ -173,7 +173,14 @@ describe('usage cells and filter counts', () => {
 
   test('filter counts: all, only in one CLI, never ran, dead', () => {
     const rows = [...inv.items, ...inv.hooks];
-    assert.deepEqual(filterCounts(rows), { all: 7, only: { claude: 5, codex: 1 }, neverRan: 2, dead: 1 });
+    assert.deepEqual(filterCounts(rows), { all: 7, only: { claude: 5, codex: 1 }, neverRan: 1, dead: 1 });
     assert.deepEqual(filterCounts([]), { all: 0, only: { claude: 0, codex: 0 }, neverRan: 0, dead: 0 });
+  });
+
+  test('filter counts: a dead hook with 0 runs is counted under dead only', () => {
+    const row = { key: 'k', dead: true, cells: { claude: { state: 'counted', runs: 0 }, codex: { state: 'missing' } } };
+    const c = filterCounts([row]);
+    assert.equal(c.dead, 1);
+    assert.equal(c.neverRan, 0);
   });
 });

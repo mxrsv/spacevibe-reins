@@ -347,7 +347,8 @@ export function attachUsage(inv, usage, { now = Date.now() } = {}) {
 }
 
 // Counts for the filter chips. Rows are deduplicated by key, so a skill in both CLIs counts once.
-// neverRan: it ran in no CLI that logs it, and at least one CLI counted it. dead: a hook whose script is gone.
+// neverRan: it ran in no CLI that logs it, and at least one CLI counted it; a dead hook is counted only under dead.
+// dead: a hook whose script is gone.
 export function filterCounts(rows) {
   const seen = new Map();
   for (const x of rows) {
@@ -365,7 +366,7 @@ export function filterCounts(rows) {
   for (const row of seen.values()) {
     if (row.clis.size === 1) out.only[[...row.clis][0]]++;
     const counted = row.cells.filter((c) => c.state === 'counted');
-    if (counted.length > 0 && counted.every((c) => c.runs === 0)) out.neverRan++;
+    if (!row.dead && counted.length > 0 && counted.every((c) => c.runs === 0)) out.neverRan++;
     if (row.dead) out.dead++;
   }
   return out;
