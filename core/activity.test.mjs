@@ -291,7 +291,7 @@ test('cost: subagent transcripts count toward the session cost', async () => {
   status(r, 72, { status: 'idle' });
   claudeLog(r, '/work/app', sid(72), [c.user('go', now - 9000), c.tool('m1', 'Read', { file_path: '/x' }, now - 8000, { usage: { input_tokens: 1_000_000 } })]);
   const sub = { ...c.tool('s1', 'Read', { file_path: '/y' }, now - 7000, { usage: { output_tokens: 1_000_000 } }), isSidechain: true };
-  put(join(r.claude.logs, '-work-app', sid(72), 'subagents', 'agent-1.jsonl'), jsonl([sub]), 7000);
+  put(join(r.claude.logs, '--work-app', sid(72), 'subagents', 'agent-1.jsonl'), jsonl([sub]), 7000);
   const s = byId(await run(r, fakeProc({ alive: [72] })), sid(72));
   assert.ok(Math.abs(s.cost.usd - (3 + 15)) < 1e-9, String(s.cost?.usd)); // 1M input + 1M output at sonnet-4-6 prices
 });
@@ -301,7 +301,7 @@ test('many subagent transcripts: the newest write decides liveness, not readdir 
   const c = cl('/work/app', sid(73));
   status(r, 73, { status: 'busy' });
   claudeLog(r, '/work/app', sid(73), [c.user('go', now - 900_000), c.tool('t1', 'Agent', { description: 'delegate' }, now - 800_000)], 800_000);
-  const dir = join(r.claude.logs, '-work-app', sid(73), 'subagents');
+  const dir = join(r.claude.logs, '--work-app', sid(73), 'subagents');
   for (let i = 0; i < 60; i++) put(join(dir, `agent-${String(i).padStart(2, '0')}.jsonl`), jsonl([{ type: 'user', isSidechain: true, message: { role: 'user', content: 'x' } }]), i === 59 ? 2_000 : 600_000);
   const s = byId(await run(r, fakeProc({ alive: [73] })), sid(73));
   assert.equal(s.lastWriteAgoMs, 2_000);
