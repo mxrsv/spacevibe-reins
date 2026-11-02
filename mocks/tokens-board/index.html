@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reins · Tokens D Board</title>
+<link rel="stylesheet" href="mock-shell/reins.css"><link rel="stylesheet" href="mock-shell/tokens.css"></head>
+<body><div id="root"></div>
+<script src="mock-shell/tokens-data.js"></script><script src="mock-shell/tokens-prices.js"></script><script src="mock-shell/tokens-logos.js"></script><script src="mock-shell/data.js"></script><script src="mock-shell/ui.js"></script><script src="mock-shell/tokens.js"></script>
+<script>
+/* D · Board: the app's shell and controls. Each card has its own form; a day, model or project scopes the board and shows as a chip. */
+Page.shell = true; Page.horizontal = true; Page.periods = { days: 'Day', weeks: 'Week', months: 'Month' };
+const moreOpen = new Set();
+const pick = { cur: null };
+const rowsAll = () => series(T.period);
+const picked = () => rowsAll().find((r) => r.id === T.sel) ?? null;
+const scopeDays = () => picked()?.days ?? rowsAll().flatMap((r) => r.days);
+const scoped = (days, c) => { const p = pick.cur; if (!p) return agg(days, c); if (p.kind === 'model') return p.cli === c ? agg(days, c, { model: p.name }) : empty(); return agg(days, c, { project: p.name }); };
+const nice = (v) => { if (v <= 0) return 1; const e = 10 ** Math.floor(Math.log10(v)); const f = v / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e; };
+const axisV = (v, m) => (m === 'cost' ? `$${tk(v)}` : tk(v));
+const costOr = (a, m) => (a.t === 0 ? '–' : m === 'cost' && !a.cost ? 'no price' : fmtV(a, m));
+const noPrice = '<span class="tag">no price</span>';
+const valOr = (a, m) => (m === 'cost' && a.t && !a.cost ? noPrice : esc(costOr(a, m)));
+const unpricedTag = (a) => (a.unpriced ? `<span class="tag warn" title="Tokens on a model with no price, not in this estimate">${ic('alert', 11)}${tk(a.unpriced)} unpriced</span>` : '');
+
+Page.drawChrome = () => {
+  const m = T.measure; const seg = Object.entries(Page.periods).map(([v, l]) => `<button data-period="${v}" aria-pressed="${T.period === v}">${l}</button>`).join('');
+  const chips = Object.entries(MEASURES).map(([v, l]) => `<button class="chip" data-measure="${v}" aria-pressed="${m === v}">${l}</button>`).join('');
+  const scope = [picked() ? `<button class="chip scope-chip" data-clear="day" aria-label="Clear ${esc(picked().label)}">${esc(picked().label)}${ic('x', 12)}</button>` : '', pick.cur ? `<button class="chip scope-chip" data-clear="pick" aria-label="Clear ${esc(pick.cur.name)}">${esc(pick.cur.name)}${ic('x', 12)}</button>` : ''].join('');
+  $('#tools').innerHTML = `<div class="seg" role="group" aria-label="Period">${seg}</div><div class="chips" role="group" aria-label="Measure">${chips}</div>${scope}<span class="sp"></span><span class="caption">Claude Code from ${short(firstClaude)}, Codex from ${short(firstCodex)}</span>`;
+  const sel = T.sel && String(T.sel); const scopeOn = picked() || pick.cur;
+  $('#hints').innerHTML = hint('⌘K', 'Search or run') + hint('← →', T.period === 'days' ? 'Day' : T.period === 'weeks' ? 'Week' : 'Month') + (sel ? hint('↵', 'Token kinds') : '') + (scopeOn ? hint('Esc', 'Clear scope') : '');
+};
+
+const logo = (k, sz = 14) => `<svg class="lgm lg-${k}" width="${sz}" height="${sz}" viewBox="${LOGOS[k].vb}" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="${LOGOS[k].d}"/></svg>`;
+const modelLogo = (n, c, sz) => (n === 'unknown' ? '' : logo(c === 'claude' ? 'claude' : 'openai', sz));
+const cliH = (c) => `<span class="h">${logo(c, 13)}${CLI[c]}</span>`;
+function summary(m) {
+  const days = rowsAll().flatMap((r) => r.days);
+  const as = CLIS.map((c) => agg(days, c)); const both = mergeA(as[0], as[1]); const max = Math.max(...as.map((a) => value(a, m)), 1);
+  const conversations = CLIS.reduce((n, c) => n + conv(days, c), 0);
+  const side = (c, a) => `<div><span class="kick">${logo(c, 16)}${CLI[c]}${m === 'cost' ? unpricedTag(a) : ''}</span><span class="cli-fig">${costOr(a, m)}</span>${bar(c, a, max, m)}<span class="small">${m === 'tokens' ? `${tk(a.fresh)} new` : `${tk(a.t)} tokens`} · ${conv(days, c).toLocaleString('en-US')} conversations</span></div>`;
+  return `<div class="card summary"><div><span class="kick">${RANGE_NAME[T.period]}</span><span class="lead-fig"><b>${costOr(both, m)}</b></span><span class="small">${m === 'tokens' ? `${tk(both.fresh)} new tokens` : `${tk(both.t)} tokens`} · ${conversations.toLocaleString('en-US')} conversations</span></div>${side('claude', as[0])}${side('codex', as[1])}</div>`;
+}
+
+function pairCol(c, a, axis, m) {
+  const fill = `${c}-fill`; const v = value(a, m); if (!v) return '<span class="pr"></span>';
+  const s = Math.min(1, axis / v); const cut = v > axis ? '<span class="notch"></span>' : '';
+  if (m === 'tokens') return `<span class="pr">${cut}${a.cr ? `<i class="${fill} faint" style="height:${pct(a.cr * s, axis)}%"></i>` : ''}${a.fresh ? `<i class="${fill}" style="height:${pct(a.fresh * s, axis)}%"></i>` : ''}</span>`;
+  return `<span class="pr">${cut}<i class="${fill}" style="height:${pct(v * s, axis)}%"></i></span>`;
+}
+function timeline(m) {
+  const rows = [...rowsAll()].reverse(); const sel = picked();
+  const stats = rows.map((r) => ({ r, a: scoped(r.days, 'claude'), b: scoped(r.days, 'codex') }));
+  const vals = stats.flatMap((s) => [value(s.a, m), value(s.b, m)]).sort((x, y) => y - x);
+  const cap = nice(2 * (vals[1] || vals[0] || 1)); const axis = vals[0] > cap ? cap : nice(vals[0] || 1);
+  const clipped = stats.filter((s) => Math.max(value(s.a, m), value(s.b, m)) > axis).length;
+  const every = rows.length > 20 ? 5 : rows.length > 10 ? 2 : 1;
+  const selAt = rows.findIndex((x) => x.id === sel?.id);
+  const cols = stats.map(({ r, a, b }, i) => {
+    const isSel = r.id === sel?.id; const lab = isSel || ((rows.length - 1 - i) % every === 0 && (selAt < 0 || Math.abs(i - selAt) > 1));
+    const over = Math.max(value(a, m), value(b, m)) > axis;
+    return `<div class="tcol ${sel && !isSel ? 'quiet' : ''}" data-nav="${r.id}" aria-selected="${T.sel === r.id}" aria-label="${esc(r.label)}" data-tip="${esc(`${r.label}\nClaude Code ${costOr(a, m)}\nCodex ${costOr(b, m)}`)}">${over ? `<span class="clip-lab ${i > rows.length * 0.7 ? 'left' : ''}">${costOr(value(a, m) > value(b, m) ? a : b, m)}</span>` : ''}${pairCol('claude', a, axis, m)}${pairCol('codex', b, axis, m)}${lab ? `<span class="tick">${esc(r.spine)}</span>` : ''}</div>`;
+  }).join('');
+  const legend = (m === 'tokens' ? '<span class="lgd"><i class="lg"></i>New</span><span class="lgd"><i class="lg faint"></i>Cache reads</span>' : '') + `<span class="lgd">${logo('claude', 12)}Claude Code</span><span class="lgd">${logo('codex', 12)}Codex</span>`;
+  const combined = stats.map((x) => ({ r: x.r, a: mergeA(x.a, x.b) })).sort((x, y) => value(y.a, m) - value(x.a, m))[0];
+  const peak = sel ? (() => { const a = scoped(sel.days, 'claude'); const b = scoped(sel.days, 'codex'); return `<div class="peak"><span class="v">${logo('claude', 15)}${costOr(a, m)}</span><span class="v">${logo('codex', 15)}${costOr(b, m)}</span><span class="c2">${esc(sel.label)}</span></div>`; })() : `<div class="peak"><span class="v">${combined ? costOr(combined.a, m) : '–'}</span><span class="c2">highest day, both CLIs: ${combined ? esc(combined.r.label) : ''}</span></div>`;
+  return `<div class="card"><div class="card-t"><b>${T.period === 'days' ? 'By day' : T.period === 'weeks' ? 'By week' : 'By month'}</b><span>${RANGE_NAME[T.period]}</span>${clipped ? `<span class="tag" title="The tallest bar is cut so the rest stay readable. Its value is printed on it.">${clipped} above the axis</span>` : ''}<span class="sp"></span>${legend}</div>${peak}
+    <div class="tl"><div class="ys"><span style="top:0">${axisV(axis, m)}</span><span style="top:calc((100% - 18px) / 2)">${axisV(axis / 2, m)}</span><span style="top:calc(100% - 18px)">0</span></div>
+    <div class="plot"><span class="grid" style="top:0"></span><span class="grid" style="top:calc((100% - 18px) / 2)"></span><span class="grid" style="top:calc(100% - 18px)"></span>${cols}</div></div></div>`;
+}
+
+const isPicked = (kind, name, cli) => pick.cur && pick.cur.kind === kind && pick.cur.name === name && (kind !== 'model' || pick.cur.cli === cli);
+function modelLane(c, days, m) {
+  const list = ranked(days, c, 'model', m); const max = Math.max(...list.map(([, a]) => value(a, m)), 1);
+  const open = moreOpen.has(c); const show = open ? list : list.slice(0, 4);
+  const rows = show.map(([n, a], i) => { const v = value(a, m); const w = Math.max(pct(v, max), 1); const lead = i === 0; return `<button class="fr ${lead ? 'lead' : ''}" data-pick="model|${c}|${esc(n)}" aria-pressed="${isPicked('model', n, c)}" data-tip="${tipOf(a)}">${v ? `<i class="tint ${c}-fill" style="width:${w}%"></i><i class="base ${c}-fill" style="width:${w}%"></i>` : ''}<span style="display:inline-flex">${modelLogo(n, c, lead ? 20 : 13)}</span><span class="nm">${esc(n)}</span><span class="vl">${valOr(a, m)}</span></button>`; }).join('');
+  const more = list.length > 4 ? `<div class="more-row" style="padding:2px 0"><button class="btn" data-more="${c}">${open ? 'Show less' : `${list.length - 4} more`}</button></div>` : '';
+  return `<div><div class="lanehead">${logo(c, 13)}${CLI[c]}</div>${rows || '<div class="sec">No model</div>'}${more}</div>`;
+}
+function projects(days, m) {
+  const pn = [...new Set(CLIS.flatMap((c) => names(days, c, 'project')))].map((n) => ({ n, a: agg(days, 'claude', { project: n }), b: agg(days, 'codex', { project: n }) })).sort((u, v) => value(v.a, m) + value(v.b, m) - value(u.a, m) - value(u.b, m));
+  const max = Math.max(...pn.flatMap((r) => [value(r.a, m), value(r.b, m)]), 1);
+  const unnamed = (c) => { const tot = agg(days, c).t; const got = pn.reduce((s, r) => s + (c === 'claude' ? r.a.t : r.b.t), 0); return tot ? Math.max(0, Math.round(100 - (got / tot) * 100)) : 0; };
+  const tag = (c) => { const u = unnamed(c); return u ? `<span class="tag warn" title="${CLI[c]} tokens whose log carried no project name">${c === 'claude' ? 'Claude' : 'Codex'} ${u}% unnamed</span>` : ''; };
+  const open = moreOpen.has('projects'); const show = open ? pn : pn.slice(0, 7);
+  const bv = (a, cls = '') => `<span class="bv ${cls} ${a.t ? '' : 'none'}">${a.t ? valOr(a, m) : '–'}</span>`;
+  const tr = (c, a, flip) => { const v = value(a, m); return `<span class="tr ${flip ? 'flip' : ''}">${v ? `<i class="${c}-fill" style="width:${pct(v, max)}%"></i>` : ''}</span>`; };
+  const rows = show.map((r, i) => `<button class="bf ${i === 0 ? 'lead' : ''}" data-pick="project||${esc(r.n)}" aria-pressed="${isPicked('project', r.n)}" data-tip="${esc(`${r.n}\nClaude Code ${costOr(r.a, m)}\nCodex ${costOr(r.b, m)}`)}">${bv(r.a)}${tr('claude', r.a, true)}<span class="pname">${esc(r.n)}</span>${tr('codex', r.b, false)}${bv(r.b, 'r')}</button>`).join('');
+  const more = pn.length > 7 ? `<div class="more-row"><button class="btn" data-more="projects">${open ? 'Show less' : `${pn.length - 7} more`}</button></div>` : '';
+  return `<div class="card"><div class="card-t"><b>Projects</b><span class="n">${pn.length}</span><span class="sp"></span>${tag('claude')}${tag('codex')}</div>${rows || '<div class="sec">No project data for this scope.</div>'}${more}</div>`;
+}
+function cachePart(c, a) {
+  const share = a.t ? (a.cr / a.t) * 100 : 0;
+  return `<div data-tip="${tipOf(a)}"><div class="pc">${logo(c, 16)}${a.t ? `${share.toFixed(1)}%` : '–'}</div>
+    <div class="strp">${a.cr ? `<i class="${c}-fill faint" style="flex:${a.cr}"></i>` : ''}${a.fresh ? `<i class="${c}-fill" style="flex:${a.fresh}"></i>` : ''}${a.t ? '' : '<i style="flex:1;background:var(--track)"></i>'}</div>
+    <div class="small">${a.t ? `${tk(a.cr)} cached · ${tk(a.fresh)} new` : 'No tokens in this scope'}</div></div>`;
+}
+function cost(days) {
+  const a = scoped(days, 'claude'); const b = scoped(days, 'codex');
+  const v = (x) => (x.t && x.cost ? usd(x.cost) : x.t ? noPrice : '<span class="dim">–</span>');
+  const u = (x) => (x.unpriced ? tk(x.unpriced) : '<span class="dim">0</span>');
+  const both = a.cost + b.cost;
+  return `<div class="card"><div class="card-t"><b>Estimated cost</b><span class="sp"></span><button class="btn" id="price-btn" data-price aria-haspopup="dialog">Price table · Oct 24</button></div>
+    <div class="acct"><div class="h0"></div><div class="h0 v">${logo('claude', 12)}Claude</div><div class="h0 v">${logo('codex', 12)}Codex</div>
+    <div class="l">Priced models</div><div class="v">${v(a)}</div><div class="v">${v(b)}</div>
+    <div class="l">Tokens with no price</div><div class="v">${u(a)}</div><div class="v">${u(b)}</div>
+    <div class="l strong">Both</div><div class="bignum v">${both ? usd(both) : '–'}</div></div></div>`;
+}
+function kindsList(a) { return `<ul><li><span>Input</span><span>${tk(a.i)}</span></li><li><span>Cache write</span><span>${tk(a.cw)}</span></li><li><span>Cache read</span><span>${tk(a.cr)}</span></li><li><span>Output</span><span>${tk(a.o)}</span></li></ul>`; }
+function dayTable(m) {
+  const rows = rowsAll();
+  const max = Math.max(...rows.flatMap((r) => CLIS.map((c) => value(scoped(r.days, c), m))), 1);
+  return `<div class="card"><div class="card-h ledger sticky"><b style="font-size:13px">${ROW_NAME[T.period]}<span class="n dim">${rows.length}</span></b>${cliH('claude')}${cliH('codex')}<span class="h right">Est. cost</span></div>${rows.map((r) => { const a = scoped(r.days, 'claude'); const b = scoped(r.days, 'codex'); const open = T.open.has(r.id); return `<div class="r ledger" data-nav="${r.id}" aria-selected="${T.sel === r.id}"><div class="name"><button class="tick-btn" data-noselect data-exp="${r.id}" aria-expanded="${open}" aria-label="Show token kinds for ${esc(r.label)}">${ic('chevron', 13)}</button>${esc(r.label)}</div>${cell('claude', a, max, m)}${cell('codex', b, max, m)}${costCell(mergeA(a, b))}</div>${open ? `<div class="xpwrap"><div class="xp"><div class="lab">Token kinds</div>${kindsList(a)}${kindsList(b)}<div></div></div></div>` : ''}`; }).join('')}</div>`;
+}
+function pricePanel() {
+  const days = scopeDays();
+  const unp = [...new Set(CLIS.flatMap((c) => names(days, c, 'model').filter((n) => agg(days, c, { model: n }).unpriced > 0)))];
+  const f = (v) => `$${v}`;
+  return `<h3>Price table</h3><p>USD per million tokens. API list prices, fetched Oct 24. Not what a subscription costs.</p><table><tr><th>Model</th><th>Input</th><th>Cache read</th><th>Cache write</th><th>Output</th></tr>${Object.entries(PRICES).map(([n, x]) => `<tr><td>${esc(n)}</td><td>${f(x[0])}</td><td>${f(x[1])}</td><td>${f(x[2])}</td><td>${f(x[3])}</td></tr>`).join('')}${unp.map((n) => `<tr><td>${esc(n)}</td><td colspan="4">${noPrice}</td></tr>`).join('')}</table>`;
+}
+const closePop = () => $('#pop').classList.remove('open');
+function openPop() {
+  const el = $('#pop'); el.innerHTML = pricePanel(); el.classList.add('open');
+  const r = $('#price-btn').getBoundingClientRect(); const h = el.offsetHeight;
+  el.style.left = `${Math.max(8, r.right - el.offsetWidth)}px`;
+  el.style.top = `${r.bottom + 6 + h < innerHeight - 8 ? r.bottom + 6 : Math.max(8, r.top - 6 - h)}px`;
+}
+Page.render = () => {
+  const m = T.measure; const days = scopeDays(); const a = scoped(days, 'claude'); const b = scoped(days, 'codex');
+  return `${summary(m)}
+    <div class="row2">${timeline(m)}<div class="stack"><div class="card"><div class="card-t"><b>Cache reuse</b><span class="sp"></span><span>reused</span></div><div class="cachegrid">${cachePart('claude', a)}${cachePart('codex', b)}</div></div>${cost(days)}</div></div>
+    <div class="row3"><div class="card"><div class="card-t"><b>Models</b></div><div class="lanes2">${modelLane('claude', days, m)}${modelLane('codex', days, m)}</div></div>${projects(days, m)}</div>
+    ${dayTable(m)}`;
+};
+Page.viewDays = () => scopeDays();
+const toggleOpen = (id) => { T.open.has(id) ? T.open.delete(id) : T.open.add(id); };
+Page.onEnter = (id) => toggleOpen(id);
+Page.onEscape = () => { if ($('#pop').classList.contains('open')) { closePop(); return; } T.sel = null; pick.cur = null; };
+Page.onClick = (id, same) => { if (same) T.sel = null; };
+Page.actions = () => (T.sel || pick.cur ? [{ g: 'Scope', label: 'Clear scope', run: () => { T.sel = null; pick.cur = null; } }] : []);
+T.period = 'days'; T.measure = 'cost';
+start();
+document.addEventListener('click', (e) => {
+  const t = e.target; const on = (s) => t.closest(s);
+  if (!on('#pop') && !on('[data-price]')) closePop();
+  if (on('[data-open-actions]')) { toggleActs(true); return; }
+  if (on('[data-price]')) { $('#pop').classList.contains('open') ? closePop() : openPop(); return; }
+  const per = on('[data-period]'); if (per) { setPeriod(per.dataset.period); draw(); return; }
+  const mea = on('[data-measure]'); if (mea) { T.measure = mea.dataset.measure; draw(); return; }
+  const clr = on('[data-clear]'); if (clr) { if (clr.dataset.clear === 'day') T.sel = null; else pick.cur = null; draw(); return; }
+  const mor = on('[data-more]'); if (mor) { moreOpen.has(mor.dataset.more) ? moreOpen.delete(mor.dataset.more) : moreOpen.add(mor.dataset.more); draw(); return; }
+  const exp = on('[data-exp]'); if (exp) { toggleOpen(exp.dataset.exp); draw(); return; }
+  const pk = on('[data-pick]'); if (pk) { const [kind, cli, name] = pk.dataset.pick.split('|'); pick.cur = isPicked(kind, name, cli) ? null : { kind, cli, name }; draw(); }
+});
+</script></body></html>

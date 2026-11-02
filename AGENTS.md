@@ -63,7 +63,7 @@ Local app to see and control what Claude Code and Codex CLI are equipped with. S
 - [src/lib/ipc-contract.ts](src/lib/ipc-contract.ts): the one list of channels and payload types. A new channel is this file plus one handler file.
 - [src/](src): the renderer. It only sees `window.reins.invoke(channel, request)`.
 - `web/` is the old prototype. It cannot run any more (its server is gone) and is deleted with the Loadout screen in the [plan](docs/plans/2026-11-02-reins-electron.md) task 4.4.
-- `mocks/` holds earlier throwaway mocks kept for reference, outside git. Do not import from them.
+- `mocks/` holds earlier throwaway mocks kept for reference, outside git. Do not import from them. The exception is `mocks/tokens-board/`, tracked with synthetic data as the target for the [Tokens plan](docs/plans/2026-11-03-reins-tokens.md) and deleted when that plan's T8 passes.
 
 ## Repo-specific rules
 
