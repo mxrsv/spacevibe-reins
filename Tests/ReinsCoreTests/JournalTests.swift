@@ -120,9 +120,7 @@ struct JournalTests {
         #expect(history.map(\.count) == [2, 1, 1])
         #expect(history.map(\.undone) == [false, true, false])
 
-        // An op kind this version cannot undo is refused before anything changes.
-        let refused = #expect(throws: ReinsError.self) { try Journal.undo(r, id: "99999999-2222-3333-4444-555555555555") }
-        #expect(refused?.status == 400)
+        // Hook ops are undone by Mutate (see MutateTests); an entry that is already undone is refused.
         #expect(throws: ReinsError.self) { try Journal.undo(r, id: "11111111-2222-3333-4444-555555555555") }
 
         let label = try Journal.undo(r, id: "e271c1e3-dfc2-4e9f-9d14-ba967210bee5")

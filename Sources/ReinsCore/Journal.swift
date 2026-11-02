@@ -89,8 +89,8 @@ public struct HistoryItem: Equatable, Sendable {
 public enum Journal {
     public static let limit = 200
     static let fileName = "journal.json"
-    /// Op kinds `undo` can reverse. `hook-added` and `hook-removed` belong to Mutate and are refused until they are ported.
-    static let undoable: Set<String> = ["file-edited", "created", "moved", "link-removed"]
+    /// Op kinds `undo` can reverse. The two hook kinds are written by Mutate (see MutateHooks.swift for how they are undone).
+    static let undoable: Set<String> = ["file-edited", "created", "moved", "link-removed", "hook-added", "hook-removed"]
 
     static func journalPath(_ roots: Roots) -> String { roots.data.appendingPathComponent(fileName).path }
 
@@ -125,7 +125,11 @@ public enum Journal {
         }
         var rollbacks: [() -> Void] = []
         do {
-            for op in entry.ops.reversed() { rollbacks.append(try undoOp(roots, op)) }
+            if Mutate.isHookRemovalBatch(entry.ops) {
+                rollbacks.append(try Mutate.undoHookRemovalBatch(roots, entry.ops))
+            } else {
+                for op in entry.ops.reversed() { rollbacks.append(try undoOp(roots, op)) }
+            }
             try write(roots, all.map { $0.id == id ? $0.markedUndone() : $0 })
         } catch {
             for rollback in rollbacks.reversed() { rollback() }
@@ -184,12 +188,15 @@ public enum Journal {
         case "file-edited":
             return try undoFileEdit(roots, op)
 
+        case "hook-added", "hook-removed":
+            return try Mutate.undoHookOp(roots, op)
+
         default:
             throw ReinsError("Unknown history entry.")
         }
     }
 
-    private static func undoFileEdit(_ roots: Roots, _ op: JournalOp) throws -> () -> Void {
+    static func undoFileEdit(_ roots: Roots, _ op: JournalOp) throws -> () -> Void {
         let file = try field(op, "file"), after = try field(op, "after")
         let existed = op.json["existed"]?.boolValue ?? false
         // Only undo what this edit wrote: a hand edit made since then is not ours to overwrite.
