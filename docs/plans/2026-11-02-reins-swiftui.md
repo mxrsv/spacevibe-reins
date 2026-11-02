@@ -81,6 +81,7 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 
 - [ ] S6T.1 Direction: the owner picks one layout from the click-through mocks in `~/scratch/spacevibe-reins/` (`tokens-*.html`) and the spec records it. No UI code before this.
 - [ ] S6T.2 `TokenLedger` in `ReinsCore`: fold token usage per hour, CLI, model and project using the same deduplication as Activity; normalize Codex input; persist the rollup under the app's data folder with mode 0600 and merge on rescan so a vanished log keeps its past days (unlike the usage cache, which drops entries for missing files, see `core/usage.mjs` `scan`). Tests against `TempHome`, including AC8.
+- [ ] S6T.5 Price table: add the logged models that have none today (`gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.5`, `claude-opus-5`, `claude-fable-5-1`, `claude-haiku-5-5` and the rest of the 4.21B of 24.57B tokens measured 2026-11-03) to `Pricing.swift` and `core/pricing.json` together, because a test compares them, each with its source and `fetchedAt`. A model that needs tier information stays unpriced on purpose. TokenTracker prices these names, so without this the estimate undercounts next to it.
 - [ ] S6T.3 Screen for the picked direction with loading, empty and unpriced-model states. Screenshots to `~/scratch/spacevibe-reins/shots/`.
 - [ ] S6T.4 AC7: compare with TokenTracker's `~/.tokentracker/tracker/queue.jsonl` on the owner's Mac, per local day, CLI and field; record the differences and causes here. Read-only, and the comparison output stays out of git.
 
