@@ -14,6 +14,12 @@ extension Mutate {
         command: String,
         timeout: Double? = nil
     ) throws -> JournalEntry {
+        try WriteLock.run { try addHookLocked(roots: roots, clis: clis, event: event, matcher: matcher, command: command, timeout: timeout) }
+    }
+
+    private static func addHookLocked(
+        roots: Roots, clis: [InventoryCLI], event: String, matcher: String?, command: String, timeout: Double?
+    ) throws -> JournalEntry {
         let command = MutateText.trim(command)
         try need(!command.isEmpty, "Enter the command this hook runs.")
         try requireCLIs(clis)
@@ -55,6 +61,10 @@ extension Mutate {
 
     /// Removes every dead, user-level hook of one CLI in one file write and one journal entry.
     public static func removeDeadHooks(roots: Roots, cli: InventoryCLI) throws -> JournalEntry {
+        try WriteLock.run { try removeDeadHooksLocked(roots: roots, cli: cli) }
+    }
+
+    private static func removeDeadHooksLocked(roots: Roots, cli: InventoryCLI) throws -> JournalEntry {
         let dead = Inventory.read(roots: roots).hooks.filter { $0.cli == cli && $0.dead && $0.removable }
         try need(!dead.isEmpty, "No dead hooks to remove.", 409)
         let file = cliRoots(roots, cli).hookFile

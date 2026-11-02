@@ -8,6 +8,9 @@ import Foundation
 /// - A project folder must be one that project discovery found (404 otherwise). In Node this check sits in the IPC layer;
 ///   here it is in the engine so no caller can make Reins create `<any folder>/.claude/settings.json`.
 /// - The file is edited in place (only the changed list), not rewritten with `JSON.stringify`.
+/// - A project or local file must really live in `<project>/.claude`: a `.claude` that resolves elsewhere, or a settings
+///   file that is itself a link, is refused (409), because a hostile repo could point it at any other JSON file. The
+///   global file may be a link (a dotfiles setup) and is followed.
 public struct RulesStore: Sendable {
     public let roots: Roots
     private let discover: @Sendable () -> [String]
@@ -38,6 +41,26 @@ public struct RulesStore: Sendable {
         return URL(fileURLWithPath: InventoryFileIO.join(known, ".claude", name))
     }
 
+    /// Refuses a project or local settings file that is not really inside `<project>/.claude`. The global file is exempt.
+    private func requireInsideProject(_ file: URL, scope: RuleScope) throws {
+        if case .global = scope { return }
+        let claudeDir = file.deletingLastPathComponent().path
+        let expected = Roots.resolvedPath((claudeDir as NSString).deletingLastPathComponent) + "/.claude"
+        var info = stat()
+        if lstat(claudeDir, &info) == 0 {
+            guard let real = realpath(claudeDir, nil) else {
+                throw ReinsError("\(claudeDir) is a link to nothing, so Reins left it alone.", status: 409)
+            }
+            defer { free(real) }
+            guard String(cString: real) == expected else {
+                throw ReinsError("\(claudeDir) points outside the project, so Reins left it alone.", status: 409)
+            }
+        }
+        if lstat(file.path, &info) == 0, (info.st_mode & S_IFMT) == S_IFLNK {
+            throw ReinsError("\(file.path) is a link, so Reins left it alone. Edit the file it points at.", status: 409)
+        }
+    }
+
     // MARK: Listing
 
     /// The rules of each scope, in the order given, verdicts allow, ask, deny. A file that is not valid settings is
@@ -47,6 +70,10 @@ public struct RulesStore: Sendable {
         var problems: [String] = []
         for scope in scopes {
             let file = try file(for: scope)
+            do { try requireInsideProject(file, scope: scope) } catch let error as ReinsError {
+                problems.append(error.message)
+                continue
+            }
             guard InventoryFileIO.exists(file.path) else { continue }
             guard let data = InventoryFileIO.readData(file, maxBytes: InventoryFileIO.maxJSONBytes + 1), data.count <= InventoryFileIO.maxJSONBytes else {
                 problems.append("\(file.path) could not be read.")
@@ -113,8 +140,11 @@ public struct RulesStore: Sendable {
     // MARK: Writing
 
     func edit(_ scope: RuleScope, label: String, change: (URL, OrderedJSON) throws -> OrderedJSON) throws -> JournalEntry? {
-        let file = try file(for: scope)
-        return try FileEdit.editJSON(roots, file: file, label: label) { document in try change(file, document) }
+        try WriteLock.run {
+            let file = try file(for: scope)
+            try requireInsideProject(file, scope: scope)
+            return try FileEdit.editJSON(roots, file: file, label: label) { document in try change(file, document) }
+        }
     }
 
     private func required(_ entry: JournalEntry?) throws -> JournalEntry {

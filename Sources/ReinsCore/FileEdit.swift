@@ -22,6 +22,15 @@ public enum FileEdit {
         validate: ((String) throws -> Void)? = nil,
         change: (String?) throws -> String?
     ) throws -> JournalOp? {
+        try WriteLock.run { try applyLocked(roots, file: file, validate: validate, change: change) }
+    }
+
+    private static func applyLocked(
+        _ roots: Roots,
+        file: URL,
+        validate: ((String) throws -> Void)?,
+        change: (String?) throws -> String?
+    ) throws -> JournalOp? {
         try refuseRealHomeUnderTest(file.path)
         let target = try resolveTarget(file.path)
         let before: Data?
@@ -63,12 +72,17 @@ public enum FileEdit {
             }
         }
         do {
-            try AtomicWrite.write(to: target.real, data: next, mode: target.mode) { written in
+            try AtomicWrite.write(to: target.real, data: next, mode: target.mode, validate: { written in
                 guard let text = String(data: written, encoding: .utf8) else {
                     throw ReinsError("The new \(target.real) would not be valid text. Nothing was changed.", status: 409)
                 }
                 try validate?(text)
-            }
+            }, beforeRename: {
+                // Another process (a CLI, a hand edit) may have written since the read above; never overwrite that.
+                guard FileManager.default.contents(atPath: target.real) == before else {
+                    throw ReinsError("\(target.real) changed while Reins was editing it, so it was left alone. Try again.", status: 409)
+                }
+            })
         } catch {
             // The old file is untouched; do not leave an unused backup behind.
             if let backup { try? FileManager.default.removeItem(at: backup.deletingLastPathComponent()) }
@@ -85,8 +99,10 @@ public enum FileEdit {
         validate: ((String) throws -> Void)? = nil,
         change: (String?) throws -> String?
     ) throws -> JournalEntry? {
-        guard let op = try apply(roots, file: file, validate: validate, change: change) else { return nil }
-        return try Journal.record(roots, label: label, ops: [op])
+        try WriteLock.run {
+            guard let op = try apply(roots, file: file, validate: validate, change: change) else { return nil }
+            return try Journal.record(roots, label: label, ops: [op])
+        }
     }
 
     // MARK: JSON
@@ -124,8 +140,10 @@ public enum FileEdit {
         validate: ((OrderedJSON) throws -> Void)? = nil,
         change: (OrderedJSON) throws -> OrderedJSON
     ) throws -> JournalEntry? {
-        guard let op = try applyJSON(roots, file: file, validate: validate, change: change) else { return nil }
-        return try Journal.record(roots, label: label, ops: [op])
+        try WriteLock.run {
+            guard let op = try applyJSON(roots, file: file, validate: validate, change: change) else { return nil }
+            return try Journal.record(roots, label: label, ops: [op])
+        }
     }
 
     /// Parse errors are replaced by a fixed sentence: the parser's position and the text around it can hold a secret.

@@ -12,6 +12,14 @@ struct MutateTests {
     static let scenarioNames: [String] = scenarios.compactMap { $0["name"] as? String }
     static let hookFiles: Set<String> = Set(golden["hookFiles"] as? [String] ?? [])
 
+    /// A golden that fails to load turns every parametrized case into zero cases, which passes. This one fails instead.
+    @Test("the golden loaded: 37 or more Node scenarios are replayed")
+    func goldenLoaded() {
+        #expect(!Self.golden.isEmpty, "golden/mutate.json did not load")
+        #expect(Self.scenarioNames.count >= 37, "only \(Self.scenarioNames.count) scenarios")
+        #expect(!Self.hookFiles.isEmpty)
+    }
+
     // MARK: Helpers
 
     /// A TempHome holding a private copy of the fixture HOME, with `Roots` pointing at it.

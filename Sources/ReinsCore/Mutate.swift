@@ -11,6 +11,10 @@ import Foundation
 public enum Mutate {
     /// Removes a skill, an agent or a hook. Plugin-owned and project-scoped items are read-only (403).
     public static func removeItem(roots: Roots, id: String) throws -> JournalEntry {
+        try WriteLock.run { try removeItemLocked(roots: roots, id: id) }
+    }
+
+    private static func removeItemLocked(roots: Roots, id: String) throws -> JournalEntry {
         switch try find(roots, id: id) {
         case .item(let item):
             try requireRemovable(removable: item.removable, scope: item.scope)
@@ -26,6 +30,10 @@ public enum Mutate {
     /// unverified (spec, "To verify"), and the approved Loadout mock offers no such copy. The Node core throws a
     /// TypeError for every hook copy (it reads `name.split` before its hook branch), so there is nothing to mirror.
     public static func copyToOther(roots: Roots, id: String) throws -> JournalEntry {
+        try WriteLock.run { try copyToOtherLocked(roots: roots, id: id) }
+    }
+
+    private static func copyToOtherLocked(roots: Roots, id: String) throws -> JournalEntry {
         switch try find(roots, id: id) {
         case .hook(let hook):
             let target = hook.cli.other

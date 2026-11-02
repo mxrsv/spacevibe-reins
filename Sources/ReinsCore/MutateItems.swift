@@ -10,6 +10,12 @@ extension Mutate {
         description: String,
         body: String = ""
     ) throws -> JournalEntry {
+        try WriteLock.run { try addSkillLocked(roots: roots, clis: clis, name: name, description: description, body: body) }
+    }
+
+    private static func addSkillLocked(
+        roots: Roots, clis: [InventoryCLI], name: String, description: String, body: String
+    ) throws -> JournalEntry {
         try validName(name)
         try need(!MutateText.trim(description).isEmpty, "Say when the agent should use this skill.")
         try requireCLIs(clis)
@@ -30,6 +36,12 @@ extension Mutate {
         description: String,
         instructions: String = ""
     ) throws -> JournalEntry {
+        try WriteLock.run { try addAgentLocked(roots: roots, clis: clis, name: name, description: description, instructions: instructions) }
+    }
+
+    private static func addAgentLocked(
+        roots: Roots, clis: [InventoryCLI], name: String, description: String, instructions: String
+    ) throws -> JournalEntry {
         try validName(name)
         try need(!MutateText.trim(description).isEmpty, "Say when this agent should be used.")
         try requireCLIs(clis)
@@ -44,6 +56,13 @@ extension Mutate {
         let base = item.kind == .skill ? cli.skills : cli.agents
         try need(
             InventoryFileIO.normalize(item.path).hasPrefix(InventoryFileIO.normalize(base.path) + "/"),
+            "Refusing a path outside the CLI folder.", 403
+        )
+        // The check above is lexical. The item's parent must also be the CLI folder itself once links are followed, so a
+        // link in the middle of the path cannot send the removal to some other folder. The CLI folder may be a link
+        // (a dotfiles setup); the item itself may be one too, which is why only its parent is resolved.
+        try need(
+            Roots.resolvedPath((InventoryFileIO.normalize(item.path) as NSString).deletingLastPathComponent) == Roots.resolvedPath(base.path),
             "Refusing a path outside the CLI folder.", 403
         )
         let op = try Trash.remove(roots, path: item.path)
@@ -96,7 +115,9 @@ extension Mutate {
                 try item.write()
             }
         } catch {
-            for op in ops.reversed() { if let created = op.json["path"]?.stringValue { _ = try? Trash.moveToTrash(roots, path: created) } }
+            for op in ops.reversed() {
+                if let created = op.json["path"]?.stringValue, Trash.pathExists(created) { _ = try? Trash.moveToTrash(roots, path: created) }
+            }
             throw error
         }
         return ops

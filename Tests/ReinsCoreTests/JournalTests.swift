@@ -57,7 +57,7 @@ struct JournalTests {
         #expect(history.first?.label == "entry 204")
     }
 
-    @Test("reads a journal written by the Node core, undoes it, and keeps ops it cannot undo intact")
+    @Test("reads a journal written by the Node core, undoes an entry, refuses one already undone (409), and keeps foreign ops intact")
     func crossReadNodeJournal() throws {
         let home = try TempHome()
         let r = try roots(home)
@@ -121,7 +121,8 @@ struct JournalTests {
         #expect(history.map(\.undone) == [false, true, false])
 
         // Hook ops are undone by Mutate (see MutateTests); an entry that is already undone is refused.
-        #expect(throws: ReinsError.self) { try Journal.undo(r, id: "11111111-2222-3333-4444-555555555555") }
+        let alreadyUndone = #expect(throws: ReinsError.self) { try Journal.undo(r, id: "11111111-2222-3333-4444-555555555555") }
+        #expect(alreadyUndone?.status == 409)
 
         let label = try Journal.undo(r, id: "e271c1e3-dfc2-4e9f-9d14-ba967210bee5")
         #expect(label == "Added allow rule Read (global)")
@@ -213,5 +214,93 @@ struct JournalTests {
         #expect(FileManager.default.fileExists(atPath: created.path), "the first reversed op was put back")
         #expect(String(decoding: try read(edited), as: UTF8.self) == "{\"a\":1}\n")
         #expect(Journal.history(r).first?.undone == false)
+    }
+
+    // MARK: Refusals and rollback of one op
+
+    private func trashCopy(_ home: TempHome, _ name: String, _ text: String = "saved") throws -> URL {
+        try home.write(".reins/trash/1-\(name)/\(name)", text)
+    }
+
+    @Test("moved: when a later-reversed op refuses, the op already reversed is moved back to the trash")
+    func movedRollsBack() throws {
+        let home = try TempHome()
+        let r = try roots(home)
+        let other = try home.write("work/other.txt", "back again")
+        let otherTrash = try trashCopy(home, "other.txt")
+        let mine = try home.write("work/mine.txt", "mine")
+        let removed = try Trash.moveToTrash(r, path: mine.path)
+        let trashedMine = try #require(removed.json["to"]?.stringValue)
+        // Undo goes last op first: `mine` comes back, then `other` refuses because its path exists again.
+        let entry = try Journal.record(r, label: "Two moves", ops: [.moved(from: other.path, to: otherTrash.path), removed])
+        let error = #expect(throws: ReinsError.self) { try Journal.undo(r, id: entry.id) }
+        #expect(error?.status == 409)
+        #expect(!FileManager.default.fileExists(atPath: mine.path), "the reversed op was put back in the trash")
+        #expect(try String(contentsOfFile: trashedMine, encoding: .utf8) == "mine")
+        #expect(try String(contentsOf: other, encoding: .utf8) == "back again")
+        #expect(FileManager.default.fileExists(atPath: otherTrash.path))
+        #expect(Journal.history(r).first?.undone == false)
+    }
+
+    @Test("moved: refuses (409) when the original path exists again, and when the saved copy is gone")
+    func movedRefusals() throws {
+        let home = try TempHome()
+        let r = try roots(home)
+        let there = try home.write("work/there.txt", "new file")
+        let trash = try trashCopy(home, "there.txt", "old file")
+        let exists = try Journal.record(r, label: "exists", ops: [.moved(from: there.path, to: trash.path)])
+        let first = #expect(throws: ReinsError.self) { try Journal.undo(r, id: exists.id) }
+        #expect(first?.status == 409 && first?.message.contains("already exists again") == true)
+        #expect(try String(contentsOf: there, encoding: .utf8) == "new file")
+        #expect(try String(contentsOf: trash, encoding: .utf8) == "old file")
+
+        let gone = home.url("work/gone.txt")
+        let missing = try Journal.record(r, label: "gone", ops: [.moved(from: gone.path, to: home.url(".reins/trash/9-zzzzzzzz/gone.txt").path)])
+        let second = #expect(throws: ReinsError.self) { try Journal.undo(r, id: missing.id) }
+        #expect(second?.status == 409 && second?.message.contains("saved copy") == true)
+        #expect(!FileManager.default.fileExists(atPath: gone.path))
+        #expect(Journal.history(r).map(\.undone) == [false, false])
+    }
+
+    @Test("link-removed: refuses (409) when something exists at the path again")
+    func linkRemovedRefusal() throws {
+        let home = try TempHome()
+        let r = try roots(home)
+        let path = try home.write("skills/b", "a file now")
+        let entry = try Journal.record(r, label: "link", ops: [.linkRemoved(path: path.path, target: "/somewhere/else")])
+        let error = #expect(throws: ReinsError.self) { try Journal.undo(r, id: entry.id) }
+        #expect(error?.status == 409)
+        #expect(try String(contentsOf: path, encoding: .utf8) == "a file now")
+        #expect(Journal.history(r).first?.undone == false)
+    }
+
+    @Test("file-edited: refuses (409) when the saved copy is gone, and leaves the file as it is")
+    func fileEditedBackupGone() throws {
+        let home = try TempHome()
+        let r = try roots(home)
+        let file = try home.write("settings.json", "{\"a\":1}\n")
+        let op = JournalOp.fileEdited(
+            file: file.path, existed: true, backup: home.url(".reins/trash/1-aaaaaaaa/settings.json").path,
+            after: ContentHash.sha256Hex(Data("{\"a\":1}\n".utf8))
+        )
+        let entry = try Journal.record(r, label: "edit", ops: [op])
+        let error = #expect(throws: ReinsError.self) { try Journal.undo(r, id: entry.id) }
+        #expect(error?.status == 409 && error?.message.contains("saved copy") == true)
+        #expect(try String(contentsOf: file, encoding: .utf8) == "{\"a\":1}\n")
+        #expect(Journal.history(r).first?.undone == false)
+    }
+
+    @Test("an op type this version does not know is refused (400) before anything is reversed")
+    func unknownOpType() throws {
+        let home = try TempHome()
+        let r = try roots(home)
+        let made = try home.write("made/file.txt", "keep me").deletingLastPathComponent()
+        let mystery = JournalOp(json: .object([JSONMember("type", "teleported"), JSONMember("path", .string(made.path))]))
+        let entry = try Journal.record(r, label: "Future op", ops: [mystery, .created(path: made.path)])
+        let error = #expect(throws: ReinsError.self) { try Journal.undo(r, id: entry.id) }
+        #expect(error?.status == 400)
+        #expect(FileManager.default.fileExists(atPath: made.appendingPathComponent("file.txt").path))
+        #expect(Journal.history(r).first?.undone == false)
+        #expect(Journal.entries(r).first?.ops.first?.type == "teleported", "the foreign op is kept as written")
     }
 }

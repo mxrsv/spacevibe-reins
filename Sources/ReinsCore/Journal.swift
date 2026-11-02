@@ -110,13 +110,17 @@ public enum Journal {
     @discardableResult
     public static func record(_ roots: Roots, label: String, ops: [JournalOp]) throws -> JournalEntry {
         let entry = JournalEntry(id: UUID().uuidString.lowercased(), at: timestamp(), label: label, undone: false, ops: ops)
-        try write(roots, [entry] + entries(roots))
+        try WriteLock.run { try write(roots, [entry] + entries(roots)) }
         return entry
     }
 
     /// Reverses an entry's ops, last first, and marks it undone; returns its label.
     /// All or nothing: if one op refuses or fails, the ones already reversed are put back and the entry stays undoable.
     public static func undo(_ roots: Roots, id: String) throws -> String {
+        try WriteLock.run { try undoLocked(roots, id: id) }
+    }
+
+    private static func undoLocked(_ roots: Roots, id: String) throws -> String {
         let all = entries(roots)
         guard let entry = all.first(where: { $0.id == id }) else { throw ReinsError("That history entry is gone.", status: 404) }
         guard !entry.undone else { throw ReinsError("This was already undone.", status: 409) }
@@ -212,7 +216,11 @@ public enum Journal {
         }
         var info = stat()
         let mode = stat(file, &info) == 0 ? Int(info.st_mode & 0o777) : 0o600
-        try AtomicWrite.write(to: file, data: old, mode: mode)
+        try AtomicWrite.write(to: file, data: old, mode: mode, beforeRename: {
+            guard FileManager.default.contents(atPath: file) == now else {
+                throw ReinsError("\(file) changed while Reins was undoing, so it was left alone.", status: 409)
+            }
+        })
         return { try? AtomicWrite.write(to: file, data: now, mode: mode) }
     }
 }
