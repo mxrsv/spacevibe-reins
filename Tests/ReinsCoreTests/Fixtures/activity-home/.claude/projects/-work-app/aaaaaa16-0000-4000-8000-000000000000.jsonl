@@ -1,0 +1,1 @@
+{"type":"assistant","timestamp":"2026-11-02T11:59:52.000Z","cwd":"/work/app","sessionId":"aaaaaa16-0000-4000-8000-000000000000","message":{"id":"msg-a","model":"claude-mystery-9","content":[{"type":"tool_use","id":"a","name":"Read","input":{"file_path":"/x"}}],"usage":{"input_tokens":1000,"output_tokens":2000,"cache_creation_input_tokens":4000,"cache_read_input_tokens":10000}}}

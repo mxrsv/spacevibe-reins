@@ -1,0 +1,2 @@
+{"type":"user","timestamp":"2026-11-02T11:59:51.000Z","cwd":"/work/app","sessionId":"aaaaaaa3-0000-4000-8000-000000000000","message":{"role":"user","content":"Plan it"}}
+{"type":"assistant","timestamp":"2026-11-02T11:59:52.000Z","cwd":"/work/app","sessionId":"aaaaaaa3-0000-4000-8000-000000000000","message":{"id":"msg-q3","model":"claude-sonnet-4-6","content":[{"type":"tool_use","id":"q3","name":"AskUserQuestion","input":{"question":"Which one?"}}]}}

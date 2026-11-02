@@ -1,0 +1,1 @@
+{"type":"assistant","timestamp":"2026-11-02T11:59:53.000Z","cwd":"/work/app","sessionId":"aaaaaa17-0000-4000-8000-000000000000","message":{"id":"msg-s1","model":"claude-sonnet-4-6","content":[{"type":"tool_use","id":"s1","name":"Read","input":{"file_path":"/y"}}],"usage":{"output_tokens":1000000}},"isSidechain":true}

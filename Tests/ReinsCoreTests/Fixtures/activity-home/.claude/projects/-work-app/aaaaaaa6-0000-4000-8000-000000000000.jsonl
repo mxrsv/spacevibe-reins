@@ -1,0 +1,2 @@
+{"type":"user","timestamp":"2026-11-02T11:59:00.000Z","cwd":"/work/app","sessionId":"aaaaaaa6-0000-4000-8000-000000000000","message":{"role":"user","content":"Build the thing"}}
+{"type":"assistant","timestamp":"2026-11-02T11:59:10.000Z","cwd":"/work/app","sessionId":"aaaaaaa6-0000-4000-8000-000000000000","message":{"id":"msg-b6","model":"claude-sonnet-4-6","content":[{"type":"tool_use","id":"b6","name":"Bash","input":{"command":"sleep 1"}}]}}

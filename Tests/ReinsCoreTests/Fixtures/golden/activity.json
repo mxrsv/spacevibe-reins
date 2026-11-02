@@ -1,0 +1,925 @@
+{
+  "now": 1793620800000,
+  "shared": {
+    "sessions": [
+      {
+        "cli": "claude",
+        "id": "c0000001-0000-4000-8000-000000000000",
+        "pid": 41001,
+        "title": "Fix leaderboard rank tie",
+        "project": "spacevibe-bench",
+        "state": "running",
+        "reasonCode": null,
+        "stateReason": "Running a shell command.",
+        "currentTool": {
+          "name": "Bash",
+          "target": "pnpm test"
+        },
+        "ageMs": 1080000,
+        "lastWriteAgoMs": 2000,
+        "cost": {
+          "usd": 0.886,
+          "estimated": true
+        },
+        "costNote": null
+      },
+      {
+        "cli": "claude",
+        "id": "c0000002-0000-4000-8000-000000000000",
+        "pid": 41002,
+        "title": "2026-11-02 · c0000002",
+        "project": "spacevibe-academy",
+        "state": "waiting",
+        "reasonCode": null,
+        "stateReason": "Waiting for your answer to a question.",
+        "currentTool": {
+          "name": "AskUserQuestion",
+          "target": ""
+        },
+        "ageMs": 180000,
+        "lastWriteAgoMs": 3000,
+        "cost": {
+          "usd": 0.443,
+          "estimated": true
+        },
+        "costNote": null
+      },
+      {
+        "cli": "claude",
+        "id": "c0000003-0000-4000-8000-000000000000",
+        "pid": 41003,
+        "title": "Add rate limit to /v1/votes",
+        "project": "spacevibe-api",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 2700000,
+        "lastWriteAgoMs": 480000,
+        "cost": {
+          "usd": 1.329,
+          "estimated": true
+        },
+        "costNote": null
+      },
+      {
+        "cli": "codex",
+        "id": "a0000000-0000-4000-8000-000000000001",
+        "pid": 52001,
+        "title": "Add /v1/leaderboard cache header",
+        "project": "spacevibe-api",
+        "state": "unmeasurable",
+        "reasonCode": "codex-tool-silent",
+        "stateReason": "Codex logs nothing while a tool runs and does not record approval waits, so a long command and a wait for approval look the same.",
+        "currentTool": {
+          "name": "shell",
+          "target": "pnpm test --run"
+        },
+        "ageMs": 540000,
+        "lastWriteAgoMs": 300000,
+        "cost": {
+          "usd": 2.4,
+          "estimated": true
+        },
+        "costNote": null
+      },
+      {
+        "cli": "codex",
+        "id": "a0000000-0000-4000-8000-000000000002",
+        "pid": 52002,
+        "title": "Port the rank tie-break to a shared helper",
+        "project": "spacevibe-bench",
+        "state": "running",
+        "reasonCode": null,
+        "stateReason": "Turn in progress.",
+        "currentTool": null,
+        "ageMs": 840000,
+        "lastWriteAgoMs": 4000,
+        "cost": {
+          "usd": 4.8,
+          "estimated": true
+        },
+        "costNote": null
+      },
+      {
+        "cli": "codex",
+        "id": "pid:52003",
+        "pid": 52003,
+        "title": "2026-11-02 · pid 5200",
+        "project": null,
+        "state": "unmeasurable",
+        "reasonCode": "codex-no-rollout",
+        "stateReason": "Codex writes no log until the first prompt is sent, so this session cannot be read yet.",
+        "currentTool": null,
+        "ageMs": 120000,
+        "lastWriteAgoMs": null,
+        "cost": null,
+        "costNote": "Codex writes no log until the first prompt is sent, so this session cannot be read yet."
+      }
+    ],
+    "failures": [
+      {
+        "kind": "command",
+        "cli": "claude",
+        "key": "47abb9a41234",
+        "title": "pnpm tsc --noEmit",
+        "count": 8,
+        "exit": 2,
+        "reason": "lib/leaderboard/rank.ts(41,9): error TS2322: Type 'number | undefined' is not assignable to type 'number'.",
+        "projects": [
+          "spacevibe-bench"
+        ],
+        "sessions": 6,
+        "first": "2026-10-20T12:00:00.000Z",
+        "last": "2026-11-02T10:50:00.000Z",
+        "laterPass": "2026-11-02T11:30:00.000Z",
+        "hook": null
+      },
+      {
+        "kind": "command",
+        "cli": "claude",
+        "key": "fbd837b4d1f7",
+        "title": "git push origin main",
+        "count": 3,
+        "exit": 1,
+        "reason": "Exit 1",
+        "projects": [
+          "spacevibe-api",
+          "spacevibe-bench"
+        ],
+        "sessions": 3,
+        "first": "2026-10-28T12:00:00.000Z",
+        "last": "2026-11-01T10:00:00.000Z",
+        "laterPass": null,
+        "hook": null
+      },
+      {
+        "kind": "hook",
+        "cli": "claude",
+        "key": "6b8d44c09b19",
+        "title": "prettier --write \"$FILE\"",
+        "count": 1,
+        "exit": 1,
+        "reason": "SyntaxError in generated/schema.ts",
+        "projects": [
+          "spacevibe-bench"
+        ],
+        "sessions": 1,
+        "first": "2026-11-01T12:00:00.000Z",
+        "last": "2026-11-01T12:00:00.000Z",
+        "laterPass": null,
+        "hook": {
+          "hash": "6b8d44c09b19",
+          "event": "PostToolUse"
+        }
+      },
+      {
+        "kind": "hook",
+        "cli": "claude",
+        "key": "e7067f2456fc",
+        "title": "sh '$HOME/.claude/scripts/block-env-edit.sh'",
+        "count": 1,
+        "exit": 1,
+        "reason": "SyntaxError in generated/schema.ts",
+        "projects": [
+          "spacevibe-bench"
+        ],
+        "sessions": 1,
+        "first": "2026-11-01T12:00:00.000Z",
+        "last": "2026-11-01T12:00:00.000Z",
+        "laterPass": null,
+        "hook": {
+          "hash": "e7067f2456fc",
+          "event": "PreToolUse"
+        }
+      },
+      {
+        "kind": "command",
+        "cli": "codex",
+        "key": "230d7ce625c4",
+        "title": "curl -s localhost:3000/health",
+        "count": 3,
+        "exit": 7,
+        "reason": "curl: (7) Failed to connect to localhost port 3000",
+        "projects": [
+          "spacevibe-api"
+        ],
+        "sessions": 1,
+        "first": "2026-11-02T09:30:00.000Z",
+        "last": "2026-11-02T11:38:00.000Z",
+        "laterPass": null,
+        "hook": null
+      }
+    ],
+    "files": [
+      {
+        "path": "$HOME/work/spacevibe-academy/src/app/api/route.ts",
+        "label": "api/route.ts",
+        "edits": 1,
+        "sessions": 1,
+        "last": "2026-11-02T10:30:00.000Z",
+        "clis": [
+          "codex"
+        ],
+        "projects": [
+          "spacevibe-api"
+        ]
+      },
+      {
+        "path": "$HOME/work/spacevibe-academy/src/repositories/course.ts",
+        "label": "course.ts",
+        "edits": 24,
+        "sessions": 24,
+        "last": "2026-11-01T12:00:00.000Z",
+        "clis": [
+          "claude"
+        ],
+        "projects": [
+          "spacevibe-academy"
+        ]
+      },
+      {
+        "path": "$HOME/work/spacevibe-api/src/leaderboard/rank.ts",
+        "label": "src/leaderboard/rank.ts",
+        "edits": 25,
+        "sessions": 25,
+        "last": "2026-11-02T10:00:00.000Z",
+        "clis": [
+          "claude",
+          "codex"
+        ],
+        "projects": [
+          "spacevibe-api"
+        ]
+      },
+      {
+        "path": "$HOME/work/spacevibe-api/src/votes/route.ts",
+        "label": "votes/route.ts",
+        "edits": 1,
+        "sessions": 1,
+        "last": "2026-11-02T10:20:00.000Z",
+        "clis": [
+          "codex"
+        ],
+        "projects": [
+          "spacevibe-api"
+        ]
+      },
+      {
+        "path": "$HOME/work/spacevibe-bench/lib/leaderboard/rank.ts",
+        "label": "lib/leaderboard/rank.ts",
+        "edits": 24,
+        "sessions": 24,
+        "last": "2026-11-01T12:00:00.000Z",
+        "clis": [
+          "claude"
+        ],
+        "projects": [
+          "spacevibe-bench"
+        ]
+      }
+    ],
+    "unmeasurable": [
+      {
+        "cli": "claude",
+        "code": "claude-prompt-vs-busy",
+        "text": "Claude Code does not record permission prompts, so a long tool run and a wait for approval look the same."
+      },
+      {
+        "cli": "codex",
+        "code": "codex-tool-silent",
+        "text": "Codex logs nothing while a tool runs and does not record approval waits, so a long command and a wait for approval look the same."
+      },
+      {
+        "cli": "codex",
+        "code": "codex-no-rollout",
+        "text": "Codex writes no log until the first prompt is sent, so this session cannot be read yet."
+      },
+      {
+        "cli": "codex",
+        "code": "codex-hook-runs",
+        "text": "Codex does not log hook runs, so failed hooks are not shown for Codex."
+      }
+    ],
+    "stats": {
+      "logs": 79,
+      "truncated": 0
+    }
+  },
+  "extra": {
+    "sessions": [
+      {
+        "cli": "claude",
+        "id": "aaaaaa10-0000-4000-8000-000000000000",
+        "pid": 10,
+        "title": "2026-11-02 · aaaaaa10",
+        "project": "app",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 5000,
+        "cost": null,
+        "costNote": "No transcript found for this session."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaa11-0000-4000-8000-000000000000",
+        "pid": 11,
+        "title": "Fix the login redirect",
+        "project": "app",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 30000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaa12-0000-4000-8000-000000000000",
+        "pid": 12,
+        "title": "My renamed session",
+        "project": "app",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 30000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaa13-0000-4000-8000-000000000000",
+        "pid": 13,
+        "title": "2026-10-31 · aaaaaa13",
+        "project": "app",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 180000000,
+        "lastWriteAgoMs": 30000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaa14-0000-4000-8000-000000000000",
+        "pid": 14,
+        "title": "Work on the thing",
+        "project": "proj",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 30000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaa15-0000-4000-8000-000000000000",
+        "pid": 15,
+        "title": "go",
+        "project": "app",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 30000,
+        "cost": {
+          "usd": 0.054,
+          "estimated": true
+        },
+        "costNote": null
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaa16-0000-4000-8000-000000000000",
+        "pid": 16,
+        "title": "2026-11-02 · aaaaaa16",
+        "project": "app",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 30000,
+        "cost": null,
+        "costNote": "No price for model \"claude-mystery-9\", so no estimate."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaa17-0000-4000-8000-000000000000",
+        "pid": 17,
+        "title": "go",
+        "project": "app",
+        "state": "running",
+        "reasonCode": null,
+        "stateReason": "A tool call is open.",
+        "currentTool": {
+          "name": "Agent",
+          "target": "delegate"
+        },
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 2000,
+        "cost": {
+          "usd": 48,
+          "estimated": true
+        },
+        "costNote": null
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaa18-0000-4000-8000-000000000000",
+        "pid": 18,
+        "title": "My named session",
+        "project": "app",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 3000000,
+        "cost": null,
+        "costNote": "No transcript found for this session."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaaa1-0000-4000-8000-000000000000",
+        "pid": 1,
+        "title": "Build the thing",
+        "project": "app",
+        "state": "running",
+        "reasonCode": null,
+        "stateReason": "A tool call is open.",
+        "currentTool": {
+          "name": "Bash",
+          "target": "sleep 1"
+        },
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 1000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaaa2-0000-4000-8000-000000000000",
+        "pid": 2,
+        "title": "Build the thing",
+        "project": "app",
+        "state": "unmeasurable",
+        "reasonCode": "claude-prompt-vs-busy",
+        "stateReason": "Claude Code does not record permission prompts, so a long tool run and a wait for approval look the same.",
+        "currentTool": {
+          "name": "Bash",
+          "target": "sleep 1"
+        },
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 90000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaaa3-0000-4000-8000-000000000000",
+        "pid": 3,
+        "title": "Plan it",
+        "project": "app",
+        "state": "waiting",
+        "reasonCode": null,
+        "stateReason": "Waiting for your answer to a question.",
+        "currentTool": {
+          "name": "AskUserQuestion",
+          "target": ""
+        },
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 5000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaaa4-0000-4000-8000-000000000000",
+        "pid": 4,
+        "title": "Build the thing",
+        "project": "app",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 400000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaaa5-0000-4000-8000-000000000000",
+        "pid": 5,
+        "title": "Build the thing",
+        "project": "app",
+        "state": "running",
+        "reasonCode": null,
+        "stateReason": "Running a shell command.",
+        "currentTool": {
+          "name": "Bash",
+          "target": "sleep 1"
+        },
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 2000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaaa6-0000-4000-8000-000000000000",
+        "pid": 6,
+        "title": "Build the thing",
+        "project": "app",
+        "state": "ended",
+        "reasonCode": null,
+        "stateReason": "The process has exited.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 60000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaaa8-0000-4000-8000-000000000000",
+        "pid": 8,
+        "title": "Build the thing",
+        "project": "app",
+        "state": "ended",
+        "reasonCode": null,
+        "stateReason": "The process has exited.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 2000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "claude",
+        "id": "aaaaaaa9-0000-4000-8000-000000000000",
+        "pid": 9,
+        "title": "Build the thing",
+        "project": "app",
+        "state": "unmeasurable",
+        "reasonCode": "claude-unknown-status",
+        "stateReason": "The Claude Code status file reports a status this app does not know.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": 2000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "codex",
+        "id": "00000000-0000-4000-8000-000000000041",
+        "pid": 4041,
+        "title": "Greet user",
+        "project": "a",
+        "state": "running",
+        "reasonCode": null,
+        "stateReason": "A tool call is open.",
+        "currentTool": {
+          "name": "exec_command",
+          "target": "npm test"
+        },
+        "ageMs": 90000,
+        "lastWriteAgoMs": 2000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "codex",
+        "id": "00000000-0000-4000-8000-000000000042",
+        "pid": 4042,
+        "title": "2026-11-02 · 00000000",
+        "project": "b",
+        "state": "unmeasurable",
+        "reasonCode": "codex-tool-silent",
+        "stateReason": "Codex logs nothing while a tool runs and does not record approval waits, so a long command and a wait for approval look the same.",
+        "currentTool": {
+          "name": "exec_command",
+          "target": "npm test"
+        },
+        "ageMs": 90000,
+        "lastWriteAgoMs": 120000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "codex",
+        "id": "00000000-0000-4000-8000-000000000043",
+        "pid": 4043,
+        "title": "Hi",
+        "project": "c",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished or aborted, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 90000,
+        "lastWriteAgoMs": 70000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "codex",
+        "id": "00000000-0000-4000-8000-000000000044",
+        "pid": 4044,
+        "title": "2026-11-02 · 00000000",
+        "project": "d",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished or aborted, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 90000,
+        "lastWriteAgoMs": 60000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "codex",
+        "id": "00000000-0000-4000-8000-000000000045",
+        "pid": 4045,
+        "title": "2026-11-02 · 00000000",
+        "project": "e",
+        "state": "waiting",
+        "reasonCode": null,
+        "stateReason": "Waiting for your answer to a question.",
+        "currentTool": {
+          "name": "request_user_input",
+          "target": ""
+        },
+        "ageMs": 90000,
+        "lastWriteAgoMs": 5000,
+        "cost": null,
+        "costNote": "No token usage logged yet."
+      },
+      {
+        "cli": "codex",
+        "id": "00000000-0000-4000-8000-000000000047",
+        "pid": 4047,
+        "title": "Waiting for a rollout",
+        "project": null,
+        "state": "unmeasurable",
+        "reasonCode": "codex-no-rollout",
+        "stateReason": "Codex writes no log until the first prompt is sent, so this session cannot be read yet.",
+        "currentTool": null,
+        "ageMs": 3600000,
+        "lastWriteAgoMs": null,
+        "cost": null,
+        "costNote": "Codex writes no log until the first prompt is sent, so this session cannot be read yet."
+      },
+      {
+        "cli": "codex",
+        "id": "00000000-0000-4000-8000-000000000049",
+        "pid": 4049,
+        "title": "Compressed and live",
+        "project": "g",
+        "state": "running",
+        "reasonCode": null,
+        "stateReason": "Turn in progress.",
+        "currentTool": null,
+        "ageMs": 90000,
+        "lastWriteAgoMs": 3000,
+        "cost": {
+          "usd": 0.0225,
+          "estimated": true
+        },
+        "costNote": null
+      },
+      {
+        "cli": "codex",
+        "id": "00000000-0000-4000-8000-000000000051",
+        "pid": 4051,
+        "title": "2026-11-02 · 00000000",
+        "project": "i",
+        "state": "idle",
+        "reasonCode": null,
+        "stateReason": "Turn finished or aborted, waiting for the next prompt.",
+        "currentTool": null,
+        "ageMs": 90000,
+        "lastWriteAgoMs": 60000,
+        "cost": null,
+        "costNote": "No price for model \"gpt-6-unlisted\", so no estimate."
+      },
+      {
+        "cli": "codex",
+        "id": "pid:4048",
+        "pid": 4048,
+        "title": "unknown date · pid 4048",
+        "project": null,
+        "state": "unmeasurable",
+        "reasonCode": "codex-no-rollout",
+        "stateReason": "Codex writes no log until the first prompt is sent, so this session cannot be read yet.",
+        "currentTool": null,
+        "ageMs": null,
+        "lastWriteAgoMs": null,
+        "cost": null,
+        "costNote": "Codex writes no log until the first prompt is sent, so this session cannot be read yet."
+      }
+    ],
+    "failures": [
+      {
+        "kind": "command",
+        "cli": "claude",
+        "key": "24a805fc88a7",
+        "title": "touch /nonexistent-reins-marker/must-not-exist && false",
+        "count": 1,
+        "exit": 1,
+        "reason": "Exit 1",
+        "projects": [
+          "app-a"
+        ],
+        "sessions": 1,
+        "first": "2026-11-02T11:46:00.000Z",
+        "last": "2026-11-02T11:46:00.000Z",
+        "laterPass": null,
+        "hook": null
+      },
+      {
+        "kind": "command",
+        "cli": "claude",
+        "key": "349cabecfcc8",
+        "title": "make deploy",
+        "count": 1,
+        "exit": 2,
+        "reason": "make: *** Error 2",
+        "projects": [
+          "app-a"
+        ],
+        "sessions": 1,
+        "first": "2026-11-02T11:31:00.000Z",
+        "last": "2026-11-02T11:31:00.000Z",
+        "laterPass": null,
+        "hook": null
+      },
+      {
+        "kind": "command",
+        "cli": "claude",
+        "key": "3e55bc153773",
+        "title": "pnpm lint",
+        "count": 1,
+        "exit": 1,
+        "reason": "error: bad",
+        "projects": [
+          "app-a"
+        ],
+        "sessions": 1,
+        "first": "2026-11-02T11:13:00.000Z",
+        "last": "2026-11-02T11:13:00.000Z",
+        "laterPass": "2026-11-02T11:29:00.000Z",
+        "hook": null
+      },
+      {
+        "kind": "command",
+        "cli": "claude",
+        "key": "cefb9267289f",
+        "title": "npm test",
+        "count": 3,
+        "exit": 1,
+        "reason": "Error: boom in suite",
+        "projects": [
+          "app-a",
+          "app-b"
+        ],
+        "sessions": 2,
+        "first": "2026-11-02T11:11:00.000Z",
+        "last": "2026-11-02T11:56:00.000Z",
+        "laterPass": null,
+        "hook": null
+      },
+      {
+        "kind": "hook",
+        "cli": "claude",
+        "key": "b6281fd23a26",
+        "title": "sh /h/check.sh",
+        "count": 2,
+        "exit": 1,
+        "reason": "check failed",
+        "projects": [
+          "app-a"
+        ],
+        "sessions": 1,
+        "first": "2026-11-02T11:15:00.000Z",
+        "last": "2026-11-02T11:35:00.000Z",
+        "laterPass": null,
+        "hook": {
+          "hash": "b6281fd23a26",
+          "event": "Stop"
+        }
+      },
+      {
+        "kind": "command",
+        "cli": "codex",
+        "key": "100ccf5605ae",
+        "title": "npm run build",
+        "count": 2,
+        "exit": 1,
+        "reason": "error: boom again",
+        "projects": [
+          "app-a"
+        ],
+        "sessions": 1,
+        "first": "2026-11-02T09:00:01.000Z",
+        "last": "2026-11-02T09:00:02.000Z",
+        "laterPass": null,
+        "hook": null
+      }
+    ],
+    "files": [
+      {
+        "path": "/work/app-a/README.md",
+        "label": "README.md",
+        "edits": 1,
+        "sessions": 1,
+        "last": "2026-11-02T11:09:00.000Z",
+        "clis": [
+          "claude"
+        ],
+        "projects": [
+          "app-a"
+        ]
+      },
+      {
+        "path": "/work/app-a/a.ts",
+        "label": "a.ts",
+        "edits": 1,
+        "sessions": 1,
+        "last": "2026-11-02T09:00:03.000Z",
+        "clis": [
+          "codex"
+        ],
+        "projects": [
+          "app-a"
+        ]
+      },
+      {
+        "path": "/work/app-a/src/rank.ts",
+        "label": "app-a/src/rank.ts",
+        "edits": 3,
+        "sessions": 2,
+        "last": "2026-11-02T11:07:00.000Z",
+        "clis": [
+          "claude",
+          "codex"
+        ],
+        "projects": [
+          "app-a"
+        ]
+      },
+      {
+        "path": "/work/app-b/src/rank.ts",
+        "label": "app-b/src/rank.ts",
+        "edits": 1,
+        "sessions": 1,
+        "last": "2026-11-02T11:50:00.000Z",
+        "clis": [
+          "claude"
+        ],
+        "projects": [
+          "app-b"
+        ]
+      }
+    ],
+    "unmeasurable": [
+      {
+        "cli": "claude",
+        "code": "claude-prompt-vs-busy",
+        "text": "Claude Code does not record permission prompts, so a long tool run and a wait for approval look the same."
+      },
+      {
+        "cli": "codex",
+        "code": "codex-tool-silent",
+        "text": "Codex logs nothing while a tool runs and does not record approval waits, so a long command and a wait for approval look the same."
+      },
+      {
+        "cli": "codex",
+        "code": "codex-no-rollout",
+        "text": "Codex writes no log until the first prompt is sent, so this session cannot be read yet."
+      },
+      {
+        "cli": "codex",
+        "code": "codex-hook-runs",
+        "text": "Codex does not log hook runs, so failed hooks are not shown for Codex."
+      }
+    ],
+    "stats": {
+      "logs": 32,
+      "truncated": 0
+    }
+  }
+}

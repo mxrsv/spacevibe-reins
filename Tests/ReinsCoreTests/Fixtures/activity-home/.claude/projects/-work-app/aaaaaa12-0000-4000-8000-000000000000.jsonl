@@ -1,0 +1,3 @@
+{"type":"custom-title","customTitle":"My renamed session","sessionId":"aaaaaa12-0000-4000-8000-000000000000"}
+{"type":"ai-title","aiTitle":"Generated one","sessionId":"aaaaaa12-0000-4000-8000-000000000000"}
+{"type":"user","timestamp":"2026-11-02T11:59:52.000Z","cwd":"/work/app","sessionId":"aaaaaa12-0000-4000-8000-000000000000","message":{"role":"user","content":"hello there"}}
