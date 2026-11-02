@@ -1,0 +1,79 @@
+{
+  "currency": "USD",
+  "unit": "per million tokens",
+  "basis": "Standard API-equivalent estimate; excludes fast mode, regional uplifts, long-context tiers and subscription billing. Models requiring unobserved tier information are intentionally unpriced.",
+  "models": {
+    "claude-opus-5-5": {
+      "input": 4,
+      "output": 20,
+      "cacheWrite": 5,
+      "cacheWriteLong": 8,
+      "cacheRead": 0.2,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "fetchedAt": "2026-10-24"
+    },
+    "claude-sonnet-5-5": {
+      "input": 2,
+      "output": 10,
+      "cacheWrite": 2.5,
+      "cacheWriteLong": 4,
+      "cacheRead": 0.1,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "fetchedAt": "2026-10-24"
+    },
+    "claude-opus-4-6": {
+      "input": 5,
+      "output": 25,
+      "cacheWrite": 6.25,
+      "cacheWriteLong": 10,
+      "cacheRead": 0.5,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "fetchedAt": "2026-10-24"
+    },
+    "claude-sonnet-4-6": {
+      "input": 3,
+      "output": 15,
+      "cacheWrite": 3.75,
+      "cacheWriteLong": 6,
+      "cacheRead": 0.3,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "fetchedAt": "2026-10-24"
+    },
+    "claude-haiku-4-5": {
+      "input": 1,
+      "output": 5,
+      "cacheWrite": 1.25,
+      "cacheWriteLong": 2,
+      "cacheRead": 0.1,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "fetchedAt": "2026-10-24"
+    },
+    "gpt-6-astra": {
+      "input": 10,
+      "output": 50,
+      "cacheWrite": 12.5,
+      "cacheWriteLong": 25,
+      "cacheRead": 1,
+      "source": "https://developers.openai.com/api/docs/pricing",
+      "fetchedAt": "2026-10-24"
+    },
+    "gpt-6.1-sol": {
+      "input": 2,
+      "output": 10,
+      "cacheWrite": 2.5,
+      "cacheWriteLong": 5,
+      "cacheRead": 0.1,
+      "source": "https://developers.openai.com/api/docs/pricing",
+      "fetchedAt": "2026-10-24"
+    },
+    "gpt-6-luna": {
+      "input": 0.1,
+      "output": 0.5,
+      "cacheWrite": 0.125,
+      "cacheWriteLong": 0.25,
+      "cacheRead": 0.01,
+      "source": "https://developers.openai.com/api/docs/pricing",
+      "fetchedAt": "2026-10-24"
+    }
+  }
+}
