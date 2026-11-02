@@ -27,6 +27,16 @@ public enum LogFiles {
         return nil
     }
 
+    /// `"<size>:<floor(mtime ms)>"`, the stamp the usage cache and the token ledger compare to tell a changed log, and the
+    /// mtime in ms. Nil when the log cannot be statted.
+    public static func stamp(of url: URL) -> (stamp: String, mtimeMs: Int64)? {
+        var info = stat()
+        guard stat(url.path, &info) == 0 else { return nil }
+        let mtime = modificationTime(info)
+        let mtimeMs = Int64(mtime.tv_sec) * 1000 + Int64(mtime.tv_nsec) / 1_000_000
+        return ("\(Int64(info.st_size)):\(mtimeMs)", mtimeMs)
+    }
+
     /// Every log under `directory`, sorted by path. When a session exists in both forms in one folder, only the plain
     /// `.jsonl` is listed: it is the one still written. Symlinks are not followed. A folder that cannot be read counts as empty.
     public static func walk(_ directory: URL) -> [URL] {
