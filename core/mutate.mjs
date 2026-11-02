@@ -1,12 +1,12 @@
 // Every write lives here. Each action records a journal entry so it can be undone, and
 // removed files move to the app's own trash instead of being deleted.
 import { execFile } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
-  cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync,
+  chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync,
   renameSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync,
 } from 'node:fs';
-import { basename, join, resolve, sep } from 'node:path';
+import { basename, dirname, join, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
 import { EVENTS, frontmatter, readInventory, tomlFields } from './inventory.mjs';
 
@@ -37,7 +37,7 @@ function writeJournal(r, entries) {
   writeFileSync(`${path}.tmp`, JSON.stringify(entries.slice(0, JOURNAL_LIMIT), null, 2), { mode: 0o600 });
   renameSync(`${path}.tmp`, path);
 }
-function record(r, label, ops) {
+export function record(r, label, ops) {
   const entry = { id: randomUUID(), at: new Date().toISOString(), label, ops };
   writeJournal(r, [entry, ...readJournal(r)]);
   return entry;
@@ -79,6 +79,40 @@ function updateJson(r, file, change) {
   const tmp = `${real}.reins-${process.pid}.tmp`;
   writeFileSync(tmp, `${JSON.stringify(nextConfig, null, 2)}\n`, { mode });
   renameSync(tmp, real);
+}
+
+const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
+
+// Writes bytes next to the target and renames over it, so a reader never sees half a file.
+// `validate` gets the text read back from the temp file; throwing aborts before the rename.
+function atomicWrite(real, data, mode, validate) {
+  const tmp = `${real}.reins-${process.pid}.tmp`;
+  try {
+    rmSync(tmp, { force: true });
+    writeFileSync(tmp, data, { mode, flag: 'wx' });
+    chmodSync(tmp, mode);
+    if (validate) validate(readFileSync(tmp, 'utf8'));
+    renameSync(tmp, real);
+  } catch (e) {
+    rmSync(tmp, { force: true });
+    throw e;
+  }
+}
+
+// Text-file edit for permission rules. `change(text | null)` returns the next text; returning
+// the same text is a no-op (null result). The previous bytes go to the app's trash and the
+// returned op lets undo put back exactly those bytes, or remove a file this edit created.
+export function editFile(r, file, change, { validate } = {}) {
+  const real = existsSync(file) ? realpathSync(file) : file;
+  const existed = existsSync(real);
+  const before = existed ? readFileSync(real, 'utf8') : null;
+  const next = change(before);
+  if (next === before) return null;
+  const mode = existed ? statSync(real).mode & 0o777 : 0o600;
+  let backup = null;
+  if (existed) { backup = trashSlot(r, basename(real)); cpSync(real, backup); } else mkdirSync(dirname(real), { recursive: true });
+  atomicWrite(real, next, mode, validate);
+  return { type: 'file-edited', file: real, existed, backup, after: sha256(Buffer.from(next)) };
 }
 
 const sameGroup = (g, matcher) => (g.matcher ?? null) === (matcher ?? null);
@@ -260,6 +294,13 @@ function undoOp(r, op) {
     case 'hook-removed':
       updateJson(r, op.file, (cfg) => withHook(cfg, { event: op.event, matcher: op.matcher, hook: op.hook }));
       return;
+    case 'file-edited': {
+      const now = existsSync(op.file) ? readFileSync(op.file) : null;
+      need(now && sha256(now) === op.after, `${op.file} changed since this edit, so it was left alone.`, 409);
+      if (op.existed) atomicWrite(op.file, readFileSync(op.backup), statSync(op.file).mode & 0o777);
+      else moveToTrash(r, op.file);
+      return;
+    }
     default:
       throw new UserError('Unknown history entry.');
   }
