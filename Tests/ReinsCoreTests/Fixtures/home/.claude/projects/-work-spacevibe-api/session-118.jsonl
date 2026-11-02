@@ -14,3 +14,4 @@
 {"type":"attachment","timestamp":"2026-10-26T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"Stop","command":"sh '$HOME/.claude/scripts/notify-done.sh'","durationMs":58,"exitCode":0,"stderr":""}}
 {"type":"assistant","timestamp":"2026-10-26T12:00:00.000Z","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_118_edit","name":"Edit","input":{"file_path":"$HOME/work/spacevibe-api/src/leaderboard/rank.ts"}}]}}
 {"type":"user","timestamp":"2026-10-26T12:00:00.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_118_edit","content":"ok"}]}}
+{"type":"assistant","timestamp":"2026-10-26T12:00:00.000Z","cwd":"$HOME/work/spacevibe-api","sessionId":"session-118","message":{"id":"msg_fixture_118","model":"claude-sonnet-4-6","role":"assistant","content":[{"type":"text","text":"Done."}],"usage":{"input_tokens":3326,"output_tokens":56520,"cache_creation_input_tokens":282600,"cache_read_input_tokens":6978000}}}

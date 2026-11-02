@@ -29,6 +29,14 @@ public enum Pricing {
         "gpt-6-luna": ModelPrice(input: 0.1, output: 0.5, cacheWrite: 0.125, cacheWriteLong: 0.25, cacheRead: 0.01),
     ]
 
+    /// The day each row was read from its vendor's page (`fetchedAt` in core/pricing.json), for the price table the
+    /// Tokens tab shows.
+    public static let fetchedAt: [String: String] = [
+        "claude-opus-5-5": "2026-10-24", "claude-sonnet-5-5": "2026-10-24", "claude-fable-5-1": "2026-11-03", "claude-opus-5": "2026-11-03",
+        "claude-opus-4-6": "2026-10-24", "claude-sonnet-4-6": "2026-10-24", "claude-haiku-4-5": "2026-10-24",
+        "gpt-6-astra": "2026-10-24", "gpt-6.1-sol": "2026-10-24", "gpt-6-luna": "2026-10-24",
+    ]
+
     /// The price for a model name as logged: exact match first, then without a trailing `[1m]`-style suffix and a `-YYYYMMDD` date.
     public static func price(for model: String, in table: [String: ModelPrice] = Pricing.models) -> ModelPrice? {
         if let exact = table[model] { return exact }

@@ -183,6 +183,7 @@ function claudeLogsSection(ctx) {
     const eid = `toolu_${i}_edit`;
     lines.push(line({ type: 'assistant', timestamp: at, message: { role: 'assistant', content: [{ type: 'tool_use', id: eid, name: 'Edit', input: { file_path: edited } }] } }));
     lines.push(line({ type: 'user', timestamp: at, message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: eid, content: 'ok' }] } }));
+    lines.push(claudeUsageLine(i, at, join(work, project)));
     const file = join(claude, 'projects', `-work-${project}`, `session-${String(i).padStart(3, '0')}.jsonl`);
     put(file, `${lines.join('\n')}\n`);
     const mtime = new Date(at);
@@ -199,11 +200,40 @@ function codexLogsSection(ctx) {
     const call = (args) => lines.push(line({ timestamp: at, type: 'response_item', payload: { type: 'function_call', name: 'shell', arguments: JSON.stringify(args), call_id: `c${i}_${lines.length}` } }));
     for (const [name, , , runs] of SKILLS) if (runs !== null && i < runs) call({ command: ['bash', '-lc', `cat ${codex}/skills/${name}/SKILL.md`] });
     for (const [name, , , runs] of AGENTS) if (runs !== null && i < runs) lines.push(line({ timestamp: at, type: 'response_item', payload: { type: 'function_call', name: 'spawn_agent', arguments: JSON.stringify({ agent_type: name }), call_id: `a${i}` } }));
+    lines.push(...codexUsageLines(i, at));
     const file = join(codex, 'sessions', at.slice(0, 4), at.slice(5, 7), `rollout-${String(i).padStart(3, '0')}.jsonl`);
     put(file, `${lines.join('\n')}\n`);
     const mtime = new Date(at);
     utimesSync(file, mtime, mtime);
   }
+}
+
+// Tokens: one usage record per session, so the Tokens board has 28 days of both CLIs, several models (one of each CLI
+// with no price) and one day far above the rest. Made-up numbers from a fixed sequence; no skill, agent or hook is named.
+const spread = (i) => ((i * 7919) % 1000) / 1000;
+const CLAUDE_MODELS = ['claude-opus-5-5', 'claude-opus-5-5', 'claude-opus-5-5', 'claude-opus-5-5', 'claude-opus-5-5', 'claude-opus-5-5',
+  'claude-sonnet-5-5', 'claude-sonnet-5-5', 'claude-sonnet-4-6', 'claude-haiku-5-5'];
+const CODEX_MODELS = ['gpt-6-astra', 'gpt-6-astra', 'gpt-6-astra', 'gpt-6-astra', 'gpt-6-astra', 'gpt-6.1-sol', 'gpt-6-luna', 'gpt-5.6-sol'];
+const TOKEN_SPIKE = 4; // the Claude session four days back: its day is cut on the By day axis
+
+function claudeUsageLine(i, at, cwd) {
+  const r = spread(i);
+  const k = i === TOKEN_SPIKE ? 40 : 1;
+  const usage = {
+    input_tokens: Math.round((2000 + 3000 * r) * k), output_tokens: Math.round((30_000 + 60_000 * r) * k),
+    cache_creation_input_tokens: Math.round((150_000 + 300_000 * r) * k), cache_read_input_tokens: Math.round((3_000_000 + 9_000_000 * r) * k),
+  };
+  return line({ type: 'assistant', timestamp: at, cwd, sessionId: `session-${i}`, message: { id: `msg_fixture_${i}`, model: CLAUDE_MODELS[i % CLAUDE_MODELS.length], role: 'assistant', content: [{ type: 'text', text: 'Done.' }], usage } });
+}
+
+function codexUsageLines(i, at) {
+  const r = spread(i + 31);
+  const input = Math.round(800_000 + 1_600_000 * r);
+  const usage = { input_tokens: input, cached_input_tokens: Math.round(input * 0.86), output_tokens: Math.round(20_000 + 40_000 * r), reasoning_output_tokens: 0 };
+  return [
+    line({ timestamp: at, type: 'turn_context', payload: { model: CODEX_MODELS[i % CODEX_MODELS.length] } }),
+    line({ timestamp: at, type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: usage, last_token_usage: usage } } }),
+  ];
 }
 
 // Loadout: project-level skills, agents and hooks (read-only in the UI), so the Scope select has a project to show.

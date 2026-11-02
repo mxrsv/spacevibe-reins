@@ -24,6 +24,10 @@ enum ShotRenderer {
                 try RulesShots.run(into: directory)
                 exit(0)
             }
+            if TokensShots.isRequested() {
+                try TokensShots.run(into: directory)
+                exit(0)
+            }
             if ActivityShots.isRequested() {
                 try ActivityShots.run(into: directory)
                 exit(0)

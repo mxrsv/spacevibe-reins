@@ -11,6 +11,10 @@ public struct TokenScanResult: Equatable, Sendable {
     public var files: Int
     /// Logs that could not be read to the end this time (their earlier rows, if any, stay).
     public var unreadable: Int
+
+    public init(ledger: TokenLedger, movedAside: String? = nil, notSaved: String? = nil, files: Int, unreadable: Int = 0) {
+        self.ledger = ledger; self.movedAside = movedAside; self.notSaved = notSaved; self.files = files; self.unreadable = unreadable
+    }
 }
 
 /// Folds token usage of every log into the ledger and saves it. An actor, so a first scan of gigabytes never runs on the

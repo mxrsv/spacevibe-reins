@@ -18,7 +18,9 @@ struct ActivityPricingTests {
             #expect(rate("cacheWrite") == price.cacheWrite, "\(name) cacheWrite")
             #expect(rate("cacheWriteLong") == price.cacheWriteLong, "\(name) cacheWriteLong")
             #expect(rate("cacheRead") == price.cacheRead, "\(name) cacheRead")
+            #expect(row["fetchedAt"] as? String == Pricing.fetchedAt[name], "\(name) fetchedAt")
         }
+        #expect(Set(Pricing.fetchedAt.keys) == Set(Pricing.models.keys))
     }
 
     @Test("a model priced by prompt length, or not confirmed on its vendor's page, has no price on purpose")
