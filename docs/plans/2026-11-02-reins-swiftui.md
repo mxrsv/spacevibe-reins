@@ -77,6 +77,13 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 - [ ] S5 Rules: capability grid with confirm sheet, expandable concrete rules, scope selector, rule list with add, remove and change verdict, read-only Codex group and the unrestricted state. Eye approval.
 - [ ] S6 Activity: lanes per CLI, sessions, failures, file history, unmeasurable reasons on hover, Stop with confirmation, honest loading state while the first wide read runs. Eye approval.
 
+### Phase S6T: Tokens tab (added to the spec 2026-11-03, after S2 and S3)
+
+- [ ] S6T.1 Direction: the owner picks one layout from the click-through mocks in `~/scratch/spacevibe-reins/` (`tokens-*.html`) and the spec records it. No UI code before this.
+- [ ] S6T.2 `TokenLedger` in `ReinsCore`: fold token usage per hour, CLI, model and project using the same deduplication as Activity; normalize Codex input; persist the rollup under the app's data folder with mode 0600 and merge on rescan so a vanished log keeps its past days (unlike the usage cache, which drops entries for missing files, see `core/usage.mjs` `scan`). Tests against `TempHome`, including AC8.
+- [ ] S6T.3 Screen for the picked direction with loading, empty and unpriced-model states. Screenshots to `~/scratch/spacevibe-reins/shots/`.
+- [ ] S6T.4 AC7: compare with TokenTracker's `~/.tokentracker/tracker/queue.jsonl` on the owner's Mac, per local day, CLI and field; record the differences and causes here. Read-only, and the comparison output stays out of git.
+
 ### Phase S7: package
 
 - [ ] S7.1 `build-app.sh`: release build, bundle, Developer ID signature, hardened runtime, verification output; notarization is release work.
@@ -84,7 +91,7 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 
 ### Phase S8: accept and cut over
 
-- [ ] S8.1 AC5: run the packaged app with the network off and open all three tabs.
+- [ ] S8.1 AC5: run the packaged app with the network off and open all four tabs.
 - [ ] S8.2 AC1: the owner times the permission task (find, remove, undo) under one minute.
 - [ ] S8.3 Parity reached: delete `core/`, `electron/`, the Electron renderer, `e2e/`, the Node build files and the Electron lines in `AGENTS.md` and `README.md`/`CHANGELOG.md` where they exist (D8, D12), after the owner agrees. Mark this plan historical (D1).
 
@@ -97,12 +104,14 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 | AC3 tests never touch the real config | S1.3 guard, every `ReinsCore` test |
 | AC4 a running session of each CLI, limits stated | S2.5, S6 |
 | AC5 offline | S8.1 |
-| AC6 owner approves the UI by eye | S3.3, S4, S5, S6 |
+| AC6 owner approves the UI by eye | S3.3, S4, S5, S6, S6T.3 |
+| AC7 Tokens matches TokenTracker | S6T.4 |
+| AC8 history survives a deleted log | S6T.2 |
 
 ## Action needed from the owner
 
 - S0.5 and the signal checks of S0.4: run a real `claude` and `codex` session (needs your logins).
-- Eye approval at S3.3, S4, S5, S6 and the AC1 timing at S8.2.
+- Eye approval at S3.3, S4, S5, S6, S6T.3, the direction pick at S6T.1 and the AC1 timing at S8.2.
 - Tell any other session still working in this repository that the platform changed; commits to `main` on Electron after this point are reference only.
 
 ## Handoff
@@ -111,4 +120,4 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 - Known facts carried over: Codex permission schema, live-state findings, hook error root cause, Rules mapping table and capability semantics are in the Electron plan's task evidence; `core/` is the behavior reference including `stopSession` and compressed Codex logs.
 - Remaining: everything above.
 
-`/goal` Deliver the native SwiftUI Reins per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-02-reins-swiftui.md phases S0 to S8 so that AC1 to AC6 hold, with the Swift core matching the Node goldens, tests running only against temp HOME, every UI phase approved by the owner by eye and each task's evidence recorded under it; stop and ask at owner-only steps, at deletion of the Node and Electron code, and before any push, merge or release.
+`/goal` Deliver the native SwiftUI Reins per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-02-reins-swiftui.md phases S0 to S8 so that AC1 to AC8 hold, with the Swift core matching the Node goldens, tests running only against temp HOME, every UI phase approved by the owner by eye and each task's evidence recorded under it; stop and ask at owner-only steps, at deletion of the Node and Electron code, and before any push, merge or release.
