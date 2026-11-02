@@ -3,3 +3,5 @@ node_modules/
 shots/
 .env
 .env.local
+out/
+release/
