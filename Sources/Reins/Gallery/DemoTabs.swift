@@ -1,0 +1,131 @@
+import SwiftUI
+
+/// Three tabs with made-up content and counts, built only from the shared views. They stand in for the real
+/// screens in screenshots so the shell is judged with realistic rows. Never registered in `TabRegistry`.
+@MainActor
+enum DemoTabs {
+    static func make() -> [any ReinsTab] { [DemoLoadoutTab(), DemoRulesTab(), DemoActivityTab()] }
+}
+
+@MainActor
+final class DemoLoadoutTab: ReinsTab {
+    let id = "loadout"
+    let title = "Loadout"
+    let systemImage = "square.stack.3d.up"
+    var badge: TabBadge? { TabBadge(value: 22) }
+    var hints: [KeyHint] { [KeyHint(keys: "Tab", label: "Row actions")] }
+    var paletteItems: [PaletteEntry] {
+        ["ponytail", "impeccable", "review-change", "skill-creator"].map { name in
+            PaletteEntry(id: "demo.skill.\(name)", title: name, systemImage: "sparkles", keywords: ["skill"]) {}
+        }
+    }
+    var paletteActions: [PaletteEntry] {
+        [PaletteEntry(id: "demo.rescan", title: "Rescan usage", systemImage: "arrow.clockwise") {}]
+    }
+    var content: AnyView { AnyView(DemoLoadoutScreen()) }
+}
+
+@MainActor
+final class DemoRulesTab: ReinsTab {
+    let id = "rules"
+    let title = "Rules"
+    let systemImage = "checkmark.shield"
+    var badge: TabBadge? { TabBadge(value: 11) }
+    var hints: [KeyHint] { [KeyHint(keys: "Space", label: "Set Allow, Ask or Deny")] }
+    var content: AnyView { AnyView(DemoRulesScreen()) }
+}
+
+@MainActor
+final class DemoActivityTab: ReinsTab {
+    let id = "activity"
+    let title = "Activity"
+    let systemImage = "waveform.path.ecg"
+    var badge: TabBadge? { TabBadge(value: 2, alert: true, spoken: "2 sessions running") }
+    var hints: [KeyHint] { [KeyHint(keys: "Tab", label: "Why a state is what it is")] }
+    var content: AnyView { AnyView(DemoActivityScreen()) }
+}
+
+private struct DemoLoadoutScreen: View {
+    @State private var filter = "all"
+
+    var body: some View {
+        PageLayout {
+            HStack(spacing: 6) {
+                FilterChip("All", count: 22, isOn: filter == "all") { filter = "all" }
+                FilterChip("In one CLI only", count: 16, isOn: filter == "one") { filter = "one" }
+                FilterChip("Never ran", count: 5, isOn: filter == "never") { filter = "never" }
+                FilterChip("Dead", count: 2, isOn: filter == "dead") { filter = "dead" }
+                Spacer(minLength: 0)
+                Text("Counted from 146 Claude Code and 34 Codex sessions since 2026-10-05")
+                    .font(ReinsFont.small)
+                    .foregroundStyle(Palette.textTertiary)
+            }
+        } content: {
+            DemoLoadoutList()
+        }
+    }
+}
+
+private struct DemoRulesScreen: View {
+    @State private var scope = "global"
+    @State private var push = "ask"
+
+    var body: some View {
+        PageLayout {
+            SegmentedControl(label: "Scope", options: [
+                SegmentOption("Global", value: "global"),
+                SegmentOption("Project", value: "project", count: 3),
+            ], selection: $scope)
+        } content: {
+            GroupedList {
+                HeadRow("What the agent may do") {
+                    CLIColumnHead(.claude)
+                    CLIColumnHead(.codex)
+                }
+                ForEach(["Read files", "Edit files", "Run commands"], id: \.self) { name in
+                    Row { RowText(name) }
+                        .cells {
+                            SegmentedControl(label: "\(name), Claude Code", options: [
+                                SegmentOption("Allow", value: "allow"),
+                                SegmentOption("Ask", value: "ask"),
+                                SegmentOption("Deny", value: "deny"),
+                            ], selection: .constant("allow"))
+                            .frame(width: Metrics.usageCellWidth, alignment: .leading)
+                            Text("no setting").foregroundStyle(Palette.textTertiary)
+                                .frame(width: Metrics.usageCellWidth, alignment: .leading)
+                        }
+                }
+                Row { RowText("Push and deploy") }
+                    .cells {
+                        SegmentedControl(label: "Push and deploy, Claude Code", options: [
+                            SegmentOption("Allow", value: "allow"),
+                            SegmentOption("Ask", value: "ask"),
+                            SegmentOption("Deny", value: "deny"),
+                        ], selection: $push)
+                        .frame(width: Metrics.usageCellWidth, alignment: .leading)
+                        Tag("workspace only", tone: .neutral)
+                            .frame(width: Metrics.usageCellWidth, alignment: .leading)
+                    }
+            }
+        }
+    }
+}
+
+private struct DemoActivityScreen: View {
+    var body: some View {
+        PageLayout {
+            Banner(.warn, message: "Codex does not record permission prompts", detail: "A long command and a wait for approval look the same.")
+        } content: {
+            GroupLabel("Running", count: 2) { CLIDot(.claude, decorative: true) }
+            GroupedList {
+                Row { RowText("Fix leaderboard rank tie", subtitle: "demo-bench \u{00B7} Bash \u{00B7} 18 min") }
+                    .lead { CLIDot(.claude) }
+                    .cells { Tag("running", tone: .claude) }
+                Row { RowText("Add cache header", subtitle: "demo-api \u{00B7} 9 min") }
+                    .lead { CLIDot(.codex) }
+                    .cells { Tag("running", tone: .codex) }
+                EmptyRow("No failed commands in the last 14 days.")
+            }
+        }
+    }
+}
