@@ -104,7 +104,7 @@ Phases 1 to 4 can start now. Phase 5 waits on the decision above (0.1 is done). 
 
 ### Phase 7: package and accept
 
-- [ ] 7.1 Build a macOS package with electron-builder; `core/` unpacked from the asar; no auto-updater. Signing and notarization are release work, not in this plan.
+- [x] 7.1 Build a macOS package with electron-builder; `core/` unpacked from the asar; no auto-updater. Signing and notarization are release work, not in this plan. Done 2026-11-02: `npm run pack` builds `release/mac-arm64/Reins.app`, its headless test mode passes, and its bundled Node 24.22.1 reads `.jsonl.zst` through the unpacked `core/log-files.mjs`.
 - [ ] 7.2 Playwright `_electron` e2e with temp `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `REINS_HOME`; the 1.4 guard is on. Cover Loadout, Rules and Activity flows and Undo.
 - [ ] 7.3 AC5: run the packaged app with the network off and open all three tabs.
 - [ ] 7.4 AC1: owner times the permission task (find, remove, undo) under one minute.
@@ -148,6 +148,6 @@ Built by parallel subagents; the orchestrator re-ran `npm run typecheck`, `npm t
 
 - Checkout: `main`; the UI (3.x, 4.2, 5.2, 6.2, 6.3, 6.5) and its IPC stay uncommitted in the working tree until eye approval. `mocks/` stays untracked.
 - Mock for the chosen direction: `~/scratch/spacevibe-reins/b-matrix.html` (outside the repo).
-- Remaining: owner eye approval (3.3, 4.4, 5.3, 6.4), 0.2, the Rules-grid decision, 1.2 lint script, Phase 7.
+- Remaining: owner eye approval (3.3, 4.4, 5.3, 6.4), 0.2, the Rules-grid decision, 1.2 lint script, 7.2 to 7.5.
 
 `/goal` Deliver the Reins Electron app per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-02-reins-electron.md phases 0 to 7 so that AC1 to AC6 hold, with every UI phase approved by the owner by eye, tests running only against temp HOME, and each task's evidence recorded under it; stop and ask at the Rules-grid decision, at owner-only steps, and before any push, merge or release.
