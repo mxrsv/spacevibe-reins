@@ -10,19 +10,31 @@ public struct ModelPrice: Equatable, Sendable {
 }
 
 /// The estimate-only price table. It is a Swift literal, not a bundled JSON file, so ReinsCore needs no resource bundle.
-/// A test compares it with core/pricing.json (fetched 2026-10-24 from https://platform.claude.com/docs/en/about-claude/pricing
-/// for Claude; the GPT rows follow the same file). Models that need tier information nobody observed are left out on purpose:
-/// no price means no estimate (`nil`), never a guess.
+/// A test compares it with core/pricing.json, which records the source and `fetchedAt` of every row: Claude from
+/// https://platform.claude.com/docs/en/about-claude/pricing (2026-10-24; `claude-fable-5-1` and `claude-opus-5` on
+/// 2026-11-03), the GPT rows from https://developers.openai.com/api/docs/pricing (2026-10-24). Models that need tier
+/// information the logs do not keep are left out on purpose (`claude-haiku-5-5` is priced by each request's prompt
+/// length), and so is any model not confirmed on its vendor's page: no price means no estimate (`nil`), never a guess.
 public enum Pricing {
     public static let models: [String: ModelPrice] = [
         "claude-opus-5-5": ModelPrice(input: 4.0, output: 20.0, cacheWrite: 5.0, cacheWriteLong: 8.0, cacheRead: 0.2),
         "claude-sonnet-5-5": ModelPrice(input: 2.0, output: 10.0, cacheWrite: 2.5, cacheWriteLong: 4.0, cacheRead: 0.1),
+        "claude-fable-5-1": ModelPrice(input: 10.0, output: 50.0, cacheWrite: 12.5, cacheWriteLong: 20.0, cacheRead: 0.25),
+        "claude-opus-5": ModelPrice(input: 5.0, output: 25.0, cacheWrite: 6.25, cacheWriteLong: 10.0, cacheRead: 0.5),
         "claude-opus-4-6": ModelPrice(input: 5.0, output: 25.0, cacheWrite: 6.25, cacheWriteLong: 10.0, cacheRead: 0.5),
         "claude-sonnet-4-6": ModelPrice(input: 3.0, output: 15.0, cacheWrite: 3.75, cacheWriteLong: 6.0, cacheRead: 0.3),
         "claude-haiku-4-5": ModelPrice(input: 1.0, output: 5.0, cacheWrite: 1.25, cacheWriteLong: 2.0, cacheRead: 0.1),
         "gpt-6-astra": ModelPrice(input: 10.0, output: 50.0, cacheWrite: 12.5, cacheWriteLong: 25.0, cacheRead: 1.0),
         "gpt-6.1-sol": ModelPrice(input: 2.0, output: 10.0, cacheWrite: 2.5, cacheWriteLong: 5.0, cacheRead: 0.1),
         "gpt-6-luna": ModelPrice(input: 0.1, output: 0.5, cacheWrite: 0.125, cacheWriteLong: 0.25, cacheRead: 0.01),
+    ]
+
+    /// The day each row was read from its vendor's page (`fetchedAt` in core/pricing.json), for the price table the
+    /// Tokens tab shows.
+    public static let fetchedAt: [String: String] = [
+        "claude-opus-5-5": "2026-10-24", "claude-sonnet-5-5": "2026-10-24", "claude-fable-5-1": "2026-11-03", "claude-opus-5": "2026-11-03",
+        "claude-opus-4-6": "2026-10-24", "claude-sonnet-4-6": "2026-10-24", "claude-haiku-4-5": "2026-10-24",
+        "gpt-6-astra": "2026-10-24", "gpt-6.1-sol": "2026-10-24", "gpt-6-luna": "2026-10-24",
     ]
 
     /// The price for a model name as logged: exact match first, then without a trailing `[1m]`-style suffix and a `-YYYYMMDD` date.
@@ -57,6 +69,14 @@ public enum Pricing {
         case note(String)
     }
 
+    /// USD for the tokens of one model at `rate`. One-hour cache writes are priced apart from the five-minute ones.
+    static func usd(_ m: Usage, rate: ModelPrice) -> Double {
+        let long = min(m.cacheWrite, m.cacheWriteLong)
+        let sum = m.input * rate.input + m.output * rate.output + m.cacheRead * rate.cacheRead
+            + (m.cacheWrite - long) * rate.cacheWrite + long * rate.cacheWriteLong
+        return sum / 1_000_000
+    }
+
     /// Models are summed in the order given (floating point addition is not associative, and the golden compares exact values).
     static func estimate(_ usage: [(model: String, usage: Usage)], table: [String: ModelPrice] = Pricing.models) -> Estimate {
         var usd = 0.0
@@ -65,10 +85,7 @@ public enum Pricing {
             let tokens = m.input + m.output + m.cacheWrite + m.cacheRead
             if tokens == 0 { continue }
             guard let rate = price(for: model, in: table) else { return .note("No price for model \"\(model)\", so no estimate.") }
-            let long = min(m.cacheWrite, m.cacheWriteLong)
-            let sum = m.input * rate.input + m.output * rate.output + m.cacheRead * rate.cacheRead
-                + (m.cacheWrite - long) * rate.cacheWrite + long * rate.cacheWriteLong
-            usd += sum / 1_000_000
+            usd += Self.usd(m, rate: rate)
             any = true
         }
         return any ? .usd(usd) : .note("No token usage logged yet.")

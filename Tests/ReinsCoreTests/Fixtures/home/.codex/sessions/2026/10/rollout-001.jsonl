@@ -2,3 +2,5 @@
 {"timestamp":"2026-10-31T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/impeccable/SKILL.md\"]}","call_id":"c1_1"}}
 {"timestamp":"2026-10-31T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/explain/SKILL.md\"]}","call_id":"c1_2"}}
 {"timestamp":"2026-10-31T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/kyant-kanban/SKILL.md\"]}","call_id":"c1_3"}}
+{"timestamp":"2026-10-31T12:00:00.000Z","type":"turn_context","payload":{"model":"gpt-6-astra"}}
+{"timestamp":"2026-10-31T12:00:00.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1452800,"cached_input_tokens":1249408,"output_tokens":36320,"reasoning_output_tokens":0},"last_token_usage":{"input_tokens":1452800,"cached_input_tokens":1249408,"output_tokens":36320,"reasoning_output_tokens":0}}}}

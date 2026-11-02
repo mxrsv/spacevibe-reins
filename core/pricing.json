@@ -1,7 +1,7 @@
 {
   "currency": "USD",
   "unit": "per million tokens",
-  "basis": "Standard API-equivalent estimate; excludes fast mode, regional uplifts, long-context tiers and subscription billing. Models requiring unobserved tier information are intentionally unpriced.",
+  "basis": "Standard API-equivalent estimate; excludes fast mode, regional uplifts, long-context tiers and subscription billing. Models requiring unobserved tier information are intentionally unpriced. Claude Haiku 5.5 is priced by each request's prompt length (over 100,000 tokens pays more), which the logs' totals do not keep, so it is unpriced. GPT models not listed were not confirmed on the vendor's page.",
   "models": {
     "claude-opus-5-5": {
       "input": 4,
@@ -20,6 +20,24 @@
       "cacheRead": 0.1,
       "source": "https://platform.claude.com/docs/en/about-claude/pricing",
       "fetchedAt": "2026-10-24"
+    },
+    "claude-fable-5-1": {
+      "input": 10,
+      "output": 50,
+      "cacheWrite": 12.5,
+      "cacheWriteLong": 20,
+      "cacheRead": 0.25,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "fetchedAt": "2026-11-03"
+    },
+    "claude-opus-5": {
+      "input": 5,
+      "output": 25,
+      "cacheWrite": 6.25,
+      "cacheWriteLong": 10,
+      "cacheRead": 0.5,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "fetchedAt": "2026-11-03"
     },
     "claude-opus-4-6": {
       "input": 5,

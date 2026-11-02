@@ -9,6 +9,7 @@ enum TabRegistry {
             LoadoutTab(),
             RulesTab(),
             ActivityTab(),
+            TokensTab(),
         ]
     }
 }

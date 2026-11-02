@@ -27,3 +27,35 @@ struct ReinsScrollView<Content: View>: View {
         }
     }
 }
+
+/// A spinner in the app; a static mark in headless screenshots, where AppKit-backed controls do not draw.
+struct LoadingMark: View {
+    @Environment(\.isShotRendering) private var isShotRendering
+
+    var body: some View {
+        if isShotRendering {
+            Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(Palette.textTertiary).accessibilityHidden(true)
+        } else {
+            ProgressView().controlSize(.small)
+        }
+    }
+}
+
+/// Headless shots have no ScrollView, so content taller than the frame would be squeezed (rows overlap) or push the shell
+/// off screen. In a shot the content takes its ideal height and is cut at the frame, like a scrolled page. No effect in the app.
+struct ShotFit: ViewModifier {
+    @Environment(\.isShotRendering) private var isShotRendering
+
+    func body(content: Content) -> some View {
+        if isShotRendering {
+            GeometryReader { proxy in
+                content
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
+                    .clipped()
+            }
+        } else {
+            content
+        }
+    }
+}

@@ -44,4 +44,14 @@ enum ReinsFont {
     static let mono = Font.system(size: 12, design: .monospaced)
     static let monoStrong = Font.system(size: 12, weight: .semibold, design: .monospaced)
     static let kbd = Font.system(size: 11, design: .monospaced)
+
+    // The size order of the Tokens board (spec, Interface: Tokens): one lead total, then the figure per CLI, then one
+    // leading number in each card, then a leading row; everything else is body size or smaller. Large figures keep
+    // proportional digits, as the mock draws them.
+    static let leadTotal = Font.system(size: 40, weight: .semibold)
+    static let cliFigure = Font.system(size: 24, weight: .semibold)
+    static let cardLeader = Font.system(size: 20, weight: .semibold)
+    static let rowLeader = Font.system(size: 15, weight: .semibold)
+    /// Rows under a leading row in a Tokens card, and their values.
+    static let compact = Font.system(size: 12.5).monospacedDigit()
 }

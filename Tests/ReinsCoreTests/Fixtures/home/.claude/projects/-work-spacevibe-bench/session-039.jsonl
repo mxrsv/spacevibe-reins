@@ -19,3 +19,4 @@
 {"type":"attachment","timestamp":"2026-10-21T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"Stop","command":"sh '$HOME/.claude/scripts/notify-done.sh'","durationMs":41,"exitCode":0,"stderr":""}}
 {"type":"assistant","timestamp":"2026-10-21T12:00:00.000Z","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_39_edit","name":"Edit","input":{"file_path":"$HOME/work/spacevibe-bench/lib/leaderboard/rank.ts"}}]}}
 {"type":"user","timestamp":"2026-10-21T12:00:00.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_39_edit","content":"ok"}]}}
+{"type":"assistant","timestamp":"2026-10-21T12:00:00.000Z","cwd":"$HOME/work/spacevibe-bench","sessionId":"session-39","message":{"id":"msg_fixture_39","model":"claude-haiku-5-5","role":"assistant","content":[{"type":"text","text":"Done."}],"usage":{"input_tokens":4523,"output_tokens":80460,"cache_creation_input_tokens":402300,"cache_read_input_tokens":10569000}}}

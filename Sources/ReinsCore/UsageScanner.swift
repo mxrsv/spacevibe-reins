@@ -45,11 +45,7 @@ public actor UsageScanner {
 
     /// The cached record when the log is unchanged, otherwise a fresh parse. Nil when the log cannot be statted or read to the end.
     nonisolated static func entry(for url: URL, cli: InventoryCLI, cached: CachedFile?, maxLineBytes: Int) -> CachedFile? {
-        var info = stat()
-        guard stat(url.path, &info) == 0 else { return nil }
-        let mtime = modificationTime(info)
-        let mtimeMs = Int64(mtime.tv_sec) * 1000 + Int64(mtime.tv_nsec) / 1_000_000
-        let stamp = "\(Int64(info.st_size)):\(mtimeMs)"
+        guard case let (stamp, mtimeMs)? = LogFiles.stamp(of: url) else { return nil }
         if let cached, cached.stamp == stamp, cached.v == scanVersion { return cached }
         let fallbackDay = UsageScan.isoDay(Date(timeIntervalSince1970: TimeInterval(mtimeMs) / 1000))
         return scanFile(url, cli: cli, stamp: stamp, fallbackDay: fallbackDay, maxLineBytes: maxLineBytes)

@@ -18,7 +18,16 @@ struct ActivityPricingTests {
             #expect(rate("cacheWrite") == price.cacheWrite, "\(name) cacheWrite")
             #expect(rate("cacheWriteLong") == price.cacheWriteLong, "\(name) cacheWriteLong")
             #expect(rate("cacheRead") == price.cacheRead, "\(name) cacheRead")
+            #expect(row["fetchedAt"] as? String == Pricing.fetchedAt[name], "\(name) fetchedAt")
         }
+        #expect(Set(Pricing.fetchedAt.keys) == Set(Pricing.models.keys))
+    }
+
+    @Test("a model priced by prompt length, or not confirmed on its vendor's page, has no price on purpose")
+    func unpricedOnPurpose() {
+        for model in ["claude-haiku-5-5", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.5"] { #expect(Pricing.price(for: model) == nil, "\(model)") }
+        #expect(Pricing.price(for: "claude-fable-5-1")?.cacheRead == 0.25)
+        #expect(Pricing.price(for: "claude-opus-5")?.input == 5)
     }
 
     @Test("estimate sums per model and says why when it cannot")

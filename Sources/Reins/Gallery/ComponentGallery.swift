@@ -51,6 +51,16 @@ struct ComponentGalleryContent: View {
                         FilterChip("In one CLI only", count: 4, isOn: chip == "one") { chip = "one" }
                         FilterChip("Never ran", count: 1, isOn: chip == "never") { chip = "never" }
                     }
+                    FilterChip(dismissing: "Yesterday") { chip = "all" }
+                    Spacer(minLength: 0)
+                }
+            }
+            section("Provider marks") {
+                HStack(spacing: 14) {
+                    ForEach([ProviderMarkKind.claude, .codex, .openai], id: \.self) { kind in ProviderMark(kind, size: 20) }
+                    ProviderMark(.claude)
+                    ProviderMark(.codex)
+                    ProviderMark(.openai)
                     Spacer(minLength: 0)
                 }
             }

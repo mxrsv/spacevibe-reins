@@ -1,3 +1,5 @@
 {"timestamp":"2026-10-27T12:00:00.000Z","type":"session_meta","payload":{"id":"fixture-5","cwd":"$HOME/work/spacevibe-academy"}}
 {"timestamp":"2026-10-27T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/impeccable/SKILL.md\"]}","call_id":"c5_1"}}
 {"timestamp":"2026-10-27T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/explain/SKILL.md\"]}","call_id":"c5_2"}}
+{"timestamp":"2026-10-27T12:00:00.000Z","type":"turn_context","payload":{"model":"gpt-6.1-sol"}}
+{"timestamp":"2026-10-27T12:00:00.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":934400,"cached_input_tokens":803584,"output_tokens":23360,"reasoning_output_tokens":0},"last_token_usage":{"input_tokens":934400,"cached_input_tokens":803584,"output_tokens":23360,"reasoning_output_tokens":0}}}}

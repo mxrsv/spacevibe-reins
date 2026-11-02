@@ -16,3 +16,4 @@
 {"type":"attachment","timestamp":"2026-10-17T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"Stop","command":"sh '$HOME/.claude/scripts/notify-done.sh'","durationMs":51,"exitCode":0,"stderr":""}}
 {"type":"assistant","timestamp":"2026-10-17T12:00:00.000Z","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_71_edit","name":"Edit","input":{"file_path":"$HOME/work/spacevibe-academy/src/repositories/course.ts"}}]}}
 {"type":"user","timestamp":"2026-10-17T12:00:00.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_71_edit","content":"ok"}]}}
+{"type":"assistant","timestamp":"2026-10-17T12:00:00.000Z","cwd":"$HOME/work/spacevibe-academy","sessionId":"session-71","message":{"id":"msg_fixture_71","model":"claude-opus-5-5","role":"assistant","content":[{"type":"text","text":"Done."}],"usage":{"input_tokens":2747,"output_tokens":44940,"cache_creation_input_tokens":224700,"cache_read_input_tokens":5241000}}}
