@@ -24,6 +24,23 @@
 	     above the running system fails to launch with LaunchServices error -10825. -->
 	<key>LSMinimumSystemVersion</key>
 	<string>15.0</string>
+	<!-- Updates. scripts/build-app.sh adds SUFeedURL when REINS_UPDATE_FEED_URL is set, so a build without it makes
+	     no request. Checks run without asking; installing always takes a click. The private half of this key is in
+	     the owner's login Keychain under the Sparkle account dev.spacevibe.reins: never regenerate it (AGENTS.md B8). -->
+	<key>SUPublicEDKey</key>
+	<string>hm8HrxfmddgAerzdQuttPxx7gexaV3oBycH9YIG1tSY=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUAllowsAutomaticUpdates</key>
+	<false/>
+	<key>SUEnableSystemProfiling</key>
+	<false/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>

@@ -9,7 +9,7 @@ struct ToastHost: View {
         VStack {
             Spacer()
             if let toast = toasts.current {
-                ToastView(toast: toast, undo: toasts.undoCurrent, dismiss: toasts.dismiss)
+                ToastView(toast: toast, run: toasts.runCurrentAction, dismiss: toasts.dismiss)
                     .onHover { $0 ? toasts.hold() : toasts.release() }
                     .padding(.bottom, Metrics.toastBottomInset)
                     .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
@@ -22,10 +22,10 @@ struct ToastHost: View {
     }
 }
 
-/// The toast itself: inverted surface, message, Undo (or a dismiss button when there is nothing to undo).
+/// The toast itself: inverted surface, message, its action (or a dismiss button when it has none).
 struct ToastView: View {
     let toast: Toast
-    let undo: () -> Void
+    let run: () -> Void
     let dismiss: () -> Void
 
     var body: some View {
@@ -34,9 +34,9 @@ struct ToastView: View {
                 Image(systemName: "exclamationmark.triangle").accessibilityHidden(true)
             }
             Text(toast.message).font(ReinsFont.body)
-            if toast.undo != nil {
-                Button(action: undo) {
-                    Label("Undo", systemImage: "arrow.uturn.backward").font(ReinsFont.bodyStrong)
+            if let action = toast.action {
+                Button(action: run) {
+                    Label(action.title, systemImage: action.systemImage).font(ReinsFont.bodyStrong)
                 }
                 .buttonStyle(.reins(.inverse))
             } else {

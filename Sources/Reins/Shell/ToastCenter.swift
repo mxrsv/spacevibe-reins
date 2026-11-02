@@ -3,11 +3,22 @@ import SwiftUI
 
 enum ToastTone { case info, danger }
 
+/// The one button a toast can carry. Undo is the common case; without an action the toast offers only dismiss.
+struct ToastAction {
+    let title: String
+    let systemImage: String
+    let run: @MainActor () -> Void
+
+    static func undo(_ run: @escaping @MainActor () -> Void) -> ToastAction {
+        ToastAction(title: "Undo", systemImage: "arrow.uturn.backward", run: run)
+    }
+}
+
 struct Toast: Identifiable {
     let id = UUID()
     let message: String
     let tone: ToastTone
-    let undo: (@MainActor () -> Void)?
+    let action: ToastAction?
 }
 
 /// The one toast the app shows, bottom centre. Every write calls `show` with an Undo closure.
@@ -15,6 +26,7 @@ struct Toast: Identifiable {
 ///     @Environment(ToastCenter.self) private var toasts
 ///     toasts.show("Removed ponytail") { journal.undo(entry) }          // trailing closure is `undo`
 ///     toasts.show("Could not write settings.json", tone: .danger)
+///     toasts.show("Reins 0.2.0 is available", action: viewUpdate)      // any other single action
 ///
 /// A new toast replaces the current one. It disappears after about 7 seconds, paused while the pointer is on it.
 @MainActor
@@ -29,12 +41,15 @@ final class ToastCenter {
     init(announce: Bool = true) { self.announce = announce }
 
     func show(_ message: String, tone: ToastTone = .info, undo: (@MainActor () -> Void)? = nil) {
-        let toast = Toast(message: message, tone: tone, undo: undo)
-        current = toast
-        schedule(for: toast.id)
-        if announce {
-            AccessibilityNotification.Announcement(undo == nil ? message : "\(message). Undo available.").post()
-        }
+        present(Toast(message: message, tone: tone, action: undo.map(ToastAction.undo)))
+    }
+
+    /// Returns the toast's id, for `dismiss(id:)`.
+    @discardableResult
+    func show(_ message: String, tone: ToastTone = .info, action: ToastAction) -> UUID {
+        let toast = Toast(message: message, tone: tone, action: action)
+        present(toast)
+        return toast.id
     }
 
     func dismiss() {
@@ -42,11 +57,16 @@ final class ToastCenter {
         current = nil
     }
 
-    /// Runs the Undo closure of the current toast, then hides it.
-    func undoCurrent() {
+    /// Hides that toast only: one that replaced it stays.
+    func dismiss(id: UUID) {
+        if current?.id == id { dismiss() }
+    }
+
+    /// Runs the action of the current toast, then hides it.
+    func runCurrentAction() {
         guard let toast = current else { return }
         dismiss()
-        toast.undo?()
+        toast.action?.run()
     }
 
     /// While the pointer rests on the toast the countdown stops; leaving restarts it.
@@ -54,6 +74,14 @@ final class ToastCenter {
 
     func release() {
         if let id = current?.id { schedule(for: id) }
+    }
+
+    private func present(_ toast: Toast) {
+        current = toast
+        schedule(for: toast.id)
+        if announce {
+            AccessibilityNotification.Announcement(toast.action.map { "\(toast.message). \($0.title) available." } ?? toast.message).post()
+        }
     }
 
     private func schedule(for id: UUID) {

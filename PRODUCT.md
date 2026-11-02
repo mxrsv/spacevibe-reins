@@ -25,7 +25,7 @@ Generic AI dashboards, neon on black, gradients, card grids of icon + title + te
 - Nothing is executed: a hook is shown and written, never run by the app.
 
 ## Accessibility and constraints
-Keyboard navigation, visible focus, WCAG AA, reduced motion. Offline, no account, no telemetry. Writes go only to the skill, agent, hook and permission locations of Claude Code and Codex, plus the app's own data folder; each write to agent configuration keeps a restorable copy. Plugin-owned items are read-only. Secret values in settings are never read or displayed.
+Keyboard navigation, visible focus, WCAG AA, reduced motion. Works offline, no account, no telemetry. Writes go only to the skill, agent, hook and permission locations of Claude Code and Codex, plus the app's own data folder; each write to agent configuration keeps a restorable copy. Plugin-owned items are read-only. Secret values in settings are never read or displayed.
 
 ## Distribution
-Public site and downloads: `reins.spacevibe.dev` (not live yet). The app is a native macOS app (Swift and SwiftUI) that opens no network listener and makes no network request; no user data passes through the site.
+Public site and downloads: `reins.spacevibe.dev` (not live yet). The app is a native macOS app (Swift and SwiftUI) that opens no network listener. Its only network requests check for and download updates, once a day and without asking; installing takes a click. No user data passes through the site.

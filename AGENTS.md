@@ -13,9 +13,11 @@ Stack: SwiftPM, swift-tools 6.0, Swift 5 language mode, macOS 15+, Command Line 
 | `scripts/test.sh`             | All Swift tests against temporary folders. Look for `Test run with N tests ... passed`: N must be above 0 |
 | `scripts/build-app.sh`        | Release build, `build/Reins.app`, signature, `vtool` deployment-target print                              |
 | `scripts/dev.sh`              | Build, sign, relaunch. Opens a window and reads the real `~/.claude` and `~/.codex` unless the env points elsewhere |
+| `scripts/test-update.sh`      | End-to-end update test through a feed on 127.0.0.1: a wrong signature is refused, the right one installs. Needs the Developer ID identity and no running Reins |
+| `scripts/generate-update-feed.sh <dir> <https-prefix>` | Signed `appcast.xml` next to notarized, stapled DMGs. Publishes nothing |
 | `node scripts/make-golden.mjs [section]` | Rewrites `Tests/ReinsCoreTests/Fixtures` (synthetic HOME, manifest, `golden/*.json`, `zst/`) from the Node core. Rerun gives no diff |
 
-Layout: `Sources/CZstd` (vendored decompress-only zstd, see its README), `Sources/ReinsCore` (the engine; Foundation only, no UI import), `Sources/Reins` (the app), `Tests/ReinsCoreTests` (swift-testing; `Support/` has `TempHome` and `FixtureHome`).
+Layout: `Sources/CZstd` (vendored decompress-only zstd, see its README), `Sources/ReinsCore` (the engine; Foundation only, no UI import), `Sources/Reins` (the app), `Tests/ReinsCoreTests` (swift-testing; `Support/` has `TempHome` and `FixtureHome`), `Tests/ReinsTests` (app logic that needs no window).
 
 Toolchain rules (taken from `spacevibe-board`, re-verified here):
 
@@ -26,14 +28,15 @@ Toolchain rules (taken from `spacevibe-board`, re-verified here):
 - **B5. zstd is vendored, never linked from the system.** macOS ships no usable libzstd (no header in the SDK, none in `/usr/lib`, no zstd in the Compression framework), and Homebrew's copy is absent on a clean Mac. [`Sources/CZstd`](Sources/CZstd/README.md) is an unmodified copy of facebook/zstd 1.5.7 `lib/` (decompress only, BSD); update it from a release tarball and change the version and checksum in its README.
 - **B7. `ReinsCore` stays portable** ([spec, Platform](docs/specs/2026-11-02-reins.md)): Foundation only, no AppKit or other Apple-only import, no Darwin-only API outside `#if canImport(Darwin)` (see `modificationTime` in [TailReader.swift](Sources/ReinsCore/TailReader.swift)), vendored zstd. POSIX calls (`open`, `pread`, `realpath`, `getpwuid`) are used directly and exist on Linux but not Windows; a Linux build is unverified until plan task S0.6. Tests may use Apple frameworks (`CryptoKit`).
 - **B6. Golden tests read the fixture at a fixed path.** Hook and project ids are hashes of absolute paths, so [`FixtureHome`](Tests/ReinsCoreTests/Support/FixtureHome.swift) materializes the tree at `/private/tmp/reins-fixture-home` (the path [`make-golden.mjs`](scripts/make-golden.mjs) ran the Node core on). That tree is read-only and shared; a test that writes uses `FixtureHome.materialize(into:)` or `TempHome`.
+- **B8. The update signing key is load-bearing.** The private half of `SUPublicEDKey` ([Info.plist](Resources/Info.plist)) is in the owner's login Keychain under the Sparkle account `dev.spacevibe.reins`. Never regenerate it once a release has shipped: installed copies would refuse every later update. On another machine move it with `generate_keys -x` and `-f`. `Sparkle` is linked by the `Reins` target only, never `ReinsCore` (B7), and [`build-app.sh`](scripts/build-app.sh) signs its helpers inside out before the app.
 
 Boundary rules for the Swift app (the Electron rules R1 to R6 below keep applying to the Node code until it is deleted):
 
 - **S-R1. Tests and agents never touch the real config.** Tests build a `TempHome` or use `FixtureHome`. [`Roots.resolve`](Sources/ReinsCore/Roots.swift) throws when `REINS_TEST=1` and a root, or the real path behind it (symlinks included), is under the real home from `getpwuid`; [`scripts/test.sh`](scripts/test.sh) sets that flag. `scripts/dev.sh` and the built app read the real `~/.claude` and `~/.codex`: set `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `REINS_HOME` to a temporary folder before testing a write by hand.
 - **S-R2. No real data in committed files.** Fixtures and goldens come from `scripts/fixture-home.mjs` (synthetic names only) through [`make-golden.mjs`](scripts/make-golden.mjs), which refuses a tree containing the real home path or user name; [`FixtureHomeTests`](Tests/ReinsCoreTests/FixtureHomeTests.swift) re-checks. Screenshots from a real config stay out of git (R2 above).
 - **S-R3. Secrets are never read into the UI or logged.** Errors from `OrderedJSON`, `TOMLReader` and `ZstdStream` carry a position or a fixed reason, never file content; keep it that way in new code.
-- **S-R4. The app never executes a hook or a recorded command.** The only processes it will start are the fixed `ps`, `lsof` and `kill` of the Activity engine, with the pid re-validated first.
-- **S-R5. The app opens no network listener and makes no request.** No updater, no crash reporter, no analytics.
+- **S-R4. The app never executes a hook or a recorded command.** The only processes it will start are the fixed `ps`, `lsof` and `kill` of the Activity engine, with the pid re-validated first, and Sparkle's own installer helpers.
+- **S-R5. The app opens no network listener, and its only requests are Sparkle's update check and download**, started by [`UpdateController`](Sources/Reins/App/UpdateController.swift) in a normal launch of a build with `REINS_UPDATE_FEED_URL` set; `scripts/dev.sh`, fixture launches and `REINS_TEST=1` make none. No crash reporter, no analytics, no system profile, no other request.
 
 The Node `core/` is an oracle for parity and is deleted at plan task S8.3. Do not change its behavior to suit Swift; when a golden has to change, run `node scripts/make-golden.mjs`, read the diff and commit it with the test that needs it.
 

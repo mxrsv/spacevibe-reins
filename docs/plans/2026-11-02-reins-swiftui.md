@@ -48,7 +48,7 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 - [ ] S0.4 Process facts: `Process` with `ps`, `lsof` and `kill` (same lock-fd mapping as the Electron plan 0.3 evidence), and the signal behavior of both CLIs for Stop (spec "To verify"; needs a live session, see Action needed).
 - [ ] S0.5 Real-CLI check (AC2, owner): a skill, agent, hook and permission written by `ReinsCore` is honored by a real `claude` and `codex` on a throwaway config.
 
-- [ ] S0.6 Portability: `swift build` of a stub `ReinsCore` (one JSON read, one `Process` call) on Linux, in a container or CI. Record whether `swift-testing` runs there and whether Swift on Windows builds the same stub. Unverified today; this is the cheapest signal that the door is open. Repeat on Linux whenever `ReinsCore` gains a dependency.
+- [ ] S0.6 Portability: `swift build` of a stub `ReinsCore` (one JSON read, one `Process` call) on Linux, in a container or CI. Record whether `swift-testing` runs there and whether Swift on Windows builds the same stub. Unverified today; this is the cheapest signal that the door is open. Repeat on Linux whenever `ReinsCore` gains a dependency, and check that `Package.swift` still resolves there now that it declares Sparkle, a macOS-only binary package.
 
 ### Phase S1: scaffold and shared plumbing
 
@@ -89,6 +89,13 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 
 - [ ] S7.1 `build-app.sh`: release build, bundle, Developer ID signature, hardened runtime, verification output; notarization is release work.
 - [ ] S7.2 UI tests are not available without Xcode; cover flows with `ReinsCore` tests plus a scripted launch against the fixture HOME and screenshots.
+- [ ] S7.3 Updater (AC7): Sparkle 2.10.0 in the `Reins` target, `UpdateController`, "Check for Updates…" menu item, toast on a scheduled find, `build-app.sh` embeds and signs the framework and takes `REINS_UPDATE_FEED_URL`, `scripts/test-update.sh`, `scripts/generate-update-feed.sh`. Built 2026-11-03; stays open until the owner approves the toast and update window by eye with AC6. Not in this task: notarization, the public feed host, a real release.
+  - Window path, by hand: a Developer ID build with an `http://127.0.0.1` feed checked at launch with no prompt and opened Sparkle's window. Two mouse clicks on that window, not sent by the agent, started the download and the relaunch; build 2 then ran from the same path and its bundle verified. A relaunch does not inherit the launch environment, so that process read the real home (read-only until a write is clicked) and was stopped.
+  - Toast path, by hand: with the last check set to 24 h minus 70 s, the check fired mid-session and logged `Update 2 found, by user: false` with no attention event, the branch that keeps the toast. The toast's look is in `~/scratch/spacevibe-reins/shots/update-toast/`; clicking View is unverified.
+  - `scripts/test-update.sh`: wrong signature downloaded and still build 1 after quit, right signature build 2 and verifying. The two runs differ only in the signature.
+  - No feed: an ad-hoc build logged `Updater off`, ran, and held no TCP socket.
+  - `scripts/generate-update-feed.sh`: refuses no DMG, an http prefix, a prefix with no trailing slash and an unstapled DMG. With `stapler` stubbed it wrote a signed HTTPS entry; a really stapled DMG is unverified.
+  - Before the first release: repeat with an installed, quarantined, notarized older build. These local bundles were not quarantined, so Gatekeeper was not exercised (`spctl` rejects them as `Unnotarized Developer ID`).
 
 ### Phase S8: accept and cut over
 
@@ -106,6 +113,7 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 | AC4 a running session of each CLI, limits stated | S2.5, S6 |
 | AC5 offline | S8.1 |
 | AC6 owner approves the UI by eye | S3.3, S4, S5, S6, S6T.3 |
+| AC7 update found, installed and relaunched from a feed; wrong signature refused; no feed, no request | S7.3 |
 | AC8 Tokens matches TokenTracker | S6T.4 |
 | AC9 history survives a deleted log | S6T.2 |
 

@@ -9,6 +9,10 @@ import PackageDescription
 let package = Package(
     name: "Reins",
     platforms: [.macOS(.v15)],
+    dependencies: [
+        // App target only: `ReinsCore` stays Foundation only (AGENTS.md B7).
+        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
+    ],
     targets: [
         // Decompress-only zstd from the official facebook/zstd release; see Sources/CZstd/README.md.
         .target(
@@ -24,13 +28,20 @@ let package = Package(
         ),
         .executableTarget(
             name: "Reins",
-            dependencies: ["ReinsCore"],
-            swiftSettings: [.swiftLanguageMode(.v5)]
+            dependencies: ["ReinsCore", .product(name: "Sparkle", package: "Sparkle")],
+            swiftSettings: [.swiftLanguageMode(.v5)],
+            // scripts/build-app.sh copies Sparkle.framework to Contents/Frameworks.
+            linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
         ),
         .testTarget(
             name: "ReinsCoreTests",
             dependencies: ["ReinsCore"],
             exclude: ["Fixtures"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .testTarget(
+            name: "ReinsTests",
+            dependencies: ["Reins"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]

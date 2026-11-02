@@ -89,8 +89,8 @@ struct ComponentGalleryContent: View {
             }
             section("Toast") {
                 HStack(spacing: 14) {
-                    ToastView(toast: Toast(message: "Removed ponytail", tone: .info, undo: {}), undo: {}, dismiss: {})
-                    ToastView(toast: Toast(message: "Could not write settings.json", tone: .danger, undo: nil), undo: {}, dismiss: {})
+                    ToastView(toast: Toast(message: "Removed ponytail", tone: .info, action: .undo {}), run: {}, dismiss: {})
+                    ToastView(toast: Toast(message: "Could not write settings.json", tone: .danger, action: nil), run: {}, dismiss: {})
                     Spacer(minLength: 0)
                 }
             }
