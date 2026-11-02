@@ -69,7 +69,7 @@ private struct ModelRow: View {
             HStack(spacing: 8) {
                 if let mark = ProviderMarkKind.model(item.name, cli: cli) { ProviderMark(mark, size: lead ? 20 : 13) }
                 Text(item.name).lineLimit(1).truncationMode(.tail).frame(maxWidth: .infinity, alignment: .leading)
-                TokensValue(tally: item.tally, measure: measure, font: lead ? ReinsFont.rowLeader : ReinsFont.compact)
+                TokensValue(tally: item.tally, measure: measure, font: lead ? ReinsFont.rowLeader : ReinsFont.compact, warns: false)
             }
             .font(lead ? ReinsFont.bodyStrong : ReinsFont.compact)
             .foregroundStyle(lead ? Palette.text : Palette.textSecondary)
@@ -194,7 +194,7 @@ private struct ProjectRow: View {
         if tally.isEmpty {
             Text("–").font(ReinsFont.compact).foregroundStyle(Palette.textTertiary)
         } else {
-            TokensValue(tally: tally, measure: measure, font: lead ? ReinsFont.rowLeader : ReinsFont.compact)
+            TokensValue(tally: tally, measure: measure, font: lead ? ReinsFont.rowLeader : ReinsFont.compact, warns: false)
         }
     }
 }

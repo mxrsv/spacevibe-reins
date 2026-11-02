@@ -111,6 +111,12 @@ struct TokensCostCard: View {
             .padding(.horizontal, 10)
             .padding(.bottom, 6)
         }
+        // Headless screenshots cannot draw a popover, so they draw the price table in place under its button.
+        .overlay(alignment: .topTrailing) {
+            if isShotRendering, model.isPriceTableOpen {
+                TokensPriceTable(unpriced: board.unpricedModels).overlayPanel().fixedSize().offset(x: -14, y: 38)
+            }
+        }
     }
 
     private func line<L: View, A: View, B: View>(height: CGFloat = 26, top: Bool = true, @ViewBuilder _ label: () -> L,
@@ -141,23 +147,13 @@ struct TokensCostCard: View {
         Text(tally.unpriced > 0 ? TokensFormat.tokens(tally.unpriced) : "0").foregroundStyle(tally.unpriced > 0 ? Palette.text : Palette.textTertiary)
     }
 
-    /// The price table is a popover in the app. Headless screenshots cannot draw one, so they draw it in place under the button.
-    @ViewBuilder
     private var priceButton: some View {
-        let button = Button("Price table \u{00B7} \(TokensPriceTable.latestFetch)") { model.isPriceTableOpen.toggle() }
+        Button("Price table \u{00B7} \(TokensPriceTable.latestFetch)") { model.isPriceTableOpen.toggle() }
             .buttonStyle(.reins(.normal))
             .accessibilityHint("Shows the prices behind the estimate")
-        if isShotRendering {
-            button.overlay(alignment: .topTrailing) {
-                if model.isPriceTableOpen {
-                    TokensPriceTable(unpriced: board.unpricedModels).overlayPanel().offset(y: 32).fixedSize()
-                }
-            }
-        } else {
-            button.popover(isPresented: $model.isPriceTableOpen, arrowEdge: .bottom) {
+            .popover(isPresented: isShotRendering ? .constant(false) : $model.isPriceTableOpen, arrowEdge: .bottom) {
                 TokensPriceTable(unpriced: board.unpricedModels).padding(2)
             }
-        }
     }
 }
 
@@ -237,6 +233,9 @@ struct TokensPriceTable: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .frame(width: Self.width, alignment: .leading)
+        // A popover takes the environment of its button, which sits in a one-line, muted card title.
+        .lineLimit(nil)
+        .foregroundStyle(Palette.text)
     }
 
     /// "$4", "$0.2", "$0.125"

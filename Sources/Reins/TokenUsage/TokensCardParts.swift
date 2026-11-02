@@ -158,6 +158,8 @@ struct TokensValue: View {
     let tally: TokenTally
     let measure: TokenMeasure
     var font: Font = ReinsFont.compact
+    /// Off in the ranked lists, where the summary and the cost card already say how much has no price.
+    var warns = true
 
     var body: some View {
         if !tally.isEmpty, measure == .cost, tally.cost == nil {
@@ -167,7 +169,7 @@ struct TokensValue: View {
                 Text(TokensFormat.value(tally, measure))
                     .font(font)
                     .foregroundStyle(tally.isEmpty ? Palette.textTertiary : Palette.text)
-                if TokensFormat.isPartial(tally, measure) {
+                if warns, TokensFormat.isPartial(tally, measure) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 10))
                         .foregroundStyle(Palette.warnInk)

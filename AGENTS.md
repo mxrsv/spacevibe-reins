@@ -17,7 +17,7 @@ Stack: SwiftPM, swift-tools 6.0, Swift 5 language mode, macOS 15+, Command Line 
 | `scripts/generate-update-feed.sh <dir> <https-prefix>` | Signed `appcast.xml` next to notarized, stapled DMGs. Publishes nothing |
 | `node scripts/make-golden.mjs [section]` | Rewrites `Tests/ReinsCoreTests/Fixtures` (synthetic HOME, manifest, `golden/*.json`, `zst/`) from the Node core. Rerun gives no diff |
 
-Layout: `Sources/CZstd` (vendored decompress-only zstd, see its README), `Sources/ReinsCore` (the engine; Foundation only, no UI import), `Sources/Reins` (the app), `Tests/ReinsCoreTests` (swift-testing; `Support/` has `TempHome` and `FixtureHome`), `Tests/ReinsTests` (app logic that needs no window).
+Layout: `Sources/CZstd` (vendored decompress-only zstd, see its README), `Sources/ReinsCore` (the engine; Foundation only, no UI import), `Sources/Reins` (the app; `Tokens/` there is the design tokens, the Tokens tab is [`TokenUsage/`](Sources/Reins/TokenUsage/TokensTab.swift)), `Tests/ReinsCoreTests` (swift-testing; `Support/` has `TempHome` and `FixtureHome`), `Tests/ReinsTests` (app logic that needs no window).
 
 Toolchain rules (taken from `spacevibe-board`, re-verified here):
 
@@ -36,6 +36,7 @@ Boundary rules for the Swift app (the Electron rules R1 to R6 below keep applyin
 - **S-R2. No real data in committed files.** Fixtures and goldens come from `scripts/fixture-home.mjs` (synthetic names only) through [`make-golden.mjs`](scripts/make-golden.mjs), which refuses a tree containing the real home path or user name; [`FixtureHomeTests`](Tests/ReinsCoreTests/FixtureHomeTests.swift) re-checks. Screenshots from a real config stay out of git (R2 above).
 - **S-R3. Secrets are never read into the UI or logged.** Errors from `OrderedJSON`, `TOMLReader` and `ZstdStream` carry a position or a fixed reason, never file content; keep it that way in new code.
 - **S-R4. The app never executes a hook or a recorded command.** The only processes it will start are the fixed `ps`, `lsof` and `kill` of the Activity engine, with the pid re-validated first, and Sparkle's own installer helpers.
+- **S-R6. The token ledger is history, not a cache.** `token-ledger.json` under the data root keeps days whose logs are gone ([TokenLedger](Sources/ReinsCore/TokenLedger.swift)). Never delete it to force a rescan (unlike `usage-cache.json`); bump `TokenLedger.scanVersion` when the fold changes, and an unreadable file is moved aside, never overwritten.
 - **S-R5. The app opens no network listener, and its only requests are Sparkle's update check and download**, started by [`UpdateController`](Sources/Reins/App/UpdateController.swift) in a normal launch of a build with `REINS_UPDATE_FEED_URL` set; a build without it, fixture launches and `REINS_TEST=1` make none. No crash reporter, no analytics, no system profile, no other request.
 
 The Node `core/` is an oracle for parity and is deleted at plan task S8.3. Do not change its behavior to suit Swift; when a golden has to change, run `node scripts/make-golden.mjs`, read the diff and commit it with the test that needs it.
