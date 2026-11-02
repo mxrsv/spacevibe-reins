@@ -32,6 +32,7 @@ Local app to see and control what Claude Code and Codex CLI are equipped with. S
 - **R3.** Values in settings files that may be secrets are never read into the UI or logged.
 - **R4.** The app never executes a hook or a recorded command.
 - **R5.** The built app opens no network listener and loads from `file:`. The renderer reaches `core/` only through the channels in `src/lib/ipc-contract.ts`: the preload refuses any other channel, and main refuses a sender that is not the app's own top frame. The window stays `contextIsolation` + `sandbox`, with navigation and `window.open` denied, no auto-updater and no crash reporter. Do not widen any of these to make a feature easier.
+- **R6.** [`stopSession`](core/activity.mjs) is the only code that signals a process, and it sends SIGTERM only to a pid it found itself and matched to the session at that moment (Claude: status file plus process start time; Codex: thread lock). A handler takes a session id, never a pid. With `REINS_TEST=1` it answers from the fake and signals nothing.
 
 ## Known traps
 
@@ -40,4 +41,5 @@ Local app to see and control what Claude Code and Codex CLI are equipped with. S
 - The preload must be CommonJS (`out/preload/index.cjs`): a sandboxed preload cannot be ESM, even though the package is `"type": "module"`. The contract file is bundled into it, so it imports nothing from Node or Electron.
 - Errors cross IPC as a value, `{ ok: false, error, status }`, never as a thrown error: `ipcMain.handle` rewrites thrown messages and drops `status`. Unexpected errors log only their code or name, never the message (R3).
 - Handlers in `electron/ipc/` must not import `electron`, so `npm test` can run them under plain node. Anything that needs Electron goes in `main.ts`, `register-ipc.ts` or `harden.ts`.
+- Codex keeps older rollouts as `.jsonl.zst`. Find and open logs through [core/log-files.mjs](core/log-files.mjs), which handles both forms; a reader that only matches `.jsonl` silently misses most of a machine's Codex history.
 - A hook's identity is the hash of event plus command. Hashing the command alone inflates run counts.

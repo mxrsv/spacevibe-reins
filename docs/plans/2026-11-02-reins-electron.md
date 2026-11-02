@@ -1,7 +1,7 @@
 # Reins: move to Electron and build the Matrix interface
 
 Spec: [2026-11-02-reins.md](../specs/2026-11-02-reins.md) (requirements, platform, interface, acceptance criteria AC1 to AC6).
-Status: in progress. Core, IPC and all four UI areas are built (2026-11-02); the UI waits for the owner's eye approval and is uncommitted. Written 2026-11-02.
+Status: in progress. Core, IPC, all four UI areas and Stop are built (2026-11-02); the UI waits for the owner's eye approval and is uncommitted. Written 2026-11-02.
 
 ## Approach
 
@@ -28,7 +28,6 @@ Tooling (verified 2026-11-02, not yet exercised): `electron-vite` 6 on Vite 6 to
 - `usage.mjs` runs as a `worker_threads` Worker started from a real file path. Under electron-vite that means the `?modulePath` import and, in the packaged app, `asarUnpack` for `core/`. A bundled copy would break the worker.
 - The "no network listener" rule applies to the built app: it loads from a `file:` or custom protocol, with no auto-updater and no crash reporter. The dev server listens on localhost in development only.
 - Window security: `contextIsolation`, `sandbox`, no `nodeIntegration`, an allow-list of IPC channels, navigation and `window.open` blocked, CSP set.
-- Stop in Activity is a placeholder until the owner decides.
 
 ## Decision needed
 
@@ -52,7 +51,7 @@ Phases 1 to 4 can start now. Phase 5 waits on the decision above (0.1 is done). 
   - Capability mapping: Read and Edit are per path only in a `[permissions]` profile; Run commands only via rules and `approval_policy`; Network per profile; Push and deploy has no setting; Secrets only by `deny` globs (beta; issue openai/codex#22179 says an `.env` glob did not block `cat .env`, unverified on macOS in 0.166).
   - Writing: there is no `codex config` subcommand; the file is 93 KB, mode 600, with 62 projects, 9 MCP servers and `[hooks.state.*]` tables that Codex itself rewrites, plus a `config.toml.bak`. Reins needs a format-preserving TOML editor (core only has a reader, `tomlFields`), a backup, an atomic write, mode 600 kept, and a re-parse after writing. Concurrent rewrites by a running Codex are unverified.
   - This machine runs `approval_policy = "never"` with `sandbox_mode = "danger-full-access"`, so the Codex column would read "unrestricted" for file and network.
-- [ ] 0.2 In a throwaway `HOME`, write a skill, agent, hook and permission with `core/` and confirm a real `claude` and `codex` session honors each (AC2). Needs the owner: see Action needed.
+- [ ] 0.2 In a throwaway `HOME`, write a skill, agent, hook and permission with `core/` and confirm a real `claude` and `codex` session honors each (AC2). In the same run, press Stop on one session of each CLI: confirm it exits on SIGTERM and that its log still resumes. Needs the owner: see Action needed.
 - [x] 0.3 Live session state, done 2026-11-02 (read-only research by a subagent; the paths, the 108 rollouts, the lock files and the `agent-world` file list were spot-checked, the rest is as reported and unverified on a live running turn).
   - Claude Code: `~/.claude/sessions/<pid>.json` is a status file (`status` idle, busy, shell). `statusUpdatedAt` goes stale during a long busy turn, so show age from the transcript's last write. A permission prompt is not distinguishable from `busy`.
   - Codex: no status file. State comes from the rollout tail (`task_started`, `task_complete`, `turn_aborted`); the live `codex` process holds `~/.codex/thread-writer-locks/<threadId>.lock`, so `lsof` on the pid maps process to rollout exactly (better than `agent-world`'s cwd match; launch modes other than the CLI are unverified). The log has no heartbeat during a tool call, and approval waits are not recorded. A live process before its first prompt has no rollout.
@@ -98,7 +97,9 @@ Phases 1 to 4 can start now. Phase 5 waits on the decision above (0.1 is done). 
 
 - [x] 6.1 Port live-session parsing and metrics from `agent-world/` in the `model-lab` repo into `core/activity.mjs` (read-only on logs). Tests on fixture logs.
 - [ ] 6.2 Failed commands grouped with a count and one title form; file history with paths long enough to tell two files apart; junk-title fallback; worktree slug not shown as a project; "next run passed" never presented as a fix. Replay Studio findings from the spec.
-- [ ] 6.3 One lane per CLI as in the mock, with "not measurable" where 0.3 says so. No Stop button.
+- [ ] 6.3 One lane per CLI as in the mock, with "not measurable" where 0.3 says so.
+- [ ] 6.5 Stop on a session row, confirmed first (spec, decided 2026-11-02). Core `stopSession` finds the pid from the system at call time and sends SIGTERM; built and tested with fakes and a child process, real CLI reaction open under 0.2. Eye approval with 6.4.
+- [x] 6.6 Read compressed Codex rollouts (`.jsonl.zst`) in the usage scan and Activity, and stop counting interleaved or inherited Codex totals. Found while reviewing TokenTracker on 2026-11-02: 1,941 of this machine's 2,052 rollouts were compressed and unread.
 - [ ] 6.4 Owner eye approval.
 
 ### Phase 7: package and accept
@@ -115,7 +116,8 @@ Built by parallel subagents; the orchestrator re-ran `npm run typecheck`, `npm t
 
 - Done and committed: 1.1 to 1.4, 2.1 to 2.3 (server and loopback removed, `AGENTS.md` rewritten, Electron 45.2.1 bundles Node 24.22.1, worker scan verified in dev, built and unpacked runs), 4.1 (hook error root cause: `hook_blocking_error` keeps the command under `attachment.blockingError.command`; project `.claude/` read; 20 errors on the owner's real logs), 4.3 cells, 5.1 core rules, 6.1 core activity, and `fix(core)` for never-ran vs dead counts and `Read(*)` as wide.
 - Built, not committed, waiting for eye approval: 3.1 to 3.3 shell and shared blocks, 4.2 Loadout, 5.2 Rules, 6.2 and 6.3 Activity (screenshots in `~/scratch/spacevibe-reins/shots/{shell,loadout,rules,activity}/`). Commit by area after approval, then 4.4 deletes `web/`.
-- Still open: 0.2 (owner runs a real `claude` and `codex` on the throwaway config), 1.2 lint script, Phase 7, tooltip and focus-ring screenshots (headless cannot show them), Stop decision.
+- Still open: 0.2 (owner runs a real `claude` and `codex` on the throwaway config), 1.2 lint script, Phase 7, tooltip and focus-ring screenshots (headless cannot show them).
+- Stop and compressed logs, same day: with real logs and a temporary `REINS_HOME`, the scan now covers 2,052 Codex sessions back to 2026-03-29 (81 s first run, 94 ms cached); Activity reads 14 days in 1.4 s. Screenshots in `~/scratch/spacevibe-reins/shots/stop/`.
 - Interpretations kept: option A for the Rules grid (Claude writes, Codex display-only); each Rules scope is one settings file; the confirm dialog always opens; the Loadout toolbar says "Counted from N sessions since <date>" instead of "Last 30 days".
 
 ### Debt accepted (optimize later)
@@ -144,8 +146,8 @@ Built by parallel subagents; the orchestrator re-ran `npm run typecheck`, `npm t
 
 ## Handoff
 
-- Checkout: `main` at `21a2a01`, working tree: `core/`, `mocks/`, `server.mjs`, `test.mjs`, `web/` untracked; this plan file new.
-- Observed: `npm test` 14 pass, 0 fail (2026-11-02, temp HOME). Mock for the chosen direction: `~/scratch/spacevibe-reins/b-matrix.html` (outside the repo).
-- Remaining: everything above. Blockers: the Rules-grid decision (0.1 and 0.3 are done).
+- Checkout: `main`; the UI (3.x, 4.2, 5.2, 6.2, 6.3, 6.5) and its IPC stay uncommitted in the working tree until eye approval. `mocks/` stays untracked.
+- Mock for the chosen direction: `~/scratch/spacevibe-reins/b-matrix.html` (outside the repo).
+- Remaining: owner eye approval (3.3, 4.4, 5.3, 6.4), 0.2, the Rules-grid decision, 1.2 lint script, Phase 7.
 
 `/goal` Deliver the Reins Electron app per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-02-reins-electron.md phases 0 to 7 so that AC1 to AC6 hold, with every UI phase approved by the owner by eye, tests running only against temp HOME, and each task's evidence recorded under it; stop and ask at the Rules-grid decision, at owner-only steps, and before any push, merge or release.
