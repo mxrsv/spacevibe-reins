@@ -30,4 +30,5 @@ else
 fi
 
 export REINS_TEST=1
-exec swift test "${FLAGS[@]}" "$@"
+# The `+` form: bash 3.2 with `set -u` treats an empty array as unbound, which is the Xcode case above.
+exec swift test ${FLAGS[@]+"${FLAGS[@]}"} "$@"
