@@ -57,6 +57,14 @@ public enum Pricing {
         case note(String)
     }
 
+    /// USD for the tokens of one model at `rate`. One-hour cache writes are priced apart from the five-minute ones.
+    static func usd(_ m: Usage, rate: ModelPrice) -> Double {
+        let long = min(m.cacheWrite, m.cacheWriteLong)
+        let sum = m.input * rate.input + m.output * rate.output + m.cacheRead * rate.cacheRead
+            + (m.cacheWrite - long) * rate.cacheWrite + long * rate.cacheWriteLong
+        return sum / 1_000_000
+    }
+
     /// Models are summed in the order given (floating point addition is not associative, and the golden compares exact values).
     static func estimate(_ usage: [(model: String, usage: Usage)], table: [String: ModelPrice] = Pricing.models) -> Estimate {
         var usd = 0.0
@@ -65,10 +73,7 @@ public enum Pricing {
             let tokens = m.input + m.output + m.cacheWrite + m.cacheRead
             if tokens == 0 { continue }
             guard let rate = price(for: model, in: table) else { return .note("No price for model \"\(model)\", so no estimate.") }
-            let long = min(m.cacheWrite, m.cacheWriteLong)
-            let sum = m.input * rate.input + m.output * rate.output + m.cacheRead * rate.cacheRead
-                + (m.cacheWrite - long) * rate.cacheWrite + long * rate.cacheWriteLong
-            usd += sum / 1_000_000
+            usd += Self.usd(m, rate: rate)
             any = true
         }
         return any ? .usd(usd) : .note("No token usage logged yet.")
