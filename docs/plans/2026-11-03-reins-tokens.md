@@ -39,15 +39,16 @@ This is the one plan for the whole tab. The owner runs it on the cloud; what can
 
 | Tasks | Where | Why |
 | --- | --- | --- |
-| T0 | This Mac, once | A cloud token may not be allowed to push workflow files, and the owner approves the macOS minutes |
-| T1 to T4 | Cloud | `ReinsCore` is Foundation only. A Linux build is unverified (parent plan S0.6), so CI from T0 is the check that counts |
-| T5, T6 | Cloud, only after T0 | SwiftUI compiles on macOS only. The cloud agent pushes and reads the CI result and screenshots instead of building locally |
+| T0 | This Mac, done | A cloud token may not be allowed to push workflow files, and the owner approves the macOS minutes |
+| T1 to T4 | Cloud, with CI as the check | The sandbox is Ubuntu with no Swift, and `download.swift.org` is blocked by its proxy (routine run, 2026-11-03), so nothing compiles there |
+| T5, T6 | Cloud, with CI as the check | SwiftUI compiles on macOS only. The cloud agent pushes and reads the CI result and screenshots instead of building locally. Whether `gh` can read CI from the sandbox is unverified |
 | T7 | This Mac | It reads the owner's real logs, which never leave the machine |
 | T8 | The owner | Eyes on the built app |
 
 ## Tasks
 
-- [ ] T0 macOS CI. `.github/workflows/swift.yml` on pushes to `claude/**` and PRs: `macos` runner, `swift build`, `scripts/test.sh`, `scripts/build-app.sh` without signing, and Tokens screenshots from the fixture home uploaded as an artifact. Verify with one real run, and record the toolchain it used against B1 to B4. Needs the owner's approval: it pushes a workflow and uses paid macOS minutes on this private repo.
+- [x] T0 macOS CI. `.github/workflows/swift.yml` runs on pushes to `claude/**`, PRs and by hand: `macos-15`, `scripts/test.sh`, `scripts/build-app.sh`, a `minos 15.0` check, and screenshots from the fixture home as the `shots` artifact. T6 must add `REINS_SHOT_SCREEN=tokens` for the Tokens shots; the workflow picks them up when `Sources/Reins/TokenUsage` exists.
+  Done 2026-11-03, run 41500297865, about 2 minutes: Swift 6.1.2 and Xcode 16.4 (this Mac has 6.3.2, so code must compile on both), `Test run with 267 tests passed`, `minos 15.0`, ad-hoc signature, 10 screenshots. `macos-26` was never acquired by a hosted runner in 15 minutes. It also exposed and fixed an empty-array bug in `scripts/test.sh` on Xcode.
 - [ ] T1 Fold. Lift Claude and Codex usage counting out of `ActivityFold` into a shared function with Activity's goldens unchanged, then fold a log into hour, CLI, model, project and session rows, reading `.jsonl` and `.jsonl.zst` through `LogFiles`. Tests against `TempHome`: repeated streaming blocks, repeated Codex totals, Codex input without cached tokens, a sidechain, an unknown model, a line with no timestamp.
   Answered 2026-11-03 on the owner's Mac (read-only, counts only): of 1,805 Claude logs (880 under `subagents/`), 150 of 76,977 messages repeat across files, in 36 files, 20.9M of 15.2B tokens (0.14%). The per-file ledger stays and this small overcount is accepted, because it is inside AC8's 1% and spanning files would keep every message id forever. Fold `subagents/` logs too: they are about half the files.
 - [ ] T2 Ledger (AC9). Load, merge, save per the decisions above; a scan version forces a refold of files still present and keeps rows of files that are gone. Tests: deleting a counted log and rescanning leaves every past day unchanged; a corrupt file is moved aside and reported; the file is mode 0600; `REINS_TEST=1` refuses the real home. Runs in an actor off the main thread with progress, like `UsageScanner`.
@@ -84,7 +85,7 @@ T0 first for anything UI. T1 to T3 run in order. T4 and T5 are independent. T6 n
 ## Handoff
 
 - Checkout: `main`. Another session is working on the parent plan in the same checkout, so commit with `git commit -- <paths>` and read `git status` first: `4b45a25` swept that session's spec edits into a Tokens commit.
-- Cloud run: routine `trig_01RkCKKMMrxNXKw5pXcK3zRP` does T1 to T4 once on 2026-11-03 at 01:07 Asia/Saigon, on branch `claude/reins-tokens-engine` with a PR. **A later cloud run continues from that branch if it exists, in the same PR**, instead of starting again from `main`.
+- Cloud run: routine `trig_01RkCKKMMrxNXKw5pXcK3zRP` fired on 2026-11-03 and stopped at once because the sandbox has no Swift; it changed nothing and no branch exists. **A cloud run works on branch `claude/reins-tokens-engine`, continuing it if it exists, in one PR.**
 - Remaining: T1 to T8.
 
 `/goal` Build the Reins Tokens tab per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-03-reins-tokens.md tasks T1 to T6 on branch claude/reins-tokens-engine, continuing it if it exists, so that AC9 holds and the Board matches mocks/tokens-board/ in the macOS CI build and its screenshots, recording each task's evidence under it and opening one PR; stop and report if T0's workflow is missing or CI cannot build, and never read real logs, merge to main or release.
