@@ -10,13 +10,17 @@ public struct ModelPrice: Equatable, Sendable {
 }
 
 /// The estimate-only price table. It is a Swift literal, not a bundled JSON file, so ReinsCore needs no resource bundle.
-/// A test compares it with core/pricing.json (fetched 2026-10-24 from https://platform.claude.com/docs/en/about-claude/pricing
-/// for Claude; the GPT rows follow the same file). Models that need tier information nobody observed are left out on purpose:
-/// no price means no estimate (`nil`), never a guess.
+/// A test compares it with core/pricing.json, which records the source and `fetchedAt` of every row: Claude from
+/// https://platform.claude.com/docs/en/about-claude/pricing (2026-10-24; `claude-fable-5-1` and `claude-opus-5` on
+/// 2026-11-03), the GPT rows from https://developers.openai.com/api/docs/pricing (2026-10-24). Models that need tier
+/// information the logs do not keep are left out on purpose (`claude-haiku-5-5` is priced by each request's prompt
+/// length), and so is any model not confirmed on its vendor's page: no price means no estimate (`nil`), never a guess.
 public enum Pricing {
     public static let models: [String: ModelPrice] = [
         "claude-opus-5-5": ModelPrice(input: 4.0, output: 20.0, cacheWrite: 5.0, cacheWriteLong: 8.0, cacheRead: 0.2),
         "claude-sonnet-5-5": ModelPrice(input: 2.0, output: 10.0, cacheWrite: 2.5, cacheWriteLong: 4.0, cacheRead: 0.1),
+        "claude-fable-5-1": ModelPrice(input: 10.0, output: 50.0, cacheWrite: 12.5, cacheWriteLong: 20.0, cacheRead: 0.25),
+        "claude-opus-5": ModelPrice(input: 5.0, output: 25.0, cacheWrite: 6.25, cacheWriteLong: 10.0, cacheRead: 0.5),
         "claude-opus-4-6": ModelPrice(input: 5.0, output: 25.0, cacheWrite: 6.25, cacheWriteLong: 10.0, cacheRead: 0.5),
         "claude-sonnet-4-6": ModelPrice(input: 3.0, output: 15.0, cacheWrite: 3.75, cacheWriteLong: 6.0, cacheRead: 0.3),
         "claude-haiku-4-5": ModelPrice(input: 1.0, output: 5.0, cacheWrite: 1.25, cacheWriteLong: 2.0, cacheRead: 0.1),

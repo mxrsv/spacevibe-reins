@@ -21,6 +21,13 @@ struct ActivityPricingTests {
         }
     }
 
+    @Test("a model priced by prompt length, or not confirmed on its vendor's page, has no price on purpose")
+    func unpricedOnPurpose() {
+        for model in ["claude-haiku-5-5", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.5"] { #expect(Pricing.price(for: model) == nil, "\(model)") }
+        #expect(Pricing.price(for: "claude-fable-5-1")?.cacheRead == 0.25)
+        #expect(Pricing.price(for: "claude-opus-5")?.input == 5)
+    }
+
     @Test("estimate sums per model and says why when it cannot")
     func estimates() {
         var usage = Pricing.Usage()
