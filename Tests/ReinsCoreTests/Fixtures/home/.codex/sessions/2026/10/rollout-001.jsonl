@@ -1,0 +1,4 @@
+{"timestamp":"2026-10-31T12:00:00.000Z","type":"session_meta","payload":{"id":"fixture-1","cwd":"$HOME/work/spacevibe-api"}}
+{"timestamp":"2026-10-31T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/impeccable/SKILL.md\"]}","call_id":"c1_1"}}
+{"timestamp":"2026-10-31T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/explain/SKILL.md\"]}","call_id":"c1_2"}}
+{"timestamp":"2026-10-31T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/kyant-kanban/SKILL.md\"]}","call_id":"c1_3"}}

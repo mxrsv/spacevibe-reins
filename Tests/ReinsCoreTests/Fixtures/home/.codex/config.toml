@@ -1,0 +1,14 @@
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = false
+
+[projects."$HOME/work/spacevibe-bench"]
+trust_level = "trusted"
+
+[projects."$HOME/work/spacevibe-api"]
+trust_level = "trusted"
+
+[projects."$HOME/work/spacevibe-academy"]
+trust_level = "trusted"

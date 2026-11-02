@@ -1,0 +1,1374 @@
+{
+  "now": 1793620800000,
+  "usageInput": {
+    "state": "ready",
+    "totals": {
+      "claude": {
+        "skill": {
+          "clear": {
+            "sessions": 1,
+            "days": [
+              "2026-11-02"
+            ],
+            "last": "2026-11-02"
+          },
+          "ponytail": {
+            "sessions": 142,
+            "days": [
+              "2026-10-05",
+              "2026-10-06",
+              "2026-10-07",
+              "2026-10-08",
+              "2026-10-09",
+              "2026-10-10",
+              "2026-10-11",
+              "2026-10-12",
+              "2026-10-13",
+              "2026-10-14",
+              "2026-10-15",
+              "2026-10-16",
+              "2026-10-17",
+              "2026-10-18",
+              "2026-10-19",
+              "2026-10-20",
+              "2026-10-21",
+              "2026-10-22",
+              "2026-10-23",
+              "2026-10-24",
+              "2026-10-25",
+              "2026-10-26",
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "impeccable": {
+            "sessions": 87,
+            "days": [
+              "2026-10-05",
+              "2026-10-06",
+              "2026-10-07",
+              "2026-10-08",
+              "2026-10-09",
+              "2026-10-10",
+              "2026-10-11",
+              "2026-10-12",
+              "2026-10-13",
+              "2026-10-14",
+              "2026-10-15",
+              "2026-10-16",
+              "2026-10-17",
+              "2026-10-18",
+              "2026-10-19",
+              "2026-10-20",
+              "2026-10-21",
+              "2026-10-22",
+              "2026-10-23",
+              "2026-10-24",
+              "2026-10-25",
+              "2026-10-26",
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "diagnosing-bugs": {
+            "sessions": 23,
+            "days": [
+              "2026-10-10",
+              "2026-10-11",
+              "2026-10-12",
+              "2026-10-13",
+              "2026-10-14",
+              "2026-10-15",
+              "2026-10-16",
+              "2026-10-17",
+              "2026-10-18",
+              "2026-10-19",
+              "2026-10-20",
+              "2026-10-21",
+              "2026-10-22",
+              "2026-10-23",
+              "2026-10-24",
+              "2026-10-25",
+              "2026-10-26",
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "explain": {
+            "sessions": 17,
+            "days": [
+              "2026-10-16",
+              "2026-10-17",
+              "2026-10-18",
+              "2026-10-19",
+              "2026-10-20",
+              "2026-10-21",
+              "2026-10-22",
+              "2026-10-23",
+              "2026-10-24",
+              "2026-10-25",
+              "2026-10-26",
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "kyant-kanban": {
+            "sessions": 9,
+            "days": [
+              "2026-10-24",
+              "2026-10-25",
+              "2026-10-26",
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "tdd": {
+            "sessions": 4,
+            "days": [
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "neon-postgres": {
+            "sessions": 11,
+            "days": [
+              "2026-10-22",
+              "2026-10-23",
+              "2026-10-24",
+              "2026-10-25",
+              "2026-10-26",
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          }
+        },
+        "agent": {
+          "typescript-reviewer": {
+            "sessions": 34,
+            "days": [
+              "2026-10-05",
+              "2026-10-06",
+              "2026-10-07",
+              "2026-10-08",
+              "2026-10-09",
+              "2026-10-10",
+              "2026-10-11",
+              "2026-10-12",
+              "2026-10-13",
+              "2026-10-14",
+              "2026-10-15",
+              "2026-10-16",
+              "2026-10-17",
+              "2026-10-18",
+              "2026-10-19",
+              "2026-10-20",
+              "2026-10-21",
+              "2026-10-22",
+              "2026-10-23",
+              "2026-10-24",
+              "2026-10-25",
+              "2026-10-26",
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "react-reviewer": {
+            "sessions": 19,
+            "days": [
+              "2026-10-14",
+              "2026-10-15",
+              "2026-10-16",
+              "2026-10-17",
+              "2026-10-18",
+              "2026-10-19",
+              "2026-10-20",
+              "2026-10-21",
+              "2026-10-22",
+              "2026-10-23",
+              "2026-10-24",
+              "2026-10-25",
+              "2026-10-26",
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "database-reviewer": {
+            "sessions": 6,
+            "days": [
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "security-reviewer": {
+            "sessions": 3,
+            "days": [
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          }
+        },
+        "hook": {
+          "47c885b4654d": {
+            "runs": 412,
+            "ms": 16106,
+            "timed": 412,
+            "errors": 0,
+            "last": "2026-11-01"
+          },
+          "e7067f2456fc": {
+            "runs": 96,
+            "ms": 3600,
+            "timed": 96,
+            "errors": 3,
+            "last": "2026-11-01"
+          },
+          "6b8d44c09b19": {
+            "runs": 1204,
+            "ms": 47486,
+            "timed": 1204,
+            "errors": 17,
+            "last": "2026-11-01"
+          },
+          "487c8bee3fe1": {
+            "runs": 58,
+            "ms": 2093,
+            "timed": 58,
+            "errors": 0,
+            "last": "2026-11-01"
+          },
+          "e33ea0a4c951": {
+            "runs": 203,
+            "ms": 7963,
+            "timed": 203,
+            "errors": 0,
+            "last": "2026-11-01"
+          }
+        }
+      },
+      "codex": {
+        "skill": {
+          "impeccable": {
+            "sessions": 31,
+            "days": [
+              "2026-10-08",
+              "2026-10-09",
+              "2026-10-10",
+              "2026-10-11",
+              "2026-10-12",
+              "2026-10-13",
+              "2026-10-14",
+              "2026-10-15",
+              "2026-10-16",
+              "2026-10-17",
+              "2026-10-18",
+              "2026-10-19",
+              "2026-10-20",
+              "2026-10-21",
+              "2026-10-22",
+              "2026-10-23",
+              "2026-10-24",
+              "2026-10-25",
+              "2026-10-26",
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "explain": {
+            "sessions": 6,
+            "days": [
+              "2026-10-27",
+              "2026-10-28",
+              "2026-10-29",
+              "2026-10-30",
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          },
+          "kyant-kanban": {
+            "sessions": 2,
+            "days": [
+              "2026-10-31",
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          }
+        },
+        "agent": {
+          "security-reviewer": {
+            "sessions": 1,
+            "days": [
+              "2026-11-01"
+            ],
+            "last": "2026-11-01"
+          }
+        },
+        "hook": {}
+      }
+    },
+    "windows": {
+      "claude": {
+        "files": 146,
+        "oldest": "2026-10-05",
+        "newest": 1793620798000
+      },
+      "codex": {
+        "files": 34,
+        "oldest": "2026-10-08",
+        "newest": 1793620796000
+      }
+    }
+  },
+  "inventory": {
+    "items": [
+      {
+        "id": "claude:agent:local:architect.md",
+        "cli": "claude",
+        "kind": "agent",
+        "name": "architect",
+        "entry": "architect.md",
+        "description": "System design and trade-offs",
+        "owner": "user",
+        "path": "$HOME/.claude/agents/architect.md",
+        "file": "$HOME/.claude/agents/architect.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "inOther": false,
+        "key": "agent::architect",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 0,
+            "last": null
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:agent:local:database-reviewer.md",
+        "cli": "claude",
+        "kind": "agent",
+        "name": "database-reviewer",
+        "entry": "database-reviewer.md",
+        "description": "PostgreSQL schema and query review",
+        "owner": "user",
+        "path": "$HOME/.claude/agents/database-reviewer.md",
+        "file": "$HOME/.claude/agents/database-reviewer.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "inOther": false,
+        "key": "agent::database-reviewer",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 6,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:agent:local:react-reviewer.md",
+        "cli": "claude",
+        "kind": "agent",
+        "name": "react-reviewer",
+        "entry": "react-reviewer.md",
+        "description": "Hooks, render performance, a11y",
+        "owner": "user",
+        "path": "$HOME/.claude/agents/react-reviewer.md",
+        "file": "$HOME/.claude/agents/react-reviewer.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "inOther": false,
+        "key": "agent::react-reviewer",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 19,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:agent:local:security-reviewer.md",
+        "cli": "claude",
+        "kind": "agent",
+        "name": "security-reviewer",
+        "entry": "security-reviewer.md",
+        "description": "OWASP-style vulnerability review",
+        "owner": "user",
+        "path": "$HOME/.claude/agents/security-reviewer.md",
+        "file": "$HOME/.claude/agents/security-reviewer.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "inOther": true,
+        "key": "agent::security-reviewer",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 3,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "counted",
+            "runs": 1,
+            "last": "2026-11-01"
+          }
+        }
+      },
+      {
+        "id": "claude:agent:local:typescript-reviewer.md",
+        "cli": "claude",
+        "kind": "agent",
+        "name": "typescript-reviewer",
+        "entry": "typescript-reviewer.md",
+        "description": "Type safety and async correctness review",
+        "owner": "user",
+        "path": "$HOME/.claude/agents/typescript-reviewer.md",
+        "file": "$HOME/.claude/agents/typescript-reviewer.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "inOther": false,
+        "key": "agent::typescript-reviewer",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 34,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:agent:project:231074454cfd:migration-reviewer.md",
+        "cli": "claude",
+        "kind": "agent",
+        "name": "migration-reviewer",
+        "entry": "migration-reviewer.md",
+        "description": "Reviews database migrations",
+        "owner": "user",
+        "path": "$HOME/work/spacevibe-bench/.claude/agents/migration-reviewer.md",
+        "file": "$HOME/work/spacevibe-bench/.claude/agents/migration-reviewer.md",
+        "removable": false,
+        "scope": "project",
+        "project": "$HOME/work/spacevibe-bench",
+        "inOther": false,
+        "key": "agent:$HOME/work/spacevibe-bench:migration-reviewer",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 0,
+            "last": null
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:skill:local:diagnosing-bugs",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "diagnosing-bugs",
+        "entry": "diagnosing-bugs",
+        "description": "Investigate a bug before fixing it",
+        "owner": "user",
+        "path": "$HOME/.claude/skills/diagnosing-bugs",
+        "file": "$HOME/.claude/skills/diagnosing-bugs/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "override": null,
+        "inOther": false,
+        "key": "skill::diagnosing-bugs",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 23,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:skill:local:explain",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "explain",
+        "entry": "explain",
+        "description": "Explain a concept in Vietnamese",
+        "owner": "user",
+        "path": "$HOME/.claude/skills/explain",
+        "file": "$HOME/.claude/skills/explain/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "override": null,
+        "inOther": true,
+        "key": "skill::explain",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 17,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "counted",
+            "runs": 6,
+            "last": "2026-11-01"
+          }
+        }
+      },
+      {
+        "id": "claude:skill:local:impeccable",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "impeccable",
+        "entry": "impeccable",
+        "description": "Design, critique and polish a frontend interface",
+        "owner": "user",
+        "path": "$HOME/.claude/skills/impeccable",
+        "file": "$HOME/.claude/skills/impeccable/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "override": null,
+        "inOther": true,
+        "key": "skill::impeccable",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 87,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "counted",
+            "runs": 31,
+            "last": "2026-11-01"
+          }
+        }
+      },
+      {
+        "id": "claude:skill:local:kyant-kanban",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "kyant-kanban",
+        "entry": "kyant-kanban",
+        "description": "Work with the task vault",
+        "owner": "user",
+        "path": "$HOME/.claude/skills/kyant-kanban",
+        "file": "$HOME/.claude/skills/kyant-kanban/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "override": null,
+        "inOther": true,
+        "key": "skill::kyant-kanban",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 9,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "counted",
+            "runs": 2,
+            "last": "2026-11-01"
+          }
+        }
+      },
+      {
+        "id": "claude:skill:local:ponytail",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "ponytail",
+        "entry": "ponytail",
+        "description": "Pick the laziest solution that works",
+        "owner": "user",
+        "path": "$HOME/.claude/skills/ponytail",
+        "file": "$HOME/.claude/skills/ponytail/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "override": null,
+        "inOther": false,
+        "key": "skill::ponytail",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 142,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:skill:local:review-change",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "review-change",
+        "entry": "review-change",
+        "description": "Review a change you just made",
+        "owner": "user",
+        "path": "$HOME/.claude/skills/review-change",
+        "file": "$HOME/.claude/skills/review-change/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "override": null,
+        "inOther": false,
+        "key": "skill::review-change",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 0,
+            "last": null
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:skill:local:skill-creator",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "skill-creator",
+        "entry": "skill-creator",
+        "description": "Create and improve skills",
+        "owner": "user",
+        "path": "$HOME/.claude/skills/skill-creator",
+        "file": "$HOME/.claude/skills/skill-creator/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "override": null,
+        "inOther": false,
+        "key": "skill::skill-creator",
+        "cells": {
+          "claude": {
+            "state": "pending",
+            "reason": "Added in the last 24 hours"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:skill:local:tdd",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "tdd",
+        "entry": "tdd",
+        "description": "Test-driven development",
+        "owner": "user",
+        "path": "$HOME/.claude/skills/tdd",
+        "file": "$HOME/.claude/skills/tdd/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "override": null,
+        "inOther": false,
+        "key": "skill::tdd",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 4,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:skill:local:webapp-testing",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "webapp-testing",
+        "entry": "webapp-testing",
+        "description": "Test a local web app with Playwright",
+        "owner": "user",
+        "path": "$HOME/.claude/skills/webapp-testing",
+        "file": "$HOME/.claude/skills/webapp-testing/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "override": null,
+        "inOther": true,
+        "key": "skill::webapp-testing",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 0,
+            "last": null
+          },
+          "codex": {
+            "state": "counted",
+            "runs": 0,
+            "last": null
+          }
+        }
+      },
+      {
+        "id": "claude:skill:neon:neon-postgres",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "neon-postgres",
+        "entry": "neon-postgres",
+        "description": "Neon Postgres guides",
+        "owner": "neon",
+        "path": "$HOME/.claude/plugins/cache/neon/skills/neon-postgres",
+        "file": "$HOME/.claude/plugins/cache/neon/skills/neon-postgres/SKILL.md",
+        "removable": false,
+        "scope": "global",
+        "project": null,
+        "override": null,
+        "inOther": false,
+        "key": "skill::neon-postgres",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 11,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "claude:skill:project:231074454cfd:bench-checklist",
+        "cli": "claude",
+        "kind": "skill",
+        "name": "bench-checklist",
+        "entry": "bench-checklist",
+        "description": "Release checklist for this project",
+        "owner": "user",
+        "path": "$HOME/work/spacevibe-bench/.claude/skills/bench-checklist",
+        "file": "$HOME/work/spacevibe-bench/.claude/skills/bench-checklist/SKILL.md",
+        "removable": false,
+        "scope": "project",
+        "project": "$HOME/work/spacevibe-bench",
+        "inOther": false,
+        "key": "skill:$HOME/work/spacevibe-bench:bench-checklist",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 0,
+            "last": null
+          },
+          "codex": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "id": "codex:agent:local:security-reviewer.toml",
+        "cli": "codex",
+        "kind": "agent",
+        "name": "security-reviewer",
+        "entry": "security-reviewer.toml",
+        "description": "OWASP-style vulnerability review",
+        "owner": "user",
+        "path": "$HOME/.codex/agents/security-reviewer.toml",
+        "file": "$HOME/.codex/agents/security-reviewer.toml",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "inOther": true,
+        "key": "agent::security-reviewer",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 3,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "counted",
+            "runs": 1,
+            "last": "2026-11-01"
+          }
+        }
+      },
+      {
+        "id": "codex:skill:local:explain",
+        "cli": "codex",
+        "kind": "skill",
+        "name": "explain",
+        "entry": "explain",
+        "description": "Explain a concept in Vietnamese",
+        "owner": "user",
+        "path": "$HOME/.codex/skills/explain",
+        "file": "$HOME/.codex/skills/explain/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "inOther": true,
+        "key": "skill::explain",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 17,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "counted",
+            "runs": 6,
+            "last": "2026-11-01"
+          }
+        }
+      },
+      {
+        "id": "codex:skill:local:impeccable",
+        "cli": "codex",
+        "kind": "skill",
+        "name": "impeccable",
+        "entry": "impeccable",
+        "description": "Design, critique and polish a frontend interface",
+        "owner": "user",
+        "path": "$HOME/.codex/skills/impeccable",
+        "file": "$HOME/.codex/skills/impeccable/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "inOther": true,
+        "key": "skill::impeccable",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 87,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "counted",
+            "runs": 31,
+            "last": "2026-11-01"
+          }
+        }
+      },
+      {
+        "id": "codex:skill:local:kyant-kanban",
+        "cli": "codex",
+        "kind": "skill",
+        "name": "kyant-kanban",
+        "entry": "kyant-kanban",
+        "description": "Work with the task vault",
+        "owner": "user",
+        "path": "$HOME/.codex/skills/kyant-kanban",
+        "file": "$HOME/.codex/skills/kyant-kanban/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "inOther": true,
+        "key": "skill::kyant-kanban",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 9,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "counted",
+            "runs": 2,
+            "last": "2026-11-01"
+          }
+        }
+      },
+      {
+        "id": "codex:skill:local:webapp-testing",
+        "cli": "codex",
+        "kind": "skill",
+        "name": "webapp-testing",
+        "entry": "webapp-testing",
+        "description": "Test a local web app with Playwright",
+        "owner": "user",
+        "path": "$HOME/.codex/skills/webapp-testing",
+        "file": "$HOME/.codex/skills/webapp-testing/SKILL.md",
+        "removable": true,
+        "scope": "global",
+        "project": null,
+        "inOther": true,
+        "key": "skill::webapp-testing",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 0,
+            "last": null
+          },
+          "codex": {
+            "state": "counted",
+            "runs": 0,
+            "last": null
+          }
+        }
+      }
+    ],
+    "hooks": [
+      {
+        "id": "claude:hook:0a18bd821ef5",
+        "cli": "claude",
+        "kind": "hook",
+        "event": "PreToolUse",
+        "matcher": "Edit|Write",
+        "command": "sh '$HOME/.claude/scripts/block-env-edit.sh'",
+        "timeout": null,
+        "async": false,
+        "owner": "user",
+        "removable": true,
+        "dead": false,
+        "paths": [
+          "$HOME/.claude/scripts/block-env-edit.sh"
+        ],
+        "hash": "e7067f2456fc",
+        "file": "$HOME/.claude/settings.json",
+        "scope": "global",
+        "project": null,
+        "key": "hook::e7067f2456fc",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 96,
+            "errors": 3,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        },
+        "usage": {
+          "runs": 96,
+          "avgMs": 38,
+          "totalMs": 3600,
+          "errors": 3,
+          "last": "2026-11-01"
+        }
+      },
+      {
+        "id": "claude:hook:0b3f174c44c9",
+        "cli": "claude",
+        "kind": "hook",
+        "event": "SessionStart",
+        "matcher": null,
+        "command": "sh '$HOME/.claude/scripts/load-context.sh'",
+        "timeout": null,
+        "async": false,
+        "owner": "user",
+        "removable": true,
+        "dead": false,
+        "paths": [
+          "$HOME/.claude/scripts/load-context.sh"
+        ],
+        "hash": "487c8bee3fe1",
+        "file": "$HOME/.claude/settings.json",
+        "scope": "global",
+        "project": null,
+        "key": "hook::487c8bee3fe1",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 58,
+            "errors": 0,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        },
+        "usage": {
+          "runs": 58,
+          "avgMs": 36,
+          "totalMs": 2093,
+          "errors": 0,
+          "last": "2026-11-01"
+        }
+      },
+      {
+        "id": "claude:hook:520be5fccf31",
+        "cli": "claude",
+        "kind": "hook",
+        "event": "Stop",
+        "matcher": null,
+        "command": "sh '$HOME/work/old-dotfiles/notify.sh'",
+        "timeout": null,
+        "async": false,
+        "owner": "user",
+        "removable": true,
+        "dead": true,
+        "paths": [
+          "$HOME/work/old-dotfiles/notify.sh"
+        ],
+        "hash": "9f0dd7d87722",
+        "file": "$HOME/.claude/settings.json",
+        "scope": "global",
+        "project": null,
+        "key": "hook::9f0dd7d87722",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 0,
+            "errors": 0,
+            "last": null
+          },
+          "codex": {
+            "state": "missing"
+          }
+        },
+        "usage": {
+          "runs": 0,
+          "avgMs": null,
+          "totalMs": 0,
+          "errors": 0,
+          "last": null
+        }
+      },
+      {
+        "id": "claude:hook:542caf91b7c8",
+        "cli": "claude",
+        "kind": "hook",
+        "event": "PreToolUse",
+        "matcher": "Bash",
+        "command": "sh '$HOME/.claude/scripts/guard-destructive.sh'",
+        "timeout": null,
+        "async": false,
+        "owner": "user",
+        "removable": true,
+        "dead": false,
+        "paths": [
+          "$HOME/.claude/scripts/guard-destructive.sh"
+        ],
+        "hash": "47c885b4654d",
+        "file": "$HOME/.claude/settings.json",
+        "scope": "global",
+        "project": null,
+        "key": "hook::47c885b4654d",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 412,
+            "errors": 0,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        },
+        "usage": {
+          "runs": 412,
+          "avgMs": 39,
+          "totalMs": 16106,
+          "errors": 0,
+          "last": "2026-11-01"
+        }
+      },
+      {
+        "id": "claude:hook:7a927295033e",
+        "cli": "claude",
+        "kind": "hook",
+        "event": "Stop",
+        "matcher": null,
+        "command": "sh '$HOME/.claude/scripts/notify-done.sh'",
+        "timeout": null,
+        "async": false,
+        "owner": "user",
+        "removable": true,
+        "dead": false,
+        "paths": [
+          "$HOME/.claude/scripts/notify-done.sh"
+        ],
+        "hash": "e33ea0a4c951",
+        "file": "$HOME/.claude/settings.json",
+        "scope": "global",
+        "project": null,
+        "key": "hook::e33ea0a4c951",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 203,
+            "errors": 0,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "unmeasurable",
+            "reason": "Codex does not log hook runs"
+          }
+        },
+        "usage": {
+          "runs": 203,
+          "avgMs": 39,
+          "totalMs": 7963,
+          "errors": 0,
+          "last": "2026-11-01"
+        }
+      },
+      {
+        "id": "claude:hook:b9f92a37d758",
+        "cli": "claude",
+        "kind": "hook",
+        "event": "PostToolUse",
+        "matcher": "Edit",
+        "command": "sh '$HOME/work/tools/tsc-watch.sh'",
+        "timeout": null,
+        "async": false,
+        "owner": "user",
+        "removable": true,
+        "dead": true,
+        "paths": [
+          "$HOME/work/tools/tsc-watch.sh"
+        ],
+        "hash": "06ec17491e86",
+        "file": "$HOME/.claude/settings.json",
+        "scope": "global",
+        "project": null,
+        "key": "hook::06ec17491e86",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 0,
+            "errors": 0,
+            "last": null
+          },
+          "codex": {
+            "state": "missing"
+          }
+        },
+        "usage": {
+          "runs": 0,
+          "avgMs": null,
+          "totalMs": 0,
+          "errors": 0,
+          "last": null
+        }
+      },
+      {
+        "id": "claude:hook:be21b7d68101",
+        "cli": "claude",
+        "kind": "hook",
+        "event": "PostToolUse",
+        "matcher": "Edit",
+        "command": "echo checked",
+        "timeout": null,
+        "async": false,
+        "owner": "user",
+        "removable": false,
+        "dead": false,
+        "paths": [],
+        "hash": "ef38d6cf6c4b",
+        "file": "$HOME/work/spacevibe-bench/.claude/settings.local.json",
+        "scope": "project",
+        "project": "$HOME/work/spacevibe-bench",
+        "key": "hook:$HOME/work/spacevibe-bench:ef38d6cf6c4b",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 0,
+            "errors": 0,
+            "last": null
+          },
+          "codex": {
+            "state": "missing"
+          }
+        },
+        "usage": {
+          "runs": 0,
+          "avgMs": null,
+          "totalMs": 0,
+          "errors": 0,
+          "last": null
+        }
+      },
+      {
+        "id": "claude:hook:ef9fdb35fcba",
+        "cli": "claude",
+        "kind": "hook",
+        "event": "PostToolUse",
+        "matcher": "Edit|Write",
+        "command": "prettier --write \"$FILE\"",
+        "timeout": null,
+        "async": false,
+        "owner": "user",
+        "removable": true,
+        "dead": false,
+        "paths": [],
+        "hash": "6b8d44c09b19",
+        "file": "$HOME/.claude/settings.json",
+        "scope": "global",
+        "project": null,
+        "key": "hook::6b8d44c09b19",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 1204,
+            "errors": 17,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "missing"
+          }
+        },
+        "usage": {
+          "runs": 1204,
+          "avgMs": 39,
+          "totalMs": 47486,
+          "errors": 17,
+          "last": "2026-11-01"
+        }
+      },
+      {
+        "id": "codex:hook:7a927295033e",
+        "cli": "codex",
+        "kind": "hook",
+        "event": "Stop",
+        "matcher": null,
+        "command": "sh '$HOME/.claude/scripts/notify-done.sh'",
+        "timeout": null,
+        "async": false,
+        "owner": "user",
+        "removable": true,
+        "dead": false,
+        "paths": [
+          "$HOME/.claude/scripts/notify-done.sh"
+        ],
+        "hash": "e33ea0a4c951",
+        "file": "$HOME/.codex/hooks.json",
+        "scope": "global",
+        "project": null,
+        "key": "hook::e33ea0a4c951",
+        "cells": {
+          "claude": {
+            "state": "counted",
+            "runs": 203,
+            "errors": 0,
+            "last": "2026-11-01"
+          },
+          "codex": {
+            "state": "unmeasurable",
+            "reason": "Codex does not log hook runs"
+          }
+        },
+        "usage": null
+      }
+    ],
+    "problems": [],
+    "events": {
+      "claude": [
+        "SessionStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PermissionRequest",
+        "PostToolUse",
+        "PostToolUseFailure",
+        "Notification",
+        "SubagentStart",
+        "SubagentStop",
+        "Elicitation",
+        "ElicitationResult",
+        "TeammateIdle",
+        "PreCompact",
+        "PostCompact",
+        "Stop",
+        "StopFailure",
+        "SessionEnd"
+      ],
+      "codex": [
+        "SessionStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PermissionRequest",
+        "PostToolUse",
+        "SubagentStart",
+        "SubagentStop",
+        "Interrupt",
+        "Stop",
+        "SessionEnd"
+      ]
+    },
+    "roots": {
+      "claude": "$HOME/.claude",
+      "codex": "$HOME/.codex"
+    }
+  },
+  "filterCounts": {
+    "all": 25,
+    "only": {
+      "claude": 19,
+      "codex": 0
+    },
+    "neverRan": 6,
+    "dead": 2
+  }
+}

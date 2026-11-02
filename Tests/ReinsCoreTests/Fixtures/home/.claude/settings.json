@@ -1,0 +1,97 @@
+{
+  "enabledPlugins": {
+    "neon@fixture-market": true
+  },
+  "env": {
+    "EXAMPLE_TOKEN": "fixture-secret-do-not-show"
+  },
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(pnpm run:*)",
+      "Bash(node:*)",
+      "WebFetch(domain:github.com)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(vercel:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Read(.env*)",
+      "Edit(~/.ssh/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh '$HOME/.claude/scripts/guard-destructive.sh'"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh '$HOME/.claude/scripts/block-env-edit.sh'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "prettier --write \"$FILE\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh '$HOME/work/tools/tsc-watch.sh'"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh '$HOME/.claude/scripts/load-context.sh'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh '$HOME/.claude/scripts/notify-done.sh'"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh '$HOME/work/old-dotfiles/notify.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

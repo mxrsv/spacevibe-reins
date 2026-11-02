@@ -1,0 +1,5 @@
+{"timestamp":"2026-11-01T12:00:00.000Z","type":"session_meta","payload":{"id":"fixture-0","cwd":"$HOME/work/spacevibe-bench"}}
+{"timestamp":"2026-11-01T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/impeccable/SKILL.md\"]}","call_id":"c0_1"}}
+{"timestamp":"2026-11-01T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/explain/SKILL.md\"]}","call_id":"c0_2"}}
+{"timestamp":"2026-11-01T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/kyant-kanban/SKILL.md\"]}","call_id":"c0_3"}}
+{"timestamp":"2026-11-01T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"spawn_agent","arguments":"{\"agent_type\":\"security-reviewer\"}","call_id":"a0"}}

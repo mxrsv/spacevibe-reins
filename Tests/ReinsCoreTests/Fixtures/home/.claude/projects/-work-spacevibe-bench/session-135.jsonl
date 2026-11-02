@@ -1,0 +1,15 @@
+{"type":"user","timestamp":"2026-10-09T12:00:00.000Z","cwd":"$HOME/work/spacevibe-bench","message":{"role":"user","content":"Synthetic request"}}
+{"type":"assistant","timestamp":"2026-10-09T12:00:00.000Z","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_135_0","name":"Skill","input":{"skill":"ponytail"}}]}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PreToolUse","command":"sh '$HOME/.claude/scripts/guard-destructive.sh'","durationMs":35,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PreToolUse","command":"sh '$HOME/.claude/scripts/guard-destructive.sh'","durationMs":57,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":35,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":57,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":39,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":21,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":43,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":25,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":47,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":29,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-09T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"Stop","command":"sh '$HOME/.claude/scripts/notify-done.sh'","durationMs":35,"exitCode":0,"stderr":""}}
+{"type":"assistant","timestamp":"2026-10-09T12:00:00.000Z","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_135_edit","name":"Edit","input":{"file_path":"$HOME/work/spacevibe-bench/lib/leaderboard/rank.ts"}}]}}
+{"type":"user","timestamp":"2026-10-09T12:00:00.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_135_edit","content":"ok"}]}}

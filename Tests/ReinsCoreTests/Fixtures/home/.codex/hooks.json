@@ -1,0 +1,1 @@
+{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"sh '$HOME/.claude/scripts/notify-done.sh'"}]}]}}

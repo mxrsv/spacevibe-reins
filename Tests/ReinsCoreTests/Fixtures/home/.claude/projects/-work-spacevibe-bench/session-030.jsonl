@@ -1,0 +1,22 @@
+{"type":"user","timestamp":"2026-10-30T12:00:00.000Z","cwd":"$HOME/work/spacevibe-bench","message":{"role":"user","content":"Synthetic request"}}
+{"type":"assistant","timestamp":"2026-10-30T12:00:00.000Z","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_30_0","name":"Skill","input":{"skill":"ponytail"}}]}}
+{"type":"assistant","timestamp":"2026-10-30T12:00:00.000Z","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_30_1","name":"Skill","input":{"skill":"impeccable"}}]}}
+{"type":"assistant","timestamp":"2026-10-30T12:00:00.000Z","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_30_2","name":"Task","input":{"subagent_type":"typescript-reviewer","description":"Synthetic"}}]}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PreToolUse","command":"sh '$HOME/.claude/scripts/guard-destructive.sh'","durationMs":50,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PreToolUse","command":"sh '$HOME/.claude/scripts/guard-destructive.sh'","durationMs":32,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PreToolUse","command":"sh '$HOME/.claude/scripts/guard-destructive.sh'","durationMs":54,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PreToolUse","command":"sh '$HOME/.claude/scripts/block-env-edit.sh'","durationMs":50,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":50,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":32,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":54,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":36,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":58,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":40,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":22,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":44,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"PostToolUse","command":"prettier --write \"$FILE\"","durationMs":26,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"SessionStart","command":"sh '$HOME/.claude/scripts/load-context.sh'","durationMs":50,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"Stop","command":"sh '$HOME/.claude/scripts/notify-done.sh'","durationMs":50,"exitCode":0,"stderr":""}}
+{"type":"attachment","timestamp":"2026-10-30T12:00:00.000Z","attachment":{"type":"hook_success","hookEvent":"Stop","command":"sh '$HOME/.claude/scripts/notify-done.sh'","durationMs":32,"exitCode":0,"stderr":""}}
+{"type":"assistant","timestamp":"2026-10-30T12:00:00.000Z","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_30_edit","name":"Edit","input":{"file_path":"$HOME/work/spacevibe-bench/lib/leaderboard/rank.ts"}}]}}
+{"type":"user","timestamp":"2026-10-30T12:00:00.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_30_edit","content":"ok"}]}}

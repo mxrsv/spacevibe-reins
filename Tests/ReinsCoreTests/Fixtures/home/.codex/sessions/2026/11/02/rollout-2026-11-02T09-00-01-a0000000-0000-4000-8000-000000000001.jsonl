@@ -1,0 +1,6 @@
+{"timestamp":"2026-11-02T11:51:00.000Z","type":"session_meta","payload":{"id":"a0000000-0000-4000-8000-000000000001","cwd":"$HOME/work/spacevibe-api","timestamp":"2026-11-02T11:51:00.000Z","source":"cli"}}
+{"timestamp":"2026-11-02T11:51:01.000Z","type":"turn_context","payload":{"model":"gpt-6-astra"}}
+{"timestamp":"2026-11-02T11:51:02.000Z","type":"event_msg","payload":{"type":"task_started","turn_id":"t"}}
+{"timestamp":"2026-11-02T11:51:03.000Z","type":"event_msg","payload":{"type":"user_message","message":"Add /v1/leaderboard cache header"}}
+{"timestamp":"2026-11-02T11:51:04.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":600000,"cached_input_tokens":500000,"output_tokens":18000}}}}
+{"timestamp":"2026-11-02T11:55:00.000Z","type":"response_item","payload":{"type":"function_call","call_id":"p1","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"pnpm test --run\"]}"}}

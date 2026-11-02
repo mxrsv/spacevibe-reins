@@ -1,0 +1,2 @@
+{"timestamp":"2026-10-28T12:00:00.000Z","type":"session_meta","payload":{"id":"fixture-29","cwd":"$HOME/work/spacevibe-academy"}}
+{"timestamp":"2026-10-28T12:00:00.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"cat $HOME/.codex/skills/impeccable/SKILL.md\"]}","call_id":"c29_1"}}
