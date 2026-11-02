@@ -6,7 +6,7 @@ export const REQUEST_LIMIT_BYTES = 256 * 1024;
 const fail = (error: string, status: number): Reply<never> => ({ ok: false, error, status });
 
 // ipcMain.handle rewrites thrown errors and drops custom fields, so errors travel as a value.
-// The shape and messages match what server.mjs sent over HTTP.
+// The shape and messages match what the old HTTP prototype server sent.
 export async function toReply<T>(work: () => T | Promise<T>): Promise<Reply<T>> {
   try {
     return { ok: true, data: await work() };
