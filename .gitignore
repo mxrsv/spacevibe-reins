@@ -9,3 +9,6 @@ release/
 build/
 *.xcodeproj
 Package.resolved
+
+# Test fixtures may contain a synthetic project settings.local.json; a global ignore of that name must not hide them.
+!Tests/ReinsCoreTests/Fixtures/**/.claude/settings.local.json
