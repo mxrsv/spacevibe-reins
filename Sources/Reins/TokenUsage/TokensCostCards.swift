@@ -200,7 +200,7 @@ struct TokensPriceTable: View {
                 .padding(.bottom, 6)
             Grid(alignment: .trailing, horizontalSpacing: 10, verticalSpacing: 0) {
                 GridRow {
-                    Text("Model").gridColumnAlignment(.leading)
+                    Text("Model").fixedSize().gridColumnAlignment(.leading)
                     Text("Input")
                     Text("Cache read")
                     Text("Cache write")
@@ -211,7 +211,7 @@ struct TokensPriceTable: View {
                 ForEach(models) { row in
                     Divider().gridCellUnsizedAxes(.horizontal)
                     GridRow {
-                        Text(row.name)
+                        Text(row.name).fixedSize()
                         Text(Self.rate(row.price.input))
                         Text(Self.rate(row.price.cacheRead))
                         Text(Self.rate(row.price.cacheWrite))
@@ -222,7 +222,7 @@ struct TokensPriceTable: View {
                 ForEach(unpriced, id: \.self) { name in
                     Divider().gridCellUnsizedAxes(.horizontal)
                     GridRow {
-                        Text(name)
+                        Text(name).fixedSize()
                         Tag("no price").gridCellColumns(4)
                     }
                     .frame(height: 26)

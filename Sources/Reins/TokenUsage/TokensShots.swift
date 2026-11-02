@@ -40,22 +40,22 @@ enum TokensShots {
                 try write(screen(model, env: env, choice: choice), name: "tokens-\(name)", choice: choice, to: directory, echo: echo)
             }
             try shot("default", echo: true)
-            try shot("tokens", echo: choice == .light) { $0.measure = .tokens }
+            try shot("tokens") { $0.measure = .tokens }
             try shot("new-only") { $0.measure = .fresh }
             try shot("price", echo: choice == .light) { $0.isPriceTableOpen = true }
-            try shot("scoped", echo: choice == .dark) { model in
+            try shot("scoped") { model in
                 guard let board = model.board else { return }
                 model.selectedID = board.buckets.dropFirst().first { !$0.both.isEmpty }?.id
                 if let top = model.board?.models(.claude).first { model.pick = .model(.claude, top.name) }
             }
-            try shot("week", echo: choice == .dark) { $0.period = .week }
+            try shot("week") { $0.period = .week }
             try shot("month") { $0.period = .month }
-            try shot("moved-aside", echo: choice == .dark) { model in
+            try shot("moved-aside") { model in
                 let moved = roots.data.appendingPathComponent("token-ledger.unreadable-20261103T014600Z.json").path
                 model.preview(result: TokenScanResult(ledger: result.ledger, movedAside: moved, files: result.files), now: now)
             }
-            try shot("empty", echo: choice == .light) { $0.preview(result: TokenScanResult(ledger: TokenLedger(), files: 0), now: now) }
-            try shot("loading", echo: choice == .dark) { $0.previewProgress(nil) }
+            try shot("empty") { $0.preview(result: TokenScanResult(ledger: TokenLedger(), files: 0), now: now) }
+            try shot("loading") { $0.previewProgress(nil) }
 
             let full = TokensModel(env: env)
             full.preview(result: result, now: now)
