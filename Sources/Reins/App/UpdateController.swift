@@ -13,6 +13,7 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
     private var controller: SPUStandardUpdaterController?
     private var unavailableReason: String?
     private var reminder: UUID?
+    private var showingInFocus = false
 
     init(toasts: ToastCenter) {
         self.toasts = toasts
@@ -90,9 +91,16 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
     /// Sparkle keeps showing its own window; the toast only points at it, because it hides after a few seconds.
     var supportsGentleScheduledUpdateReminders: Bool { true }
 
+    /// Sparkle always shows the update. At launch it shows it in focus, so a toast would only flash behind the window.
+    func standardUserDriverShouldHandleShowingScheduledUpdate(_ update: SUAppcastItem, andInImmediateFocus immediateFocus: Bool) -> Bool {
+        showingInFocus = immediateFocus
+        return true
+    }
+
     func standardUserDriverWillHandleShowingUpdate(_ handleShowingUpdate: Bool, forUpdate update: SUAppcastItem, state: SPUUserUpdateState) {
-        logger.notice("Update \(update.versionString, privacy: .public) found, by user: \(state.userInitiated, privacy: .public)")
-        guard !state.userInitiated else { return }
+        let wantsToast = !state.userInitiated && !showingInFocus
+        logger.notice("Update \(update.versionString, privacy: .public) found, by user: \(state.userInitiated, privacy: .public), toast: \(wantsToast, privacy: .public)")
+        guard wantsToast else { return }
         reminder = toasts.show("Reins \(update.displayVersionString) is available", action: Self.viewAction { [weak self] in
             self?.checkForUpdates()
         })
