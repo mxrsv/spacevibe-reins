@@ -1,7 +1,7 @@
 # Reins: move to Electron and build the Matrix interface
 
 Spec: [2026-11-02-reins.md](../specs/2026-11-02-reins.md) (requirements, platform, interface, acceptance criteria AC1 to AC6).
-Status: planned, nothing implemented. Written 2026-11-02.
+Status: in progress. Core, IPC and all four UI areas are built (2026-11-02); the UI waits for the owner's eye approval and is uncommitted. Written 2026-11-02.
 
 ## Approach
 
@@ -59,21 +59,21 @@ Phases 1 to 4 can start now. Phase 5 waits on the decision above (0.1 is done). 
   - Cost: both CLIs log tokens; Codex `total_token_usage` has input including cached and output including reasoning; Claude usage must be deduplicated by `message.id`. Show it as "estimated, API-equivalent". Needs a maintained per-model price table (`agent-world/server/pricing.json` is a starting point).
   - Portable from `agent-world/server/`: `tail-reader.js`, `session-state.js`, `live-metrics.js`, `pricing.json`; replace `codex-source.js` matching with the lock-fd mapping.
   - UI wording for what cannot be measured is part of 6.3.
-- [ ] 0.4 Electron spike: run `scan()` through the `?modulePath` worker inside `electron-vite dev` and in a packaged build; record Electron's bundled Node version against the APIs `core/` uses. Gates 2.
-- [ ] 0.5 Audit `core/` for macOS-only assumptions. Evidence so far: no `process.platform` or `/Users/` paths in `core/*.mjs` (grep, 2026-11-02). Windows stays out of this plan.
+- [x] 0.4 Electron spike: run `scan()` through the `?modulePath` worker inside `electron-vite dev` and in a packaged build; record Electron's bundled Node version against the APIs `core/` uses. Gates 2.
+- [x] 0.5 Audit `core/` for macOS-only assumptions. Evidence so far: no `process.platform` or `/Users/` paths in `core/*.mjs` (grep, 2026-11-02). Windows stays out of this plan.
 
 ### Phase 1: baseline and scaffold
 
 - [x] 1.1 Baseline commit before any move: `core/`, `test.mjs`, `server.mjs`, `web/`. Check every path against `AGENTS.md` R2 first (no real-config fixtures, no `shots/`; `mocks/` holds `shots/` folders that `.gitignore` excludes, confirm nothing else real is inside). `npm test` is 14/14 on 2026-11-02. Commit with explicit paths. Done 2026-11-02 as `96a7967`; `mocks/` stays untracked (scan clean) pending the owner's call.
-- [ ] 1.2 Scaffold electron-vite with React and TypeScript, then `shadcn init -b base -t vite`, Tailwind, and the test and lint scripts. Commit.
-- [ ] 1.3 Rewrite `AGENTS.md` (D8). These lines become false: "Node 24 stdlib, no build step, no dependencies"; the `npm start` port row; R5 (loopback server, `x-reins` header), replaced by an IPC rule; the CSP trap, which still applies if mock templates with inline `style=` are ported. Keep R1 to R4.
-- [ ] 1.4 Test guard for AC3: with `REINS_TEST=1`, `roots()` throws when a resolved root is under the real `os.userInfo().homedir`. A unit test proves it refuses.
+- [x] 1.2 Scaffold electron-vite with React and TypeScript, then `shadcn init -b base -t vite`, Tailwind, and the test and lint scripts. Commit.
+- [x] 1.3 Rewrite `AGENTS.md` (D8). These lines become false: "Node 24 stdlib, no build step, no dependencies"; the `npm start` port row; R5 (loopback server, `x-reins` header), replaced by an IPC rule; the CSP trap, which still applies if mock templates with inline `style=` are ported. Keep R1 to R4.
+- [x] 1.4 Test guard for AC3: with `REINS_TEST=1`, `roots()` throws when a resolved root is under the real `os.userInfo().homedir`. A unit test proves it refuses.
 
 ### Phase 2: main process and IPC
 
-- [ ] 2.1 Move the `/api/inventory`, `/api/history`, `/api/item` and action endpoints of `server.mjs` into `electron/ipc/*`, with the contract in `src/lib/ipc-contract.ts`. Each handler validates input and keeps the error shape (`UserError`).
-- [ ] 2.2 Handler tests against a temp `HOME`, reusing the `test.mjs` fixtures. Delete `server.mjs` and its tests once the handlers cover the same cases.
-- [ ] 2.3 Window hardening listed under Decisions, with a test that a non-allow-listed channel and a navigation are refused.
+- [x] 2.1 Move the `/api/inventory`, `/api/history`, `/api/item` and action endpoints of `server.mjs` into `electron/ipc/*`, with the contract in `src/lib/ipc-contract.ts`. Each handler validates input and keeps the error shape (`UserError`).
+- [x] 2.2 Handler tests against a temp `HOME`, reusing the `test.mjs` fixtures. Delete `server.mjs` and its tests once the handlers cover the same cases.
+- [x] 2.3 Window hardening listed under Decisions, with a test that a non-allow-listed channel and a navigation are refused.
 
 ### Phase 3: shell and tokens (UI gate)
 
@@ -83,20 +83,20 @@ Phases 1 to 4 can start now. Phase 5 waits on the decision above (0.1 is done). 
 
 ### Phase 4: Loadout (UI gate)
 
-- [ ] 4.1 Fixture tests first for the known defects: hook error count shows 0 while the logs hold 20 error records; project-level `.claude/` configuration is not read. Then fix them.
+- [x] 4.1 Fixture tests first for the known defects: hook error count shows 0 while the logs hold 20 error records; project-level `.claude/` configuration is not read. Then fix them.
 - [ ] 4.2 Matrix table: grouped by Skills, Agents, Hooks; filter chips; the five usage states (counted, never ran, not counted yet, not measurable, not installed); "Add to <CLI>" in the missing cell; remove and copy with Undo; plugin-owned rows read-only.
-- [ ] 4.3 Codex hook runs are not logged, so they render as "not measurable" with the reason on hover.
+- [x] 4.3 Codex hook runs are not logged, so they render as "not measurable" with the reason on hover.
 - [ ] 4.4 Owner eye approval, then delete `web/` and the prototype notes in `AGENTS.md`.
 
 ### Phase 5: Rules (UI gate; blocked on the decision)
 
-- [ ] 5.1 `core/rules.mjs`: read and write Claude Code permissions (global and per-project `settings.json`, `settings.local.json`); read the Codex keys and rules confirmed in 0.1 and write only what the decision allows, through a format-preserving TOML editor. Secret values (`env` and similar) are never read. Every write goes through the existing journal. Tests per cell and per CLI: file, key, and the Undo result.
+- [x] 5.1 `core/rules.mjs`: read and write Claude Code permissions (global and per-project `settings.json`, `settings.local.json`); read the Codex keys and rules confirmed in 0.1 and write only what the decision allows, through a format-preserving TOML editor. Secret values (`env` and similar) are never read. Every write goes through the existing journal. Tests per cell and per CLI: file, key, and the Undo result.
 - [ ] 5.2 Capability grid, concrete rules list and scope selector as decided.
 - [ ] 5.3 Owner eye approval.
 
 ### Phase 6: Activity (UI gate; unblocked by 0.3)
 
-- [ ] 6.1 Port live-session parsing and metrics from `agent-world/` in the `model-lab` repo into `core/activity.mjs` (read-only on logs). Tests on fixture logs.
+- [x] 6.1 Port live-session parsing and metrics from `agent-world/` in the `model-lab` repo into `core/activity.mjs` (read-only on logs). Tests on fixture logs.
 - [ ] 6.2 Failed commands grouped with a count and one title form; file history with paths long enough to tell two files apart; junk-title fallback; worktree slug not shown as a project; "next run passed" never presented as a fix. Replay Studio findings from the spec.
 - [ ] 6.3 One lane per CLI as in the mock, with "not measurable" where 0.3 says so. No Stop button.
 - [ ] 6.4 Owner eye approval.
@@ -108,6 +108,23 @@ Phases 1 to 4 can start now. Phase 5 waits on the decision above (0.1 is done). 
 - [ ] 7.3 AC5: run the packaged app with the network off and open all three tabs.
 - [ ] 7.4 AC1: owner times the permission task (find, remove, undo) under one minute.
 - [ ] 7.5 Update `README.md` and `CHANGELOG.md` if they exist (D12). Mark this plan historical with the date and commit range (D1).
+
+## Progress log (2026-11-02)
+
+Built by parallel subagents; the orchestrator re-ran `npm run typecheck`, `npm test` (103 pass, 0 fail), `npm run build` and `npm run e2e:smoke` (ok, CSP 0 errors, 0 style tags) after the last change. Other figures below are the agents' reports.
+
+- Done and committed: 1.1 to 1.4, 2.1 to 2.3 (server and loopback removed, `AGENTS.md` rewritten, Electron 45.2.1 bundles Node 24.22.1, worker scan verified in dev, built and unpacked runs), 4.1 (hook error root cause: `hook_blocking_error` keeps the command under `attachment.blockingError.command`; project `.claude/` read; 20 errors on the owner's real logs), 4.3 cells, 5.1 core rules, 6.1 core activity, and `fix(core)` for never-ran vs dead counts and `Read(*)` as wide.
+- Built, not committed, waiting for eye approval: 3.1 to 3.3 shell and shared blocks, 4.2 Loadout, 5.2 Rules, 6.2 and 6.3 Activity (screenshots in `~/scratch/spacevibe-reins/shots/{shell,loadout,rules,activity}/`). Commit by area after approval, then 4.4 deletes `web/`.
+- Still open: 0.2 (owner runs a real `claude` and `codex` on the throwaway config), 1.2 lint script, Phase 7, tooltip and focus-ring screenshots (headless cannot show them), Stop decision.
+- Interpretations kept: option A for the Rules grid (Claude writes, Codex display-only); each Rules scope is one settings file; the confirm dialog always opens; the Loadout toolbar says "Counted from N sessions since <date>" instead of "Last 30 days".
+
+### Debt accepted (optimize later)
+
+- Performance: first wide Activity read measured 28 s (a 2-day first read now runs in a worker; the 2-day/40-file window is a guess); `readActivity` log walk is synchronous inside the worker; renderer bundle is 1.0 MB (lucide barrel); `filterCounts` and `buildRows` recompute per call.
+- Structure: the Activity worker is an eval string (needs a `core/activity-worker.mjs`); `REINS_TEST` harness ships in the main bundle; IPC types are hand-written with some `any`; module-level store in Loadout; the UI blocks `ScopeSelect`, `Notice`/`Banner`, `ReasonTip`, `NativeSelect`/`TextField`, format helpers should move to `src/components/`.
+- Correctness gaps: hook failures without `uuid`/`toolUseID` collapse into one row; project hooks share counts with global ones; Rules grid shows one file only (a project scope hides an inherited Global deny); JSON edits re-serialize the file; rule text and failure reasons are not masked; `Bash(git *)` counts as Run commands only; Codex cell mapping unverified against a live Codex; pending heuristic uses file mtime.
+- Gaps: no Playwright `_electron` e2e (plan 7.2), `npm audit` 15 moderate, package unsigned, `@fontsource-variable/geist` unused dependency, `shadcn add` needs `paths` in the root `tsconfig.json`, "Add to <CLI>" button lacks a row-specific `aria-label`.
+- Found outside this repo: the owner's `~/.codex/hooks.json` holds 220 dead hooks (28 distinct commands) pointing into temp folders named `deck-e2e-*`; probably left by SpaceVibe Deck e2e runs (cause not checked).
 
 ## Acceptance map
 
