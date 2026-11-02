@@ -1,0 +1,63 @@
+# Builds and tests the Swift app on macOS, so a cloud session that cannot compile SwiftUI still gets a real result:
+# docs/plans/2026-11-03-reins-tokens.md T0. Runs only on agent branches, PRs and by hand, because macOS minutes are paid.
+name: swift
+
+on:
+  push:
+    branches: ['claude/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: swift-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            /tmp/reins-build-dev-fixture
+          key: swift-${{ runner.os }}-${{ hashFiles('Package.swift') }}-${{ github.sha }}
+          restore-keys: swift-${{ runner.os }}-${{ hashFiles('Package.swift') }}-
+
+      - name: Test
+        run: scripts/test.sh
+
+      # No signing identity exists here, so this signs ad-hoc. AGENTS.md B1: the binary must report minos 15.0.
+      - name: Build the app
+        run: scripts/build-app.sh | tee "$RUNNER_TEMP/build.log"
+
+      - name: Check the deployment target
+        run: grep -E 'minos 15\.0' "$RUNNER_TEMP/build.log"
+
+      # Synthetic home only (scripts/dev-fixture.sh): nothing real exists on this machine.
+      - name: Screenshots
+        run: |
+          scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/shell"
+          if [ -d Sources/Reins/TokenUsage ]; then
+            REINS_SHOT_SCREEN=tokens scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/tokens"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shots
+          path: ${{ runner.temp }}/shots
+          retention-days: 7
+          if-no-files-found: warn
