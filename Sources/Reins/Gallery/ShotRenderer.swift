@@ -15,7 +15,11 @@ enum ShotRenderer {
         NSApplication.shared.setActivationPolicy(.prohibited)
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            // The dev variables of scripts/dev-fixture.sh select the real Activity screen over the demo shell.
+            // REINS_SHOT_SCREEN=loadout selects the real Loadout screen; the dev variables of scripts/dev-fixture.sh the Activity one.
+            if LoadoutShots.isRequested() {
+                try LoadoutShots.run(into: directory)
+                exit(0)
+            }
             if ActivityShots.isRequested() {
                 try ActivityShots.run(into: directory)
                 exit(0)

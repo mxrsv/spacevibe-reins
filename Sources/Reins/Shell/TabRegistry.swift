@@ -6,7 +6,7 @@ import SwiftUI
 enum TabRegistry {
     static func makeTabs() -> [any ReinsTab] {
         [
-            LoadoutStubTab(),
+            LoadoutTab(),
             RulesStubTab(),
             ActivityTab(),
         ]
