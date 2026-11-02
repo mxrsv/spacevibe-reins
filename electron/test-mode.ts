@@ -38,11 +38,19 @@ export async function runHeadlessCheck(win: BrowserWindow, refusals: Refusals, c
   try {
     const wc = win.webContents;
     const page = await wc.executeJavaScript(PAGE_CHECK);
+    // Self-test of the CSP counter: this fetch is blocked by connect-src in both the dev and the
+    // built policy, so the listener must see at least one violation (Chromium logs two lines for it). Otherwise a zero below means nothing.
+    const cspBefore = consoleErrors.csp;
+    await wc.executeJavaScript("fetch('https://example.invalid/probe').catch(() => 0).then(() => 0)");
+    await new Promise((r) => setTimeout(r, 300));
+    const cspProbeSeen = consoleErrors.csp > cspBefore;
+    consoleErrors.csp = cspBefore;
     const before = wc.getURL();
     await wc.executeJavaScript("location.href = 'https://example.invalid/'; 0").catch(() => 0);
     await new Promise((r) => setTimeout(r, 500));
     const result = {
       ...page,
+      cspProbeSeen,
       navigationBlocked: wc.getURL() === before && refusals.navigation >= 1,
       refusals,
       consoleErrors,
@@ -50,7 +58,7 @@ export async function runHeadlessCheck(win: BrowserWindow, refusals: Refusals, c
       packaged: app.isPackaged,
     };
     const ok = result.inventoryOk && result.usageState === 'ready' && result.badChannelRefused && !result.nodeLeaked
-      && result.windowOpenBlocked && result.navigationBlocked && consoleErrors.csp === 0;
+      && result.windowOpenBlocked && result.navigationBlocked && cspProbeSeen && consoleErrors.csp === 0;
     clearTimeout(watchdog);
     console.log(`REINS_TEST ${JSON.stringify({ ok, ...result })}`);
     app.exit(ok ? 0 : 1);

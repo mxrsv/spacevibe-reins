@@ -19,6 +19,7 @@ try {
   assert.equal(result.ok, true);
   assert.deepEqual([result.items, result.hooks, result.usageState, result.usageFiles], [3, 1, 'ready', 1]);
   assert.equal(result.badChannelRefused && result.navigationBlocked && result.windowOpenBlocked && !result.nodeLeaked, true);
+  assert.equal(result.cspProbeSeen, true, 'the CSP violation counter did not see the deliberate probe');
   assert.equal(result.consoleErrors.csp, 0);
 } finally {
   rmSync(home, { recursive: true, force: true });
