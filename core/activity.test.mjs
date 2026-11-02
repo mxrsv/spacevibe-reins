@@ -1,14 +1,18 @@
 // Activity tests. Every log, status file and lock is generated inside a temporary HOME; the real
-// ~/.claude and ~/.codex are never read, and ps/lsof/kill are replaced by an injected adapter.
+// ~/.claude and ~/.codex are never read, and ps/lsof/kill are replaced by an injected adapter. The one exception
+// is a Stop test that signals a child process this file spawned itself.
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, before, test } from 'node:test';
-import { ENDED_KEEP_MS, TOOL_QUIET_MS, UNMEASURABLE, estimateCost, readActivity } from './activity.mjs';
+import { zstdCompressSync } from 'node:zlib';
+import { ENDED_KEEP_MS, TOOL_QUIET_MS, UNMEASURABLE, estimateCost, readActivity, stopSession } from './activity.mjs';
 import { shortestLabels } from './activity-groups.mjs';
 import { sha, roots } from './inventory.mjs';
-import { parseCodexPids, parseLockFds } from './process-adapter.mjs';
+import { foldCodex, newState } from './activity-fold.mjs';
+import { parseCodexPids, parseLockFds, systemProc } from './process-adapter.mjs';
 import { isJunkTitle, pickTitle, projectName } from './session-titles.mjs';
 
 const tmp = mkdtempSync(join(tmpdir(), 'reins-activity-'));
@@ -467,4 +471,140 @@ test('process adapter parsers read ps and lsof output', () => {
   assert.deepEqual(parseCodexPids(ps), [100, 103]);
   const lsof = ['p100', 'n/Users/me/.codex/.sqlite-maintenance.lock', `n/Users/me/.codex/thread-writer-locks/${uuid(1)}.lock`, 'p103', 'n/etc/hosts'].join('\n');
   assert.deepEqual(parseLockFds(lsof), [{ pid: 100, threadId: uuid(1) }]);
+});
+
+// ---- compressed rollouts ----
+
+test('a compressed rollout gives failures and file history like a plain one, and is read only once', async () => {
+  const { r } = sandbox();
+  const id = sid(40);
+  const c = cx(id);
+  const text = jsonl([c.meta(now - 90_000, '/work/app'), c.exec(now - 80_000, 1, 'npm run build', 1, 'error: boom'), c.patch(now - 70_000, 2, ['/work/app/a.ts'])]);
+  const path = join(r.codex.logs, '2026', '10', '20', `rollout-2026-10-20T01-00-00-${id}.jsonl.zst`);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, zstdCompressSync(Buffer.from(text)));
+  utimesSync(path, (now - 60_000) / 1000, (now - 60_000) / 1000);
+  const cache = new Map();
+  const a = await run(r, fakeProc(), { cache });
+  assert.deepEqual(a.failures.map((f) => [f.cli, f.title]), [['codex', 'npm run build']]);
+  assert.deepEqual(a.files.map((f) => f.path), ['/work/app/a.ts']);
+  const b = await run(r, fakeProc(), { cache });
+  assert.equal(b.failures[0].count, 1, 'a second read must not fold the same lines again');
+});
+
+test('a compressed rollout larger than the limit keeps only its tail and says it was cut', async () => {
+  const { r } = sandbox();
+  const id = sid(41);
+  const c = cx(id);
+  const text = jsonl([c.tokens(now - 90_000, 1000, 0, 100), c.exec(now - 80_000, 1, 'first-cmd', 1, 'error: a'), c.exec(now - 70_000, 2, 'last-cmd', 1, 'error: b')]);
+  const path = join(r.codex.logs, '2026', '10', '20', `rollout-2026-10-20T01-00-00-${id}.jsonl.zst`);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, zstdCompressSync(Buffer.from(text)));
+  utimesSync(path, (now - 60_000) / 1000, (now - 60_000) / 1000);
+  const a = await run(r, fakeProc(), { historyTailBytes: 300 });
+  assert.deepEqual(a.failures.map((f) => f.title), ['last-cmd']);
+  assert.equal(a.stats.truncated, 1);
+});
+
+// ---- Codex token totals ----
+
+test('Codex tokens: interleaved streams, repeated totals and an inherited first total do not inflate the count', () => {
+  const event = (total, last) => JSON.stringify({ timestamp: iso(now), type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: total, ...(last ? { last_token_usage: last } : {}) } } });
+  const usage = (input, output) => ({ input_tokens: input, cached_input_tokens: 0, output_tokens: output });
+  const metrics = (lines) => {
+    const st = newState('codex', '/x');
+    for (const line of lines) foldCodex(st, line);
+    return st.metrics.unknown;
+  };
+  // A parent at 1000, an embedded reviewer's own total at 50, the parent again at 1100, and a repeat of that total.
+  const m = metrics([event(usage(1000, 100), usage(1000, 100)), event(usage(50, 5), usage(50, 5)), event(usage(1100, 110), usage(100, 10)), event(usage(1100, 110), usage(100, 10))]);
+  assert.deepEqual([m.input, m.output], [1150, 115]);
+  // A forked rollout starts from the parent's total: only the turn's own usage belongs to it.
+  const fork = metrics([event(usage(90_000, 9000), usage(200, 20))]);
+  assert.deepEqual([fork.input, fork.output], [200, 20]);
+  // Rollouts with no per-turn usage still work from the difference, and a lower total is a restart.
+  const old = metrics([event(usage(1000, 100)), event(usage(1500, 150)), event(usage(40, 4))]);
+  assert.deepEqual([old.input, old.output], [1540, 154]);
+});
+
+// ---- Stop ----
+
+const stopProc = (over = {}) => {
+  const killed = [];
+  const alive = new Set(over.alive ?? []);
+  return {
+    killed,
+    alive: (pid) => alive.has(pid),
+    startOf: (pid) => over.starts?.[pid] ?? null,
+    codexThreads: async () => over.threads ?? [],
+    terminate(pid) {
+      if (over.terminateError) throw Object.assign(new Error('no'), { code: over.terminateError });
+      killed.push(pid);
+      if (!over.ignoresSignal) alive.delete(pid);
+    },
+  };
+};
+const START = 'Mon Nov  2 11:00:00 2026';
+const fast = { waitMs: 30, pollMs: 5 };
+
+test('Stop signals the Claude process that the status file names, and reports that it exited', async () => {
+  const { r } = sandbox();
+  status(r, 11, { procStart: START });
+  const proc = stopProc({ alive: [11], starts: { 11: 'Mon Nov  2  11:00:00  2026' } });
+  assert.deepEqual(await stopSession(r, { cli: 'claude', id: sid(11) }, { proc, ...fast }), { exited: true });
+  assert.deepEqual(proc.killed, [11]);
+});
+
+test('Stop refuses a reused pid, a dead process and an unknown session, and signals nothing', async () => {
+  const { r } = sandbox();
+  status(r, 12, { procStart: START });
+  status(r, 13, { procStart: START });
+  const reused = stopProc({ alive: [12], starts: { 12: 'Tue Nov  3 01:00:00 2026' } });
+  await assert.rejects(stopSession(r, { cli: 'claude', id: sid(12) }, { proc: reused, ...fast }), { status: 404 });
+  const unknownStart = stopProc({ alive: [12] });
+  await assert.rejects(stopSession(r, { cli: 'claude', id: sid(12) }, { proc: unknownStart, ...fast }), { status: 404 });
+  const dead = stopProc({ starts: { 13: START } });
+  await assert.rejects(stopSession(r, { cli: 'claude', id: sid(13) }, { proc: dead, ...fast }), { status: 404 });
+  const none = stopProc();
+  await assert.rejects(stopSession(r, { cli: 'codex', id: sid(99) }, { proc: none, ...fast }), { status: 404 });
+  assert.deepEqual([...reused.killed, ...unknownStart.killed, ...dead.killed, ...none.killed], []);
+});
+
+test('Stop finds a Codex process by its thread lock, or by pid before the first prompt', async () => {
+  const { r } = sandbox();
+  const threads = [{ pid: 21, threadId: sid(21) }, { pid: 22, threadId: null }];
+  const byThread = stopProc({ alive: [21, 22], threads });
+  assert.deepEqual(await stopSession(r, { cli: 'codex', id: sid(21) }, { proc: byThread, ...fast }), { exited: true });
+  assert.deepEqual(byThread.killed, [21]);
+  const byPid = stopProc({ alive: [21, 22], threads });
+  assert.deepEqual(await stopSession(r, { cli: 'codex', id: 'pid:22' }, { proc: byPid, ...fast }), { exited: true });
+  assert.deepEqual(byPid.killed, [22]);
+  // A pid that holds a thread is not reachable through the bare-pid form.
+  const held = stopProc({ alive: [21], threads });
+  await assert.rejects(stopSession(r, { cli: 'codex', id: 'pid:21' }, { proc: held, ...fast }), { status: 404 });
+});
+
+test('Stop says when the process ignored the signal, and turns a permission error into a plain message', async () => {
+  const { r } = sandbox();
+  status(r, 14, { procStart: START });
+  const stubborn = stopProc({ alive: [14], starts: { 14: START }, ignoresSignal: true });
+  assert.deepEqual(await stopSession(r, { cli: 'claude', id: sid(14) }, { proc: stubborn, ...fast }), { exited: false });
+  const denied = stopProc({ alive: [14], starts: { 14: START }, terminateError: 'EPERM' });
+  await assert.rejects(stopSession(r, { cli: 'claude', id: sid(14) }, { proc: denied, ...fast }), { status: 403 });
+  const gone = stopProc({ alive: [14], starts: { 14: START }, terminateError: 'ESRCH' });
+  assert.deepEqual(await stopSession(r, { cli: 'claude', id: sid(14) }, { proc: gone, ...fast }), { exited: true });
+});
+
+test('Stop through the real adapter ends the process the status file names, matched by its real start time', async () => {
+  const { r } = sandbox();
+  const child = spawn('sleep', ['30'], { stdio: 'ignore' });
+  const gone = new Promise((resolve) => { child.once('exit', (_code, signal) => resolve(signal)); });
+  try {
+    const proc = systemProc();
+    status(r, child.pid, { sessionId: sid(50), procStart: await proc.startOf(child.pid) });
+    assert.deepEqual(await stopSession(r, { cli: 'claude', id: sid(50) }, { proc }), { exited: true });
+    assert.equal(await gone, 'SIGTERM');
+  } finally {
+    child.kill('SIGKILL');
+  }
 });

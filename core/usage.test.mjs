@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
+import { zstdCompressSync } from 'node:zlib';
 import { roots, sha } from './inventory.mjs';
 import { scan } from './usage.mjs';
 
@@ -50,4 +51,21 @@ test('scan reports the log window per CLI and rescans cache entries from an olde
   writeFileSync(path, JSON.stringify(cache));
   const { totals } = await scan(r);
   assert.equal(totals.claude.hook[sha('PostToolUse|cmd-b')].errors, 2);
+});
+
+test('compressed Codex rollouts count like plain ones, and a session in both forms counts once', async () => {
+  const dir = join(home, '.codex/sessions/2026/03/01');
+  mkdirSync(dir, { recursive: true });
+  const call = (day, skill) => `{"timestamp":"${day}T10:00:00Z","type":"response_item","payload":{"type":"function_call","arguments":"cat skills/${skill}/SKILL.md"}}\n`;
+  writeFileSync(join(dir, 'rollout-old.jsonl.zst'), zstdCompressSync(Buffer.from(call('2026-03-01', 'old-skill'))));
+  writeFileSync(join(dir, 'rollout-both.jsonl'), call('2026-03-02', 'both-skill'));
+  writeFileSync(join(dir, 'rollout-both.jsonl.zst'), zstdCompressSync(Buffer.from(call('2026-03-02', 'stale-skill'))));
+  writeFileSync(join(dir, 'rollout-broken.jsonl.zst'), 'not zstd');
+  const { totals, sessions, windows } = await scan(r);
+  assert.equal(totals.codex.skill['old-skill'].sessions, 1);
+  assert.deepEqual(totals.codex.skill['old-skill'].days, ['2026-03-01']);
+  assert.equal(totals.codex.skill['both-skill'].sessions, 1);
+  assert.equal(totals.codex.skill['stale-skill'], undefined);
+  assert.equal(sessions.codex, 2, 'the broken file is skipped, the others still count');
+  assert.equal(windows.codex.oldest, '2026-03-01');
 });

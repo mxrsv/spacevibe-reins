@@ -1,9 +1,10 @@
 // Counts real usage from session logs. Runs in a worker because logs reach several GB.
 // Only names, dates, hook hashes and durations are stored in the cache, never log text.
-import { closeSync, createReadStream, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, statSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { parentPort, workerData } from 'node:worker_threads';
 import { bare, roots, sha } from './inventory.mjs';
+import { logBaseName, openLogText, walkLogs } from './log-files.mjs';
 
 // Bump when the parser changes what a log file yields, so cached results are rescanned.
 const SCAN_VERSION = 2;
@@ -15,20 +16,9 @@ const CODEX_SKILL = /skills\/([\w-]+)\/SKILL\.md/g;
 const CODEX_AGENT = /\\?"agent_type\\?":\s*\\?"([\w-]+)/g;
 const CODEX_CALL = /"type":"(function_call|custom_tool_call)"|"CommandExecution"/;
 
-function walk(dir, out = []) {
-  let entries;
-  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return out; }
-  for (const e of entries) {
-    const p = join(dir, e.name);
-    if (e.isDirectory()) walk(p, out);
-    else if (e.isFile() && e.name.endsWith('.jsonl')) out.push(p);
-  }
-  return out;
-}
-
 async function eachLine(file, fn) {
   let rest = '';
-  for await (const chunk of createReadStream(file, { encoding: 'utf8', highWaterMark: 1 << 20 })) {
+  for await (const chunk of openLogText(file)) {
     const lines = (rest + chunk).split('\n');
     rest = lines.pop();
     for (const line of lines) fn(line);
@@ -39,19 +29,7 @@ async function eachLine(file, fn) {
 function sessionOf(file) {
   const parts = file.split('/');
   const i = parts.lastIndexOf('subagents');
-  return i > 0 ? parts[i - 1] : basename(file, '.jsonl');
-}
-
-// Day of the first timestamp in the first 64 KB of a log, or null.
-function firstDay(file) {
-  try {
-    const fd = openSync(file, 'r');
-    try {
-      const buf = Buffer.alloc(64 * 1024);
-      const n = readSync(fd, buf, 0, buf.length, 0);
-      return TS.exec(buf.toString('utf8', 0, n))?.[1] ?? null;
-    } finally { closeSync(fd); }
-  } catch { return null; }
+  return i > 0 ? parts[i - 1] : logBaseName(file);
 }
 
 const note = (rec, group, name, day) => {
@@ -139,8 +117,8 @@ export async function scan(r, onProgress = () => {}) {
   let cache = {};
   if (existsSync(cachePath)) { try { cache = JSON.parse(readFileSync(cachePath, 'utf8')); } catch { cache = {}; } }
   const targets = [
-    ...walk(r.claude.logs).map((file) => ({ file, cli: 'claude' })),
-    ...walk(r.codex.logs).map((file) => ({ file, cli: 'codex' })),
+    ...walkLogs(r.claude.logs).map((file) => ({ file, cli: 'claude' })),
+    ...walkLogs(r.codex.logs).map((file) => ({ file, cli: 'codex' })),
   ];
   const next = {};
   let done = 0;
@@ -152,9 +130,11 @@ export async function scan(r, onProgress = () => {}) {
     else {
       const rec = { skill: {}, agent: {}, hook: {} };
       const fallbackDay = st.mtime.toISOString().slice(0, 10);
-      const onLine = cli === 'claude' ? (l) => scanClaudeLine(l, rec, fallbackDay) : (l) => scanCodexLine(l, rec, fallbackDay);
+      const scanLine = cli === 'claude' ? scanClaudeLine : scanCodexLine;
+      let first = null;
+      const onLine = (l) => { first ??= TS.exec(l)?.[1] ?? null; scanLine(l, rec, fallbackDay); };
       try { await eachLine(file, onLine); } catch { done++; continue; }
-      next[file] = { v: SCAN_VERSION, stamp, cli, session: sessionOf(file), first: firstDay(file), rec };
+      next[file] = { v: SCAN_VERSION, stamp, cli, session: sessionOf(file), first, rec };
     }
     done++;
     if (done % 200 === 0) onProgress(done, targets.length);

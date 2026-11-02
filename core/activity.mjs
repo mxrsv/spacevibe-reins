@@ -25,11 +25,14 @@
 //   Limit    { cli, code, text }   what cannot be measured, listed even when no session is live
 import { closeSync, fstatSync, openSync, readFileSync, readSync, readdirSync, statSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { foldLine, newState } from './activity-fold.mjs';
 import { groupFailures, groupFiles } from './activity-groups.mjs';
+import { isCompressedLog, logBaseName, walkLogs } from './log-files.mjs';
+import { UserError } from './mutate.mjs';
 import { systemProc } from './process-adapter.mjs';
 import { pickTitle, projectName } from './session-titles.mjs';
-import { TailReader } from './tail-reader.mjs';
+import { CompressedLogReader, TailReader } from './tail-reader.mjs';
 
 const MB = 1024 * 1024;
 export const TOOL_QUIET_MS = 30_000; // an open tool call with no log write for this long is ambiguous
@@ -38,7 +41,7 @@ const DAY_MS = 86_400_000;
 const CHILD_HEAD_BYTES = 64 * 1024;
 const INDEX_TAIL_BYTES = 1 * MB;
 const MAX_SUBAGENT_LOGS = 50;
-const UUID_FILE = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.jsonl$/;
+const UUID_FILE = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.jsonl(?:\.zstd?)?$/;
 
 /** Reasons a state cannot be known. The wording is Activity's own: the plan only lists the facts. */
 export const UNMEASURABLE = {
@@ -51,32 +54,24 @@ export const UNMEASURABLE = {
 const LIMIT_CODES = [['claude', 'claude-prompt-vs-busy'], ['codex', 'codex-tool-silent'], ['codex', 'codex-no-rollout'], ['codex', 'codex-hook-runs']];
 const limits = () => LIMIT_CODES.map(([cli, code]) => ({ cli, code, text: UNMEASURABLE[code] }));
 
+const STOP_WAIT_MS = 3000;
+const STOP_POLL_MS = 100;
+
 const sharedCache = new Map();
 let defaultPrices;
 const loadPrices = () => (defaultPrices ??= JSON.parse(readFileSync(new URL('./pricing.json', import.meta.url), 'utf8')).models);
 
 // ---- log discovery ----
 
-function walk(dir, out = []) {
-  let entries;
-  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return out; }
-  for (const e of entries) {
-    const p = join(dir, e.name);
-    if (e.isDirectory()) walk(p, out);
-    else if (e.isFile() && e.name.endsWith('.jsonl')) out.push(p);
-  }
-  return out;
-}
-
 function listLogs(r) {
   const files = [];
   const claudeMain = new Map();
   const claudeSubs = new Map();
   const codexById = new Map();
-  for (const path of walk(r.claude.logs)) {
+  for (const path of walkLogs(r.claude.logs)) {
     const rel = relative(r.claude.logs, path).split(sep);
     const sub = rel.length >= 4 && rel[2] === 'subagents';
-    const session = sub ? rel[1] : basename(path, '.jsonl');
+    const session = sub ? rel[1] : logBaseName(path);
     let st;
     try { st = statSync(path); } catch { continue; }
     const f = { path, cli: 'claude', session, sub, mtimeMs: st.mtimeMs };
@@ -84,7 +79,7 @@ function listLogs(r) {
     if (sub) claudeSubs.set(session, [...(claudeSubs.get(session) ?? []), f]);
     else if (rel.length === 2) claudeMain.set(session, f);
   }
-  for (const path of walk(r.codex.logs)) {
+  for (const path of walkLogs(r.codex.logs)) {
     if (!basename(path).startsWith('rollout-')) continue;
     const id = UUID_FILE.exec(path)?.[1];
     if (!id) continue;
@@ -135,7 +130,7 @@ function codexThreadNames(r) {
 
 async function advance(cache, f, maxBytes) {
   let e = cache.get(f.path);
-  if (!e) { e = { reader: new TailReader(f.path, { maxBytes }), st: newState(f.cli, f.path), truncated: false }; cache.set(f.path, e); }
+  if (!e) { e = { reader: new (isCompressedLog(f.path) ? CompressedLogReader : TailReader)(f.path, { maxBytes }), st: newState(f.cli, f.path), truncated: false }; cache.set(f.path, e); }
   const res = await e.reader.read((line) => foldLine(e.st, line), () => { e.st = newState(f.cli, f.path); });
   if (res.missing) { cache.delete(f.path); return null; }
   e.truncated = res.truncated;
@@ -285,9 +280,9 @@ export async function readActivity(r, opts = {}) {
   const utc = (text) => (text ? Date.parse(`${text} UTC`) || null : null);
   for (const t of threads) {
     const f = t.threadId ? index.codexById.get(t.threadId) : null;
-    if (t.threadId && f && isChildRollout(f.path)) continue;
-    if (!t.threadId && codexPids.has(t.pid)) continue;
     const e = f ? folded.get(f.path) : null;
+    if (t.threadId && f && (isCompressedLog(f.path) ? e?.st.parent : isChildRollout(f.path))) continue;
+    if (!t.threadId && codexPids.has(t.pid)) continue;
     if (!e) {
       const startedAt = utc(await proc.startOf?.(t.pid)); // the rollout does not exist yet, so the process start is the only clock
       sessions.push({
@@ -316,4 +311,47 @@ export async function readActivity(r, opts = {}) {
     sessions, failures: groupFailures(logs, { limit: failureLimit }), files: groupFiles(logs, { limit: fileLimit }),
     unmeasurable: limits(), stats: { logs: folded.size, truncated: [...folded.values()].filter((e) => e.truncated).length },
   };
+}
+
+// ---- stop ----
+
+const sameStart = (a, b) => Boolean(a && b) && a.replace(/\s+/g, ' ') === b.replace(/\s+/g, ' ');
+
+/** The pid of a live session, decided from the system now and never taken from the caller: pids get reused. */
+async function livePid(r, cli, id, proc) {
+  if (cli === 'codex') {
+    const threads = await proc.codexThreads();
+    const match = threads.find((t) => (t.threadId ? t.threadId === id : `pid:${t.pid}` === id));
+    return match?.pid ?? null;
+  }
+  const dir = join(r.claude.root, 'sessions');
+  let names = [];
+  try { names = readdirSync(dir).filter((n) => /^\d+\.json$/.test(n)); } catch { return null; }
+  for (const n of names) {
+    const s = readJson(join(dir, n));
+    if (s?.sessionId !== id || !Number.isInteger(s.pid) || !(await proc.alive(s.pid))) continue;
+    if (sameStart(await proc.startOf(s.pid), s.procStart)) return s.pid;
+  }
+  return null;
+}
+
+/**
+ * Asks one running session to end (SIGTERM). Cannot be undone: the current turn stops, finished work stays.
+ * Resolves { exited } once the process is gone or the wait is over.
+ */
+export async function stopSession(r, { cli, id }, opts = {}) {
+  const { proc = systemProc(), waitMs = STOP_WAIT_MS, pollMs = STOP_POLL_MS } = opts;
+  const pid = await livePid(r, cli, id, proc);
+  if (pid == null) throw new UserError('That session is no longer running.', 404);
+  try {
+    await proc.terminate(pid);
+  } catch (error) {
+    if (error.code === 'ESRCH') return { exited: true };
+    if (error.code === 'EPERM') throw new UserError('This session belongs to another user, so it cannot be stopped.', 403);
+    throw error;
+  }
+  for (const end = Date.now() + waitMs; Date.now() < end; await sleep(pollMs)) {
+    if (!(await proc.alive(pid))) return { exited: true };
+  }
+  return { exited: !(await proc.alive(pid)) };
 }

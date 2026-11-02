@@ -177,18 +177,26 @@ export function foldClaude(st, line) {
 
 // ---- Codex rollout ----
 
+const codexTokens = (u) => ({ input: count(u.input_tokens), output: count(u.output_tokens), cacheRead: count(u.cached_input_tokens ?? u.cache_read_input_tokens) });
+
 function codexUsage(st, info, model) {
   const u = info?.total_token_usage;
   if (!u) return;
-  const values = { input: count(u.input_tokens), output: count(u.output_tokens), cacheRead: count(u.cached_input_tokens ?? u.cache_read_input_tokens) };
+  const total = codexTokens(u);
+  // A rollout can interleave streams (an embedded reviewer has its own running total) and repeat a total, so a
+  // total already seen adds nothing, and the turn's own usage is trusted over the difference between two totals.
+  const seen = `${total.input}:${total.output}:${total.cacheRead}`;
+  if (st.usageSeen.has(seen)) return;
+  st.usageSeen.set(seen, true);
   const prior = st.cumulative ?? { input: 0, output: 0, cacheRead: 0 };
-  const delta = Object.fromEntries(Object.entries(values).map(([k, v]) => [k, v >= prior[k] ? v - prior[k] : v]));
+  const delta = info.last_token_usage ? codexTokens(info.last_token_usage)
+    : Object.fromEntries(Object.entries(total).map(([k, v]) => [k, v >= prior[k] ? v - prior[k] : v]));
   const metric = metricFor(st, model);
   // Codex input includes cached tokens and output includes reasoning tokens.
   metric.input += Math.max(0, delta.input - delta.cacheRead);
   metric.cacheRead += delta.cacheRead;
   metric.output += delta.output;
-  st.cumulative = values;
+  st.cumulative = total;
 }
 
 function codexItem(st, item, at) {

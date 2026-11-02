@@ -1,7 +1,8 @@
 // Incremental, read-only line reader for JSONL logs. Remembers its byte offset, so a
 // second read() only returns lines appended since the first. Ported from agent-world.
-import { open } from 'node:fs/promises';
+import { open, stat as statFile } from 'node:fs/promises';
 import { StringDecoder } from 'node:string_decoder';
+import { openLogText } from './log-files.mjs';
 
 const CHUNK_BYTES = 256 * 1024;
 const MAX_LINE_CHARS = 16 * 1024 * 1024;
@@ -65,5 +66,53 @@ export class TailReader {
     } finally {
       await handle?.close();
     }
+  }
+}
+
+/**
+ * Same read() as TailReader for a compressed log. It cannot seek or be appended to, so it reads the file once, and
+ * again only if the file changes. maxBytes keeps the last lines of that size, as TailReader does by starting late.
+ */
+export class CompressedLogReader {
+  /** @param {string} path @param {{ maxBytes?: number }} [opts] */
+  constructor(path, { maxBytes = Infinity } = {}) {
+    this.path = path;
+    this.maxBytes = maxBytes;
+    this.stamp = null;
+    this.truncated = false;
+  }
+
+  async read(onLine, onReset = () => {}) {
+    let st;
+    try { st = await statFile(this.path); } catch (error) {
+      if (error.code === 'ENOENT') return { missing: true };
+      throw error;
+    }
+    const result = (truncated) => ({ size: st.size, mtimeMs: st.mtimeMs, truncated });
+    const stamp = `${st.dev}:${st.ino}:${st.size}:${st.mtimeMs}`;
+    if (stamp === this.stamp) return result(this.truncated);
+    if (this.stamp) onReset();
+
+    const kept = [];
+    let keptChars = 0;
+    let truncated = false;
+    const keep = (line) => {
+      if (!line.trim()) return;
+      kept.push(line);
+      keptChars += line.length;
+      while (keptChars > this.maxBytes && kept.length > 1) { keptChars -= kept.shift().length; truncated = true; }
+    };
+    let partial = '';
+    for await (const chunk of openLogText(this.path)) {
+      const lines = (partial + chunk).split('\n');
+      partial = lines.pop();
+      lines.forEach(keep);
+      if (partial.length > MAX_LINE_CHARS) { partial = ''; truncated = true; }
+    }
+    keep(partial);
+    kept.forEach(onLine);
+    this.stamp = stamp;
+    this.truncated = truncated;
+    return result(truncated);
   }
 }

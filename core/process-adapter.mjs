@@ -1,10 +1,11 @@
-// The only place Activity touches the operating system: ps, lsof and kill -0. Everything it
-// returns is read-only information. Tests inject a fake with the same shape instead.
+// The only place Activity touches the operating system: ps, lsof, kill -0, and SIGTERM for Stop. Only
+// terminate changes anything, and stopSession() is its one caller. Tests inject a fake with the same shape instead.
 //
 //   proc = {
 //     alive(pid): boolean | Promise<boolean>,
 //     startOf(pid): string | null | Promise<string | null>,   // UTC `ps lstart`, same text as a Claude status file `procStart`
 //     codexThreads(): Promise<Array<{ pid: number, threadId: string | null }>>,
+//     terminate(pid): void | Promise<void>,   // throws with code ESRCH or EPERM
 //   }
 //
 // codexThreads lists live `codex` processes with the thread each one holds a writer lock on.
@@ -50,6 +51,7 @@ export function isAlive(pid) {
 export function systemProc() {
   return {
     alive: isAlive,
+    terminate(pid) { process.kill(pid, 'SIGTERM'); },
     async startOf(pid) {
       try {
         const { stdout } = await run('ps', ['-o', 'lstart=', '-p', String(pid)], { env: PS_ENV, timeout: 3000 });
