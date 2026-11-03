@@ -45,7 +45,6 @@ private struct SidebarItem: View {
     let isActive: Bool
     let select: () -> Void
 
-    @FocusState private var focused: Bool
     @State private var hovering = false
 
     var body: some View {
@@ -73,9 +72,7 @@ private struct SidebarItem: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .focused($focused)
-        .focusEffectDisabled()
-        .focusRing(focused, cornerRadius: Metrics.controlRadius)
+        .reinsFocusable(cornerRadius: Metrics.controlRadius)
         .onHover { hovering = $0 }
         .accessibilityAddTraits(isActive ? .isSelected : [])
         .accessibilityLabel(badge.map { "\(tab.title), \($0.spoken ?? String($0.value))" } ?? tab.title)

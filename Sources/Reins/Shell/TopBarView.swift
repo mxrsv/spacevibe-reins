@@ -22,10 +22,9 @@ struct TopBarView: View {
 private struct SearchButton: View {
     let action: () -> Void
     @State private var hovering = false
-    @FocusState private var focused: Bool
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").imageScale(.small).accessibilityHidden(true)
@@ -43,9 +42,7 @@ private struct SearchButton: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .focused($focused)
-        .focusEffectDisabled()
-        .focusRing(focused, cornerRadius: 8)
+        .reinsFocusable(cornerRadius: Metrics.fieldRadius)
         .onHover { hovering = $0 }
         .accessibilityLabel("Search or run a command")
         .accessibilityHint("Command K")

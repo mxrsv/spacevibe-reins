@@ -10,8 +10,6 @@ struct RulesConfirmation: View {
     let cancel: () -> Void
     let confirm: () -> Void
 
-    @FocusState private var confirmFocused: Bool
-
     var body: some View {
         ZStack {
             Palette.overlay
@@ -20,7 +18,6 @@ struct RulesConfirmation: View {
                 .accessibilityHidden(true)
             card
         }
-        .onAppear { confirmFocused = true }
         .onExitCommand(perform: cancel)
     }
 
@@ -54,9 +51,7 @@ struct RulesConfirmation: View {
                     .keyboardShortcut(.cancelAction)
                 Button("Set to \(RulesWording.title(pending.verdict))", action: confirm)
                     .buttonStyle(.reins(.primary))
-                    .focused($confirmFocused)
-                    .focusEffectDisabled()
-                    .focusRing(confirmFocused, cornerRadius: Metrics.controlRadius)
+                    .reinsFocusable(cornerRadius: Metrics.controlRadius, focusOnAppear: true)
             }
             .padding(.top, 10)
         }

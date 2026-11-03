@@ -8,8 +8,6 @@ struct FilterChip: View {
     let isOn: Bool
     let action: () -> Void
 
-    @FocusState private var focused: Bool
-
     init(_ title: String, count: Int? = nil, isOn: Bool, action: @escaping () -> Void) {
         self.title = title
         self.count = count
@@ -32,9 +30,7 @@ struct FilterChip: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .focused($focused)
-        .focusEffectDisabled()
-        .focusRing(focused, cornerRadius: Metrics.chipHeight / 2)
+        .reinsFocusable(cornerRadius: Metrics.chipHeight / 2)
         .accessibilityAddTraits(isOn ? [.isSelected] : [])
         .accessibilityLabel(count.map { "\(title), \($0)" } ?? title)
         .accessibilityHint("Filter")

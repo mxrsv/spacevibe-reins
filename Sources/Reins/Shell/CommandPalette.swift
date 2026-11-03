@@ -89,7 +89,7 @@ struct CommandPalette: View {
     }
 
     private func results(sections: [PaletteSection], flat: [PaletteEntry], current: String?) -> some View {
-        let height = min(360, CGFloat(flat.count) * 36 + CGFloat(sections.count) * 26 + 12)
+        let height = min(360, CGFloat(flat.count) * Metrics.paletteRowHeight + CGFloat(sections.count) * Metrics.paletteSectionHeight + 12)
         return ScrollViewReader { proxy in
             ReinsScrollView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -98,7 +98,7 @@ struct CommandPalette: View {
                             .font(ReinsFont.body)
                             .foregroundStyle(Palette.textTertiary)
                             .padding(.horizontal, 10)
-                            .frame(height: 36)
+                            .frame(height: Metrics.paletteRowHeight)
                     }
                     ForEach(sections) { section in
                         Text(section.title)
@@ -164,7 +164,7 @@ private struct PaletteRow: View {
     @State private var hovering = false
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
         Button(action: action) {
             HStack(spacing: 10) {
                 if let systemImage = entry.systemImage {
@@ -185,7 +185,7 @@ private struct PaletteRow: View {
             .font(ReinsFont.body)
             .foregroundStyle(isHighlighted ? Palette.text : Palette.textSecondary)
             .padding(.horizontal, 10)
-            .frame(height: 36)
+            .frame(height: Metrics.paletteRowHeight)
             .background(shape.fill(isHighlighted ? Palette.selection : (hovering ? Palette.hover : .clear)))
             .contentShape(shape)
         }

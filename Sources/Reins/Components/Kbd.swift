@@ -12,8 +12,8 @@ struct Kbd: View {
             .foregroundStyle(Palette.textSecondary)
             .padding(.horizontal, 5)
             .padding(.vertical, 1)
-            .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Palette.surfaceRaised))
-            .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(Palette.border, lineWidth: 1))
+            .background(RoundedRectangle(cornerRadius: Metrics.kbdRadius, style: .continuous).fill(Palette.surfaceRaised))
+            .overlay(RoundedRectangle(cornerRadius: Metrics.kbdRadius, style: .continuous).strokeBorder(Palette.border, lineWidth: 1))
             .accessibilityHidden(true)
     }
 }

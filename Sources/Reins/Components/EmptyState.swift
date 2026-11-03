@@ -11,7 +11,7 @@ struct EmptyState<Action: View>: View {
         VStack(spacing: 12) {
             if let systemImage {
                 Image(systemName: systemImage)
-                    .font(.system(size: 22))
+                    .font(ReinsFont.emptyStateIcon)
                     .foregroundStyle(Palette.textTertiary)
                     .accessibilityHidden(true)
             }

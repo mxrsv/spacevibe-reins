@@ -36,7 +36,6 @@ private struct LoadoutScopePicker: View {
     let current: LoadoutScope
     let scopes: [LoadoutScope]
     @Environment(\.isShotRendering) private var isShotRendering
-    @FocusState private var focused: Bool
 
     var body: some View {
         if isShotRendering {
@@ -56,9 +55,7 @@ private struct LoadoutScopePicker: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .focused($focused)
-            .focusEffectDisabled()
-            .focusRing(focused, cornerRadius: Metrics.controlRadius)
+            .reinsFocusable(cornerRadius: Metrics.controlRadius)
             .accessibilityLabel("Scope")
             .accessibilityValue(current.label)
         }

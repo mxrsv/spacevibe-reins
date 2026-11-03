@@ -30,8 +30,8 @@ struct SegmentedControl<Value: Hashable>: View {
             }
         }
         .padding(2)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Palette.surface))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Palette.border, lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous).fill(Palette.surface))
+        .overlay(RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous).strokeBorder(Palette.border, lineWidth: 1))
         .onKeyPress(.leftArrow) { move(-1) }
         .onKeyPress(.rightArrow) { move(1) }
         .accessibilityElement(children: .contain)
@@ -40,7 +40,7 @@ struct SegmentedControl<Value: Hashable>: View {
 
     private func segment(_ option: SegmentOption<Value>) -> some View {
         let isOn = option.value == selection
-        let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: Metrics.segmentRadius, style: .continuous)
         return Button {
             selection = option.value
         } label: {
@@ -61,7 +61,7 @@ struct SegmentedControl<Value: Hashable>: View {
         .buttonStyle(.plain)
         .focused($focused, equals: option.value)
         .focusEffectDisabled()
-        .focusRing(focused == option.value, cornerRadius: 6)
+        .focusRing(focused == option.value, cornerRadius: Metrics.segmentRadius)
         .accessibilityAddTraits(isOn ? .isSelected : [])
         .accessibilityLabel(option.count.map { "\(option.title), \($0)" } ?? option.title)
     }

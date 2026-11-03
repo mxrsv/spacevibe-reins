@@ -9,8 +9,6 @@ struct ActivityStopConfirmation: View {
     let cancel: () -> Void
     let confirm: () -> Void
 
-    @FocusState private var cancelFocused: Bool
-
     var body: some View {
         ZStack {
             Palette.overlay
@@ -19,7 +17,6 @@ struct ActivityStopConfirmation: View {
                 .accessibilityHidden(true)
             card
         }
-        .onAppear { cancelFocused = true }
         .onExitCommand { if !isStopping { cancel() } }
     }
 
@@ -38,9 +35,7 @@ struct ActivityStopConfirmation: View {
                 Spacer(minLength: 0)
                 Button("Cancel", action: cancel)
                     .buttonStyle(.reins(.normal))
-                    .focused($cancelFocused)
-                    .focusEffectDisabled()
-                    .focusRing(cancelFocused, cornerRadius: Metrics.controlRadius)
+                    .reinsFocusable(cornerRadius: Metrics.controlRadius, focusOnAppear: true)
                     .disabled(isStopping)
                     .keyboardShortcut(.cancelAction)
                 Button(isStopping ? "Stopping\u{2026}" : "Stop", action: confirm)

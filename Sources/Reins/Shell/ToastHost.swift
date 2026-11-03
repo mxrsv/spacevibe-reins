@@ -48,7 +48,7 @@ struct ToastView: View {
         .padding(.leading, 16)
         .padding(.trailing, 8)
         .padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Palette.text))
+        .background(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous).fill(Palette.text))
         .shadow(color: Palette.overlayShadow, radius: 14, y: 8)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(toast.message)

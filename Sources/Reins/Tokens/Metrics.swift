@@ -13,6 +13,11 @@ enum Metrics {
     static let controlRadius: CGFloat = 7
     static let tagRadius: CGFloat = 5
     static let paletteRadius: CGFloat = 14
+    /// Search field, palette row and the segmented control's frame.
+    static let fieldRadius: CGFloat = 8
+    /// A segment inside the segmented control (the frame's radius less its padding).
+    static let segmentRadius: CGFloat = 6
+    static let kbdRadius: CGFloat = 4
 
     static let rowMinHeight: CGFloat = 46
     static let rowSpacing: CGFloat = 12
@@ -26,6 +31,10 @@ enum Metrics {
 
     static let controlHeight: CGFloat = 26
     static let chipHeight: CGFloat = 24
+
+    static let paletteRowHeight: CGFloat = 36
+    /// Estimated height of a section title in the palette list (8 pt above, 4 pt below, one line); it only sizes the list.
+    static let paletteSectionHeight: CGFloat = 26
 
     /// Toast stays about this long unless the pointer rests on it.
     static let toastDuration: Duration = .seconds(7)
@@ -44,4 +53,5 @@ enum ReinsFont {
     static let mono = Font.system(size: 12, design: .monospaced)
     static let monoStrong = Font.system(size: 12, weight: .semibold, design: .monospaced)
     static let kbd = Font.system(size: 11, design: .monospaced)
+    static let emptyStateIcon = Font.system(size: 22)
 }
