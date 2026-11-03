@@ -19,33 +19,30 @@ struct StyleBoundaryTests {
         ("palette colour", #"Palette\."#),
         ("colour literal", #"\bColor\("#),
         ("radius literal", #"cornerRadius:\s*[0-9]"#),
-        ("padding literal", #"\.padding\([^)]*?\b[0-9]+(\.[0-9]+)?\s*\)"#),
-        ("spacing literal", #"spacing:\s*[0-9]"#),
-        ("frame literal", #"\.frame\([^)]*?\b(width|height|minWidth|minHeight|maxWidth|maxHeight):\s*[0-9]"#),
+        // Zero is structure, not a design value, so `spacing: 0` and `.padding(.top, 0)` pass.
+        ("padding literal", #"\.padding\([^)]*?\b[1-9][0-9]*(\.[0-9]+)?\s*\)"#),
+        ("spacing literal", #"spacing:\s*[1-9]"#),
+        ("frame literal", #"\.frame\([^)]*?\b(width|height|minWidth|minHeight|maxWidth|maxHeight):\s*[1-9]"#),
     ]
 
-    /// Today's counts (2026-11-03, design-language plan T3). Lower an entry when a file sheds literals; delete it at zero.
+    /// Today's counts (2026-11-03, design-language plan T3; zero literals stopped counting in T5). Lower an entry when a file sheds literals; delete it at zero.
     static let allowed: [String: Int] = [
-        "Loadout/LoadoutRowView.swift": 9,
-        "Loadout/LoadoutScreen.swift": 1,
-        "Loadout/LoadoutTable.swift": 14,
-        "Loadout/LoadoutToolbar.swift": 5,
         "Rules/RulesAddRow.swift": 15,
         "Rules/RulesConfirmation.swift": 32,
         "Rules/RulesGrid.swift": 21,
-        "Rules/RulesScreen.swift": 3,
+        "Rules/RulesScreen.swift": 2,
         "Rules/RulesToolbar.swift": 5,
         "Activity/ActivityFailureRow.swift": 2,
         "Activity/ActivityFileHistory.swift": 9,
-        "Activity/ActivityLane.swift": 7,
+        "Activity/ActivityLane.swift": 6,
         "Activity/ActivityLines.swift": 9,
-        "Activity/ActivityScreen.swift": 3,
+        "Activity/ActivityScreen.swift": 2,
         "Activity/ActivitySessionRow.swift": 6,
         "Activity/ActivityStopConfirmation.swift": 13,
-        "Shell/CommandPalette.swift": 44,
+        "Shell/CommandPalette.swift": 42,
         "Shell/HintBar.swift": 5,
-        "Shell/ShellView.swift": 3,
-        "Shell/SidebarView.swift": 24,
+        "Shell/ShellView.swift": 1,
+        "Shell/SidebarView.swift": 23,
         "Shell/ThemeToggle.swift": 4,
         "Shell/ToastHost.swift": 9,
         "Shell/TopBarView.swift": 14,
@@ -111,6 +108,7 @@ struct StyleBoundaryTests {
         #expect(Self.violations(in: "x.padding(.horizontal, Metrics.pagePadding)") == 0)
         #expect(Self.violations(in: "HStack(spacing: 8) {") == 1)
         #expect(Self.violations(in: "HStack(spacing: Space.s8) {") == 0)
+        #expect(Self.violations(in: "VStack(spacing: 0) {") == 0)
         #expect(Self.violations(in: "x.frame(width: 58, alignment: .trailing)") == 1)
         #expect(Self.violations(in: "x.frame(maxWidth: .infinity)") == 0)
         #expect(Self.violations(in: "RoundedRectangle(cornerRadius: 6)") == 1)

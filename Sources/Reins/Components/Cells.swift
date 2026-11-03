@@ -22,3 +22,32 @@ struct StateCell<Content: View>: View {
         content.frame(width: Metrics.stateWidth, alignment: .trailing)
     }
 }
+
+/// An empty 28 pt action slot, so per-CLI actions keep their column when one CLI has nothing to act on.
+struct EmptyActionSlot: View {
+    var body: some View {
+        Color.clear.frame(width: Metrics.controlHeight, height: Metrics.controlHeight).accessibilityHidden(true)
+    }
+}
+
+/// A lock in an action slot: the row cannot be changed here, and the help text says why.
+struct ReadOnlyMark: View {
+    let reason: String
+
+    var body: some View {
+        Image(systemName: "lock")
+            .foregroundStyle(TextTone.tertiary.color)
+            .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
+            .help(reason)
+            .accessibilityLabel(reason)
+    }
+}
+
+/// Holds a column's width in a header where the column has no label (the actions column).
+struct ColumnSpacer: View {
+    let width: CGFloat
+
+    var body: some View {
+        Color.clear.frame(width: width, height: Space.s2).accessibilityHidden(true)
+    }
+}

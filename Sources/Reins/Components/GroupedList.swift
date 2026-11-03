@@ -31,10 +31,18 @@ extension View {
 /// so the rows read as one group; none under a section row; 16 pt of space, not a line, before a section row that follows
 /// rows.
 struct GroupedList<Content: View>: View {
+    /// `.belowPinnedHeader`: the rows of a card whose `CardHeader` pins separately (`.pinnedCardTop()`), so only the
+    /// bottom corners round and the top edge lies on the header's bottom edge.
+    var edges: CardEdges = .all
     @ViewBuilder var content: Content
 
+    init(edges: CardEdges = .all, @ViewBuilder content: () -> Content) {
+        self.edges = edges
+        self.content = content()
+    }
+
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous)
+        let shape = edges.shape
         VStack(spacing: 0) {
             Group(subviews: content) { subviews in
                 ForEach(subviews.indices, id: \.self) { index in
@@ -50,6 +58,8 @@ struct GroupedList<Content: View>: View {
         .background(shape.fill(Palette.surface))
         .clipShape(shape)
         .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
+        // Under a pinned header, one point up so the two borders share an edge instead of doubling it.
+        .padding(.top, edges == .belowPinnedHeader ? -1 : 0)
         .accessibilityElement(children: .contain)
     }
 
@@ -79,5 +89,29 @@ struct Hairline: View {
             .padding(.leading, inset ? Metrics.separatorInset : 0)
             .padding(.trailing, inset ? Metrics.rowHorizontalPadding : 0)
             .accessibilityHidden(true)
+    }
+}
+
+enum CardEdges {
+    case all, belowPinnedHeader
+
+    var shape: UnevenRoundedRectangle {
+        let r = Metrics.groupRadius
+        switch self {
+        case .all: return UnevenRoundedRectangle(topLeadingRadius: r, bottomLeadingRadius: r, bottomTrailingRadius: r, topTrailingRadius: r, style: .continuous)
+        case .belowPinnedHeader: return UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: r, bottomTrailingRadius: r, topTrailingRadius: 0, style: .continuous)
+        }
+    }
+}
+
+extension View {
+    /// A `CardHeader` used as a pinned section header: the card's top corners and border, on an opaque surface so rows
+    /// scroll under it. Pair with `GroupedList(edges: .belowPinnedHeader)`.
+    func pinnedCardTop() -> some View {
+        let r = Metrics.groupRadius
+        let shape = UnevenRoundedRectangle(topLeadingRadius: r, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: r, style: .continuous)
+        return clipShape(shape)
+            .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
+            .background(Palette.well)
     }
 }

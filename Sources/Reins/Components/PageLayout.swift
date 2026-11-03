@@ -41,6 +41,28 @@ extension PageLayout {
     }
 }
 
+extension View {
+    /// The tools row of a screen that builds its own scrolling body (Loadout's pinned headers): PageLayout's tools padding.
+    func pageTools() -> some View {
+        padding(.horizontal, Metrics.pagePadding)
+            .padding(.top, Space.s8)
+            .padding(.bottom, Space.s24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The scrolling body of such a screen: PageLayout's side and bottom padding.
+    func pageContent() -> some View {
+        padding(.horizontal, Metrics.pagePadding)
+            .padding(.bottom, Metrics.pageBottomPadding)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    /// The `well` behind a screen.
+    func pageBackground() -> some View {
+        background(Palette.well)
+    }
+}
+
 /// Vertical rhythm between blocks on a page: nearness says what belongs together.
 enum Rhythm {
     /// Between two cards of one screen (Skills, Agents, Hooks).

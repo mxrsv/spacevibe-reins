@@ -23,6 +23,7 @@ struct LoadoutScreen: View {
                 LoadoutToolbar(model: model, view: view, scopes: data.scopes)
                 LoadoutTable(model: model, view: view, data: data)
             }
+            .pageBackground()
         } else if let failure = model.readFailure {
             PageLayout {
                 Banner(.error, message: "Could not read what is installed.", detail: failure, actionTitle: "Retry", action: model.retry)

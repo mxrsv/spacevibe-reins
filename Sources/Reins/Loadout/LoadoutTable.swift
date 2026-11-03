@@ -1,7 +1,8 @@
 import ReinsCore
 import SwiftUI
 
-/// The scrolling part of the screen: banners, the matrix table with a header that stays put, and the legend.
+/// The scrolling part of the screen: banners, one card per kind (Skills, Agents, Hooks) whose header stays put while its
+/// rows scroll, and the legend with what the counts rest on.
 struct LoadoutTable: View {
     let model: LoadoutModel
     let view: LoadoutView
@@ -13,88 +14,85 @@ struct LoadoutTable: View {
             page.modifier(ShotFit())
         } else {
             ScrollViewReader { proxy in
-                ScrollView { page.frame(maxWidth: .infinity, alignment: .topLeading) }
+                ScrollView { page }
                     .onChange(of: model.jumpToken) { _, _ in scrollToSelection(proxy) }
             }
         }
     }
 
+    private var kinds: [LoadoutKind] {
+        LoadoutKind.allCases.filter { model.shotKinds?.contains($0) ?? true }
+    }
+
     private var page: some View {
         VStack(alignment: .leading, spacing: 0) {
             banners
-            tableLayout
-            UsageLegend()
+            cards
+            UsageLegend(note: model.usageNote).padding(.top, Rhythm.caption)
         }
-        .padding(.horizontal, Metrics.pagePadding)
-        .padding(.top, 6)
-        .padding(.bottom, 28)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .pageContent()
     }
 
     @ViewBuilder
     private var banners: some View {
-        VStack(spacing: 8) {
-            if model.scanFailure != nil {
-                Banner(.warn, message: "Usage could not be counted, so every count shows as pending.", detail: model.scanFailure, actionTitle: "Try again", action: model.retry)
+        let problems = (model.scanFailure.map { [$0] } ?? []).count + data.problems.count
+        if problems > 0 {
+            VStack(spacing: Space.s12) {
+                if model.scanFailure != nil {
+                    Banner(.warn, message: "Usage could not be counted, so every count shows as pending.", detail: model.scanFailure, actionTitle: "Try again", action: model.retry)
+                }
+                ForEach(data.problems, id: \.self) { problem in
+                    Banner(.warn, message: problem)
+                }
             }
-            ForEach(data.problems, id: \.self) { problem in
-                Banner(.warn, message: problem)
-            }
+            .padding(.bottom, Rhythm.cards)
         }
-        .padding(.bottom, data.problems.isEmpty && model.scanFailure == nil ? 0 : 10)
     }
 
-    /// In the app the header pins to the top of the scroll view; a screenshot has no scrolling, so it is a plain stack.
+    /// In the app each card's header pins to the top of the scroll view; a screenshot has no scrolling, so it is a stack.
     @ViewBuilder
-    private var tableLayout: some View {
-        if isShotRendering {
-            VStack(spacing: 0) { head; bodyRows }
-        } else {
-            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                Section { bodyRows } header: { head }
-            }
-        }
-    }
-
-    private var head: some View {
-        let shape = UnevenRoundedRectangle(topLeadingRadius: Metrics.groupRadius, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: Metrics.groupRadius, style: .continuous)
-        return HeadRow("Name") {
-            CLIColumnHead(.claude)
-            CLIColumnHead(.codex)
-            Color.clear.frame(width: loadoutActionsWidth, height: 1)
-        }
-        .clipShape(shape)
-        .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
-        .background(Palette.background)
-    }
-
-    private var bodyRows: some View {
-        let shape = UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: Metrics.groupRadius, bottomTrailingRadius: Metrics.groupRadius, topTrailingRadius: 0, style: .continuous)
-        let kinds = LoadoutKind.allCases.filter { model.shotKinds?.contains($0) ?? true }
-        return VStack(spacing: 0) {
-            if view.shown.isEmpty {
+    private var cards: some View {
+        let shown = kinds.filter { !LoadoutRows.section(view.shown, $0).isEmpty }
+        if shown.isEmpty {
+            GroupedList {
                 EmptyRow(view.all.isEmpty ? "Nothing installed at this scope." : "Nothing matches this filter.")
             }
-            ForEach(kinds, id: \.self) { kind in
-                let rows = LoadoutRows.section(view.shown, kind)
-                if !rows.isEmpty {
-                    Hairline()
-                    SectionRow(kind.sectionTitle, count: rows.count)
-                    ForEach(rows) { row in
-                        Hairline()
-                        LoadoutRowView(model: model, row: row, max: view.max[kind] ?? 1, events: data.events, selected: model.selectedKey == row.key)
-                            .id(row.key)
+        } else if isShotRendering {
+            VStack(spacing: Rhythm.cards) {
+                ForEach(shown, id: \.self) { kind in
+                    VStack(spacing: 0) { header(kind); rows(kind) }
+                }
+            }
+        } else {
+            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                ForEach(shown, id: \.self) { kind in
+                    Section {
+                        rows(kind).padding(.bottom, kind == shown.last ? 0 : Rhythm.cards)
+                    } header: {
+                        header(kind)
                     }
                 }
             }
         }
-        .background(Palette.surface)
-        .clipShape(shape)
-        .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
-        // One point up, so its top edge lies on the header's bottom edge instead of doubling it.
-        .padding(.top, -1)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Skills, agents and hooks")
+    }
+
+    private func header(_ kind: LoadoutKind) -> some View {
+        CardHeader(kind.sectionTitle, count: LoadoutRows.section(view.shown, kind).count, columns: {
+            CLIColumnHead(.claude)
+            CLIColumnHead(.codex)
+            ColumnSpacer(width: Metrics.loadoutActionsWidth)
+        })
+        .pinnedCardTop()
+    }
+
+    private func rows(_ kind: LoadoutKind) -> some View {
+        GroupedList(edges: .belowPinnedHeader) {
+            ForEach(LoadoutRows.section(view.shown, kind)) { row in
+                LoadoutRowView(model: model, row: row, max: view.max[kind] ?? 1, events: data.events, selected: model.selectedKey == row.key)
+                    .id(row.key)
+            }
+        }
+        .accessibilityLabel(kind.sectionTitle)
     }
 
     /// After the layout pass that follows the scope and filter reset of a jump.

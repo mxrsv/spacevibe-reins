@@ -1,9 +1,6 @@
 import ReinsCore
 import SwiftUI
 
-/// Room for one Remove button per CLI. Every row and the header reserve it so the two usage columns line up.
-let loadoutActionsWidth: CGFloat = 100
-
 /// One matrix row. Return, Space and a click only select it; the buttons inside it are the only things that change files.
 struct LoadoutRowView: View {
     let model: LoadoutModel
@@ -14,7 +11,12 @@ struct LoadoutRowView: View {
 
     var body: some View {
         Row(selected: selected, revealActions: model.revealRowActions, onActivate: { model.select(row.key) }) {
-            LoadoutRowText(row: row)
+            // A hook's second line is its command; everything else has a description.
+            RowText(row.name, subtitle: row.detail.isEmpty ? nil : row.detail, codeSubtitle: row.kind == .hook) {
+                ForEach(LoadoutFormat.tags(row), id: \.text) { tag in
+                    Tag(tag.text, tone: tag.tone, systemImage: tag.systemImage)
+                }
+            }
         }
         .lead { Image(systemName: row.kind.systemImage).accessibilityHidden(true) }
         .cells {
@@ -30,56 +32,26 @@ struct LoadoutRowView: View {
         .actions { actions }
     }
 
-    /// One Remove button per CLI that holds a removable copy, each marked with its CLI dot; a lock when nothing is removable.
+    /// One 28 pt slot per CLI: Remove, badged with that CLI's dot, where a removable copy exists; a lock when nothing is
+    /// removable.
     private var actions: some View {
         let members = row.removableMembers
-        return HStack(spacing: 4) {
+        return HStack(spacing: Space.s4) {
             if members.isEmpty {
-                Image(systemName: "lock")
-                    .foregroundStyle(Palette.textTertiary)
-                    .help(LoadoutRows.readOnlyReason(row))
-                    .accessibilityLabel(LoadoutRows.readOnlyReason(row))
+                EmptyActionSlot()
+                ReadOnlyMark(reason: LoadoutRows.readOnlyReason(row))
             } else {
-                ForEach(members, id: \.id) { member in
-                    Button { model.remove(row, member: member) } label: {
-                        HStack(spacing: 5) {
-                            CLIDot(member.cli, decorative: true)
-                            Image(systemName: "trash")
+                ForEach(InventoryCLI.allCases, id: \.self) { cli in
+                    if let member = members.first(where: { $0.cli == cli }) {
+                        RowActionButton(title: LoadoutFormat.removeAction(row: row, member: member), systemImage: "trash", kind: .danger, iconOnly: true, badge: cli) {
+                            model.remove(row, member: member)
                         }
+                    } else {
+                        EmptyActionSlot()
                     }
-                    .buttonStyle(.reins(.danger))
-                    .help(LoadoutFormat.removeAction(row: row, member: member))
-                    .accessibilityLabel(LoadoutFormat.removeAction(row: row, member: member))
                 }
             }
         }
-        .frame(width: loadoutActionsWidth, alignment: .trailing)
-    }
-}
-
-/// The name with its tags, and one muted line: the description, or for a hook the command in monospace.
-private struct LoadoutRowText: View {
-    let row: LoadoutRow
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                Text(row.name)
-                    .font(ReinsFont.bodyStrong)
-                    .foregroundStyle(Palette.text)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                ForEach(LoadoutFormat.tags(row), id: \.text) { tag in
-                    Tag(tag.text, tone: tag.tone, systemImage: tag.systemImage)
-                }
-            }
-            if !row.detail.isEmpty {
-                Text(row.detail)
-                    .font(row.kind == .hook ? ReinsFont.mono : ReinsFont.small)
-                    .foregroundStyle(Palette.textTertiary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
-        }
+        .frame(width: Metrics.loadoutActionsWidth, alignment: .trailing)
     }
 }
