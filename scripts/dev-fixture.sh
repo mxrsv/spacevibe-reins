@@ -7,6 +7,8 @@
 #
 # Environment: REINS_FIXTURE_ACTIVITY=empty (no live session) or =loading (the first process question waits 20 s, so the
 # screen sits on "Reading logs...") is passed to scripts/fixture-home.mjs. REINS_BUILD_PATH overrides the scratch path.
+# REINS_SHOT_SCREEN=shell|loadout|rules|activity picks the --shots run (default shell: the demo shell states and the
+# gallery); the other three read this synthetic home and assert their writes, Undo included. Nothing else selects a screen.
 #
 # What the fake process list says (written by fixture-home.mjs to <home>/.reins/activity-proc.json, used because
 # REINS_TEST=1 and REINS_PROC_FIXTURE name it; the pids are made up and only the fake answers for them):

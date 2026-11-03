@@ -73,22 +73,3 @@ private struct LoadingMark: View {
         }
     }
 }
-
-/// Headless shots have no ScrollView, so content taller than the frame would be squeezed (rows overlap) or push the shell
-/// off screen. In a shot the content takes its ideal height and is cut at the frame, like a scrolled page. No effect in the app.
-private struct ShotFit: ViewModifier {
-    @Environment(\.isShotRendering) private var isShotRendering
-
-    func body(content: Content) -> some View {
-        if isShotRendering {
-            GeometryReader { proxy in
-                content
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
-                    .clipped()
-            }
-        } else {
-            content
-        }
-    }
-}

@@ -49,7 +49,9 @@ jobs:
       # Synthetic home only (scripts/dev-fixture.sh): nothing real exists on this machine.
       - name: Screenshots
         run: |
-          scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/shell"
+          for screen in shell loadout rules activity; do
+            REINS_SHOT_SCREEN=$screen scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/$screen"
+          done
           if [ -d Sources/Reins/TokenUsage ]; then
             REINS_SHOT_SCREEN=tokens scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/tokens"
           fi

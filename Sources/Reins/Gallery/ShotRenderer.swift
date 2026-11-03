@@ -2,10 +2,15 @@ import AppKit
 import SwiftUI
 
 /// Headless screenshots (`REINS_SHOT_DIR=<dir>`). Renders views with `ImageRenderer`: no window is created, no
-/// focus is taken and no Screen Recording permission is needed. Writes `<name>-<dark|light>.png`, 1440x900 points
-/// at 2x for the shell states and the gallery at its full height, then the process exits.
+/// focus is taken and no Screen Recording permission is needed. Then the process exits.
 ///
-/// It uses only synthetic demo data and never touches the saved appearance choice or the real config folders.
+/// `REINS_SHOT_SCREEN` picks the run, and nothing else does:
+/// - `shell` (the default): the demo shell states and the gallery, `<name>-<dark|light>.png`, 1440x900 points at 2x for the
+///   shell states and the gallery at its full height. Synthetic demo data only; it never touches the saved appearance choice
+///   or the real config folders.
+/// - `loadout`, `rules`, `activity`: the real screen read from the synthetic HOME, with checks on the writes
+///   (`LoadoutShots`, `RulesShots`, `ActivityShots`, which share `ShotHarness`). These need `REINS_TEST=1` and a synthetic
+///   home, as `scripts/dev-fixture.sh --shots` sets up.
 @MainActor
 enum ShotRenderer {
     static let size = CGSize(width: 1440, height: 900)
@@ -15,34 +20,40 @@ enum ShotRenderer {
         NSApplication.shared.setActivationPolicy(.prohibited)
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            // REINS_SHOT_SCREEN=loadout selects the real Loadout screen; the dev variables of scripts/dev-fixture.sh the Activity one.
-            if LoadoutShots.isRequested() {
-                try LoadoutShots.run(into: directory)
-                exit(0)
-            }
-            if RulesShots.isRequested() {
-                try RulesShots.run(into: directory)
-                exit(0)
-            }
-            if ActivityShots.isRequested() {
-                try ActivityShots.run(into: directory)
-                exit(0)
-            }
-            for choice in [AppearanceChoice.dark, .light] {
-                try write(shell(choice) { _, _ in }, name: "shell-loadout", choice: choice, to: directory)
-                try write(shell(choice) { shell, _ in shell.select("activity") }, name: "shell-activity", choice: choice, to: directory)
-                try write(shell(choice) { shell, _ in shell.select("rules") }, name: "shell-rules", choice: choice, to: directory)
-                try write(shell(choice) { shell, _ in shell.openPalette() }, name: "shell-palette", choice: choice, to: directory)
-                try write(shell(choice) { shell, _ in shell.openPalette(query: "p") }, name: "shell-palette-filtered", choice: choice, to: directory)
-                try write(shell(choice) { _, toasts in toasts.show("Removed ponytail", undo: {}) }, name: "shell-toast", choice: choice, to: directory)
-                try write(shell(choice) { _, toasts in toasts.show("Reins 0.2.0 is available", action: UpdateController.viewAction {}) }, name: "shell-toast-update", choice: choice, to: directory)
-                try write(gallery(choice), name: "gallery", choice: choice, to: directory, fullHeight: true)
+            let environment = ProcessInfo.processInfo.environment
+            let screen = environment["REINS_SHOT_SCREEN"] ?? "shell"
+            switch screen {
+            case "shell": try writeShellStates(into: directory)
+            case "loadout": try requireSyntheticHome(environment); try LoadoutShots.run(into: directory)
+            case "rules": try requireSyntheticHome(environment); try RulesShots.run(into: directory)
+            case "activity": try requireSyntheticHome(environment); try ActivityShots.run(into: directory)
+            default: throw ShotHarness.Failure("unknown REINS_SHOT_SCREEN \"\(screen)\" (shell, loadout, rules or activity)")
             }
         } catch {
             FileHandle.standardError.write(Data("shot mode failed: \(error.localizedDescription)\n".utf8))
             exit(1)
         }
         exit(0)
+    }
+
+    /// The real screens read config folders, so they run only where `Roots.resolve` refuses a root under the real home.
+    private static func requireSyntheticHome(_ environment: [String: String]) throws {
+        guard environment["REINS_TEST"] == "1" else {
+            throw ShotHarness.Failure("real-screen shots need REINS_TEST=1 and a synthetic home")
+        }
+    }
+
+    private static func writeShellStates(into directory: URL) throws {
+        for choice in [AppearanceChoice.dark, .light] {
+            try write(shell(choice) { _, _ in }, name: "shell-loadout", choice: choice, to: directory)
+            try write(shell(choice) { shell, _ in shell.select("activity") }, name: "shell-activity", choice: choice, to: directory)
+            try write(shell(choice) { shell, _ in shell.select("rules") }, name: "shell-rules", choice: choice, to: directory)
+            try write(shell(choice) { shell, _ in shell.openPalette() }, name: "shell-palette", choice: choice, to: directory)
+            try write(shell(choice) { shell, _ in shell.openPalette(query: "p") }, name: "shell-palette-filtered", choice: choice, to: directory)
+            try write(shell(choice) { _, toasts in toasts.show("Removed ponytail", undo: {}) }, name: "shell-toast", choice: choice, to: directory)
+            try write(shell(choice) { _, toasts in toasts.show("Reins 0.2.0 is available", action: UpdateController.viewAction {}) }, name: "shell-toast-update", choice: choice, to: directory)
+            try write(gallery(choice), name: "gallery", choice: choice, to: directory, fullHeight: true)
+        }
     }
 
     private static func shell(_ choice: AppearanceChoice, configure: (ShellModel, ToastCenter) -> Void) -> some View {

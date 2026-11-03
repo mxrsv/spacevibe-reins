@@ -10,7 +10,7 @@ struct LoadoutTable: View {
 
     var body: some View {
         if isShotRendering {
-            page.modifier(LoadoutShotFit())
+            page.modifier(ShotFit())
         } else {
             ScrollViewReader { proxy in
                 ScrollView { page.frame(maxWidth: .infinity, alignment: .topLeading) }
@@ -103,19 +103,6 @@ struct LoadoutTable: View {
         Task {
             try? await Task.sleep(for: .milliseconds(60))
             withAnimation { proxy.scrollTo(key, anchor: .center) }
-        }
-    }
-}
-
-/// Headless shots have no ScrollView, so content taller than the frame would push the shell off screen. In a shot the content
-/// takes its ideal height and is cut at the frame, like a scrolled page.
-private struct LoadoutShotFit: ViewModifier {
-    func body(content: Content) -> some View {
-        GeometryReader { proxy in
-            content
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
-                .clipped()
         }
     }
 }

@@ -41,7 +41,7 @@ struct RulesScreen: View {
                             RulesAddRow(model: model).id(Self.addRowID)
                             RulesCodexGroup(snapshot: snapshot)
                         }
-                        .modifier(RulesShotFit())
+                        .modifier(ShotFit())
                     }
                 )
                 .onChange(of: model.addFocusToken) { _, _ in withAnimation { proxy.scrollTo(Self.addRowID, anchor: .center) } }
@@ -73,24 +73,5 @@ struct RulesScreen: View {
             }
         }
         .padding(.bottom, snapshot.problems.isEmpty && model.failure == nil && snapshot.codex.model != .both ? 0 : 12)
-    }
-}
-
-/// Headless shots have no ScrollView, so content taller than the frame would be squeezed or push the shell off screen. In a
-/// shot the content takes its ideal height and is cut at the frame, like a scrolled page. No effect in the app.
-private struct RulesShotFit: ViewModifier {
-    @Environment(\.isShotRendering) private var isShotRendering
-
-    func body(content: Content) -> some View {
-        if isShotRendering {
-            GeometryReader { proxy in
-                content
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
-                    .clipped()
-            }
-        } else {
-            content
-        }
     }
 }

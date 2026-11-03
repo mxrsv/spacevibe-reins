@@ -2,9 +2,10 @@ import Foundation
 import ReinsCore
 import SwiftUI
 
-/// Headless screenshots of the real Activity screen (`REINS_SHOT_DIR` plus the dev variables `REINS_TEST=1` and
-/// `REINS_PROC_FIXTURE`, as `scripts/dev-fixture.sh --shots` sets them). The report is read from the synthetic HOME before
-/// any frame is drawn, because `ImageRenderer` draws one frame and runs no `.task`.
+/// Headless screenshots of the real Activity screen. `ShotRenderer.run` starts it for `REINS_SHOT_SCREEN=activity`, which
+/// needs the synthetic HOME and fake process list of `scripts/dev-fixture.sh --shots`; `ShotHarness` holds the waits and
+/// shell it shares with the Loadout and Rules runs. The report is read from the synthetic HOME before any frame is drawn,
+/// because `ImageRenderer` draws one frame and runs no `.task`.
 ///
 /// Which states are written depends on the fixture: a HOME with live sessions gives `default`, `unmeasurable`
 /// (the unmeasurable sessions only, Stop shown), `laterpass` (failure groups that have a later pass, no sessions), `stop`
@@ -12,17 +13,9 @@ import SwiftUI
 /// report; none of them invents data.
 @MainActor
 enum ActivityShots {
-    static func isRequested(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
-        environment["REINS_TEST"] == "1" && !(environment["REINS_PROC_FIXTURE"] ?? "").isEmpty
-    }
-
-    private struct ShotFailure: LocalizedError {
-        let errorDescription: String?
-    }
-
     static func run(into directory: URL) throws {
         let env = AppEnvironment.live(toasts: ToastCenter(announce: false))
-        guard env.roots != nil else { throw ShotFailure(errorDescription: env.startupProblem ?? "no roots") }
+        guard env.roots != nil else { throw ShotHarness.Failure(env.startupProblem ?? "no roots") }
         let loader = ActivityModel(env: env)
         let report = try readBeforeRendering(loader)
         let live = report.sessions.filter { $0.state != .ended }
@@ -33,7 +26,8 @@ enum ActivityShots {
                 model.preview(report: report)
                 model.revealRowActions = reveal
                 model.pendingStop = stop
-                try ShotRenderer.write(screen(model, env: env, choice: choice), name: "activity-\(name)", choice: choice, to: directory)
+                let shell = ShotHarness.shell(around: ActivityTab(model: model), choice: choice)
+                try ShotRenderer.write(ShotHarness.view(shell, env: env), name: "activity-\(name)", choice: choice, to: directory)
             }
             if live.isEmpty {
                 try shot("no-session", report)
@@ -60,21 +54,10 @@ enum ActivityShots {
     /// Runs the engine read and spins the main run loop until it lands; the engine is an actor, so this does not deadlock.
     private static func readBeforeRendering(_ model: ActivityModel) throws -> ActivityReport {
         Task { await model.readOnce() }
-        let deadline = Date().addingTimeInterval(120)
-        while model.report == nil, model.failure == nil, Date() < deadline {
-            RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.05))
-        }
+        try ShotHarness.wait("the Activity read", seconds: ShotHarness.settleSeconds) { model.report != nil || model.failure != nil }
         guard let report = model.report else {
-            throw ShotFailure(errorDescription: model.failure ?? "the Activity read did not finish in 120 s")
+            throw ShotHarness.Failure(model.failure ?? "the Activity read returned no report")
         }
         return report
-    }
-
-    private static func screen(_ model: ActivityModel, env: AppEnvironment, choice: AppearanceChoice) -> some View {
-        let tabs: [any ReinsTab] = TabRegistry.makeTabs().map { $0.id == ActivityTab.tabID ? ActivityTab(model: model) : $0 }
-        let shell = ShellModel(tabs: tabs, appearance: AppearanceStore(forced: choice), activeID: ActivityTab.tabID)
-        return ShellView()
-            .reinsRoot(shell: shell, toasts: env.toasts, env: env)
-            .frame(width: ShotRenderer.size.width, height: ShotRenderer.size.height)
     }
 }
