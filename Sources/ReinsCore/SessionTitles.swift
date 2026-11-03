@@ -48,7 +48,7 @@ public enum SessionTitles {
         for candidate in candidates {
             if let candidate, !isJunk(candidate) { return clean(candidate) }
         }
-        let day = startedAt.map { $0.isFinite ? ActivityText.isoDay($0) : "unknown date" } ?? "unknown date"
+        let day = ActivityText.boundedTimestamp(startedAt).map(ActivityText.isoDay) ?? "unknown date"
         return "\(day) · \(ActivityText.prefix(id ?? "", 8))"
     }
 }

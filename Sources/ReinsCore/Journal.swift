@@ -129,6 +129,49 @@ public enum Journal {
         return entry
     }
 
+    /// Called under WriteLock before a config mutation, so unreadable history refuses before any change.
+    static func prepareMutation(_ roots: Roots) throws {
+        _ = try entriesForWriting(roots)
+    }
+
+    /// Persist a completed mutation, restoring its ops when the journal cannot be saved.
+    static func recordMutation(_ roots: Roots, label: String, ops: [JournalOp]) throws -> JournalEntry {
+        do {
+            return try record(roots, label: label, ops: ops)
+        } catch {
+            try rollbackMutation(roots, ops: ops)
+            throw error
+        }
+    }
+
+    static let rollbackFailureMessage = "The change failed and could not be fully rolled back. Some configuration may have changed. Review the configuration and the saved copies in the Reins trash before trying again."
+
+    /// Roll back every completed op even if one fails. Hooks use their exact backup, never the user Undo fallback:
+    /// reversing a failed transaction must not silently preserve a partial write or overwrite a concurrent change.
+    /// A dead-hook batch shares one restore op; restore that file only once.
+    static func rollbackMutation(_ roots: Roots, ops: [JournalOp]) throws {
+        var restored: [JournalOp] = []
+        var failed = false
+        for op in ops.reversed() {
+            do {
+                if op.type == "hook-added" || op.type == "hook-removed" {
+                    guard let json = op.json["restore"], json["type"]?.stringValue == "file-edited" else {
+                        throw ReinsError(rollbackFailureMessage, status: 500)
+                    }
+                    let restore = JournalOp(json: json)
+                    if restored.contains(restore) { continue }
+                    _ = try undoFileEdit(roots, restore)
+                    restored.append(restore)
+                } else {
+                    _ = try undoOp(roots, op)
+                }
+            } catch {
+                failed = true
+            }
+        }
+        if failed { throw ReinsError(rollbackFailureMessage, status: 500) }
+    }
+
     /// Reverses an entry's ops, last first, and marks it undone; returns its label.
     /// All or nothing: if one op refuses or fails, the ones already reversed are put back and the entry stays undoable.
     public static func undo(_ roots: Roots, id: String) throws -> String {

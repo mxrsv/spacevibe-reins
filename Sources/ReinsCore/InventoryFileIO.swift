@@ -23,13 +23,13 @@ enum InventoryFileIO {
     }
 
     static func readData(_ url: URL, maxBytes: Int) -> Data? {
-        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        guard let handle = openRegularFile(url) else { return nil }
         defer { try? handle.close() }
         return try? handle.read(upToCount: maxBytes) ?? Data()
     }
 
     static func readJSON(_ url: URL) -> JSONFile {
-        guard let handle = try? FileHandle(forReadingFrom: url) else {
+        guard let handle = openRegularFile(url) else {
             return presence(url.path) == .missing ? .missing : .unreadable
         }
         defer { try? handle.close() }
@@ -37,6 +37,19 @@ enum InventoryFileIO {
         if data.count > maxJSONBytes { return .tooLarge }
         guard let doc = try? OrderedJSON(text: String(decoding: data, as: UTF8.self)) else { return .invalid }
         return .value(doc.root)
+    }
+
+    /// Nonblocking open prevents a FIFO from waiting for a writer. Check the opened descriptor, not a path that
+    /// could change between stat and open. Symlinks to regular files remain supported (shared skill installs).
+    private static func openRegularFile(_ url: URL) -> FileHandle? {
+        let fd = open(url.path, O_RDONLY | O_NONBLOCK | O_CLOEXEC)
+        guard fd >= 0 else { return nil }
+        var info = stat()
+        guard fstat(fd, &info) == 0, (info.st_mode & S_IFMT) == S_IFREG else {
+            close(fd)
+            return nil
+        }
+        return FileHandle(fileDescriptor: fd, closeOnDealloc: true)
     }
 
     /// Entry names of a folder, sorted. Empty when the folder is missing or cannot be read.

@@ -95,8 +95,16 @@ enum ActivityText {
 
     // MARK: Time
 
+    /// The formatter and log parser use four-digit ISO years (0000 through 9999).
+    /// Reject untrusted numbers before integer conversion or arithmetic used by UI ages.
+    static func boundedTimestamp(_ ms: Double?) -> Double? {
+        guard let ms, ms.isFinite, (-62_167_219_200_000...253_402_300_799_999).contains(ms) else { return nil }
+        return ms
+    }
+
     /// `new Date(ms).toISOString()`: `2026-11-02T12:00:00.000Z`.
     static func isoString(_ ms: Double) -> String {
+        guard let ms = boundedTimestamp(ms) else { return "unknown date" }
         let whole = Int64(ms.rounded(.towardZero))
         var days = whole / 86_400_000
         var rest = whole % 86_400_000
@@ -199,11 +207,14 @@ enum ActivityText {
     static func parseProcessStart(_ text: String?) -> Double? {
         guard let text else { return nil }
         let parts = text.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
-        guard parts.count == 5, let month = months.firstIndex(of: parts[1]), let day = Int(parts[2]), let year = Int(parts[4]) else { return nil }
-        let clock = parts[3].split(separator: ":").compactMap { Int($0) }
-        guard clock.count == 3 else { return nil }
+        guard parts.count == 5, let month = months.firstIndex(of: parts[1]), let day = Int(parts[2]), let year = Int(parts[4]),
+              (1...31).contains(day), (0...9999).contains(year) else { return nil }
+        let clockParts = parts[3].split(separator: ":", omittingEmptySubsequences: false)
+        guard clockParts.count == 3 else { return nil }
+        let clock = clockParts.compactMap { Int($0) }
+        guard clock.count == 3, (0...23).contains(clock[0]), (0...59).contains(clock[1]), (0...59).contains(clock[2]) else { return nil }
         let ms = Double(days(fromCivil: year, month + 1, day)) * 86_400_000 + Double(clock[0] * 3_600_000 + clock[1] * 60_000 + clock[2] * 1000)
-        return ms == 0 ? nil : ms
+        return ms == 0 ? nil : boundedTimestamp(ms)
     }
 
     // MARK: Byte search

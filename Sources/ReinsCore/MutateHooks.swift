@@ -20,6 +20,7 @@ extension Mutate {
     private static func addHookLocked(
         roots: Roots, clis: [InventoryCLI], event: String, matcher: String?, command: String, timeout: Double?
     ) throws -> JournalEntry {
+        try Journal.prepareMutation(roots)
         let command = ActivityText.trim(command)
         try need(!command.isEmpty, "Enter the command this hook runs.")
         try requireCLIs(clis)
@@ -39,13 +40,14 @@ extension Mutate {
             }
         } catch {
             // A later CLI failed: put back the files already changed so no change is left without a journal entry.
-            for op in ops.reversed() { _ = try? undoHookOp(roots, op) }
+            try Journal.rollbackMutation(roots, ops: ops)
             throw error
         }
-        return try Journal.record(roots, label: "Added \(event) hook to \(labels(clis))", ops: ops)
+        return try Journal.recordMutation(roots, label: "Added \(event) hook to \(labels(clis))", ops: ops)
     }
 
     static func removeHook(roots: Roots, hook item: InventoryHook) throws -> JournalEntry {
+        try Journal.prepareMutation(roots)
         let file = cliRoots(roots, item.cli).hookFile
         var removed: JSONValue?
         let edit = try FileEdit.applyJSON(roots, file: file) { doc in
@@ -56,7 +58,7 @@ extension Mutate {
         }
         guard let edit, let removed else { throw ReinsError("This hook has already changed. Refresh the list.", status: 409) }
         let op = hookOp("hook-removed", file: file.path, event: item.event, matcher: item.matcher, hook: removed, restore: edit)
-        return try Journal.record(roots, label: "Removed \(item.event) hook from \(label(item.cli))", ops: [op])
+        return try Journal.recordMutation(roots, label: "Removed \(item.event) hook from \(label(item.cli))", ops: [op])
     }
 
     /// Removes every dead, user-level hook of one CLI in one file write and one journal entry.
@@ -65,6 +67,7 @@ extension Mutate {
     }
 
     private static func removeDeadHooksLocked(roots: Roots, cli: InventoryCLI) throws -> JournalEntry {
+        try Journal.prepareMutation(roots)
         let dead = Inventory.read(roots: roots).hooks.filter { $0.cli == cli && $0.dead && $0.removable }
         try need(!dead.isEmpty, "No dead hooks to remove.", 409)
         let file = cliRoots(roots, cli).hookFile
@@ -80,7 +83,7 @@ extension Mutate {
         }
         guard let edit, !removed.isEmpty else { throw ReinsError("No dead hooks to remove.", status: 409) }
         let ops = removed.map { hookOp("hook-removed", file: file.path, event: $0.hook.event, matcher: $0.hook.matcher, hook: $0.value, restore: edit) }
-        return try Journal.record(roots, label: "Removed \(ops.count) dead hooks from \(label(cli))", ops: ops)
+        return try Journal.recordMutation(roots, label: "Removed \(ops.count) dead hooks from \(label(cli))", ops: ops)
     }
 
     private static func hookOp(_ type: String, file: String, event: String, matcher: String?, hook: JSONValue, restore: JournalOp) -> JournalOp {

@@ -2,7 +2,7 @@
 
 Spec: [2026-11-02-reins.md](../specs/2026-11-02-reins.md) (requirements, platform, interface, acceptance criteria AC1 to AC6).
 Supersedes: [the Electron plan](2026-11-02-reins-electron.md), which stays as history and as the reference for behavior, contracts and screenshots.
-Status: planned, nothing implemented. Written 2026-11-02.
+Status: in progress; implementation and outstanding acceptance gates are recorded below. Started 2026-11-02.
 
 ## Approach
 
@@ -107,6 +107,37 @@ Built by parallel subagents; the orchestrator re-ran `scripts/test.sh` (267 test
 - Review (`review-change`, run `aeze29`, range `d366edc..694e39a`): correctness, tests and security-code all ran. Fixed in `887bc9c`, `a7a02d1`, `58fbb31`, `3d632fb`: fixtures hidden by a global gitignore; concurrent writes losing journal entries and edits (one process-wide recursive lock, unique temp names, a byte re-check before rename); project-scope symlink escape; symlinked Claude root; denied paths read as missing; unbounded TOML recursion; zstd memory (ring buffer, 512 MiB cap) and an exact-128-KB truncation bug; Rules confirmation bound to its scope; Loadout row, toast and double-click findings; test gaps for the pid guard, rollbacks and hook timeouts.
 - Debt accepted (optimize or harden later): trash backups of edited settings are never pruned and may hold `env` secrets; Undo trusts paths in `journal.json`; Stop takes a Claude pid from a writable status file (needs the confirmation click; the pid is re-checked by start time only); the fixture tree lives at the fixed path `/private/tmp/reins-fixture-home`; the write lock covers this process only (another process is caught by the byte re-check, with a small window before `rename`); failed-command text shown in Activity is not redacted (same as the Node core; owner decision pending); `Components/`, `Gallery/` and the Shell views were not reviewed; the app target has no unit tests (the Sparkle session added `Tests/ReinsTests`); no `NavigationSplitView`, so the sidebar cannot collapse; palette has no real combobox role.
 - Not verified: hover, focus ring, keyboard flow, VoiceOver, window drag, the real `Menu` and `TextField` in a live window, polling, Stop against a live process, TCC prompts (S0.3), Linux build (S0.6), `scripts/build-app.sh` after the Sparkle change (another session owns it), a clean-checkout test run after `887bc9c`.
+
+## Security remediation (2026-11-03)
+
+The owner authorized fixes for the four reproduced security-review findings. These changes enforce the existing
+[spec's config undoability, local-input safety and session Stop scope](../specs/2026-11-02-reins.md); they do not close
+the remaining UI, real-CLI, portability or release gates.
+
+- Config mutations preflight the journal while holding the write lock. If journal persistence fails after a mutation,
+  completed operations are reversed; an unsuccessful rollback is reported explicitly instead of claiming no change.
+  Hook rollback uses exact backups, including one shared backup for a dead-hook batch. User-initiated Undo keeps its
+  existing behavior. Regression coverage: [MutationTransactionTests](../../Tests/ReinsCoreTests/MutationTransactionTests.swift).
+- Threadless Codex session IDs bind the PID to the observed process start time. Stop refuses a stale identity, an old
+  bare PID ID, or an unknown start. The Node golden comparison projects the opaque ID to its old display form only;
+  [ActivitySafetyTests](../../Tests/ReinsCoreTests/ActivitySafetyTests.swift) separately tests read-to-Stop authorization.
+- Status timestamps are bounded to supported ISO years before integer conversion or age arithmetic. Malformed values
+  yield an unknown date/age; valid timestamps keep their existing output.
+- Inventory file reads open nonblocking and check the opened descriptor with `fstat`. FIFOs and other nonregular files
+  are refused; symlinks to regular files and byte limits remain supported. Regression coverage:
+  [ReadHardeningTests](../../Tests/ReinsCoreTests/ReadHardeningTests.swift), with a rescue writer so a FIFO regression fails
+  assertions rather than hanging the test run.
+- Verification: `scripts/test.sh` passed 317 tests in 36 suites on the shared `main` checkout. An isolated copy of HEAD
+  plus only this task's patch passed 281 tests in 31 suites, proving the commit does not require the other session's
+  uncommitted refactors. Removing only `O_NONBLOCK` in that scratch copy made the two FIFO regression tests fail with
+  five assertions; the exact production source was then restored.
+- Independent correctness, tests and security-code reviews passed after strengthening the FIFO rescue assertion and
+  the partial-rollback conflict case. Gitleaks found no secrets in the change; Semgrep had no Swift semantic coverage,
+  so security-code approval relies on manual tracing and the regression tests.
+- Delivery: one scoped commit on `main`, with unrelated staged and working-tree edits preserved; no push or PR. No real
+  CLI configuration was edited; process-identity regressions use a fake adapter.
+- Remaining limits of these fixes: process start identity has the precision of `ps lstart`; the OS check-to-signal race,
+  crash recovery between config and journal persistence, and cross-process write races remain outside this change.
 
 ## Acceptance map
 

@@ -48,6 +48,84 @@ private func chmod(_ mode: mode_t, _ url: URL) { _ = Foundation.chmod(url.path, 
 
 @Suite("Read-side hardening")
 struct ReadHardeningTests {
+    // MARK: Regular-file reads
+
+    /// A regressed blocking reader must fail assertions instead of hanging the suite. Start with no writer;
+    /// if the read has not returned, wait for its open, then supply EOF. Needing rescue is itself a failure.
+    private func withFIFORescue<T>(_ fifo: URL, _ body: () throws -> T) throws -> T {
+        let finished = DispatchSemaphore(value: 0)
+        let rescued = DispatchSemaphore(value: 0)
+        let rescue = DispatchGroup()
+        rescue.enter()
+        DispatchQueue.global().async {
+            defer { rescue.leave() }
+            guard finished.wait(timeout: .now() + .milliseconds(250)) == .timedOut else { return }
+            while true {
+                // ENXIO means the reader has not opened yet; retry so scheduler delays cannot strand it.
+                let writer = open(fifo.path, O_WRONLY | O_NONBLOCK | O_CLOEXEC)
+                if writer >= 0 {
+                    rescued.signal()
+                    close(writer)
+                    return
+                }
+                if finished.wait(timeout: .now() + .milliseconds(10)) == .success { return }
+            }
+        }
+        defer {
+            finished.signal()
+            rescue.wait()
+            #expect(rescued.wait(timeout: .now()) == .timedOut, "A regular-file reader must reject FIFO without a writer")
+        }
+        return try body()
+    }
+
+    @Test("inventory readers reject FIFOs and links to FIFOs without waiting for input", arguments: [false, true])
+    func rejectFIFO(linked: Bool) throws {
+        let home = try TempHome()
+        let fifo = home.url("input")
+        try #require(mkfifo(fifo.path, 0o600) == 0)
+        let path = linked ? home.url("input-link") : fifo
+        if linked { try FileManager.default.createSymbolicLink(at: path, withDestinationURL: fifo) }
+        let data = try withFIFORescue(fifo) { InventoryFileIO.readData(path, maxBytes: 64) }
+        #expect(data == nil)
+        let json = try withFIFORescue(fifo) { InventoryFileIO.readJSON(path) }
+        guard case .unreadable = json else { Issue.record("FIFO must be unreadable, not valid JSON or missing"); return }
+    }
+
+    @Test("a discovered project with FIFO settings reports unreadable and preserves other inventory")
+    func discoveredProjectFIFO() throws {
+        let home = try TempHome()
+        let project = home.url("project")
+        try home.write("project/.claude/skills/example/SKILL.md", "---\nname: example\n---\n")
+        try home.write(".codex/config.toml", "[projects.\"\(project.path)\"]\ntrust_level = \"trusted\"\n")
+        let fifo = project.appendingPathComponent(".claude/settings.json")
+        try #require(mkfifo(fifo.path, 0o600) == 0)
+        let roots = try Roots.resolve(env: home.env)
+        let snapshot = try withFIFORescue(fifo) { Inventory.read(roots: roots) }
+        #expect(snapshot.items.contains { $0.name == "example" && $0.project == project.path })
+        #expect(snapshot.problems.contains { $0.contains(fifo.path) && $0.contains("cannot be read") })
+    }
+
+    @Test("regular files and symlinks retain byte limits and JSON classifications")
+    func regularReadSemantics() throws {
+        let home = try TempHome()
+        let target = try home.write("input.json", "{\"value\":true}")
+        let link = home.url("link.json")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
+        for path in [target, link] {
+            #expect(InventoryFileIO.readData(path, maxBytes: 2) == Data("{\"".utf8))
+            guard case .value(let json) = InventoryFileIO.readJSON(path) else { Issue.record("regular JSON must remain readable"); continue }
+            #expect(json["value"]?.boolValue == true)
+        }
+        let missing = home.url("missing")
+        guard case .missing = InventoryFileIO.readJSON(missing) else { Issue.record("absent file must remain missing"); return }
+        guard case .unreadable = InventoryFileIO.readJSON(home.root) else { Issue.record("directory must be unreadable"); return }
+        let invalid = try home.write("invalid.json", "{")
+        guard case .invalid = InventoryFileIO.readJSON(invalid) else { Issue.record("malformed JSON must remain invalid"); return }
+        let oversized = try home.write("large.json", Data(repeating: 0x20, count: InventoryFileIO.maxJSONBytes + 1))
+        guard case .tooLarge = InventoryFileIO.readJSON(oversized) else { Issue.record("oversized file must remain too large"); return }
+    }
+
     // MARK: LogFiles and a symlinked Claude root
 
     /// A real folder with a link to it, both inside one temp home (TempHome resolves its own root, so the link is built here).

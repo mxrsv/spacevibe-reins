@@ -100,8 +100,9 @@ public enum FileEdit {
         change: (String?) throws -> String?
     ) throws -> JournalEntry? {
         try WriteLock.run {
+            try Journal.prepareMutation(roots)
             guard let op = try apply(roots, file: file, validate: validate, change: change) else { return nil }
-            return try Journal.record(roots, label: label, ops: [op])
+            return try Journal.recordMutation(roots, label: label, ops: [op])
         }
     }
 
@@ -141,8 +142,9 @@ public enum FileEdit {
         change: (OrderedJSON) throws -> OrderedJSON
     ) throws -> JournalEntry? {
         try WriteLock.run {
+            try Journal.prepareMutation(roots)
             guard let op = try applyJSON(roots, file: file, validate: validate, change: change) else { return nil }
-            return try Journal.record(roots, label: label, ops: [op])
+            return try Journal.recordMutation(roots, label: label, ops: [op])
         }
     }
 

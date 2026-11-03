@@ -44,7 +44,8 @@ public struct ActivityCost: Equatable, Sendable {
 
 public struct ActivitySession: Equatable, Sendable, Identifiable {
     public var cli: ActivityCLI
-    /// Claude: the session id. Codex: the thread id, or `pid:<n>` before the first prompt.
+    /// Claude: the session id. Codex: the thread id, or `pid:<n>:<start-ms>` before the first prompt.
+    /// An unknown process start uses `pid:<n>:unknown` and cannot authorize Stop.
     public var id: String
     public var title: String
     public var project: String?
@@ -200,7 +201,7 @@ public actor ActivityEngine {
         var info = stat()
         guard stat(path, &info) == 0 else { return nil }
         let t = modificationTime(info)
-        return Double(t.tv_sec) * 1000 + Double(t.tv_nsec) / 1e6
+        return ActivityText.boundedTimestamp(Double(t.tv_sec) * 1000 + Double(t.tv_nsec) / 1e6)
     }
 
     private static func readJSON(_ url: URL) -> JSONValue? {
@@ -434,7 +435,7 @@ public actor ActivityEngine {
             let written = newestWrite != 0 ? newestWrite : (Self.truthyNumber(c.status["statusUpdatedAt"]) ?? Self.truthyNumber(c.status["startedAt"]) ?? nowMs)
             let lastWriteAgoMs = max(0, nowMs - written)
             if !c.alive, lastWriteAgoMs > options.endedKeepMs { continue }
-            let startedAt = c.status.nonNull("startedAt")?.doubleValue ?? st?.startedAt
+            let startedAt = ActivityText.boundedTimestamp(c.status.nonNull("startedAt")?.doubleValue) ?? ActivityText.boundedTimestamp(st?.startedAt)
             let subEntries = c.subs.prefix(Self.maxSubagentLogs).compactMap { foldedByPath[$0.path] }
             let nameSource = c.status["nameSource"]?.stringValue
             let state = Self.claudeState(alive: c.alive, status: c.status["status"]?.stringValue, st: st, lastWriteAgoMs: lastWriteAgoMs, toolQuietMs: options.toolQuietMs)
@@ -472,9 +473,10 @@ public actor ActivityEngine {
             if t.threadId == nil, codexPids.contains(t.pid) { continue }
             guard let f, let entry else {
                 // The rollout does not exist yet, so the process start is the only clock.
-                let startedAt = ActivityText.parseProcessStart(await proc.startTime(pid: t.pid))
+                let processStart = await proc.startTime(pid: t.pid)
+                let startedAt = ActivityText.parseProcessStart(processStart)
                 sessions.append(ActivitySession(
-                    cli: .codex, id: t.threadId ?? "pid:\(t.pid)", title: SessionTitles.pick(
+                    cli: .codex, id: t.threadId ?? codexProcessID(pid: t.pid, start: processStart) ?? "pid:\(t.pid):unknown", title: SessionTitles.pick(
                         [t.threadId.flatMap { threadNames[$0] }], startedAt: startedAt, id: t.threadId ?? "pid \(t.pid)"
                     ),
                     project: nil, pid: t.pid, state: .unmeasurable, stateReason: ActivityReason.codexNoRollout.text, reasonCode: .codexNoRollout, currentTool: nil,
@@ -501,12 +503,12 @@ public actor ActivityEngine {
 
     /// A JSON number that is non-zero (JavaScript `||` chain).
     private static func truthyNumber(_ v: JSONValue?) -> Double? {
-        guard let d = v?.doubleValue, d != 0 else { return nil }
+        guard let d = ActivityText.boundedTimestamp(v?.doubleValue), d != 0 else { return nil }
         return d
     }
 
     private static func truthy(_ d: Double?) -> Double? {
-        guard let d, d != 0 else { return nil }
+        guard let d = ActivityText.boundedTimestamp(d), d != 0 else { return nil }
         return d
     }
 }

@@ -47,15 +47,16 @@ struct ActivityStopTests {
         }
     }
 
-    @Test("finds a Codex process by its thread lock, or by pid before the first prompt")
+    @Test("finds a Codex process by its thread lock, or by pid and start identity before the first prompt")
     func codexStop() async throws {
         let sb = try ActivitySandbox()
         let threads = [CodexThread(pid: 21, threadId: activitySid(21)), CodexThread(pid: 22, threadId: nil)]
         let byThread = FakeProcess(alive: [21, 22], threads: threads)
         #expect(try await stopSession(roots: try sb.roots, cli: .codex, id: activitySid(21), proc: byThread, options: Self.fast) == StopResult(exited: true))
         #expect(byThread.killed == [21])
-        let byPid = FakeProcess(alive: [21, 22], threads: threads)
-        #expect(try await stopSession(roots: try sb.roots, cli: .codex, id: "pid:22", proc: byPid, options: Self.fast) == StopResult(exited: true))
+        let byPid = FakeProcess(alive: [21, 22], starts: [22: Self.start], threads: threads)
+        let id = try #require(codexProcessID(pid: 22, start: Self.start))
+        #expect(try await stopSession(roots: try sb.roots, cli: .codex, id: id, proc: byPid, options: Self.fast) == StopResult(exited: true))
         #expect(byPid.killed == [22])
         // A pid that holds a thread is not reachable through the bare-pid form.
         let held = FakeProcess(alive: [21], threads: threads)

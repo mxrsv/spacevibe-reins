@@ -21,11 +21,24 @@ private func sameStart(_ a: String?, _ b: String?) -> Bool {
     return ActivityText.collapse(a) == ActivityText.collapse(b)
 }
 
+/// Before a thread exists, bind the row to the observed process generation, never just its reusable pid.
+func codexProcessID(pid: Int, start: String?) -> String? {
+    guard pid > 0, pid <= Int(Int32.max), let started = ActivityText.parseProcessStart(start) else { return nil }
+    return "pid:\(pid):\(Int64(started))"
+}
+
 /// The pid of a live session, decided from the system now and never taken from the caller: pids get reused.
 private func livePid(roots: Roots, cli: ActivityCLI, id: String, proc: any ProcessAdapter) async -> Int? {
     if cli == .codex {
         let threads = await proc.codexThreads()
-        return threads.first { t in t.threadId != nil ? t.threadId == id : "pid:\(t.pid)" == id }?.pid
+        for thread in threads {
+            if let threadId = thread.threadId {
+                if threadId == id { return thread.pid }
+            } else if let currentID = codexProcessID(pid: thread.pid, start: await proc.startTime(pid: thread.pid)), currentID == id {
+                return thread.pid
+            }
+        }
+        return nil
     }
     let dir = roots.claude.root.appendingPathComponent("sessions", isDirectory: true)
     guard let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { return nil }

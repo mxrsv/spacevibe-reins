@@ -322,7 +322,7 @@ struct ActivityTests {
         #expect(missing.reasonCode == .codexNoRollout)
         #expect(missing.ageMs == 3_600_000, "no rollout exists yet, so the process start is the clock")
         #expect(missing.title == "2026-11-02 · \(activityUuid(47).prefix(8))")
-        let bare = try #require(session(report, "pid:4048"))
+        let bare = try #require(session(report, "pid:4048:unknown"))
         #expect(bare.reasonCode == .codexNoRollout)
         #expect(bare.lastWriteAgoMs == nil)
         #expect(session(report, activityUuid(41))?.lastWriteAgoMs == 2000)

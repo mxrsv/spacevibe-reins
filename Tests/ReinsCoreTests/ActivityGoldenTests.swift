@@ -15,8 +15,15 @@ struct ActivityGoldenTests {
 
     private func canonical(_ report: ActivityReport) -> [String: Any] {
         func sorted<T>(_ items: [T], _ key: (T) -> String) -> [T] { items.sorted { key($0) < key($1) } }
+        // The Node oracle predates birth-bound Codex IDs. Compare its display data using the old PID projection;
+        // ActivitySafetyTests separately verifies that the actual ID refuses Stop after PID reuse or without a birth.
+        func oracleSession(_ session: ActivitySession) -> [String: Any] {
+            var json = session.jsonObject
+            if session.cli == .codex, session.id.hasPrefix("pid:") { json["id"] = "pid:\(session.pid)" }
+            return json
+        }
         return [
-            "sessions": sorted(report.sessions) { "\($0.cli.rawValue)|\($0.id)" }.map(\.jsonObject),
+            "sessions": sorted(report.sessions) { "\($0.cli.rawValue)|\($0.id)" }.map(oracleSession),
             "failures": sorted(report.failures) { "\($0.cli.rawValue)|\($0.kind.rawValue)|\($0.key)" }.map(\.jsonObject),
             "files": sorted(report.files, { $0.path }).map(\.jsonObject),
             "unmeasurable": ActivityReport(sessions: [], failures: [], files: [], unmeasurable: report.unmeasurable, stats: report.stats).jsonObject["unmeasurable"] as Any,

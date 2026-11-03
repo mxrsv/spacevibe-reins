@@ -16,6 +16,7 @@ extension Mutate {
     private static func addSkillLocked(
         roots: Roots, clis: [InventoryCLI], name: String, description: String, body: String
     ) throws -> JournalEntry {
+        try Journal.prepareMutation(roots)
         try validName(name)
         try need(!ActivityText.trim(description).isEmpty, "Say when the agent should use this skill.")
         try requireCLIs(clis)
@@ -25,7 +26,7 @@ extension Mutate {
             try need(!Trash.pathExists(dir), "\(label(cli)) already has a skill named \(name).", 409)
             return (dir, { try makeFolder(dir); try createFile(path(dir, "SKILL.md"), text: text) })
         }
-        return try Journal.record(roots, label: "Added skill \(name) to \(labels(clis))", ops: ops)
+        return try Journal.recordMutation(roots, label: "Added skill \(name) to \(labels(clis))", ops: ops)
     }
 
     /// Writes `<agents>/<name>.md` (Claude Code) or `<name>.toml` (Codex) in each CLI.
@@ -42,16 +43,18 @@ extension Mutate {
     private static func addAgentLocked(
         roots: Roots, clis: [InventoryCLI], name: String, description: String, instructions: String
     ) throws -> JournalEntry {
+        try Journal.prepareMutation(roots)
         try validName(name)
         try need(!ActivityText.trim(description).isEmpty, "Say when this agent should be used.")
         try requireCLIs(clis)
         let ops = try createAll(roots, clis: clis) { cli in
             try writeAgentPlan(roots, cli: cli, name: name, description: description, instructions: instructions)
         }
-        return try Journal.record(roots, label: "Added agent \(name) to \(labels(clis))", ops: ops)
+        return try Journal.recordMutation(roots, label: "Added agent \(name) to \(labels(clis))", ops: ops)
     }
 
     static func removeFile(roots: Roots, item: InventoryItem) throws -> JournalEntry {
+        try Journal.prepareMutation(roots)
         let cli = cliRoots(roots, item.cli)
         let base = item.kind == .skill ? cli.skills : cli.agents
         try need(
@@ -66,19 +69,20 @@ extension Mutate {
             "Refusing a path outside the CLI folder.", 403
         )
         let op = try Trash.remove(roots, path: item.path)
-        return try Journal.record(roots, label: "Removed \(item.kind.rawValue) \(item.name) from \(label(item.cli))", ops: [op])
+        return try Journal.recordMutation(roots, label: "Removed \(item.kind.rawValue) \(item.name) from \(label(item.cli))", ops: [op])
     }
 
     static func copyItem(roots: Roots, item: InventoryItem) throws -> JournalEntry {
         let target = item.cli.other
         let name = Inventory.bare(item.name)
+        try Journal.prepareMutation(roots)
         try validName(name)
         if item.kind == .skill {
             let dir = path(cliRoots(roots, target).skills, name)
             try need(!Trash.pathExists(dir), "\(label(target)) already has a skill named \(name).", 409)
             let source = InventoryFileIO.realPath(item.path)
             let ops = try createAll(roots, clis: [target]) { _ in (dir, { try copyFolder(from: source, to: dir) }) }
-            return try Journal.record(roots, label: "Copied skill \(name) to \(label(target))", ops: ops)
+            return try Journal.recordMutation(roots, label: "Copied skill \(name) to \(label(target))", ops: ops)
         }
         guard let data = FileManager.default.contents(atPath: item.path) else {
             throw ReinsError("Could not read \(item.path). Nothing was changed.", status: 409)
@@ -87,7 +91,7 @@ extension Mutate {
         let ops = try createAll(roots, clis: [target]) { cli in
             try writeAgentPlan(roots, cli: cli, name: name, description: fields.description, instructions: fields.instructions)
         }
-        return try Journal.record(roots, label: "Copied agent \(name) to \(label(target))", ops: ops)
+        return try Journal.recordMutation(roots, label: "Copied agent \(name) to \(label(target))", ops: ops)
     }
 
     // MARK: Creating
@@ -115,9 +119,7 @@ extension Mutate {
                 try item.write()
             }
         } catch {
-            for op in ops.reversed() {
-                if let created = op.json["path"]?.stringValue, Trash.pathExists(created) { _ = try? Trash.moveToTrash(roots, path: created) }
-            }
+            try Journal.rollbackMutation(roots, ops: ops)
             throw error
         }
         return ops
