@@ -22,6 +22,17 @@ struct RootsTests {
         #expect(roots.data.path == scratch.reins.path)
     }
 
+    @Test("Claude Code's state file follows CLAUDE_CONFIG_DIR, else sits in HOME; Gemini CLI's folder is in HOME")
+    func stateFileAndGemini() throws {
+        let (fakeReal, scratch) = try twoFolders()
+        let configured = try Roots.resolve(env: scratch.env, realHome: fakeReal.root.path)
+        #expect(configured.claudeState.path == scratch.claude.appendingPathComponent(".claude.json").path)
+        #expect(configured.gemini.path == scratch.url(".gemini").path)
+        var env = scratch.env
+        env["CLAUDE_CONFIG_DIR"] = nil
+        #expect(try Roots.resolve(env: env, realHome: fakeReal.root.path).claudeState.path == scratch.url(".claude.json").path)
+    }
+
     @Test("falls back to folders under HOME and ignores empty values")
     func defaults() throws {
         let (fakeReal, scratch) = try twoFolders()

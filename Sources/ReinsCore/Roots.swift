@@ -31,6 +31,11 @@ public struct Roots: Equatable, Sendable {
     public let codex: CLIRoots
     /// Reins' own data: journal, trash, caches.
     public let data: URL
+    /// Claude Code's global state file: `.claude.json` in CLAUDE_CONFIG_DIR when that is set, otherwise in HOME beside
+    /// `.claude`. Limits reads its usage cache and nothing else from it.
+    public let claudeState: URL
+    /// Gemini CLI's folder. Only whether it exists is checked.
+    public let gemini: URL
 
     /// - Parameters:
     ///   - env: HOME, CLAUDE_CONFIG_DIR, CODEX_HOME, REINS_HOME and REINS_TEST. An empty value counts as unset.
@@ -45,8 +50,12 @@ public struct Roots: Equatable, Sendable {
         let claudeRoot = value("CLAUDE_CONFIG_DIR") ?? (home as NSString).appendingPathComponent(".claude")
         let codexRoot = value("CODEX_HOME") ?? (home as NSString).appendingPathComponent(".codex")
         let dataRoot = value("REINS_HOME") ?? (home as NSString).appendingPathComponent(".reins")
+        let claudeState = ((value("CLAUDE_CONFIG_DIR") ?? home) as NSString).appendingPathComponent(".claude.json")
+        let geminiRoot = (home as NSString).appendingPathComponent(".gemini")
         if env["REINS_TEST"] == "1" {
-            try assertNotUnderRealHome(realHome: realHome, roots: [("claude", claudeRoot), ("codex", codexRoot), ("reins", dataRoot)])
+            try assertNotUnderRealHome(realHome: realHome, roots: [
+                ("claude", claudeRoot), ("codex", codexRoot), ("reins", dataRoot), ("claude state", claudeState), ("gemini", geminiRoot),
+            ])
         }
         func folder(_ path: String) -> URL { URL(fileURLWithPath: path, isDirectory: true) }
         func cli(_ root: String, hookFile: String, logs: String) -> CLIRoots {
@@ -62,7 +71,9 @@ public struct Roots: Equatable, Sendable {
         return Roots(
             claude: cli(claudeRoot, hookFile: "settings.json", logs: "projects"),
             codex: cli(codexRoot, hookFile: "hooks.json", logs: "sessions"),
-            data: folder(dataRoot)
+            data: folder(dataRoot),
+            claudeState: URL(fileURLWithPath: claudeState),
+            gemini: folder(geminiRoot)
         )
     }
 
