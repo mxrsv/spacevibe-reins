@@ -39,25 +39,26 @@ struct ComponentGalleryContent: View {
                 }
             }
             section("Ruler: 0, 4, 39 and 100 percent, not known, low (20% left) and out (5% left)") { RulerSpecimens() }
+            section("Icons: Solar Bold Duotone at 14, 16, 20 and 22, then the drawn chevrons. Solar by 480 Design, CC BY 4.0") { IconSpecimens() }
             section("Cards, rows and the five usage states") { DemoLoadoutList() }
             section("Rows: the selected one hides the dividers on both sides of it") {
                 GroupedList {
                     CardHeader("Rows", count: 5)
                     Row { RowText("Plain row", subtitle: "Second line in the muted colour") }
-                        .lead { Image(systemName: "sparkles") }
+                        .lead { ReinsIcon(.skill, size: .row) }
                     Row(selected: true, revealActions: true, onActivate: {}) {
                         RowText("Selected row with actions", subtitle: "Actions stay visible while selected")
                     }
-                    .lead { Image(systemName: "sparkles") }
+                    .lead { ReinsIcon(.skill, size: .row) }
                     .actions {
-                        RowActionButton(title: "Copy to Codex", systemImage: "doc.on.doc") {}
-                        RowActionButton(title: "Remove", systemImage: "trash", kind: .danger, iconOnly: true) {}
+                        RowActionButton(title: "Copy to Codex", icon: .copy) {}
+                        RowActionButton(title: "Remove", icon: .trash, kind: .danger, iconOnly: true) {}
                     }
                     Row(onActivate: {}) { RowText("Session with a state", subtitle: "spacevibe-bench \u{00B7} just now") }
                         .lead { CLIDot(.codex) }
-                        .cells { StateCell { Tag("not measurable", systemImage: "exclamationmark.triangle") }; NumberCell(text: "~$148.20") }
+                        .cells { StateCell { Tag("not measurable", icon: .warning) }; NumberCell(text: "~$148.20") }
                     Row(onActivate: {}) { RowText("A row with nothing to change", subtitle: "Owned by a plugin") }
-                        .lead { Image(systemName: "sparkles") }
+                        .lead { ReinsIcon(.skill, size: .row) }
                         .cells { FixedCell { Tag("\u{00D7}3") }; NumberCell(text: "~$1.33") }
                         .actions { HStack(spacing: Space.s4) { EmptyActionSlot(); ReadOnlyMark(reason: "Read-only: owned by a plugin") } }
                     Row(tall: true) {
@@ -114,9 +115,9 @@ struct ComponentGalleryContent: View {
             section("Sidebar items and the command palette") {
                 HStack(alignment: .top, spacing: Space.s24) {
                     VStack(spacing: Metrics.sidebarItemSpacing) {
-                        SidebarItem(title: "Loadout", systemImage: "square.stack.3d.up", count: 22, isActive: true) {}
-                        SidebarItem(title: "Rules", systemImage: "checkmark.shield", count: 11, isActive: false) {}
-                        SidebarItem(title: "Activity", systemImage: "waveform.path.ecg", count: 2, alert: true, isActive: false) {}
+                        SidebarItem(title: "Loadout", icon: .loadout, count: 22, isActive: true) {}
+                        SidebarItem(title: "Rules", icon: .rules, count: 11, isActive: false) {}
+                        SidebarItem(title: "Activity", icon: .activity, count: 2, alert: true, isActive: false) {}
                     }
                     .sidebarSurface()
                     .frame(height: Metrics.galleryOverlayHeight)
@@ -125,16 +126,16 @@ struct ComponentGalleryContent: View {
                         Hairline()
                         VStack(alignment: .leading, spacing: 0) {
                             PaletteSectionTitle(title: "Go to")
-                            PaletteRow(entry: PaletteEntry(id: "g.loadout", title: "Loadout", systemImage: "square.stack.3d.up", trailing: "\u{2318}1") {}, isHighlighted: true) {}
-                            PaletteRow(entry: PaletteEntry(id: "g.rules", title: "Rules", systemImage: "checkmark.shield", trailing: "\u{2318}2") {}, isHighlighted: false) {}
+                            PaletteRow(entry: PaletteEntry(id: "g.loadout", title: "Loadout", icon: .loadout, trailing: "\u{2318}1") {}, isHighlighted: true) {}
+                            PaletteRow(entry: PaletteEntry(id: "g.rules", title: "Rules", icon: .rules, trailing: "\u{2318}2") {}, isHighlighted: false) {}
                             PaletteSectionTitle(title: "Skills")
-                            PaletteRow(entry: PaletteEntry(id: "s.ponytail", title: "ponytail", subtitle: "Pick the laziest solution", systemImage: "sparkles") {}, isHighlighted: false) {}
+                            PaletteRow(entry: PaletteEntry(id: "s.ponytail", title: "ponytail", subtitle: "Pick the laziest solution", icon: .skill) {}, isHighlighted: false) {}
                             PaletteEmptyRow(text: "No matches")
                         }
                         .paletteList()
                         Hairline()
                         PaletteFooter {
-                            PaletteHint(text: "navigate") { Image(systemName: "arrow.up.arrow.down") }
+                            PaletteHint(text: "navigate") { ReinsIcon(.navigate, size: .inline) }
                             PaletteHint(text: "close") { Kbd("Esc") }
                         }
                     }
@@ -153,7 +154,7 @@ struct ComponentGalleryContent: View {
             }
             section("Empty state") {
                 GroupedList {
-                    EmptyState("No skills yet", message: "Skills you add to Claude Code or Codex show up here with how often they ran.", systemImage: "square.stack.3d.up") {
+                    EmptyState("No skills yet", message: "Skills you add to Claude Code or Codex show up here with how often they ran.", icon: .loadout) {
                         Button("Rescan") {}.buttonStyle(.reins(.normal))
                     }
                 }
@@ -181,12 +182,12 @@ struct ComponentGalleryContent: View {
             Button("Primary") {}.buttonStyle(.reins(.primary))
             Button("Remove") {}.buttonStyle(.reins(.danger))
             Button {} label: {
-                HStack(spacing: Space.s4) { Image(systemName: "plus").imageScale(.small); Text("Add to Codex") }
+                HStack(spacing: Space.s4) { ReinsIcon(.add); Text("Add to Codex") }
             }
             .buttonStyle(.reins(.ghost))
-            Button {} label: { Image(systemName: "trash").accessibilityLabel("Remove") }.buttonStyle(.reins(.icon))
-            RowActionButton(title: "Remove from Claude Code", systemImage: "trash", kind: .danger, iconOnly: true, badge: .claude) {}
-            RowActionButton(title: "Remove from Codex", systemImage: "trash", kind: .danger, iconOnly: true, badge: .codex) {}
+            Button {} label: { ReinsIcon(.trash) }.buttonStyle(.reins(.icon)).accessibilityLabel("Remove")
+            RowActionButton(title: "Remove from Claude Code", icon: .trash, kind: .danger, iconOnly: true, badge: .claude) {}
+            RowActionButton(title: "Remove from Codex", icon: .trash, kind: .danger, iconOnly: true, badge: .codex) {}
             Button("Disabled") {}.buttonStyle(.reins(.normal)).disabled(true)
             Spacer(minLength: 0)
         }
@@ -195,13 +196,13 @@ struct ComponentGalleryContent: View {
 
     private var tags: some View {
         HStack(spacing: Rhythm.tools) {
-            Tag("plugin: neon", systemImage: "lock")
+            Tag("plugin: neon", icon: .lock)
             Tag("added recently")
             Tag("running", tone: .success)
             Tag("waiting for you", tone: .warn)
             Tag("17 errors", tone: .warn)
-            Tag("mixed", tone: .warn, systemImage: "info.circle")
-            Tag("script not found", tone: .danger, systemImage: "questionmark.folder")
+            Tag("mixed", tone: .warn, icon: .info)
+            Tag("script not found", tone: .danger, icon: .scriptMissing)
             Tag("Deny", tone: .danger)
             CLITag(.claude)
             CLITag(.codex)
@@ -332,6 +333,39 @@ private struct Swatches: View {
     }
 }
 
+/// Every generated glyph at the four sizes, in the secondary tone and in a tag's warn ink, then the chevrons.
+private struct IconSpecimens: View {
+    private let sizes: [IconSize] = [.inline, .control, .row, .sidebar]
+
+    var body: some View {
+        GroupedList {
+            ForEach(Array(ReinsGlyph.allCases.enumerated()), id: \.offset) { _, glyph in
+                HStack(spacing: Metrics.rowSpacing) {
+                    Text(glyph.solarName).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
+                    ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
+                        ReinsIcon(glyph, size: size).frame(width: Metrics.iconLarge)
+                    }
+                    ReinsIcon(glyph, size: .control, ink: Palette.warnInk)
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(Palette.textSecondary)
+                .padding(.horizontal, Metrics.rowHorizontalPadding)
+            }
+            HStack(spacing: Metrics.rowSpacing) {
+                Text("chevron (drawn)").reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
+                ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
+                    Chevron(.right, size: size).frame(width: Metrics.iconLarge)
+                }
+                Chevron(.down, size: .row)
+                Chevron(.upDown, size: .control)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(Palette.textSecondary)
+            .padding(.horizontal, Metrics.rowHorizontalPadding)
+        }
+    }
+}
+
 /// The ruler at the usage cell's width (its number column beside it) and at a wider track: the cell is a tenth of the
 /// track either way. Inside a card, where it always sits.
 private struct RulerSpecimens: View {
@@ -370,18 +404,18 @@ private struct LimitsSpecimens: View {
                 LimitCard(.claude, title: "Claude Code", plan: nil) {
                     Text("read 4 min ago").reinsText(.caption, tone: .secondary)
                 } trailing: {
-                    Image(systemName: "info.circle")
+                    ReinsIcon(.info)
                 } content: {
                     LimitTile(cli: .claude, title: "Weekly", detail: "Resets in 2 d 22 h \u{00B7} Fri 16:00", reading: .share(left: 92, tone: .normal), isLead: true)
                     LimitTile(cli: .claude, title: "Weekly \u{00B7} Fable", detail: "Resets in 2 d 22 h \u{00B7} Fri 16:00", tags: [LimitTileTag(text: "not in use")], reading: .share(left: 100, tone: .normal))
                 }
                 LimitCard(.codex, title: "Codex", plan: "Plus") {
-                    Tag("read 5 h ago", tone: .warn, systemImage: "clock")
+                    Tag("read 5 h ago", tone: .warn, icon: .clock)
                 } trailing: {
-                    Image(systemName: "info.circle")
+                    ReinsIcon(.info)
                 } content: {
                     LimitTile(cli: .codex, title: "Weekly", detail: "Resets in 1 d 3 h \u{00B7} Wed 21:00", reading: .share(left: 18, tone: .low), isLead: true)
-                    LimitTile(cli: .codex, title: "5-hour", detail: "Reset at 17:34 \u{00B7} no newer reading", tags: [LimitTileTag(text: "reset passed", tone: .warn, systemImage: "clock")], reading: .unknown)
+                    LimitTile(cli: .codex, title: "5-hour", detail: "Reset at 17:34 \u{00B7} no newer reading", tags: [LimitTileTag(text: "reset passed", tone: .warn, icon: .clock)], reading: .unknown)
                 }
             }
             VStack(spacing: Space.s16) {
@@ -399,7 +433,7 @@ private struct LimitsSpecimens: View {
                     EmptyView()
                 } content: {
                     LimitNoteTile(title: "Not measurable", text: "Gemini CLI keeps no usage limit on disk, and Reins does not go online for it.", isWarn: true)
-                    LimitNoteTile(title: "No reading yet", text: "Claude Code has not fetched usage on this Mac.", action: ("Copy /usage", "doc.on.doc", {}))
+                    LimitNoteTile(title: "No reading yet", text: "Claude Code has not fetched usage on this Mac.", action: ("Copy /usage", .copy, {}))
                 }
                 VStack(spacing: Space.s6) {
                     LimitSidebarTile(cli: .claude, name: "Claude Code", value: "92% left", fraction: 0.92)

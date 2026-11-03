@@ -51,7 +51,7 @@ struct ActivityScreen: View {
             }
         } else if let failure = model.failure {
             PageLayout {
-                EmptyState("Could not read the session logs.", message: failure, systemImage: "exclamationmark.triangle") {
+                EmptyState("Could not read the session logs.", message: failure, icon: .warning) {
                     Button("Try again", action: model.retry).buttonStyle(.reins(.normal))
                 }
             }
@@ -71,7 +71,7 @@ private struct LoadingMark: View {
 
     var body: some View {
         if isShotRendering {
-            Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(TextTone.tertiary.color).accessibilityHidden(true)
+            ReinsIcon(.refresh).foregroundStyle(TextTone.tertiary.color)
         } else {
             ProgressView().controlSize(.small)
         }

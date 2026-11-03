@@ -33,7 +33,9 @@ struct ReinsApp: App {
         .defaultSize(width: 1180, height: 760)
         .commands {
             ShellCommands(shell: shell, limits: env.limits)
-            CommandGroup(after: .appInfo) {
+            // The standard About panel, with the licences the app must show (Credits).
+            CommandGroup(replacing: .appInfo) {
+                Button("About Reins") { Credits.showAboutPanel() }
                 Button("Check for Updates\u{2026}") { updates.checkForUpdates() }
             }
         }

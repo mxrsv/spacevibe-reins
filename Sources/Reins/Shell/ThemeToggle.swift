@@ -9,10 +9,10 @@ struct ThemeToggle: View {
         let target = appearance.choice.toggled
         let label = "Switch to \(target.rawValue) theme"
         Button { appearance.toggle() } label: {
-            Image(systemName: target == .light ? "sun.max" : "moon")
-                .accessibilityLabel(label)
+            ReinsIcon(target == .light ? .sun : .moon)
         }
         .buttonStyle(.reins(.plainIcon))
         .help(label)
+        .accessibilityLabel(label)
     }
 }

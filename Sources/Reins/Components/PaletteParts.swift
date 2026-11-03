@@ -83,11 +83,7 @@ struct PaletteRow: View {
         let shape = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
         Button(action: action) {
             HStack(spacing: Space.s8) {
-                if let systemImage = entry.systemImage {
-                    Image(systemName: systemImage)
-                        .frame(width: Metrics.paletteIconWidth)
-                        .accessibilityHidden(true)
-                }
+                if let icon = entry.icon { ReinsIcon(icon) }
                 Text(entry.title).lineLimit(1)
                 if let subtitle = entry.subtitle {
                     Text(subtitle).reinsText(.caption, tone: .tertiary).lineLimit(1)

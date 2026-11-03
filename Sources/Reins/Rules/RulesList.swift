@@ -47,7 +47,7 @@ private struct RulesRuleRow: View {
         }
         .actions {
             RulesVerdictMenu(item: item) { model.move(item, to: $0) }
-            RowActionButton(title: "Remove rule", systemImage: "trash", iconOnly: true) { model.remove(item) }
+            RowActionButton(title: "Remove rule", icon: .trash, iconOnly: true) { model.remove(item) }
         }
     }
 }
@@ -78,5 +78,5 @@ private struct RulesVerdictMenu: View {
         }
     }
 
-    private var icon: some View { Image(systemName: "arrow.left.arrow.right").accessibilityLabel("Change verdict") }
+    private var icon: some View { ReinsIcon(.swap, label: "Change verdict") }
 }

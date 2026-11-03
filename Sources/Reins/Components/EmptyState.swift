@@ -4,17 +4,15 @@ import SwiftUI
 struct EmptyState<Action: View>: View {
     let title: String
     var message: String?
-    var systemImage: String?
+    var icon: ReinsGlyph?
     let action: Action
 
     var body: some View {
         VStack(spacing: Space.s8) {
-            if let systemImage {
-                Image(systemName: systemImage)
-                    .font(ReinsType.symbolLarge.font)
+            if let icon {
+                ReinsIcon(icon, size: .large)
                     .foregroundStyle(Palette.textTertiary)
                     .padding(.bottom, Space.s4)
-                    .accessibilityHidden(true)
             }
             Text(title).reinsText(.bodyStrong, tone: .primary)
             if let message {
@@ -33,19 +31,19 @@ struct EmptyState<Action: View>: View {
 }
 
 extension EmptyState where Action == EmptyView {
-    init(_ title: String, message: String? = nil, systemImage: String? = nil) {
+    init(_ title: String, message: String? = nil, icon: ReinsGlyph? = nil) {
         self.title = title
         self.message = message
-        self.systemImage = systemImage
+        self.icon = icon
         self.action = EmptyView()
     }
 }
 
 extension EmptyState {
-    init(_ title: String, message: String? = nil, systemImage: String? = nil, @ViewBuilder action: () -> Action) {
+    init(_ title: String, message: String? = nil, icon: ReinsGlyph? = nil, @ViewBuilder action: () -> Action) {
         self.title = title
         self.message = message
-        self.systemImage = systemImage
+        self.icon = icon
         self.action = action()
     }
 }

@@ -5,7 +5,7 @@ import ReinsCore
 struct LoadoutTag: Equatable {
     var text: String
     var tone: TagTone = .neutral
-    var systemImage: String?
+    var icon: ReinsGlyph?
 }
 
 /// Wording and mapping of the Loadout screen. Pure.
@@ -27,8 +27,8 @@ enum LoadoutFormat {
 
     static func tags(_ row: LoadoutRow) -> [LoadoutTag] {
         var out: [LoadoutTag] = []
-        if let plugin = row.plugin { out.append(LoadoutTag(text: "plugin: \(plugin)", systemImage: "lock")) }
-        if row.flags.dead { out.append(LoadoutTag(text: "script not found", tone: .danger, systemImage: "questionmark.folder")) }
+        if let plugin = row.plugin { out.append(LoadoutTag(text: "plugin: \(plugin)", icon: .lock)) }
+        if row.flags.dead { out.append(LoadoutTag(text: "script not found", tone: .danger, icon: .scriptMissing)) }
         if row.errors > 0 { out.append(LoadoutTag(text: "\(row.errors) \(row.errors == 1 ? "error" : "errors")", tone: .warn)) }
         if let note = row.addedNote { out.append(LoadoutTag(text: note)) }
         return out

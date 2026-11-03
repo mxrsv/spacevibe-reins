@@ -11,16 +11,16 @@ enum DemoTabs {
 final class DemoLoadoutTab: ReinsTab {
     let id = "loadout"
     let title = "Loadout"
-    let systemImage = "square.stack.3d.up"
+    let icon = ReinsGlyph.loadout
     var badge: TabBadge? { TabBadge(value: 22) }
     var hints: [KeyHint] { [KeyHint(keys: "Tab", label: "Row actions")] }
     var paletteItems: [PaletteEntry] {
         ["ponytail", "impeccable", "review-change", "skill-creator"].map { name in
-            PaletteEntry(id: "demo.skill.\(name)", title: name, systemImage: "sparkles", keywords: ["skill"]) {}
+            PaletteEntry(id: "demo.skill.\(name)", title: name, icon: .skill, keywords: ["skill"]) {}
         }
     }
     var paletteActions: [PaletteEntry] {
-        [PaletteEntry(id: "demo.rescan", title: "Rescan usage", systemImage: "arrow.clockwise") {}]
+        [PaletteEntry(id: "demo.rescan", title: "Rescan usage", icon: .refresh) {}]
     }
     var content: AnyView { AnyView(DemoLoadoutScreen()) }
 }
@@ -29,7 +29,7 @@ final class DemoLoadoutTab: ReinsTab {
 final class DemoRulesTab: ReinsTab {
     let id = "rules"
     let title = "Rules"
-    let systemImage = "checkmark.shield"
+    let icon = ReinsGlyph.rules
     var badge: TabBadge? { TabBadge(value: 11) }
     var hints: [KeyHint] { [KeyHint(keys: "Space", label: "Set Allow, Ask or Deny")] }
     var content: AnyView { AnyView(DemoRulesScreen()) }
@@ -39,7 +39,7 @@ final class DemoRulesTab: ReinsTab {
 final class DemoActivityTab: ReinsTab {
     let id = "activity"
     let title = "Activity"
-    let systemImage = "waveform.path.ecg"
+    let icon = ReinsGlyph.activity
     var badge: TabBadge? { TabBadge(value: 2, alert: true, spoken: "2 sessions running") }
     var hints: [KeyHint] { [KeyHint(keys: "Tab", label: "Why a state is what it is")] }
     var content: AnyView { AnyView(DemoActivityScreen()) }
@@ -81,7 +81,7 @@ private struct DemoRulesScreen: View {
                 })
                 ForEach(["Read files", "Edit files", "Run commands"], id: \.self) { name in
                     Row { RowText(name) }
-                        .lead { Image(systemName: "chevron.right").imageScale(.small) }
+                        .lead { Chevron(.right, size: .row) }
                         .cells {
                             SegmentedControl(label: "\(name), Claude Code", options: [
                                 SegmentOption("Allow", value: "allow"),
@@ -94,7 +94,7 @@ private struct DemoRulesScreen: View {
                         }
                 }
                 Row { RowText("Push and deploy") }
-                    .lead { Image(systemName: "chevron.right").imageScale(.small) }
+                    .lead { Chevron(.right, size: .row) }
                     .cells {
                         SegmentedControl(label: "Push and deploy, Claude Code", options: [
                             SegmentOption("Allow", value: "allow"),

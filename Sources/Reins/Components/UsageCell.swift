@@ -23,7 +23,7 @@ struct UsageCell: View {
             if let onAdd {
                 Button(action: onAdd) {
                     HStack(spacing: Space.s4) {
-                        Image(systemName: "plus").imageScale(.small).accessibilityHidden(true)
+                        ReinsIcon(.add)
                         Text("Add to \(cli.label)")
                     }
                 }
@@ -46,7 +46,7 @@ struct UsageCell: View {
             .accessibilityHint(reason ?? "")
         case .unmeasurable(let reason):
             HStack(spacing: Space.s6) {
-                Image(systemName: "exclamationmark.triangle").imageScale(.small)
+                ReinsIcon(.warning)
                 Text("not measurable")
             }
             .reinsText(.body, tone: .tertiary)

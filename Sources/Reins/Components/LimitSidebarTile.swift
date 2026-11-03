@@ -53,9 +53,6 @@ struct LimitSidebarTile: View {
 /// A warn clock beside the block's title: at least one CLI's reading is older than six hours.
 struct StaleMark: View {
     var body: some View {
-        Image(systemName: "clock")
-            .imageScale(.small)
-            .foregroundStyle(Palette.warnInk)
-            .accessibilityLabel("A reading is old")
+        ReinsIcon(.clock, ink: Palette.warnInk, label: "A reading is old")
     }
 }

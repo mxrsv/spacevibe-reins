@@ -104,10 +104,10 @@ extension ButtonStyle where Self == ReinsButtonStyle {
 }
 
 /// A small button for a row's trailing actions: revealed on hover, focus or selection (see `Row`).
-/// `systemImage` alone makes a square icon button; the title is then its accessibility label and tooltip.
+/// `iconOnly` with an `icon` makes a square icon button; the title is then its accessibility label and tooltip.
 struct RowActionButton: View {
     let title: String
-    var systemImage: String?
+    var icon: ReinsGlyph?
     var kind: ReinsButtonKind = .normal
     var iconOnly = false
     /// A CLI's dot in the icon button's corner: which CLI this action touches ("Remove from Codex").
@@ -116,21 +116,24 @@ struct RowActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            if iconOnly, let systemImage {
-                Image(systemName: systemImage)
+            if iconOnly, let icon {
+                ReinsIcon(icon)
                     .foregroundStyle(kind == .danger ? Palette.dangerInk : Palette.text)
-                    .accessibilityLabel(title)
                     .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
                     .overlay(alignment: .topTrailing) {
                         if let badge { CLIDot(badge, decorative: true, size: Space.s6).padding(Space.s4) }
                     }
-            } else if let systemImage {
-                Label(title, systemImage: systemImage)
+            } else if let icon {
+                HStack(spacing: Space.s6) {
+                    ReinsIcon(icon)
+                    Text(title)
+                }
             } else {
                 Text(title)
             }
         }
         .buttonStyle(.reins(iconOnly ? .icon : kind))
         .help(title)
+        .accessibilityLabel(title)
     }
 }

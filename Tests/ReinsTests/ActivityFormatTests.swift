@@ -148,7 +148,7 @@ struct ActivityFormatTests {
         let waiting = SessionWording(session(.claude, .waiting), elapsedMs: 0)
         #expect((waiting.tagText, waiting.tagTone, waiting.tagIcon) == ("waiting for you", .warn, nil))
         let unmeasurable = SessionWording(session(.codex, .unmeasurable), elapsedMs: 0)
-        #expect((unmeasurable.tagText, unmeasurable.tagTone, unmeasurable.tagIcon) == ("not measurable", .neutral, "exclamationmark.triangle"))
+        #expect((unmeasurable.tagText, unmeasurable.tagTone, unmeasurable.tagIcon) == ("not measurable", .neutral, .warning))
         let idle = SessionWording(session(.claude, .idle), elapsedMs: 0)
         #expect((idle.tagText, idle.tagTone, idle.tagIcon) == ("idle", .neutral, nil))
     }

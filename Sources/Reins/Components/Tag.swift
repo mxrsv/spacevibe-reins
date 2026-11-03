@@ -44,18 +44,18 @@ enum TagTone {
 struct Tag: View {
     let text: String
     var tone: TagTone = .neutral
-    var systemImage: String?
+    var icon: ReinsGlyph?
 
-    init(_ text: String, tone: TagTone = .neutral, systemImage: String? = nil) {
+    init(_ text: String, tone: TagTone = .neutral, icon: ReinsGlyph? = nil) {
         self.text = text
         self.tone = tone
-        self.systemImage = systemImage
+        self.icon = icon
     }
 
     var body: some View {
         HStack(spacing: Space.s4) {
-            if let systemImage {
-                Image(systemName: systemImage).imageScale(.small).foregroundStyle(tone.ink).accessibilityHidden(true)
+            if let icon {
+                ReinsIcon(icon, ink: tone.ink)
             } else if let dot = tone.dot {
                 Circle().fill(dot).frame(width: Metrics.tagDotSize, height: Metrics.tagDotSize).accessibilityHidden(true)
             }

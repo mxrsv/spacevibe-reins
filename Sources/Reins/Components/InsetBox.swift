@@ -21,7 +21,7 @@ struct WarningNote: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: Space.s8) {
-            Image(systemName: "exclamationmark.triangle").foregroundStyle(TextTone.warn.color).accessibilityHidden(true)
+            ReinsIcon(.warning, ink: TextTone.warn.color)
             Text(text).reinsText(.caption, tone: .primary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(Space.s12)

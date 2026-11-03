@@ -12,7 +12,7 @@ extension LoadoutModel {
                     id: "loadout.remove-dead.\(member.id)",
                     title: "Remove dead hook \(row.name)",
                     subtitle: "\(member.cli.label): \(row.detail)",
-                    systemImage: "trash",
+                    icon: .trash,
                     keywords: ["delete", "hook", "script not found"]
                 ) { [weak self] in self?.remove(row, member: member) })
             }
@@ -23,7 +23,7 @@ extension LoadoutModel {
             out.append(PaletteEntry(
                 id: "loadout.remove-all-dead.\(cli.rawValue)",
                 title: "Remove all \(count) dead hooks from \(cli.label)",
-                systemImage: "trash",
+                icon: .trash,
                 keywords: ["delete", "hooks", "script not found"]
             ) { [weak self] in self?.removeDeadHooks(cli: cli) })
         }
@@ -39,7 +39,7 @@ extension LoadoutModel {
                     id: "loadout.copy.\(row.key).\(cli.rawValue)",
                     title: "Copy \(row.kind.noun) \(row.name) to \(cli.label)",
                     subtitle: "Loadout",
-                    systemImage: "doc.on.doc",
+                    icon: .copy,
                     keywords: ["add", "install"]
                 ) { [weak self] in self?.add(row, to: cli) })
             }
@@ -49,7 +49,7 @@ extension LoadoutModel {
                 id: "loadout.go.\(row.key)",
                 title: row.name,
                 subtitle: subtitle(for: row),
-                systemImage: "arrow.right",
+                icon: .arrowRight,
                 keywords: [row.kind.noun]
             ) { [weak self] in self?.jump(to: row) })
         }

@@ -8,7 +8,7 @@ final class RulesTab: ReinsTab {
 
     let id = RulesTab.tabID
     let title = "Rules"
-    let systemImage = "checkmark.shield"
+    let icon = ReinsGlyph.rules
     let model: RulesModel
 
     init(env: AppEnvironment? = nil) { model = RulesModel(env: env ?? .shared) }

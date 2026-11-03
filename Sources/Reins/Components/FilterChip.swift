@@ -34,7 +34,7 @@ struct FilterChip: View {
             pill(trailing: Space.s8) {
                 Text(title)
                 Button(action: onDismiss) {
-                    Image(systemName: "xmark").imageScale(.small).foregroundStyle(TextTone.secondary.color)
+                    ReinsIcon(.close).foregroundStyle(TextTone.secondary.color)
                 }
                 .buttonStyle(.plain)
                 .reinsFocusable(cornerRadius: Metrics.segmentRadius)

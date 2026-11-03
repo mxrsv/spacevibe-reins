@@ -21,12 +21,9 @@ struct ScopePicker: View {
             label
         } else {
             Menu {
+                // A toggle per option: the menu draws its own checkmark beside the current one.
                 ForEach(options, id: \.id) { option in
-                    Button {
-                        onSelect(option)
-                    } label: {
-                        if option.id == current.id { Label(option.label, systemImage: "checkmark") } else { Text(option.label) }
-                    }
+                    Toggle(option.label, isOn: Binding(get: { option.id == current.id }, set: { _ in onSelect(option) }))
                 }
             } label: {
                 label
@@ -45,7 +42,7 @@ struct ScopePicker: View {
         return HStack(spacing: Space.s8) {
             Text(current.label).lineLimit(1)
             Spacer(minLength: 0)
-            Image(systemName: "chevron.up.chevron.down").imageScale(.small).foregroundStyle(Palette.textTertiary).accessibilityHidden(true)
+            Chevron(.upDown).foregroundStyle(Palette.textTertiary)
         }
         .reinsText(.body, tone: .primary)
         .padding(.leading, Space.s12)

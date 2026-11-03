@@ -7,7 +7,7 @@ final class LoadoutTab: ReinsTab {
 
     let id = LoadoutTab.tabID
     let title = "Loadout"
-    let systemImage = "square.stack.3d.up"
+    let icon = ReinsGlyph.loadout
     let model: LoadoutModel
 
     init(env: AppEnvironment? = nil) { model = LoadoutModel(env: env ?? .shared) }

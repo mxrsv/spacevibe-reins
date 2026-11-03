@@ -7,13 +7,11 @@ struct LimitNoteTile: View {
     let title: String
     let text: String
     var isWarn = false
-    var action: (title: String, systemImage: String, run: () -> Void)?
+    var action: (title: String, icon: ReinsGlyph, run: () -> Void)?
 
     var body: some View {
         HStack(alignment: .top, spacing: Space.s12) {
-            Image(systemName: isWarn ? "exclamationmark.triangle" : "info.circle")
-                .imageScale(.medium)
-                .foregroundStyle(isWarn ? Palette.warnInk : Palette.text)
+            ReinsIcon(isWarn ? .warning : .info, size: .row, ink: isWarn ? Palette.warnInk : nil)
                 .frame(width: Metrics.limitTileIconSize, height: Metrics.limitTileIconSize)
                 .background(RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous).fill(isWarn ? Palette.warnTint : Palette.surface))
                 .accessibilityHidden(true)
@@ -25,7 +23,7 @@ struct LimitNoteTile: View {
                 if let action {
                     Button(action: action.run) {
                         HStack(spacing: Space.s6) {
-                            Image(systemName: action.systemImage).imageScale(.small).accessibilityHidden(true)
+                            ReinsIcon(action.icon)
                             Text(action.title)
                         }
                     }

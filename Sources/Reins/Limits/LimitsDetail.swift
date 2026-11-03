@@ -30,7 +30,7 @@ struct LimitsDetail: View {
             FilterChip("Show windows not in use", isOn: model.showInactive) { model.showInactive.toggle() }
             Button { Task { await model.readOnce() } } label: {
                 HStack(spacing: Space.s6) {
-                    Image(systemName: "arrow.clockwise").imageScale(.small).accessibilityHidden(true)
+                    ReinsIcon(.refresh)
                     Text("Refresh")
                 }
             }
@@ -81,13 +81,13 @@ struct LimitsDetail: View {
     private func tags(_ window: LimitWindow, now: Date) -> [LimitTileTag] {
         var tags: [LimitTileTag] = []
         if !window.active { tags.append(LimitTileTag(text: "not in use")) }
-        if !window.isCurrent(at: now) { tags.append(LimitTileTag(text: "reset passed", tone: .warn, systemImage: "clock")) }
+        if !window.isCurrent(at: now) { tags.append(LimitTileTag(text: "reset passed", tone: .warn, icon: .clock)) }
         return tags
     }
 
-    private func copyAction(_ limits: CLILimits) -> (title: String, systemImage: String, run: () -> Void)? {
+    private func copyAction(_ limits: CLILimits) -> (title: String, icon: ReinsGlyph, run: () -> Void)? {
         guard limits.cli == .claude, limits.state == .notRecorded else { return nil }
-        return ("Copy \(LimitsWording.copyHint)", "doc.on.doc", { LimitsClipboard.copyUsageCommand() })
+        return ("Copy \(LimitsWording.copyHint)", .copy, { LimitsClipboard.copyUsageCommand() })
     }
 }
 
@@ -99,7 +99,7 @@ private struct LimitsReadingAge: View {
     var body: some View {
         let age = LimitsWording.readAge(at: at, now: now)
         if LimitsWording.isStale(at: at, now: now) {
-            Tag(age, tone: .warn, systemImage: "clock")
+            Tag(age, tone: .warn, icon: .clock)
         } else {
             Text(age).reinsText(.caption, tone: .secondary)
         }
@@ -115,7 +115,7 @@ private struct LimitsSourceButton: View {
 
     var body: some View {
         if let source = LimitsWording.source(cli) {
-            Button { showSource.toggle() } label: { Image(systemName: "info.circle") }
+            Button { showSource.toggle() } label: { ReinsIcon(.info) }
                 .buttonStyle(.reins(.plainIcon))
                 .accessibilityLabel("Where this reading comes from")
                 .popover(isPresented: $showSource, arrowEdge: .bottom) {
@@ -126,7 +126,7 @@ private struct LimitsSourceButton: View {
                             if cli == .claude {
                                 Button { LimitsClipboard.copyUsageCommand() } label: {
                                     HStack(spacing: Space.s6) {
-                                        Image(systemName: "doc.on.doc").imageScale(.small).accessibilityHidden(true)
+                                        ReinsIcon(.copy)
                                         Text("Copy \(LimitsWording.copyHint)")
                                     }
                                 }

@@ -47,6 +47,24 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
   the [`ControlGround`](../Sources/Reins/Components/ControlGround.swift): `surface` on the well, `surfaceRaised` inside a
   card (a card, a dialog and the search field set it), and `selection` for the chosen segment or chip.
 
+## Icons
+
+- **Solar Bold Duotone is the only icon set** (Solar by 480 Design, CC BY 4.0, https://creativecommons.org/licenses/by/4.0/).
+  The credit is in the About panel ([`Credits`](../Sources/Reins/App/Credits.swift)) and here.
+  [`IconPolicyTests`](../Tests/ReinsTests/IconPolicyTests.swift) fails on an SF Symbol or any other image outside
+  `Gallery/`; the CLI brand marks in [`CLIMark`](../Sources/Reins/Components/CLIMark.swift) are the one image.
+- **Generated Swift, not files.** [`generate-icons.mjs`](../scripts/generate-icons.mjs) turns the `@iconify-json/solar`
+  package (downloaded into a scratch folder, never committed) into
+  [`ReinsIconData.swift`](../Sources/Reins/Components/ReinsIconData.swift): two layers per glyph as path code. A glyph
+  that is missing gets a line in the script's table, then a rerun; the file is never edited by hand. Its table names the
+  Solar icon behind each glyph.
+- **One colour per icon.** [`ReinsIcon`](../Sources/Reins/Components/ReinsIcon.swift) draws both layers in the current
+  foreground style, the lighter at 50%. Only a state tag and a banner tint an icon with their tone's ink.
+- **Sizes** (`IconSize`): 22 sidebar, 20 row lead and banner, 16 buttons, tags and fields, 14 beside 12 pt text, 24 an
+  empty state. Never below 14.
+- **The chevron is drawn**, not taken from Solar Bold Duotone, whose chevron breaks up at small sizes: `Chevron` strokes
+  Solar Linear's geometry (right, down, and the up-and-down pair of a menu).
+
 ## Components
 
 | Need | Component |
@@ -56,7 +74,8 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
 | Progress | [`Ruler`](../Sources/Reins/Components/Ruler.swift): ten cells, 8 high, each a tenth of the real track with a 3 pt gap, the last filled cell cut at the share, empty cells `surfaceRaised`, a dashed outline when the share is not known. `UsageCell` and the Limits tiles use it |
 | Limits | [`LimitCard`](../Sources/Reins/Components/LimitCard.swift) (a CLI's block: [`CLIMark`](../Sources/Reins/Components/CLIMark.swift), name, plan tag) holding [`LimitTile`](../Sources/Reins/Components/LimitTile.swift) (one window with its `Ruler`; the tightest leads, tinted, in `figure`) and [`LimitNoteTile`](../Sources/Reins/Components/LimitNoteTile.swift) (no reading); [`LimitSidebarTile`](../Sources/Reins/Components/LimitSidebarTile.swift) in the sidebar block. Borderless: fill and space separate them |
 | Cells | `UsageCell`, `NumberCell`, `StateCell`, `FixedCell`, `EmptyActionSlot`, `ReadOnlyMark`, `ColumnSpacer` ([Cells](../Sources/Reins/Components/Cells.swift)) |
-| Labels | `Tag` (24, radius 6, `surfaceRaised`, neutral text; the tone is a 6 pt dot, none with an icon; warn and danger keep their ink), `CLITag`, `CLIDot`, `Count`, `Kbd` |
+| Labels | `Tag` (24, radius 6, `surfaceRaised`, neutral text; the tone is a 6 pt dot, or tints the icon when it has one; warn and danger keep their ink), `CLITag`, `CLIDot`, `Count`, `Kbd` |
+| Icons | `ReinsIcon` (a `ReinsGlyph` at an `IconSize`), `Chevron` |
 | Controls | `ReinsButtonStyle` kinds (normal, primary, danger, ghost, icon, plainIcon, inverse), `RowActionButton` (with a CLI badge), `SegmentedControl`, `FilterChip` (and its dismissible form), `ScopePicker`, `SearchField`, `TextInputField` |
 | Messages | `Banner`, `EmptyState`, `NoteRegion`, `InsetBox`, `WarningNote`, `UsageLegend`, `ToastView`, `ConfirmationDialog` |
 | Page and shell | `PageLayout` (or `.pageTools()`, `.pageContent()`, `.pageBackground()`), `HintBar`, `SidebarItem` (48, `title` role in every state, the active one changes only its fill to `surface`) with `.sidebarSurface()`, `PaletteCard` and its parts, `Scrim` |
@@ -66,5 +85,7 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
 - `Font.custom("Inter", …)` silently falls back to the system font: the family is `Inter Variable`. Build fonts only
   through `ReinsType`, which creates them by PostScript name.
 - `@Entry` needs SwiftUI's macro plugin, which the Command Line Tools lack; container and environment keys are written out.
+- Solar draws a few icons with overlapping half-opacity shapes (the Loadout `layers` glyph): the browser darkens the overlap,
+  one light layer does not. Check a new glyph in the gallery's icon section before using it.
 - Fixed widths that hold text were measured in Inter at these sizes (usage number 52, cost 72, state 120, Rules' Claude
   Code column 280). Recheck them when a role's size or weight changes.

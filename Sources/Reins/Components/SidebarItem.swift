@@ -5,7 +5,7 @@ import SwiftUI
 /// active tab changes only its fill (`surface` on the well), never its text, weight or icon.
 struct SidebarItem: View {
     let title: String
-    let systemImage: String
+    let icon: ReinsGlyph
     var count: Int?
     var alert = false
     /// What VoiceOver says for the count ("2 sessions running"); the number when nil.
@@ -19,11 +19,7 @@ struct SidebarItem: View {
         let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
         Button(action: select) {
             HStack(spacing: Space.s8) {
-                Image(systemName: systemImage)
-                    .imageScale(.large)
-                    .foregroundStyle(TextTone.secondary.color)
-                    .frame(width: Metrics.sidebarIconSize, height: Metrics.sidebarIconSize)
-                    .accessibilityHidden(true)
+                ReinsIcon(icon, size: .sidebar).foregroundStyle(TextTone.secondary.color)
                 Text(title)
                 Spacer(minLength: 0)
                 if let count {

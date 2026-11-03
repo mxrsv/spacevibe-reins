@@ -14,11 +14,11 @@ struct LimitsSidebarBlock: View {
             Button { model.isDetailOpen.toggle() } label: {
                 VStack(alignment: .leading, spacing: Space.s6) {
                     HStack(spacing: Space.s6) {
-                        Image(systemName: "gauge.with.dots.needle.33percent").imageScale(.small).accessibilityHidden(true)
+                        ReinsIcon(.limits)
                         Text("Limits")
                         if hasStaleReading(now: context.date) { StaleMark() }
                         Spacer(minLength: 0)
-                        Image(systemName: "chevron.right").imageScale(.small).accessibilityHidden(true)
+                        Chevron(.right)
                     }
                     .reinsText(.bodyStrong, tone: .primary)
                     .padding(.horizontal, Space.s4)

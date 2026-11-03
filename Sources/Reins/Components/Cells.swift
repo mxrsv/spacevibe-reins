@@ -45,11 +45,10 @@ struct ReadOnlyMark: View {
     let reason: String
 
     var body: some View {
-        Image(systemName: "lock")
+        ReinsIcon(.lock, label: reason)
             .foregroundStyle(TextTone.tertiary.color)
             .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
             .help(reason)
-            .accessibilityLabel(reason)
     }
 }
 

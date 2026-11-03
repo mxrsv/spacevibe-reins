@@ -15,7 +15,7 @@ struct SearchField: View {
         let shape = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
         Button(action: action) {
             HStack(spacing: Space.s8) {
-                Image(systemName: "magnifyingglass").imageScale(.small).accessibilityHidden(true)
+                ReinsIcon(.search)
                 Text(placeholder).lineLimit(1)
                 Spacer(minLength: 0)
                 Kbd(shortcut).controlGround(.card)

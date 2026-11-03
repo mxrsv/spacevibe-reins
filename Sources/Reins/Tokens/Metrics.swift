@@ -85,9 +85,16 @@ enum Metrics {
     static let sidebarItemSpacing: CGFloat = 8
     /// Inside a sidebar item, before the icon and after the count.
     static let sidebarItemPadding: CGFloat = 16
-    static let sidebarIconSize: CGFloat = 22
-    /// The icon slot of a palette row.
-    static let paletteIconWidth: CGFloat = 16
+
+    /// Icon sizes (`IconSize`): sidebar 22, row lead and banner 20, buttons, tags and fields 16, beside 12 pt text 14 (the
+    /// smallest: Solar Bold Duotone loses detail below it), an empty state's mark 24.
+    static let iconSidebar: CGFloat = 22
+    static let iconRow: CGFloat = 20
+    static let iconControl: CGFloat = 16
+    static let iconInline: CGFloat = 14
+    static let iconLarge: CGFloat = 24
+    /// The hand-drawn chevron's stroke in its 24 pt box (Solar Linear's width), scaled with the icon.
+    static let chevronStroke: CGFloat = 1.5
 
     static let emptyStateMessageWidth: CGFloat = 360
 

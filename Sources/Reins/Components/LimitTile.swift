@@ -39,7 +39,7 @@ enum LimitReading: Equatable {
 struct LimitTileTag: Equatable {
     let text: String
     var tone: TagTone = .neutral
-    var systemImage: String?
+    var icon: ReinsGlyph?
 }
 
 /// One usage-limit window as its own block, not a row in a list: a clock square, the window's name with its tags and the
@@ -64,16 +64,14 @@ struct LimitTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s12) {
             HStack(spacing: Space.s12) {
-                Image(systemName: "clock")
-                    .imageScale(.medium)
-                    .foregroundStyle(cli.ink)
+                ReinsIcon(.clock, size: .row)
                     .frame(width: Metrics.limitTileIconSize, height: Metrics.limitTileIconSize)
                     .background(RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous).fill(Palette.surface))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: Space.s8) {
                         Text(title).reinsText(.title, tone: .primary).lineLimit(1)
-                        ForEach(tags, id: \.text) { Tag($0.text, tone: $0.tone, systemImage: $0.systemImage) }
+                        ForEach(tags, id: \.text) { Tag($0.text, tone: $0.tone, icon: $0.icon) }
                     }
                     Text(detail).reinsText(.body, tone: .secondary).lineLimit(2)
                 }

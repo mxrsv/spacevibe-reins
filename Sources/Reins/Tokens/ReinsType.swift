@@ -73,8 +73,6 @@ struct ReinsType {
     static let figure = ReinsType(size: 24, weight: .semibold, lineBox: 32, trackingEm: -0.01, tabular: true)
     /// The other exception (v3): the share left on the Limits page, one at a time. The line box is the face's own height at 72.
     static let display = ReinsType(size: 72, weight: .semibold, lineBox: 88, trackingEm: -0.03, tabular: true)
-    /// SF Symbol size for an empty state's icon. Not a text role.
-    static let symbolLarge = ReinsType(size: 24, weight: .regular, lineBox: 32)
 }
 
 /// Text colours by meaning. Views pick a tone, never a `Palette` colour, so the palette can change in one place.

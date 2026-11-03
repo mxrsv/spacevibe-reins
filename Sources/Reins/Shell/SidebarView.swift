@@ -10,7 +10,7 @@ struct SidebarView: View {
             VStack(spacing: Metrics.sidebarItemSpacing) {
                 ForEach(shell.tabs, id: \.id) { tab in
                     SidebarItem(
-                        title: tab.title, systemImage: tab.systemImage, count: tab.badge?.value, alert: tab.badge?.alert ?? false,
+                        title: tab.title, icon: tab.icon, count: tab.badge?.value, alert: tab.badge?.alert ?? false,
                         spokenCount: tab.badge?.spoken, isActive: tab.id == shell.activeID
                     ) { shell.select(tab.id) }
                 }

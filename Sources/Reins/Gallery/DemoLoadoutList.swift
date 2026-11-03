@@ -10,10 +10,10 @@ struct DemoLoadoutList: View {
     private struct Item {
         var name: String
         var subtitle: String
-        var icon = "sparkles"
+        var icon = ReinsGlyph.skill
         var claude: UsageCellModel
         var codex: UsageCellModel
-        var tags: [(String, TagTone, String?)] = []
+        var tags: [(String, TagTone, ReinsGlyph?)] = []
         var codeSubtitle = false
         var removable: [InventoryCLI] = [.claude]
     }
@@ -23,11 +23,11 @@ struct DemoLoadoutList: View {
         Item(name: "impeccable", subtitle: "Counted in both", claude: .counted(runs: 87), codex: .counted(runs: 31), removable: [.claude, .codex]),
         Item(name: "review-change", subtitle: "Installed, never ran", claude: .counted(runs: 0), codex: .missing),
         Item(name: "skill-creator", subtitle: "Added today, not counted yet", claude: .pending(reason: "Added after the last scan; counted on the next one."), codex: .missing, tags: [("added recently", .neutral, nil)]),
-        Item(name: "neon-postgres", subtitle: "Owned by a plugin, read-only", claude: .counted(runs: 11), codex: .missing, tags: [("plugin: neon", .neutral, "lock")], removable: []),
+        Item(name: "neon-postgres", subtitle: "Owned by a plugin, read-only", claude: .counted(runs: 11), codex: .missing, tags: [("plugin: neon", .neutral, .lock)], removable: []),
     ]
     private let hooks: [Item] = [
-        Item(name: "Stop", subtitle: "Codex does not log hook runs", icon: "bolt", claude: .counted(runs: 203), codex: .unmeasurable(reason: "Codex does not log hook runs."), removable: [.claude, .codex]),
-        Item(name: "PostToolUse \u{00B7} Edit|Write", subtitle: "prettier --write \"$FILE\"", icon: "bolt", claude: .counted(runs: 12_345), codex: .missing, tags: [("17 errors", .warn, nil)], codeSubtitle: true),
+        Item(name: "Stop", subtitle: "Codex does not log hook runs", icon: .hook, claude: .counted(runs: 203), codex: .unmeasurable(reason: "Codex does not log hook runs."), removable: [.claude, .codex]),
+        Item(name: "PostToolUse \u{00B7} Edit|Write", subtitle: "prettier --write \"$FILE\"", icon: .hook, claude: .counted(runs: 12_345), codex: .missing, tags: [("17 errors", .warn, nil)], codeSubtitle: true),
     ]
 
     var body: some View {
@@ -54,10 +54,10 @@ struct DemoLoadoutList: View {
     private func row(_ item: Item, max: Int) -> some View {
         Row(selected: item.name == selectedName, onActivate: {}) {
             RowText(item.name, subtitle: item.subtitle, codeSubtitle: item.codeSubtitle) {
-                ForEach(item.tags, id: \.0) { tag in Tag(tag.0, tone: tag.1, systemImage: tag.2) }
+                ForEach(item.tags, id: \.0) { tag in Tag(tag.0, tone: tag.1, icon: tag.2) }
             }
         }
-        .lead { Image(systemName: item.icon) }
+        .lead { ReinsIcon(item.icon, size: .row) }
         .cells {
             UsageCell(cli: .claude, model: item.claude, max: max, onAdd: nil)
             UsageCell(cli: .codex, model: item.codex, max: max, onAdd: item.codex == .missing ? {} : nil)
@@ -66,13 +66,12 @@ struct DemoLoadoutList: View {
             HStack(spacing: Space.s4) {
                 if item.removable.isEmpty {
                     Color.clear.frame(width: Metrics.controlHeight, height: 1)
-                    Image(systemName: "lock").foregroundStyle(Palette.textTertiary)
+                    ReinsIcon(.lock, label: "Owned by a plugin").foregroundStyle(Palette.textTertiary)
                         .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
-                        .accessibilityLabel("Owned by a plugin")
                 } else {
                     ForEach(InventoryCLI.allCases, id: \.self) { cli in
                         if item.removable.contains(cli) {
-                            RowActionButton(title: "Remove from \(cli.label)", systemImage: "trash", kind: .danger, iconOnly: true, badge: cli) {}
+                            RowActionButton(title: "Remove from \(cli.label)", icon: .trash, kind: .danger, iconOnly: true, badge: cli) {}
                         } else {
                             Color.clear.frame(width: Metrics.controlHeight, height: 1)
                         }
