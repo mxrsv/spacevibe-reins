@@ -1,0 +1,16 @@
+/**
+ * The Reins mark from `spacevibe-hub/public/reins/icon.svg`, without its black
+ * plate: two bars and a ring, rotated 45°, filled with `currentColor` so the
+ * header and footer tint it from the text colour. Change the shape in the hub
+ * first, then copy it here.
+ */
+export function ReinsMark({ className }: { readonly className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <g transform="translate(128 128) scale(0.9) rotate(45) translate(-128 -128)">
+        <path d="M100 35.8A3.8 3.8 0 0 1 103.8 32H116.2A3.8 3.8 0 0 1 120 35.8V220.2A3.8 3.8 0 0 1 116.2 224H103.8A3.8 3.8 0 0 1 100 220.2ZM136 35.8A3.8 3.8 0 0 1 139.8 32H152.2A3.8 3.8 0 0 1 156 35.8V220.2A3.8 3.8 0 0 1 152.2 224H139.8A3.8 3.8 0 0 1 136 220.2Z" />
+        <path d="M156 53.06A80 80 0 1 1 100 53.06L100 81.83A54 54 0 1 0 156 81.83Z" />
+      </g>
+    </svg>
+  );
+}

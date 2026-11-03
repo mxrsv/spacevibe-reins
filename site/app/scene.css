@@ -1,0 +1,391 @@
+/* ============================================================================
+   PLANET SCENE — ported from the SpaceVibe Academy landing (home-scene.tsx +
+   home-hero.css, 2026-08). Four layers, bottom up:
+
+     1.   raster deep space (`/landing/scene-deep-space*`): atmosphere haze and dust
+     1.5. three star tiles on parallax (`starfield.tsx`): the real stars live here
+     2.   SVG planet limb: wide ambient glow → narrow blue halo → sharp white-blue core
+     3.   CSS atmosphere: the planet's dark body, vignette, a veil that keeps the text
+          column readable
+     4.   motion: star drift, halo breathe, pure CSS on the compositor
+
+   Hero and download band share one raster and one SVG; they differ by crop and
+   intensity (`data-variant`). No canvas, no WebGL, zero JS for the scene itself.
+   ============================================================================ */
+
+:root {
+  --scene-planet: #030405;
+  --scene-planet-limb: #050609;
+
+  --scene-rim-core: #d5e2ff;
+  --scene-rim-bright: var(--color-accent-hover);
+  --scene-rim-accent: var(--color-accent);
+  --scene-rim-haze: #7f8cc8;
+  --scene-core-shadow: rgb(57 83 210 / 55%);
+
+  /* Luminance ramp for the `arc-fade` mask: the glow dies at both ends of the arc
+     and peaks mid-axis. Mask data, not paint. */
+  --scene-arc-fade-0: #000;
+  --scene-arc-fade-10: #242424;
+  --scene-arc-fade-24: #8a8a8a;
+  --scene-arc-fade-40: #ebebeb;
+  --scene-arc-fade-50: #fff;
+  --scene-arc-fade-62: #d6d6d6;
+  --scene-arc-fade-74: #808080;
+  --scene-arc-fade-86: #222;
+
+  --scene-glint-core: #eef1fb;
+  --scene-glint-halo: rgb(140 165 255 / 42%);
+  --scene-glint-spike: rgb(226 233 255 / 62%);
+
+  --scene-orbit-ring: rgb(255 255 255 / 9%);
+  --scene-orbit-body: rgb(214 224 255 / 72%);
+  --scene-orbit-wash: radial-gradient(closest-side, rgb(57 83 210 / 16%), transparent 100%);
+
+  --scene-atmosphere: radial-gradient(
+    120% 92% at 52% 48%,
+    transparent 44%,
+    rgb(5 6 8 / 62%) 78%,
+    var(--color-void) 100%
+  );
+
+  /* Veil: pitch black under the heading column, gone before the limb. */
+  --scene-veil: linear-gradient(
+    97deg,
+    var(--color-void) 0%,
+    rgb(5 6 8 / 89%) 30%,
+    rgb(5 6 8 / 62%) 46%,
+    rgb(5 6 8 / 16%) 56%,
+    rgb(5 6 8 / 0%) 64%
+  );
+  --scene-veil-mobile: linear-gradient(
+    177deg,
+    rgb(5 6 8 / 92%) 0%,
+    rgb(5 6 8 / 74%) 34%,
+    rgb(5 6 8 / 22%) 64%,
+    rgb(5 6 8 / 0%) 88%
+  );
+
+  --scene-stars-far: url("/landing/star-tile-far.svg");
+  --scene-stars-mid: url("/landing/star-tile-mid.svg");
+  --scene-stars-near: url("/landing/star-tile-near.svg");
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* `inset: -10px` is slack for `scene-drift`: the raster moves a few pixels and a
+   frame at exactly 100% would show a black seam. */
+.scene__sky {
+  position: absolute;
+  inset: -10px;
+  display: block;
+  animation: scene-drift 38s ease-in-out infinite alternate;
+}
+
+.scene__sky img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 72% 82%;
+  opacity: 0.86;
+}
+
+/* ------------------------------------------------------------- star field */
+
+.scene__stars {
+  position: absolute;
+  inset: 0;
+}
+
+.scene__layer {
+  position: absolute;
+  inset: 0 calc(var(--tile) * -1) calc(var(--tile) * -1) 0;
+  background-image: var(--tile-image);
+  background-repeat: repeat;
+  background-size: var(--tile) var(--tile);
+  animation: star-drift var(--tile-drift) linear infinite;
+}
+
+.scene__layer--far {
+  --tile: 260px;
+  --tile-drift: 300s;
+  --tile-image: var(--scene-stars-far);
+
+  opacity: 0.72;
+}
+
+.scene__layer--mid {
+  --tile: 340px;
+  --tile-drift: 210s;
+  --tile-image: var(--scene-stars-mid);
+
+  opacity: 0.9;
+}
+
+.scene__layer--near {
+  --tile: 460px;
+  --tile-drift: 150s;
+  --tile-image: var(--scene-stars-near);
+}
+
+/* Named stars: core + halo + two hairline spikes, slow out-of-phase twinkle. */
+.scene__glint {
+  --glint-x: 50%;
+  --glint-y: 50%;
+  --glint-size: 3px;
+  --glint-delay: 0s;
+  --glint-duration: 8s;
+
+  position: absolute;
+  left: var(--glint-x);
+  top: var(--glint-y);
+  width: var(--glint-size);
+  height: var(--glint-size);
+  border-radius: 999px;
+  background: var(--scene-glint-core);
+  box-shadow: 0 0 calc(var(--glint-size) * 4) calc(var(--glint-size) * 0.8) var(--scene-glint-halo);
+  animation: star-twinkle var(--glint-duration) ease-in-out var(--glint-delay) infinite;
+}
+
+.scene__glint::before,
+.scene__glint::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: linear-gradient(90deg, transparent, var(--scene-glint-spike), transparent);
+}
+
+.scene__glint::before {
+  width: calc(var(--glint-size) * 10);
+  height: 1px;
+  transform: translate(-50%, -50%);
+}
+
+.scene__glint::after {
+  width: calc(var(--glint-size) * 7);
+  height: 1px;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+/* One star system: an anchor star, a tilted orbit ring, a body on a 96s lap. */
+.scene__system {
+  position: absolute;
+  left: 62%;
+  top: 23%;
+  width: clamp(132px, 13vw, 208px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  transform-style: preserve-3d;
+}
+
+.scene__system-wash {
+  position: absolute;
+  inset: -46%;
+  background: var(--scene-orbit-wash);
+}
+
+/* `rotateX` without perspective on purpose: orthographic gives a clean ellipse. */
+.scene__orbit {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--scene-orbit-ring);
+  border-radius: 999px;
+  transform: rotateX(72deg) rotate(-14deg);
+  transform-style: preserve-3d;
+}
+
+.scene__orbit-spin {
+  position: absolute;
+  inset: 0;
+  animation: orbit-run 96s linear infinite;
+}
+
+.scene__orbit-body {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 999px;
+  background: var(--scene-orbit-body);
+}
+
+.scene__glint--anchor {
+  --glint-size: 4px;
+
+  transform: translate(-50%, -50%);
+}
+
+/* ------------------------------------------------------------- planet limb */
+
+.scene__rim {
+  position: absolute;
+  inset: auto 0 -6% 0;
+  width: 100%;
+  height: 96%;
+  overflow: visible;
+}
+
+.scene__halo {
+  filter: blur(7px);
+}
+
+.scene__ambient {
+  filter: blur(18px);
+}
+
+.scene__surface {
+  filter: blur(26px);
+  opacity: 0.7;
+}
+
+.scene__spill {
+  filter: blur(7px);
+  opacity: 0.62;
+}
+
+.scene__bloom {
+  filter: blur(5px);
+}
+
+.scene__core {
+  filter: drop-shadow(0 0 2px var(--scene-core-shadow));
+}
+
+.scene__halo,
+.scene__ambient,
+.scene__spill,
+.scene__surface {
+  animation: scene-breathe 10s ease-in-out infinite;
+}
+
+.scene__atmosphere {
+  position: absolute;
+  inset: 0;
+  background: var(--scene-atmosphere);
+}
+
+.scene__veil {
+  position: absolute;
+  inset: 0;
+  background: var(--scene-veil);
+}
+
+/* ------------------------------------------------------------- download band */
+
+/* The band repeats one stretch of the arc in its lower-right corner, dimmer. */
+.scene[data-variant="download"] {
+  opacity: 0.6;
+}
+
+.scene[data-variant="download"] .scene__sky img {
+  object-position: 88% 92%;
+}
+
+.scene[data-variant="download"] .scene__rim {
+  inset: auto -34% -58% 30%;
+  width: auto;
+  height: 190%;
+}
+
+.scene[data-variant="download"] .scene__atmosphere {
+  background: none;
+}
+
+.scene[data-variant="download"] .scene__halo,
+.scene[data-variant="download"] .scene__ambient,
+.scene[data-variant="download"] .scene__spill,
+.scene[data-variant="download"] .scene__surface {
+  animation-duration: 14s;
+  opacity: 0.55;
+}
+
+/* ------------------------------------------------------------- phones */
+
+@media (width <= 760px) {
+  /* The circle's centre sits off-screen right; at phone width the default frame
+     pushes the whole arc out. Scale and anchor so the arc runs below the text. */
+  .scene[data-variant="hero"] .scene__rim {
+    inset: auto -24% -9% -58%;
+    width: auto;
+    height: 50%;
+  }
+
+  .scene[data-variant="hero"] .scene__sky img {
+    object-position: 78% 88%;
+  }
+
+  .scene__system {
+    display: none;
+  }
+
+  .scene__layer--far {
+    opacity: 0.86;
+  }
+
+  .scene__layer--mid {
+    opacity: 1;
+  }
+
+  .scene[data-variant="hero"] .scene__veil {
+    background: var(--scene-veil-mobile);
+  }
+}
+
+/* ------------------------------------------------------------- motion */
+
+@keyframes star-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(calc(var(--tile) * -1), calc(var(--tile) * -1), 0);
+  }
+}
+
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes orbit-run {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scene-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-6px, -4px, 0);
+  }
+}
+
+/* The core never breathes: a flickering core reads as an effect, not a light. */
+@keyframes scene-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 0.62;
+  }
+}

@@ -19,6 +19,8 @@ Stack: SwiftPM, swift-tools 6.0, Swift 5 language mode, macOS 15+, Command Line 
 
 Layout: `Sources/CZstd` (vendored decompress-only zstd, see its README), `Sources/ReinsCore` (the engine; Foundation only, no UI import), `Sources/Reins` (the app), `Tests/ReinsCoreTests` (swift-testing; `Support/` has `TempHome` and `FixtureHome`), `Tests/ReinsTests` (app logic that needs no window).
 
+Public site: [`site/`](site/README.md) is the page for `reins.spacevibe.dev` (Next.js static export + Tailwind, its own `package.json` and lockfile, built with `npm run build` inside `site/`). It is independent of the root Electron `package.json` and of the Swift build; its example rows mirror the synthetic fixture home, never a real `~/.claude` (S-R2).
+
 Toolchain rules (taken from `spacevibe-board`, re-verified here):
 
 - **B1. The deployment target is pinned.** The toolchain defaults to `arm64-apple-macosx28.0`; a binary built at that target refuses to launch on macOS 27 (`-10825`). `platforms: [.macOS(.v15)]` in [Package.swift](Package.swift) and `LSMinimumSystemVersion` 15.0 in [Resources/Info.plist](Resources/Info.plist) must agree. [`scripts/build-app.sh`](scripts/build-app.sh) prints `vtool -show-build-version` (expect `minos 15.0`).

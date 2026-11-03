@@ -1,0 +1,208 @@
+@import "tailwindcss";
+@import "./scene.css";
+
+/* ----------------------------------------------------------------------------
+   Tokens. One graphite ground, one accent (the planet's light), two CLI colours
+   carried over from the app (Claude Code clay, Codex teal). Everything in the
+   components reads these names; no raw colour lives in a className.
+   ---------------------------------------------------------------------------- */
+@theme {
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-void: #050608;
+  --color-bg: #08090b;
+  --color-s1: #0d0f12;
+  --color-s2: #111318;
+  --color-s3: #15181d;
+
+  --color-accent: #3953d2;
+  --color-accent-hover: #4a63dd;
+  --color-accent-text: #6478de;
+
+  --color-ink-0: #f4f5f7;
+  --color-ink-1: #a4a8b0;
+  --color-ink-2: #767b84;
+
+  --color-edge: rgb(255 255 255 / 8%);
+  --color-edge-strong: rgb(255 255 255 / 13%);
+  --color-edge-hover: rgb(255 255 255 / 20%);
+  --color-glass: rgb(13 15 18 / 62%);
+
+  --color-claude: #f69a65;
+  --color-codex: #4fcdcd;
+  --color-warn: #e8b457;
+  --color-danger: #f07070;
+  --color-ok: #62c290;
+
+  --radius-ctl: 8px;
+  --radius-card: 12px;
+  --radius-panel: 14px;
+
+  --shadow-glass: 0 20px 44px rgb(3 4 6 / 58%);
+  --shadow-panel: 0 24px 60px rgb(3 4 6 / 45%);
+
+  --ease-out-expo: cubic-bezier(0.22, 0.8, 0.26, 1);
+
+  --text-h1: clamp(46px, 6.1vw, 84px);
+  --text-h1--line-height: 0.98;
+  --text-h1--letter-spacing: -0.04em;
+  --text-h2: clamp(28px, 2.5vw, 36px);
+  --text-h2--line-height: 1.15;
+  --text-h2--letter-spacing: -0.025em;
+  --text-stat: 28px;
+  --text-stat--line-height: 1;
+  --text-stat--letter-spacing: -0.03em;
+  --text-body: 15px;
+  --text-body--line-height: 23px;
+  --text-sec: 13px;
+  --text-sec--line-height: 20px;
+  --text-tiny: 11px;
+  --text-tiny--line-height: 16px;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+    scrollbar-color: var(--color-s3) var(--color-bg);
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink-1);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  ::selection {
+    background: rgb(57 83 210 / 48%);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(57 83 210 / 75%);
+    outline-offset: 2px;
+    border-radius: var(--radius-ctl);
+  }
+
+  /* The sticky header is 60px; anchors land below it. */
+  section[id] {
+    scroll-margin-top: 80px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: var(--color-ink-0);
+    text-wrap: balance;
+  }
+}
+
+/* Page frame: 1280px cap, 48px gutters on desktop, 20px on phones. */
+@utility shell {
+  width: min(100% - 2 * var(--gutter, 48px), 1280px);
+  margin-inline: auto;
+}
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  :root {
+    --gutter: 48px;
+  }
+
+  @media (width <= 760px) {
+    :root {
+      --gutter: 20px;
+    }
+  }
+
+  /* A card that stands on the scene: 62% ground so the stars show through, a
+     1px light on the top edge that fades at both ends (lit from above, not framed). */
+  .glass {
+    position: relative;
+    background: var(--color-glass);
+    border: 1px solid var(--color-edge);
+    box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(14px);
+  }
+
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgb(255 255 255 / 11%) 28%,
+      rgb(255 255 255 / 11%) 72%,
+      transparent 100%
+    );
+  }
+
+  /* Reveal on scroll. Default is VISIBLE: the client chunk flags the root with
+     `data-motion-ready` only once the observer exists, so a lost bundle never
+     leaves the page blank. */
+  [data-motion-ready] [data-reveal] {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 520ms ease,
+      transform 520ms var(--ease-out-expo);
+    transition-delay: var(--d, 0ms);
+  }
+
+  [data-reveal].in {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Hero entrance: eyebrow-less, so the heading leads. `backwards` keeps the
+     first frame from flashing. */
+  [data-rise] {
+    animation: rise-in 620ms var(--ease-out-expo) var(--rise, 0ms) backwards;
+  }
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  [data-reveal],
+  [data-rise] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+@media print {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}
