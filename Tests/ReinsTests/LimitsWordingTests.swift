@@ -76,6 +76,48 @@ struct LimitsWordingTests {
         #expect(LimitsWording.visible([five, idle], showInactive: true).count == 2)
     }
 
+    @Test("the page lists every shown window CLI by CLI, and one entry for a CLI without a window to show")
+    func pageEntries() {
+        let claude = measured(.claude, at: -2 * 86_400, [
+            window("weekly_all", minutes: 10080, used: 8, resets: 2 * 86_400),
+            window("weekly_scoped:Fable", minutes: 10080, scope: "Fable", used: 0, resets: 2 * 86_400, active: false),
+        ])
+        let codex = measured(.codex, at: -240, [window("primary", used: 23, resets: 3 * Self.hour), window("secondary", minutes: 10080, used: 61, resets: 6 * 86_400)])
+        let gemini = CLILimits(cli: .gemini, state: .notMeasurable)
+        let results = [claude, codex, gemini]
+        let entries = LimitsWording.entries(results, showInactive: false)
+        #expect(entries.map(\.id) == ["claude:weekly_all", "codex:primary", "codex:secondary", "gemini:state"])
+        #expect(LimitsWording.entries(results, showInactive: true).count == 5)
+        // Only inactive windows and none shown: the CLI is one entry, which says no window applies.
+        let idle = measured(.claude, at: 0, [window("weekly_scoped:Fable", minutes: 10080, scope: "Fable", used: 0, resets: 86_400, active: false)])
+        #expect(LimitsWording.entries([idle], showInactive: false).map(\.id) == ["claude:state"])
+        #expect(LimitsWording.entryNote(idle).title == "No current window")
+        #expect(LimitsWording.entryNote(gemini).title == "Not measurable")
+    }
+
+    @Test("the page first selects the window with the least left across CLIs, never a passed one, else the first entry")
+    func firstSelection() {
+        let claude = measured(.claude, at: -60, [window("weekly_all", minutes: 10080, used: 8, resets: 86_400)])
+        let codex = measured(.codex, at: -60, [window("primary", used: 23, resets: 3 * Self.hour), window("secondary", minutes: 10080, used: 61, resets: 86_400)])
+        var results = [claude, codex, CLILimits(cli: .gemini, state: .notMeasurable)]
+        var entries = LimitsWording.entries(results, showInactive: false)
+        #expect(LimitsWording.firstSelection(results, entries: entries, now: Self.now) == "codex:secondary")
+        let passed = measured(.codex, at: -5 * Self.hour, [window("primary", used: 99, resets: -60)])
+        results = [CLILimits(cli: .claude, state: .notRecorded), passed]
+        entries = LimitsWording.entries(results, showInactive: false)
+        #expect(LimitsWording.firstSelection(results, entries: entries, now: Self.now) == "claude:state")
+    }
+
+    @Test("the facts: time to the reset until it passes, and the reset's clock")
+    func facts() {
+        let soon = window(used: 23, resets: 3 * Self.hour + 12 * 60)
+        #expect(LimitsWording.resetsIn(soon, now: Self.now) == "3 h 12 min")
+        #expect(LimitsWording.resetsAt(soon, now: Self.now, calendar: Self.calendar) == "21:12")
+        let passed = window(used: 88, resets: -26 * 60)
+        #expect(LimitsWording.resetsIn(passed, now: Self.now) == nil)
+        #expect(LimitsWording.resetsAt(passed, now: Self.now, calendar: Self.calendar) == "17:34")
+    }
+
     @Test("a reading is stale after six hours, and its age reads in minutes, hours, then days")
     func readingAge() {
         #expect(!LimitsWording.isStale(at: Self.now.addingTimeInterval(-6 * Self.hour), now: Self.now))

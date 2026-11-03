@@ -2,16 +2,16 @@ import ReinsCore
 import SwiftUI
 
 /// The Limits block above the sidebar footer, on every tab: one tile per CLI with the share left of its tightest window.
-/// Clicking it (or `⌘L`) opens the detail beside the sidebar. Reads run while the window is active (launch, each time it
-/// becomes active, then every minute).
+/// Clicking it (or `⌘L`) opens the Limits page in the content area. Reads run while the window is active (launch, each time
+/// it becomes active, then every minute).
 struct LimitsSidebarBlock: View {
     @Environment(LimitsModel.self) private var model
+    @Environment(ShellModel.self) private var shell
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        @Bindable var model = model
         TimelineView(.everyMinute) { context in
-            Button { model.isDetailOpen.toggle() } label: {
+            Button { shell.openLimits() } label: {
                 VStack(alignment: .leading, spacing: Space.s6) {
                     HStack(spacing: Space.s6) {
                         ReinsIcon(.limits)
@@ -32,7 +32,7 @@ struct LimitsSidebarBlock: View {
             .reinsFocusable(cornerRadius: Metrics.controlRadius)
             .accessibilityLabel("Limits")
             .accessibilityHint("Shows every usage limit window")
-            .popover(isPresented: $model.isDetailOpen, arrowEdge: .trailing) { LimitsDetail() }
+            .accessibilityAddTraits(shell.isLimitsOpen ? .isSelected : [])
         }
         .task(id: scenePhase == .active) {
             guard scenePhase == .active else { return }

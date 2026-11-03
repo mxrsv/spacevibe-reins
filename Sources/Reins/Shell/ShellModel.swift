@@ -10,6 +10,9 @@ final class ShellModel {
     let appearance: AppearanceStore
 
     var activeID: String
+    /// The Limits page shows in the content area instead of the active tab (spec, Interface: Limits). It has no sidebar
+    /// entry: the sidebar block and `⌘L` open it, choosing a tab closes it.
+    var isLimitsOpen = false
     var isPaletteOpen = false
     var paletteQuery = ""
     /// A short line at the bottom of the sidebar ("Counting usage 3/9"). Nil hides it.
@@ -24,9 +27,20 @@ final class ShellModel {
 
     var activeTab: any ReinsTab { tabs.first { $0.id == activeID } ?? tabs[0] }
 
+    /// The top bar's title: the active tab's, or the Limits page's while it shows.
+    var title: String { isLimitsOpen ? LimitsPage.title : activeTab.title }
+    /// The hint bar's middle part, likewise.
+    var hints: [KeyHint] { isLimitsOpen ? LimitsPage.hints : activeTab.hints }
+
     func select(_ id: String) {
         guard tabs.contains(where: { $0.id == id }) else { return }
         activeID = id
+        isLimitsOpen = false
+        isPaletteOpen = false
+    }
+
+    func openLimits() {
+        isLimitsOpen = true
         isPaletteOpen = false
     }
 

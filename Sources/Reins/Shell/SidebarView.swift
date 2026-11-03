@@ -11,7 +11,7 @@ struct SidebarView: View {
                 ForEach(shell.tabs, id: \.id) { tab in
                     SidebarItem(
                         title: tab.title, icon: tab.icon, count: tab.badge?.value, alert: tab.badge?.alert ?? false,
-                        spokenCount: tab.badge?.spoken, isActive: tab.id == shell.activeID
+                        spokenCount: tab.badge?.spoken, isActive: tab.id == shell.activeID && !shell.isLimitsOpen
                     ) { shell.select(tab.id) }
                 }
             }

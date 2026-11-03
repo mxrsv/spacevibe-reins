@@ -32,7 +32,7 @@ struct ReinsApp: App {
         .windowBackgroundDragBehavior(.enabled)
         .defaultSize(width: 1180, height: 760)
         .commands {
-            ShellCommands(shell: shell, limits: env.limits)
+            ShellCommands(shell: shell)
             // The standard About panel, with the licences the app must show (Credits).
             CommandGroup(replacing: .appInfo) {
                 Button("About Reins") { Credits.showAboutPanel() }

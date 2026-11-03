@@ -142,7 +142,7 @@ struct ComponentGalleryContent: View {
                     Spacer(minLength: 0)
                 }
             }
-            section("Limits: CLI card, window tiles (lead, normal, warn 20%, danger 5%, unknown), note tile, sidebar tiles") {
+            section("Limits: share cells (normal, low 20%, out 5%, not known), the figure in each tone, fact tiles, sidebar tiles") {
                 LimitsSpecimens()
             }
             section("Banner") {
@@ -395,45 +395,50 @@ private struct RulerSpecimens: View {
     }
 }
 
-/// The Limits blocks in every state, on the page well: the lead tile in each tone, a plain tile, one whose reset has passed,
-/// a note tile, and the sidebar's tiles.
+/// The Limits page's parts in every state, on the page well: share cells in a list card, the figure in each tone, the
+/// fact tiles inside a card, and the sidebar's tiles.
 private struct LimitsSpecimens: View {
     var body: some View {
-        HStack(alignment: .top, spacing: Space.s16) {
-            VStack(spacing: Space.s16) {
-                LimitCard(.claude, title: "Claude Code", plan: nil) {
-                    Text("read 4 min ago").reinsText(.caption, tone: .secondary)
-                } trailing: {
-                    ReinsIcon(.info)
-                } content: {
-                    LimitTile(cli: .claude, title: "Weekly", detail: "Resets in 2 d 22 h \u{00B7} Fri 16:00", reading: .share(left: 92, tone: .normal), isLead: true)
-                    LimitTile(cli: .claude, title: "Weekly \u{00B7} Fable", detail: "Resets in 2 d 22 h \u{00B7} Fri 16:00", tags: [LimitTileTag(text: "not in use")], reading: .share(left: 100, tone: .normal))
-                }
-                LimitCard(.codex, title: "Codex", plan: "Plus") {
-                    Tag("read 5 h ago", tone: .warn, icon: .clock)
-                } trailing: {
-                    ReinsIcon(.info)
-                } content: {
-                    LimitTile(cli: .codex, title: "Weekly", detail: "Resets in 1 d 3 h \u{00B7} Wed 21:00", reading: .share(left: 18, tone: .low), isLead: true)
-                    LimitTile(cli: .codex, title: "5-hour", detail: "Reset at 17:34 \u{00B7} no newer reading", tags: [LimitTileTag(text: "reset passed", tone: .warn, icon: .clock)], reading: .unknown)
-                }
+        HStack(alignment: .top, spacing: Rhythm.cards) {
+            GroupedList {
+                CardHeader("Windows", count: 4)
+                SectionRow("Codex")
+                Row(selected: true, onActivate: {}) { RowText("Weekly", subtitle: "Resets in 1 d 3 h \u{00B7} Wed 21:00") }
+                    .cells { LimitShareCell(share: 0.04, text: "4%", fill: Palette.danger, tone: .danger) }
+                Row(onActivate: {}) { RowText("5-hour", subtitle: "Reset at 17:34 \u{00B7} no newer reading") }
+                    .cells { LimitShareCell(share: nil, text: "\u{2014}", fill: Palette.codex) }
+                SectionRow("Claude Code")
+                Row(onActivate: {}) { RowText("Weekly", subtitle: "Resets in 2 d 22 h \u{00B7} Fri 16:00") }
+                    .cells { LimitShareCell(share: 0.18, text: "18%", fill: Palette.warn, tone: .warn) }
+                Row(onActivate: {}) { RowText("Weekly \u{00B7} Fable", subtitle: "Resets in 2 d 22 h \u{00B7} Fri 16:00") { Tag("not in use") } }
+                    .cells { LimitShareCell(share: 0.92, text: "92%", fill: Palette.claude) }
+                SectionRow("Gemini CLI")
+                Row(onActivate: {}) { RowText("Not measurable") }
+                    .cells { LimitShareCell(share: nil, text: "\u{2014}", fill: Palette.textSecondary) }
             }
-            VStack(spacing: Space.s16) {
-                LimitCard(.codex, title: "Codex", plan: "Pro") {
-                    EmptyView()
-                } trailing: {
-                    EmptyView()
-                } content: {
-                    LimitTile(cli: .codex, title: "Weekly", detail: "Resets in 1 d 3 h \u{00B7} Wed 21:00", reading: .share(left: 4, tone: .out), isLead: true)
-                    LimitTile(cli: .codex, title: "5-hour", detail: "Resets in 3 h 12 min \u{00B7} 21:12", reading: .share(left: 77, tone: .normal))
-                }
-                LimitCard(.gemini, title: "Gemini CLI") {
-                    EmptyView()
-                } trailing: {
-                    EmptyView()
-                } content: {
-                    LimitNoteTile(title: "Not measurable", text: "Gemini CLI keeps no usage limit on disk, and Reins does not go online for it.", isWarn: true)
-                    LimitNoteTile(title: "No reading yet", text: "Claude Code has not fetched usage on this Mac.", action: ("Copy /usage", .copy, {}))
+            VStack(alignment: .leading, spacing: Rhythm.cards) {
+                GroupedList {
+                    CardHeader("Weekly", detail: "Codex \u{00B7} Plus")
+                    VStack(alignment: .leading, spacing: Space.s16) {
+                        HStack(spacing: Rhythm.cards) {
+                            LimitFigure(left: 92)
+                            LimitFigure(left: 18, tone: .low)
+                            LimitFigure(left: 4, tone: .out)
+                            LimitFigure(left: nil)
+                        }
+                        Ruler(share: 0.04, fill: Palette.danger)
+                        HStack(alignment: .top, spacing: Rhythm.tiles) {
+                            FactTile("Resets in", value: "1 d 3 h")
+                            FactTile("Reset at", value: "17:34", note: "no newer reading")
+                            FactTile("Reading", value: "read 2 days ago", tone: .warn, note: "From Claude Code's own cache") {
+                                Button {} label: { HStack(spacing: Space.s6) { ReinsIcon(.copy); Text("Copy /usage") } }.buttonStyle(.reins(.normal))
+                            }
+                        }
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.horizontal, Metrics.rowHorizontalPadding)
+                    .padding(.bottom, Space.s8)
+                    .groupedListPart(.plain)
                 }
                 VStack(spacing: Space.s6) {
                     LimitSidebarTile(cli: .claude, name: "Claude Code", value: "92% left", fraction: 0.92)
@@ -446,7 +451,5 @@ private struct LimitsSpecimens: View {
                 .background(Palette.well)
             }
         }
-        .padding(Metrics.pagePadding)
-        .background(Palette.well)
     }
 }

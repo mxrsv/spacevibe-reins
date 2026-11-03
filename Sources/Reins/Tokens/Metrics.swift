@@ -98,16 +98,11 @@ enum Metrics {
 
     static let emptyStateMessageWidth: CGFloat = 360
 
-    /// Limits: a window tile's icon square, and the CLI mark beside a card title.
-    static let limitTileIconSize: CGFloat = 32
+    /// Limits: the CLI mark (40, or 24 in a sidebar tile).
     static let cliMarkSize: CGFloat = 40
     static let cliMarkSmallSize: CGFloat = 24
     /// The glyph's share of its mark square.
     static let cliMarkGlyphFraction: CGFloat = 0.6
-    /// The detail beside the sidebar: two CLI cards side by side, Gemini CLI under them.
-    static let limitsDetailWidth: CGFloat = 880
-    /// The info popover on a CLI card.
-    static let limitSourceWidth: CGFloat = 320
 
     /// Confirmation cards (Stop, a rule write).
     static let dialogWidth: CGFloat = 420
