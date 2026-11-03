@@ -6,6 +6,9 @@
 	<string>en</string>
 	<key>CFBundleExecutable</key>
 	<string>Reins</string>
+	<!-- Built by scripts/build-app.sh from Resources/AppIcon.svg through scripts/build-icon.swift. -->
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<!-- Load-bearing. Together with the signing team identifier this is what TCC keys folder
 	     consent (Documents, Desktop) on, so changing it costs the user a re-authorisation. -->
 	<key>CFBundleIdentifier</key>
@@ -16,14 +19,28 @@
 	<string>Reins</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<!-- Both change on every release (AGENTS.md B9): the short version is what people see, the build number is what
+	     Sparkle compares, so it must grow by at least one each time. scripts/release.sh refuses a reused one. -->
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.developer-tools</string>
 	<!-- Must match `platforms: [.macOS(.v15)]` in Package.swift. A bundle whose minimum is
 	     above the running system fails to launch with LaunchServices error -10825. -->
 	<key>LSMinimumSystemVersion</key>
 	<string>15.0</string>
+	<!-- Shown in the macOS consent prompt the first time a project under one of these folders is read.
+	     The app is not sandboxed; a denied folder reads as "not readable", never as empty. -->
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>Reins reads the .claude and .codex folders of projects kept here to list their skills, hooks and permissions.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Reins reads the .claude and .codex folders of projects kept here to list their skills, hooks and permissions.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>Reins reads the .claude and .codex folders of projects kept here to list their skills, hooks and permissions.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2026 SpaceVibe</string>
 	<!-- Updates. scripts/build-app.sh adds SUFeedURL when REINS_UPDATE_FEED_URL is set, so a build without it makes
 	     no request. Checks run without asking; installing always takes a click. The private half of this key is in
 	     the owner's login Keychain under the Sparkle account dev.spacevibe.reins: never regenerate it (AGENTS.md B8). -->
