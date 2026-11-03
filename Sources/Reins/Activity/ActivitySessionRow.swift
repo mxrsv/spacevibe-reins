@@ -45,7 +45,7 @@ struct ActivitySessionRow: View {
                     .accessibilityLabel("no cost estimate")
             }
         }
-        .font(ReinsFont.small)
+        .font(ReinsType.number.font)
         .frame(width: 58, alignment: .trailing)
     }
 }

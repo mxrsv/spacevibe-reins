@@ -26,6 +26,9 @@ import SwiftUI
 enum Palette {
     // Surfaces
     static let background = Color(light: 0xF8FAFE, dark: 0x121721)
+    /// The content area behind cards: one step darker than a card in light, the background itself in dark, so cards read
+    /// as blocks. Reuses existing values (light `surfaceRaised`, dark `background`).
+    static let well = Color(light: 0xF0F4FA, dark: 0x121721)
     static let sidebar = Color(light: 0xE7EDF8, dark: 0x090E1A)
     static let surface = Color(light: 0xFFFFFF, dark: 0x1B212B)
     static let surfaceRaised = Color(light: 0xF0F4FA, dark: 0x242A36)

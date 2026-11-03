@@ -18,7 +18,7 @@ Accepted by the owner on 2026-11-03 ("ok chốt"): all of mock v2 including the 
 - **Sizes 12, 14 and 16 only**, each with a line box on the 4 pt grid: 12/16, 14/20, 16/24. The single exception is `figure` 24/32, used for at most one leading number per Tokens card.
 - **Weights 400, 500 and 600.** Hierarchy inside a size comes from weight and colour, not size. A selected segment may turn 600 only if its width is reserved by a hidden 600 copy, so the control never changes width.
 - **Tracking by size:** 12 = 0, 14 = −0.006 em, 16 = −0.011 em, 24 = −0.01 em.
-- **Digits are tabular everywhere.** Machine strings (commands, paths, config keys, rule patterns) stay Inter and switch on the `ss02` and `zero` features (slashed zero, distinct l · I · 1); prose never does.
+- **Digits are tabular where numbers line up** (runs, cost, counts: the `number` and `count` roles), not in prose: Inter's `tnum` also gives the hyphen a digit's width (found in T1, 2026-11-03). Machine strings (commands, paths, config keys, rule patterns) stay Inter and switch on the `ss02` and `zero` features (slashed zero, distinct l · I · 1); prose never does.
 
 | Role | Size / box | Weight | Default colour | Used for |
 | --- | --- | --- | --- | --- |
@@ -31,6 +31,8 @@ Accepted by the owner on 2026-11-03 ("ok chốt"): all of mock v2 including the 
 | `title` | 16 / 24 | 600 | `text` | page title, card titles (palette input uses 400) |
 | `code` | 12 / 16 | 400 | `textTertiary` | commands, paths, keys on a second line |
 | `codeTitle` | 14 / 20 | 500 | `text` | row names that are machine strings |
+| `number` | 14 / 20 | 400 (600 for a zero) | `text` | runs and cost in a column, tabular digits |
+| `count` | 12 / 16 | 400 (600 for an alert) | `textTertiary` | counts beside a label, tabular digits |
 | `figure` | 24 / 32 | 600 | `text` | one leading number per Tokens card |
 
 ### Spacing, sizes, radii, colour

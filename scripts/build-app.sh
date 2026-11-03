@@ -61,6 +61,9 @@ else
   echo "    updates off: REINS_UPDATE_FEED_URL is not set"
 fi
 ditto "${BINARY_DIR}/Sparkle.framework" "${APP_BUNDLE}/Contents/Frameworks/Sparkle.framework"
+# Inter, the only typeface (OFL); InterFont registers it from here at launch.
+mkdir -p "${APP_BUNDLE}/Contents/Resources/Fonts"
+cp Resources/Fonts/InterVariable.woff2 Resources/Fonts/OFL.txt "${APP_BUNDLE}/Contents/Resources/Fonts/"
 printf 'APPL????' > "${APP_BUNDLE}/Contents/PkgInfo"
 # The app icon, rendered from the mark on every build so the artwork has one source. Resources and frameworks are
 # copied here, before codesign: anything added to a signed bundle invalidates the signature.
@@ -96,6 +99,9 @@ for component in \
 done
 codesign --force "${SIGN_ARGS[@]}" "${APP_BUNDLE}"
 codesign --verify --deep --strict --verbose=2 "${APP_BUNDLE}"
+
+echo "==> font"
+ls "${APP_BUNDLE}/Contents/Resources/Fonts"
 
 echo "==> designated requirement"
 codesign -d -r- "${APP_BUNDLE}" 2>&1 | sed -n '/designated/,$p'

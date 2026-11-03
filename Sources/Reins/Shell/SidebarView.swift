@@ -60,7 +60,7 @@ private struct SidebarItem: View {
                 Spacer(minLength: 0)
                 if let badge {
                     Text("\(badge.value)")
-                        .font(badge.alert ? ReinsFont.smallStrong : ReinsFont.small)
+                        .font(badge.alert ? ReinsType.countStrong.font : ReinsType.count.font)
                         .foregroundStyle(badge.alert ? Palette.dangerInk : (isActive ? Palette.textSecondary : Palette.textTertiary))
                 }
             }

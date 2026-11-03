@@ -47,7 +47,7 @@ struct SegmentedControl<Value: Hashable>: View {
             HStack(spacing: 5) {
                 Text(option.title)
                 if let count = option.count {
-                    Text("\(count)").font(ReinsFont.small).foregroundStyle(Palette.textTertiary)
+                    Text("\(count)").font(ReinsType.count.font).foregroundStyle(Palette.textTertiary)
                 }
             }
             .font(isOn ? ReinsFont.bodyStrong : ReinsFont.body)

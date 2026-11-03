@@ -57,7 +57,7 @@ struct UsageCell: View {
             HStack(spacing: 10) {
                 UsageBar(fraction: UsageCellModel.barFraction(runs: runs, max: max), fill: cli.fill)
                 Text(runs.formatted(.number.locale(Locale(identifier: "en_US"))))
-                    .font(runs == 0 ? ReinsFont.bodyStrong : ReinsFont.body)
+                    .font(runs == 0 ? ReinsType.numberStrong.font : ReinsType.number.font)
                     .foregroundStyle(runs == 0 ? Palette.dangerInk : Palette.text)
                     .frame(width: Metrics.usageNumberWidth, alignment: .trailing)
             }

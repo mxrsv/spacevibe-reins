@@ -19,7 +19,7 @@ struct FilterChip: View {
         Button(action: action) {
             HStack(spacing: 5) {
                 Text(title)
-                if let count { Text("\(count)").font(ReinsFont.small).foregroundStyle(Palette.textTertiary) }
+                if let count { Text("\(count)").font(ReinsType.count.font).foregroundStyle(Palette.textTertiary) }
             }
             .font(ReinsFont.body)
             .foregroundStyle(isOn ? Palette.text : Palette.textSecondary)
