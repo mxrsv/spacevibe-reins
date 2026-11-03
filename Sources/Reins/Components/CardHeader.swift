@@ -17,8 +17,11 @@ struct CardHeader<Lead: View, Columns: View>: View {
                 .overlay { lead.fixedSize() }
             HStack(alignment: .firstTextBaseline, spacing: Space.s8) {
                 Text(title).reinsText(.title, tone: .primary).lineLimit(1)
-                if let count { Count(count) }
-                if let detail { Text(detail).reinsText(.caption, tone: .tertiary).lineLimit(1) }
+                // "3 sessions" reads as one unit.
+                HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
+                    if let count { Count(count) }
+                    if let detail { Text(detail).reinsText(.caption, tone: .tertiary).lineLimit(1) }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .combine)

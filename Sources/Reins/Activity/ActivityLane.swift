@@ -1,7 +1,8 @@
 import ReinsCore
 import SwiftUI
 
-/// One CLI: its live sessions, its failed commands, and what cannot be measured for it.
+/// One CLI: a card of its live sessions and a card of its failed commands. What cannot be measured is one region under
+/// both lanes (`ActivityScreen`), so the two lanes end on the same line.
 struct ActivityLane: View {
     let cli: InventoryCLI
     let report: ActivityReport
@@ -12,23 +13,23 @@ struct ActivityLane: View {
 
     @State private var failureLimit = ActivityRows.failurePage
 
-    private static let costLimit = "Cost is estimated from logged tokens at API prices (API-equivalent), not what you are billed."
-
     var body: some View {
         let sessions = ActivityRows.sessions(report, cli: cli)
         let failures = ActivityRows.failures(report, cli: cli)
-        VStack(alignment: .leading, spacing: 0) {
-            GroupLabel(cli.label, count: sessions.isEmpty ? nil : sessions.count, detail: sessions.isEmpty ? nil : (sessions.count == 1 ? "session" : "sessions")) {
-                CLIDot(cli, decorative: true)
-            }
+        VStack(alignment: .leading, spacing: Rhythm.laneCards) {
             GroupedList {
+                CardHeader(
+                    cli.label, count: sessions.isEmpty ? nil : sessions.count,
+                    detail: sessions.isEmpty ? nil : (sessions.count == 1 ? "session" : "sessions"),
+                    lead: { CLIDot(cli, decorative: true) }
+                )
                 if sessions.isEmpty { EmptyRow("No \(cli.label) session is running.") }
                 ForEach(sessions) { session in
                     ActivitySessionRow(session: session, elapsedMs: elapsedMs, revealActions: revealActions) { onStop(session) }
                 }
             }
-            GroupLabel("Failed commands", count: failures.isEmpty ? nil : failures.count)
             GroupedList {
+                CardHeader("Failed commands", count: failures.isEmpty ? nil : failures.count)
                 if failures.isEmpty { EmptyRow("No failed commands in the last \(ActivityModel.historyDays) days.") }
                 ForEach(failures.prefix(failureLimit), id: \.key) { failure in
                     ActivityFailureRow(failure: failure, now: now)
@@ -37,26 +38,9 @@ struct ActivityLane: View {
                     ShowMoreRow(reveal: next.reveal, hiddenAfter: next.hiddenAfter) { failureLimit += ActivityRows.failurePage }
                 }
             }
-            GroupLabel("Cannot be measured")
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(ActivityRows.limits(report, cli: cli), id: \.code) { limit in
-                    limitLine(limit.text)
-                }
-                limitLine(Self.costLimit)
-            }
-            .padding(.horizontal, 4)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(cli.label)
-    }
-
-    private func limitLine(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "info.circle").imageScale(.small).padding(.top, 1).accessibilityHidden(true)
-            Text(text).fixedSize(horizontal: false, vertical: true)
-        }
-        .font(ReinsFont.small)
-        .foregroundStyle(Palette.textTertiary)
     }
 }

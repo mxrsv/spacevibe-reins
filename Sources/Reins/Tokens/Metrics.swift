@@ -62,6 +62,18 @@ enum Metrics {
 
     static let emptyStateMessageWidth: CGFloat = 360
 
+    /// Confirmation cards (Stop, a rule write).
+    static let dialogWidth: CGFloat = 420
+    static let wideDialogWidth: CGFloat = 460
+    /// Overlays only (palette, confirmation): elevation everywhere else is a border.
+    static let overlayShadowRadius: CGFloat = 30
+    static let overlayShadowOffset: CGFloat = 24
+    static let toastShadowRadius: CGFloat = 14
+    static let toastShadowOffset: CGFloat = 8
+    /// File history: the CLI dots and the "edits · sessions · when" text.
+    static let fileCLIsWidth: CGFloat = 40
+    static let fileMetaWidth: CGFloat = 230
+
     static let paletteRowHeight: CGFloat = 36
     /// Estimated height of a section title in the palette list (8 pt above, 4 pt below, one line); it only sizes the list.
     static let paletteSectionHeight: CGFloat = 28

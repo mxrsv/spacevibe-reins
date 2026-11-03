@@ -4,6 +4,8 @@ import ReinsCore
 /// What the lanes and the badge show, derived from one report. Pure: the screen only lays these out.
 enum ActivityRows {
     static let failurePage = 8
+    /// Said once under both lanes: it is true for both CLIs.
+    static let costLimit = "Cost is estimated from logged tokens at API prices (API-equivalent), not what you are billed."
     static let filePage = 25
     /// A failure group counts toward the sidebar badge when its last failure is this recent.
     static let recentFailureMs = 24 * 60 * 60 * 1000.0
@@ -48,7 +50,7 @@ struct SessionWording {
 
     init(_ session: ActivitySession, elapsedMs: Double) {
         switch session.state {
-        case .running: (tagText, tagTone, tagIcon) = ("running", session.cli.tagTone, nil)
+        case .running: (tagText, tagTone, tagIcon) = ("running", .success, nil)
         case .waiting: (tagText, tagTone, tagIcon) = ("waiting for you", .warn, nil)
         case .unmeasurable: (tagText, tagTone, tagIcon) = ("not measurable", .neutral, "exclamationmark.triangle")
         case .idle, .ended: (tagText, tagTone, tagIcon) = ("idle", .neutral, nil)

@@ -58,6 +58,8 @@ struct ReinsType {
     static let paletteInput = ReinsType(size: 16, weight: .regular, lineBox: 24, trackingEm: -0.011)
     /// A command, path or key on a second line.
     static let code = ReinsType(size: 12, weight: .regular, lineBox: 16, code: true)
+    /// The muted folder before a file name in a path title.
+    static let codeBody = ReinsType(size: 14, weight: .regular, lineBox: 20, trackingEm: -0.006, code: true)
     /// A row name that is a machine string: a failed command, a rule pattern, a file name.
     static let codeTitle = ReinsType(size: 14, weight: .medium, lineBox: 20, trackingEm: -0.006, code: true)
     /// A number in a column: runs, cost.

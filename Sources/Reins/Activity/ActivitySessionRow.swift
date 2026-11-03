@@ -1,8 +1,8 @@
 import ReinsCore
 import SwiftUI
 
-/// One live session: title, project and current tool, the state tag (the engine's reason is its help text), the
-/// estimated cost, and Stop.
+/// One live session: title, project and current tool, the state tag in its fixed column (the engine's reason is its help
+/// text), the estimated cost, and Stop.
 struct ActivitySessionRow: View {
     let session: ActivitySession
     let elapsedMs: Double
@@ -16,36 +16,32 @@ struct ActivitySessionRow: View {
         let fallback = ActivityFormat.isFallbackTitle(session.title)
         Row(revealActions: revealActions) {
             ActivityLines(
-                title: Text(session.title).font(fallback ? ReinsFont.monoStrong : ReinsFont.bodyStrong).foregroundStyle(Palette.text),
-                lines: [wording.subtitle],
+                title: Text(session.title).reinsText(fallback ? .codeTitle : .rowTitle, tone: .primary),
+                lines: [ActivityLines.Line(wording.subtitle)],
                 help: session.title
             )
         }
         .lead { CLIDot(session.cli, decorative: true) }
         .cells {
-            HStack(spacing: Metrics.rowSpacing) {
+            StateCell {
                 Tag(wording.tagText, tone: wording.tagTone, systemImage: wording.tagIcon)
                     .help(wording.help)
                     .accessibilityHint(wording.help)
-                costCell
             }
+            costCell
         }
-        .actions { RowActionButton(title: "Stop", kind: .normal, action: onStop) }
+        .actions { RowActionButton(title: "Stop", systemImage: "stop", iconOnly: true, action: onStop) }
         .accessibilityLabel("\(session.cli.label), \(session.title), \(wording.tagText)")
     }
 
     @ViewBuilder
     private var costCell: some View {
-        Group {
-            if let cost = session.cost {
-                Text(ActivityFormat.cost(cost.usd)).foregroundStyle(Palette.text).help(Self.costHelp)
-            } else {
-                Text("\u{2014}").foregroundStyle(Palette.textTertiary)
-                    .help(session.costNote ?? "No cost estimate.")
-                    .accessibilityLabel("no cost estimate")
-            }
+        if let cost = session.cost {
+            NumberCell(text: ActivityFormat.cost(cost.usd)).help(Self.costHelp)
+        } else {
+            NumberCell(text: "\u{2014}", muted: true)
+                .help(session.costNote ?? "No cost estimate.")
+                .accessibilityLabel("no cost estimate")
         }
-        .font(ReinsType.number.font)
-        .frame(width: 58, alignment: .trailing)
     }
 }

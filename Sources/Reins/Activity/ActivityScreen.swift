@@ -27,24 +27,28 @@ struct ActivityScreen: View {
         if let report = model.report {
             let now = Date()
             let elapsedMs = model.readAt.map { max(0, now.timeIntervalSince($0) * 1000) } ?? 0
-            PageLayout(
-                tools: {
+            PageLayout {
+                VStack(alignment: .leading, spacing: 0) {
                     if let failure = model.failure {
                         Banner(.error, message: "The last read failed, so this may be out of date.", detail: failure, actionTitle: "Try again", action: model.retry)
+                            .padding(.bottom, Rhythm.cards)
                     }
-                },
-                content: {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack(alignment: .top, spacing: 20) {
-                            ForEach(InventoryCLI.allCases, id: \.rawValue) { cli in
-                                ActivityLane(cli: cli, report: report, now: now, elapsedMs: elapsedMs, revealActions: model.revealRowActions) { model.requestStop($0) }
-                            }
+                    HStack(alignment: .top, spacing: Rhythm.cards) {
+                        ForEach(InventoryCLI.allCases, id: \.rawValue) { cli in
+                            ActivityLane(cli: cli, report: report, now: now, elapsedMs: elapsedMs, revealActions: model.revealRowActions) { model.requestStop($0) }
                         }
-                        ActivityFileHistory(files: report.files, now: now)
                     }
-                    .modifier(ShotFit())
+                    NoteRegion(
+                        title: "Cannot be measured",
+                        columns: InventoryCLI.allCases.map { NoteRegion.Column(cli: $0, notes: ActivityRows.limits(report, cli: $0).map(\.text)) },
+                        shared: [ActivityRows.costLimit]
+                    )
+                    .padding(.top, Rhythm.cards)
+                    ActivityFileHistory(files: report.files, now: now)
+                        .padding(.top, Rhythm.regions)
                 }
-            )
+                .modifier(ShotFit())
+            }
         } else if let failure = model.failure {
             PageLayout {
                 EmptyState("Could not read the session logs.", message: failure, systemImage: "exclamationmark.triangle") {
@@ -67,7 +71,7 @@ private struct LoadingMark: View {
 
     var body: some View {
         if isShotRendering {
-            Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(Palette.textTertiary).accessibilityHidden(true)
+            Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(TextTone.tertiary.color).accessibilityHidden(true)
         } else {
             ProgressView().controlSize(.small)
         }

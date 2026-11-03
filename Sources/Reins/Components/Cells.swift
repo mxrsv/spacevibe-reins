@@ -23,6 +23,16 @@ struct StateCell<Content: View>: View {
     }
 }
 
+/// Any cell content right-aligned in a fixed width, to share a column with `NumberCell` (a repeat count under a cost).
+struct FixedCell<Content: View>: View {
+    var width: CGFloat = Metrics.costWidth
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        content.frame(width: width, alignment: .trailing)
+    }
+}
+
 /// An empty 28 pt action slot, so per-CLI actions keep their column when one CLI has nothing to act on.
 struct EmptyActionSlot: View {
     var body: some View {
