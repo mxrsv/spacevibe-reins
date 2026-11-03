@@ -54,7 +54,7 @@ enum CodexCellWording {
             let profile = codex.profiles.first { $0.name == name }
             let base = [CodexKey(key: "default_permissions", value: name)]
             if capability == .network {
-                let flags = (profile?.networkFlags ?? []).map { CodexKey(key: "permissions.\(name).network.\($0.key)", value: show($0.value)) }
+                let flags = (profile?.networkFlags ?? []).map { CodexKey(key: "permissions.\(name).network.\($0.key)", value: networkFlagText($0.value)) }
                 return CodexCellView(label: "set by profile", tone: .neutral, keys: base + flags, note: flags.isEmpty ? "The profile has no network flags." : nil)
             }
             return CodexCellView(label: "set by profile", tone: .neutral, keys: base + [CodexKey(key: "permissions.\(name).filesystem", value: "\(profile?.filesystemEntries ?? 0) entries")])
@@ -98,6 +98,16 @@ enum CodexCellWording {
             counts[level, default: 0] += 1
         }
         return order.map { "\(counts[$0] ?? 0) \($0)" }.joined(separator: ", ")
+    }
+
+    /// What a `[permissions.<name>.network]` flag shows. The reader keeps any string there, and a string can be a proxy URL
+    /// with a password or a token (AGENTS.md S-R3), so text is shown only when it reads as a mode word such as "limited".
+    static let hiddenFlagText = "text, not shown"
+
+    static func networkFlagText(_ value: JSONValue) -> String {
+        guard case .string(let text) = value else { return show(value) }
+        let isModeWord = (1...24).contains(text.count) && text.unicodeScalars.allSatisfy { ("a"..."z").contains($0) || $0 == "-" }
+        return isModeWord ? text : hiddenFlagText
     }
 
     static func show(_ value: JSONValue) -> String {
