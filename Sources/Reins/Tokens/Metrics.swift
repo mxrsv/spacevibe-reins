@@ -58,8 +58,8 @@ enum Metrics {
     static let usageNumberWidth: CGFloat = 52
     /// Fits "~$148.20" in `ReinsType.number`.
     static let costWidth: CGFloat = 72
-    /// Activity's state tag column; fits "not measurable" with its icon.
-    static let stateWidth: CGFloat = 120
+    /// Activity's state tag column; fits "not measurable" with its 16 pt icon (125 measured in Inter 12/500, v3 tag).
+    static let stateWidth: CGFloat = 128
     /// Loadout's trailing actions: one 28 pt slot per CLI and 4 pt between.
     static let loadoutActionsWidth: CGFloat = 60
     /// Rules' grid: the Claude Code column (segmented control plus a "mixed" tag) and the Codex column.

@@ -87,5 +87,5 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
 - `@Entry` needs SwiftUI's macro plugin, which the Command Line Tools lack; container and environment keys are written out.
 - Solar draws a few icons with overlapping half-opacity shapes (the Loadout `layers` glyph): the browser darkens the overlap,
   one light layer does not. Check a new glyph in the gallery's icon section before using it.
-- Fixed widths that hold text were measured in Inter at these sizes (usage number 52, cost 72, state 120, Rules' Claude
+- Fixed widths that hold text were measured in Inter at these sizes (usage number 52, cost 72, state 128 since the v3 tag icon, Rules' Claude
   Code column 280). Recheck them when a role's size or weight changes.

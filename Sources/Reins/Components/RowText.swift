@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The text block of a `Row`: a name with optional tags beside it, and muted lines below. The name is `rowTitle`, or
 /// `codeTitle` when it is a machine string (a command, a rule pattern); a second line is `caption`, or `code` for a
-/// command or path. Prose is never set as code.
+/// command or path. Prose is never set as code. The name's line keeps its 20 pt line box even beside a 24 pt tag, so a row
+/// with tags stays 48 high (the tag reaches 2 pt above and below the line).
 struct RowText<Tags: View>: View {
     let title: String
     var subtitle: String?
@@ -19,7 +20,7 @@ struct RowText<Tags: View>: View {
                     .truncationMode(.tail)
                 tags
             }
-            .frame(minHeight: ReinsType.rowTitle.lineBox)
+            .frame(height: ReinsType.rowTitle.lineBox)
             if let subtitle {
                 Text(subtitle)
                     .reinsText(codeSubtitle ? .code : .caption, tone: .tertiary)

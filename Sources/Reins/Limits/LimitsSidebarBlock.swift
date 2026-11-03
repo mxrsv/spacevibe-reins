@@ -21,7 +21,7 @@ struct LimitsSidebarBlock: View {
                         Chevron(.right)
                     }
                     .reinsText(.bodyStrong, tone: .primary)
-                    .padding(.horizontal, Space.s4)
+                    .padding(.horizontal, Metrics.sidebarItemPadding)
                     ForEach(LimitsCLI.allCases, id: \.self) { cli in
                         tile(cli, now: context.date)
                     }

@@ -30,7 +30,7 @@ struct SidebarView: View {
                 Spacer(minLength: 0)
                 ThemeToggle()
             }
-            .padding(.horizontal, Space.s4)
+            .padding(.horizontal, Metrics.sidebarItemPadding)
         }
         .sidebarSurface()
     }
