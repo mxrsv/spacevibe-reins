@@ -16,10 +16,10 @@ struct RulesToolbar: View {
 
     var body: some View {
         let options = Self.scopeOptions(projects: snapshot.projects)
-        HStack(spacing: 10) {
+        HStack(spacing: Rhythm.tools) {
             ScopePicker(
                 options: options, current: Self.currentScope(options: options, dir: snapshot.selection.dir),
-                minWidth: 130, onSelect: { model.selectProject($0.id) }
+                minWidth: Metrics.scopePickerMinWidth, onSelect: { model.selectProject($0.id) }
             )
             if snapshot.selection.dir != nil {
                 SegmentedControl(
@@ -28,16 +28,16 @@ struct RulesToolbar: View {
                     selection: Binding(get: { snapshot.selection.file }, set: { model.selectFile($0) })
                 )
             }
-            HStack(spacing: 6) {
-                Text(snapshot.fileLabel).font(ReinsFont.mono)
+            HStack(spacing: Space.s6) {
+                Text(snapshot.fileLabel).reinsText(.code, tone: .tertiary)
                 Text("\u{00B7}")
                 Text(snapshot.selection.dir == nil ? "Applies to every project" : "Adds to Global rules")
             }
-            .font(ReinsFont.small)
-            .foregroundStyle(Palette.textTertiary)
+            .reinsText(.caption, tone: .tertiary)
             .lineLimit(1)
             .truncationMode(.middle)
-            Spacer(minLength: 12)
+            .padding(.leading, Space.s8)
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

@@ -4,9 +4,8 @@ import Testing
 /// Screens compose base components; they never style themselves (spec `docs/specs/2026-11-03-reins-design-language.md`,
 /// "Component base", DL3). A restyle then means editing `Sources/Reins/Tokens` or `Sources/Reins/Components` only.
 ///
-/// This reads source text: every forbidden pattern is lexical. `allowed` is a ratchet holding today's count per file. The test
-/// fails when a count differs from it in either direction, so a new literal is caught and a removed one has to be written down.
-/// When the design-language plan finishes (T8), `allowed` is empty.
+/// This reads source text: every forbidden pattern is lexical. `allowed` was a ratchet while the screens moved onto components;
+/// it is now empty, so any literal in a screen folder fails. A count that differs from an entry in either direction fails too.
 @Suite("Style boundary: screens compose components")
 struct StyleBoundaryTests {
     /// Folders that are screens. `Gallery/` lays out specimens and is exempt; `TokenUsage/` joins when it exists.
@@ -25,10 +24,9 @@ struct StyleBoundaryTests {
         ("frame literal", #"\.frame\([^)]*?\b(width|height|minWidth|minHeight|maxWidth|maxHeight):\s*[1-9]"#),
     ]
 
-    /// Today's counts (2026-11-03, design-language plan T3; zero literals stopped counting in T5). Lower an entry when a file sheds literals; delete it at zero.
-    static let allowed: [String: Int] = [
-        "Rules/RulesToolbar.swift": 5,
-    ]
+    /// Empty since 2026-11-03 (design-language plan T6): no screen file may hold a style literal. A file that truly needs an
+    /// exception gets an entry here with a comment saying why, and a reviewer has to agree.
+    static let allowed: [String: Int] = [:]
 
     static var appSources: URL {
         URL(fileURLWithPath: #filePath)

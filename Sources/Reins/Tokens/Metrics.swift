@@ -106,19 +106,3 @@ enum Space {
     static let s24: CGFloat = 24
     static let s32: CGFloat = 32
 }
-
-/// The old font names, now Inter roles. Kept while views move to `.reinsText(_:tone:)` (design-language plan T4 to T8),
-/// then deleted. New code uses `ReinsType`.
-enum ReinsFont {
-    static var body: Font { ReinsType.body.font }
-    static var bodyStrong: Font { ReinsType.bodyStrong.font }
-    static var small: Font { ReinsType.caption.font }
-    static var smallStrong: Font { ReinsType.captionStrong.font }
-    static var tiny: Font { ReinsType.label.font }
-    static var title: Font { ReinsType.title.font }
-    static var palette: Font { ReinsType.paletteInput.font }
-    static var mono: Font { ReinsType.code.font }
-    static var monoStrong: Font { ReinsType.codeTitle.font }
-    static var kbd: Font { ReinsType.label.font }
-    static var emptyStateIcon: Font { ReinsType.symbolLarge.font }
-}
