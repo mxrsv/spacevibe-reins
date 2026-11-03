@@ -20,11 +20,11 @@ extension Mutate {
     private static func addHookLocked(
         roots: Roots, clis: [InventoryCLI], event: String, matcher: String?, command: String, timeout: Double?
     ) throws -> JournalEntry {
-        let command = MutateText.trim(command)
+        let command = ActivityText.trim(command)
         try need(!command.isEmpty, "Enter the command this hook runs.")
         try requireCLIs(clis)
         for cli in clis { try need(events(cli).contains(event), "\(label(cli)) has no \(event) event.") }
-        let matcher = matcher.map(MutateText.trim).flatMap { $0.isEmpty ? nil : $0 }
+        let matcher = matcher.map(ActivityText.trim).flatMap { $0.isEmpty ? nil : $0 }
         let hook = try HookEdit.hookValue(command: command, timeout: timeout)
 
         var ops: [JournalOp] = []

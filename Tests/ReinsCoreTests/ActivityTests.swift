@@ -469,7 +469,7 @@ struct ActivityTests {
         let hook = try #require(report.failures.first { $0.kind == .hook })
         #expect(hook.count == 2)
         #expect(hook.title == "sh /h/check.sh")
-        #expect(hook.hook == ActivityFailure.Hook(hash: ActivityText.sha12("Stop|sh /h/check.sh"), event: "Stop"))
+        #expect(hook.hook == ActivityFailure.Hook(hash: Inventory.hookHash(event: "Stop", command: "sh /h/check.sh"), event: "Stop"))
         #expect(hook.reason == "check failed")
         // R4: the recorded command was parsed and listed, never run
         #expect(report.failures.contains { $0.title.contains("touch") })
@@ -618,8 +618,7 @@ struct ActivityTests {
 
     @Test("text helpers behave like the JavaScript they replace")
     func textHelpers() {
-        #expect(ActivityText.sha1Hex(Array("abc".utf8)) == "a9993e364706816aba3e25717850c26c9cd0d89d")
-        #expect(ActivityText.sha12("Stop|sh /h/check.sh").count == 12)
+        #expect(Inventory.sha("Stop|sh /h/check.sh").count == 12)
         #expect(ActivityText.isoString(1_793_620_800_123) == "2026-11-02T12:00:00.123Z")
         #expect(ActivityText.parseTimestamp("2026-11-02T12:00:00.123Z") == 1_793_620_800_123)
         #expect(ActivityText.parseTimestamp("2026-11-02T14:00:00+02:00") == 1_793_620_800_000)

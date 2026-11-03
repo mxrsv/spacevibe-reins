@@ -201,7 +201,7 @@ enum ActivityFold {
     private static func recordOutcome(_ st: ActivityLogState, id: String, cmd: String, at: Double, exit: Int, output: String) {
         let command = normalizeCommand(cmd)
         if command.isEmpty { return }
-        let key = ActivityText.sha12(command)
+        let key = Inventory.sha(command)
         if exit == 0 {
             var list = st.passes[key] ?? []
             list.append(at)
@@ -544,7 +544,4 @@ enum ActivityFold {
     static func fold(_ st: ActivityLogState, _ line: Data) {
         if st.cli == .claude { foldClaude(st, line) } else { foldCodex(st, line) }
     }
-
-    /// Hook failures use the inventory hash: sha(event|command).
-    static func hookHash(event: String, command: String) -> String { ActivityText.sha12("\(event)|\(command)") }
 }

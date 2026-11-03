@@ -10,7 +10,7 @@ public enum Rules {
     /// `Tool` or `Tool(specifier)`; nil when the text is neither. The tool name is `[A-Za-z][A-Za-z0-9_.-]*`, and the
     /// specifier is everything between the first `(` and the final `)`.
     public static func parseRule(_ rule: String) -> ParsedRule? {
-        let scalars = Array(jsTrim(rule).unicodeScalars)
+        let scalars = Array(ActivityText.trim(rule).unicodeScalars)
         guard let first = scalars.first, isAsciiLetter(first) else { return nil }
         var i = 1
         while i < scalars.count, isAsciiLetter(scalars[i]) || isAsciiDigit(scalars[i]) || "_.-".unicodeScalars.contains(scalars[i]) { i += 1 }
@@ -18,12 +18,12 @@ public enum Rules {
         if i == scalars.count { return ParsedRule(tool: tool, specifier: nil) }
         guard scalars[i] == "(", scalars.last == ")", scalars.count - 1 > i else { return nil }
         let specifier = String(String.UnicodeScalarView(scalars[(i + 1)..<(scalars.count - 1)]))
-        return ParsedRule(tool: tool, specifier: jsTrim(specifier).isEmpty ? nil : specifier)
+        return ParsedRule(tool: tool, specifier: ActivityText.trim(specifier).isEmpty ? nil : specifier)
     }
 
     /// The rule text a caller may add: trimmed, one line, at most 1000 UTF-16 units, and a valid rule.
     static func checkedRule(_ rule: String) throws -> String {
-        let text = jsTrim(rule)
+        let text = ActivityText.trim(rule)
         guard !text.isEmpty else { throw ReinsError("Enter a rule such as Bash(npm test *).") }
         guard text.utf16.count <= maxRuleLength, !text.unicodeScalars.contains(where: { $0 == "\n" || $0 == "\r" }), parseRule(text) != nil else {
             throw ReinsError("That is not a valid rule. Use Tool or Tool(pattern) on one line.")
@@ -35,7 +35,7 @@ public enum Rules {
 
     /// A bare `Tool`, `Tool()` or `Tool(*)`: the rule covers every use of the tool.
     static func isWide(_ rule: ParsedRule) -> Bool {
-        rule.specifier == nil || jsTrim(rule.specifier ?? "") == "*"
+        rule.specifier == nil || ActivityText.trim(rule.specifier ?? "") == "*"
     }
 
     /// The specifier names a `.env` file: `.env` at the start or right after a `/` or `*`. Tested on the untrimmed specifier.
@@ -51,7 +51,7 @@ public enum Rules {
 
     /// A command that pushes or deploys: starts with a push or deploy prefix, or has the word `deploy` anywhere.
     static func looksLikePushOrDeploy(_ command: String) -> Bool {
-        let text = jsTrim(command)
+        let text = ActivityText.trim(command)
         return pushPattern.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
     }
 
@@ -71,24 +71,10 @@ public enum Rules {
 
     // MARK: JavaScript string trim
 
-    private static let jsSpace: Set<Unicode.Scalar> = {
-        var set: Set<Unicode.Scalar> = ["\u{09}", "\u{0A}", "\u{0B}", "\u{0C}", "\u{0D}", " ", "\u{A0}", "\u{1680}", "\u{2028}", "\u{2029}", "\u{202F}", "\u{205F}", "\u{3000}", "\u{FEFF}"]
-        for value in 0x2000...0x200A { set.insert(Unicode.Scalar(UInt32(value))!) }
-        return set
-    }()
-
-    /// `String.prototype.trim`.
-    static func jsTrim(_ text: String) -> String {
-        let scalars = Array(text.unicodeScalars)
-        guard let start = scalars.firstIndex(where: { !jsSpace.contains($0) }) else { return "" }
-        let end = scalars.lastIndex(where: { !jsSpace.contains($0) })!
-        return String(String.UnicodeScalarView(scalars[start...end]))
-    }
-
     /// `String.prototype.trimStart`.
     static func jsTrimStart(_ text: String) -> String {
         let scalars = text.unicodeScalars
-        guard let start = scalars.firstIndex(where: { !jsSpace.contains($0) }) else { return "" }
+        guard let start = scalars.firstIndex(where: { !ActivityText.isJSSpace($0) }) else { return "" }
         return String(scalars[start...])
     }
 

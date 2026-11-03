@@ -95,7 +95,7 @@ enum ActivityGroups {
                 add(st.cli, "\(st.cli.rawValue)|cmd|\(f.key)", base, id: f.id, at: f.at, exit: f.exit, reason: f.reason, session: entry.session, project: entry.project)
             }
             for h in st.hookFailures {
-                let hash = ActivityFold.hookHash(event: h.event, command: h.command)
+                let hash = Inventory.hookHash(event: h.event, command: h.command)
                 let base = Group(kind: .hook, cli: st.cli, key: hash, title: title(h.command), hook: ActivityFailure.Hook(hash: hash, event: h.event))
                 add(st.cli, "\(st.cli.rawValue)|hook|\(hash)", base, id: h.id, at: h.at, exit: h.exit, reason: h.reason, session: entry.session, project: entry.project)
             }

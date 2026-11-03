@@ -17,7 +17,7 @@ extension Mutate {
         roots: Roots, clis: [InventoryCLI], name: String, description: String, body: String
     ) throws -> JournalEntry {
         try validName(name)
-        try need(!MutateText.trim(description).isEmpty, "Say when the agent should use this skill.")
+        try need(!ActivityText.trim(description).isEmpty, "Say when the agent should use this skill.")
         try requireCLIs(clis)
         let text = MutateText.skillText(name: name, description: description, body: body)
         let ops = try createAll(roots, clis: clis) { cli in
@@ -43,7 +43,7 @@ extension Mutate {
         roots: Roots, clis: [InventoryCLI], name: String, description: String, instructions: String
     ) throws -> JournalEntry {
         try validName(name)
-        try need(!MutateText.trim(description).isEmpty, "Say when this agent should be used.")
+        try need(!ActivityText.trim(description).isEmpty, "Say when this agent should be used.")
         try requireCLIs(clis)
         let ops = try createAll(roots, clis: clis) { cli in
             try writeAgentPlan(roots, cli: cli, name: name, description: description, instructions: instructions)

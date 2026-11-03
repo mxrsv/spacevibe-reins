@@ -370,9 +370,9 @@ struct MutateTests {
 
     @Test("JavaScript trim and whitespace collapse")
     func jsText() {
-        #expect(MutateText.trim("\u{00A0} a b \u{FEFF}\n") == "a b")
+        #expect(ActivityText.trim("\u{00A0} a b \u{FEFF}\n") == "a b")
         #expect(MutateText.yamlValue("  one\t\ttwo \n three\u{2003}") == "\"one two three\"")
-        #expect(MutateText.trim(" \u{200B}x") == "\u{200B}x")
+        #expect(ActivityText.trim(" \u{200B}x") == "\u{200B}x")
     }
 
     // MARK: Hook undo
