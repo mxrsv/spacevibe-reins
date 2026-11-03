@@ -5,7 +5,7 @@ Parent plan: [the SwiftUI plan](2026-11-02-reins-swiftui.md), whose packaging an
 Mock: `~/scratch/spacevibe-reins/limits/index.html`, outside git, synthetic data, typical and edge data in light and dark;
 its direction B is the target. Placement B, chosen by the owner on 2026-11-03: a sidebar block on every tab, detail in a
 popover.
-Status: engine (L1), placement B (L2), model and wording (L3) and the view (L4) done; L5 open (`distill`/`clarify` and the owner's eye approval). Started 2026-11-03.
+Status: engine (L1), placement B (L2), model and wording (L3) done; the L4 popover view (commit `5799e3f`) is superseded by the Limits page of layout H and is redone in task V6 of the [design language v3 plan](2026-11-04-reins-design-language-v3.md); L5 (shots, `distill`/`clarify`, eye approval) folds into that plan's V7. Started 2026-11-03.
 
 ## Approach
 
@@ -73,7 +73,7 @@ lines record it. Consequences for the tasks below:
   marker (reading older than 6 hours).
 - Tests in `LimitsWordingTests` against fixed dates. AC10 wording half.
 
-### L4. View (done 2026-11-03)
+### L4. View (done 2026-11-03 as a popover; superseded 2026-11-04, see V6 of the v3 plan)
 
 - Built only from `Sources/Reins/Components` and `ReinsType` roles; no style literal in the screen folder
   (`StyleBoundaryTests`, which must see `Sources/Reins/Limits/`). Sidebar block, detail popover (card per CLI, tile per
@@ -109,6 +109,6 @@ lines record it. Consequences for the tasks below:
   the detail and the detail with inactive windows, light and dark. The fixture section is opt-in so the golden home is unchanged.
 - Verification 2026-11-03: `scripts/test.sh` → `Test run with 368 tests in 40 suites passed`; the six shots per variant were
   looked at.
-- Remaining: L5 (`impeccable distill` and `clarify` on the surface, owner eye approval of the shots against the mock).
+- Remaining: V6 and V7 of the v3 plan (the Limits page, shots, owner eye approval).
 
 `/goal` Build Reins Limits per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-03-reins-limits.md tasks L3 to L5 in placement B (recorded under L2), so that AC10 holds in scripts/test.sh and the surface matches ~/scratch/spacevibe-reins/limits/ in light and dark shots; stop and report if the shell owner has not agreed to the sidebar and component edits, and never send a request, read a credential, start a CLI, push or release.
