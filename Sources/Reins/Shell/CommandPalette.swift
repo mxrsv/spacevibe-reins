@@ -19,12 +19,9 @@ struct CommandPalette: View {
 
         GeometryReader { proxy in
             ZStack(alignment: .top) {
-                Palette.overlay
-                    .contentShape(Rectangle())
-                    .onTapGesture { shell.closePalette() }
-                    .accessibilityHidden(true)
+                Scrim { shell.closePalette() }
                 panel(sections: sections, flat: flat, current: current, query: $shell.paletteQuery)
-                    .padding(.top, proxy.size.height * 0.14)
+                    .padding(.top, proxy.size.height * Metrics.paletteTopFraction)
             }
         }
         .onAppear {
@@ -39,22 +36,13 @@ struct CommandPalette: View {
     }
 
     private func panel(sections: [PaletteSection], flat: [PaletteEntry], current: String?, query: Binding<String>) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Metrics.paletteRadius, style: .continuous)
-        return VStack(spacing: 0) {
+        PaletteCard {
             field(flat: flat, current: current, query: query)
             Hairline()
             results(sections: sections, flat: flat, current: current)
             Hairline()
             footer
         }
-        .frame(width: 600)
-        .background(shape.fill(Palette.surface))
-        .clipShape(shape)
-        .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
-        .shadow(color: Palette.overlayShadow, radius: 30, y: 24)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Command palette")
-        .accessibilityAddTraits(.isModal)
     }
 
     private func field(flat: [PaletteEntry], current: String?, query: Binding<String>) -> some View {
@@ -63,12 +51,11 @@ struct CommandPalette: View {
             if isShotRendering {
                 // ImageRenderer cannot draw a TextField; draw what it would show.
                 Text(query.wrappedValue.isEmpty ? placeholder : query.wrappedValue)
-                    .foregroundStyle(query.wrappedValue.isEmpty ? Palette.textTertiary : Palette.text)
+                    .foregroundStyle((query.wrappedValue.isEmpty ? TextTone.tertiary : TextTone.primary).color)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                TextField("", text: query, prompt: Text(placeholder).foregroundStyle(Palette.textTertiary))
+                TextField("", text: query, prompt: Text(placeholder).foregroundStyle(TextTone.tertiary.color))
                     .textFieldStyle(.plain)
-                    .foregroundStyle(Palette.text)
                     .focused($fieldFocused)
                     .onSubmit { if let entry = flat.first(where: { $0.id == current }) { run(entry) } }
                     .onKeyPress(.downArrow) { move(1, in: flat, from: current) }
@@ -79,9 +66,7 @@ struct CommandPalette: View {
                     }
             }
         }
-        .font(ReinsFont.palette)
-        .padding(.horizontal, 18)
-        .frame(height: 52)
+        .paletteField()
         .accessibilityLabel("Search commands")
         .accessibilityValue(query.wrappedValue)
         .accessibilityHint("\(flat.count) results. Use up and down arrows, then Return.")
@@ -89,34 +74,22 @@ struct CommandPalette: View {
     }
 
     private func results(sections: [PaletteSection], flat: [PaletteEntry], current: String?) -> some View {
-        let height = min(360, CGFloat(flat.count) * Metrics.paletteRowHeight + CGFloat(sections.count) * Metrics.paletteSectionHeight + 12)
+        let height = min(Metrics.paletteListMaxHeight, CGFloat(flat.count) * Metrics.paletteRowHeight + CGFloat(sections.count) * Metrics.paletteSectionHeight + Space.s12)
         return ScrollViewReader { proxy in
             ReinsScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    if flat.isEmpty {
-                        Text("No matches")
-                            .font(ReinsFont.body)
-                            .foregroundStyle(Palette.textTertiary)
-                            .padding(.horizontal, 10)
-                            .frame(height: Metrics.paletteRowHeight)
-                    }
+                    if flat.isEmpty { PaletteEmptyRow(text: "No matches") }
                     ForEach(sections) { section in
-                        Text(section.title)
-                            .font(ReinsFont.tiny)
-                            .foregroundStyle(Palette.textTertiary)
-                            .padding(.horizontal, 10)
-                            .padding(.top, 8)
-                            .padding(.bottom, 4)
-                            .accessibilityAddTraits(.isHeader)
+                        PaletteSectionTitle(title: section.title)
                         ForEach(section.entries) { entry in
                             PaletteRow(entry: entry, isHighlighted: entry.id == current) { run(entry) }
                                 .id(entry.id)
                         }
                     }
                 }
-                .padding(6)
+                .paletteList()
             }
-            .frame(height: max(height, 48))
+            .frame(height: max(height, Metrics.rowMinHeight))
             .onChange(of: current) { _, id in
                 if let id { proxy.scrollTo(id) }
             }
@@ -124,23 +97,10 @@ struct CommandPalette: View {
     }
 
     private var footer: some View {
-        HStack(spacing: 16) {
-            hint { Image(systemName: "arrow.up.arrow.down") } text: { "navigate" }
-            hint { Image(systemName: "return") } text: { "run" }
-            hint { Kbd("Esc") } text: { "close" }
-            Spacer(minLength: 0)
-        }
-        .font(ReinsFont.small)
-        .foregroundStyle(Palette.textTertiary)
-        .padding(.horizontal, 14)
-        .frame(height: 34)
-        .accessibilityHidden(true)
-    }
-
-    private func hint<Glyph: View>(@ViewBuilder glyph: () -> Glyph, text: () -> String) -> some View {
-        HStack(spacing: 6) {
-            glyph()
-            Text(text())
+        PaletteFooter {
+            PaletteHint(text: "navigate") { Image(systemName: "arrow.up.arrow.down") }
+            PaletteHint(text: "run") { Image(systemName: "return") }
+            PaletteHint(text: "close") { Kbd("Esc") }
         }
     }
 
@@ -154,45 +114,5 @@ struct CommandPalette: View {
     private func run(_ entry: PaletteEntry) {
         shell.closePalette()
         entry.perform()
-    }
-}
-
-private struct PaletteRow: View {
-    let entry: PaletteEntry
-    let isHighlighted: Bool
-    let action: () -> Void
-    @State private var hovering = false
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
-        Button(action: action) {
-            HStack(spacing: 10) {
-                if let systemImage = entry.systemImage {
-                    Image(systemName: systemImage)
-                        .frame(width: 18)
-                        .foregroundStyle(isHighlighted ? Palette.text : Palette.textSecondary)
-                        .accessibilityHidden(true)
-                }
-                Text(entry.title).lineLimit(1)
-                if let subtitle = entry.subtitle {
-                    Text(subtitle).font(ReinsFont.small).foregroundStyle(Palette.textTertiary).lineLimit(1)
-                }
-                Spacer(minLength: 0)
-                if let trailing = entry.trailing {
-                    Text(trailing).font(ReinsFont.small).foregroundStyle(Palette.textTertiary)
-                }
-            }
-            .font(ReinsFont.body)
-            .foregroundStyle(isHighlighted ? Palette.text : Palette.textSecondary)
-            .padding(.horizontal, 10)
-            .frame(height: Metrics.paletteRowHeight)
-            .background(shape.fill(isHighlighted ? Palette.selection : (hovering ? Palette.hover : .clear)))
-            .contentShape(shape)
-        }
-        .buttonStyle(.plain)
-        .focusable(false)
-        .onHover { hovering = $0 }
-        .accessibilityLabel([entry.title, entry.subtitle, entry.trailing].compactMap { $0 }.joined(separator: ", "))
-        .accessibilityAddTraits(isHighlighted ? .isSelected : [])
     }
 }

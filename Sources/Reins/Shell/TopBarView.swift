@@ -1,50 +1,19 @@
 import SwiftUI
 
-/// The tab title and the palette entry point. The bar is part of the draggable window background.
+/// The tab title and the palette entry point, 48 pt high. The bar is part of the draggable window background.
 struct TopBarView: View {
     @Environment(ShellModel.self) private var shell
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Space.s12) {
             Text(shell.activeTab.title)
-                .font(ReinsFont.title)
-                .foregroundStyle(Palette.text)
+                .reinsText(.title, tone: .primary)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)
-            SearchButton { shell.openPalette() }
+            SearchField(placeholder: "Search or run a command", shortcut: "\u{2318}K", spokenShortcut: "Command K") { shell.openPalette() }
         }
         .padding(.horizontal, Metrics.pagePadding)
-        .padding(.top, 16)
-        .padding(.bottom, 10)
-    }
-}
-
-private struct SearchButton: View {
-    let action: () -> Void
-    @State private var hovering = false
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").imageScale(.small).accessibilityHidden(true)
-                Text("Search or run a command")
-                Spacer(minLength: 0)
-                Kbd("\u{2318}K")
-            }
-            .font(ReinsFont.body)
-            .foregroundStyle(Palette.textTertiary)
-            .padding(.leading, 10)
-            .padding(.trailing, 8)
-            .frame(width: Metrics.topBarSearchWidth, height: 30)
-            .background(shape.fill(hovering ? Palette.surfaceRaised : Palette.surface))
-            .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
-            .contentShape(shape)
-        }
-        .buttonStyle(.plain)
-        .reinsFocusable(cornerRadius: Metrics.fieldRadius)
-        .onHover { hovering = $0 }
-        .accessibilityLabel("Search or run a command")
-        .accessibilityHint("Command K")
+        .frame(height: Metrics.topBarHeight)
+        .padding(.top, Space.s4)
     }
 }

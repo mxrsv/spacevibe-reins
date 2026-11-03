@@ -59,6 +59,7 @@ enum Metrics {
     static let segmentHeight: CGFloat = 24
     static let tagHeight: CGFloat = 20
     static let sidebarItemHeight: CGFloat = 32
+    static let sidebarIconWidth: CGFloat = 16
 
     static let emptyStateMessageWidth: CGFloat = 360
 
@@ -74,6 +75,12 @@ enum Metrics {
     static let fileCLIsWidth: CGFloat = 40
     static let fileMetaWidth: CGFloat = 230
 
+    static let paletteWidth: CGFloat = 600
+    static let paletteFieldHeight: CGFloat = 48
+    static let paletteFooterHeight: CGFloat = 36
+    static let paletteListMaxHeight: CGFloat = 360
+    /// The palette's top edge, as a share of the window height.
+    static let paletteTopFraction: CGFloat = 0.14
     static let paletteRowHeight: CGFloat = 36
     /// Estimated height of a section title in the palette list (8 pt above, 4 pt below, one line); it only sizes the list.
     static let paletteSectionHeight: CGFloat = 28

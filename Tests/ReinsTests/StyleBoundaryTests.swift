@@ -32,13 +32,6 @@ struct StyleBoundaryTests {
         "Rules/RulesGrid.swift": 21,
         "Rules/RulesScreen.swift": 2,
         "Rules/RulesToolbar.swift": 5,
-        "Shell/CommandPalette.swift": 42,
-        "Shell/HintBar.swift": 5,
-        "Shell/ShellView.swift": 1,
-        "Shell/SidebarView.swift": 23,
-        "Shell/ThemeToggle.swift": 4,
-        "Shell/ToastHost.swift": 9,
-        "Shell/TopBarView.swift": 14,
     ]
 
     static var appSources: URL {

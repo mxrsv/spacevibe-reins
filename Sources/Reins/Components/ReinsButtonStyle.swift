@@ -14,6 +14,8 @@ enum ReinsButtonKind {
     case inverse
     /// Square, icon only; always give it an accessibility label.
     case icon
+    /// Square, icon only, no fill until hovered: the sidebar's theme toggle.
+    case plainIcon
 }
 
 /// Row actions are hidden until the row is hovered, focused or selected. `Row` sets this for its `actions` slot.
@@ -50,7 +52,7 @@ struct ReinsButtonStyle: ButtonStyle {
                 .foregroundStyle(foreground)
                 .lineLimit(1)
                 .padding(.horizontal, horizontalPadding)
-                .frame(width: kind == .icon ? Metrics.controlHeight : nil, height: Metrics.controlHeight)
+                .frame(width: kind == .icon || kind == .plainIcon ? Metrics.controlHeight : nil, height: Metrics.controlHeight)
                 .background(shape.fill(fill))
                 .overlay { outline(shape) }
                 .overlay(shape.fill(Palette.hover).opacity(hovering && isEnabled && kind != .primary ? 1 : 0).allowsHitTesting(false))
@@ -62,7 +64,7 @@ struct ReinsButtonStyle: ButtonStyle {
 
         private var horizontalPadding: CGFloat {
             switch kind {
-            case .icon: 0
+            case .icon, .plainIcon: 0
             case .ghost: Space.s8
             default: Space.s12
             }
@@ -79,7 +81,7 @@ struct ReinsButtonStyle: ButtonStyle {
             switch kind {
             case .normal, .danger, .icon: Palette.surfaceRaised
             case .primary: Palette.accentSolid
-            case .ghost: .clear
+            case .ghost, .plainIcon: .clear
             case .inverse: Palette.background.opacity(0.14)
             }
         }
@@ -90,6 +92,7 @@ struct ReinsButtonStyle: ButtonStyle {
             case .primary: Palette.onAccent
             case .danger: Palette.dangerInk
             case .ghost: Palette.textSecondary
+            case .plainIcon: hovering ? Palette.text : Palette.textSecondary
             case .inverse: Palette.background
             }
         }
@@ -99,7 +102,7 @@ struct ReinsButtonStyle: ButtonStyle {
             switch kind {
             case .normal, .danger, .icon:
                 shape.strokeBorder(Palette.border, lineWidth: 1)
-            case .primary, .inverse, .ghost:
+            case .primary, .inverse, .ghost, .plainIcon:
                 EmptyView()
             }
         }

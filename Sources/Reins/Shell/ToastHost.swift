@@ -21,36 +21,3 @@ struct ToastHost: View {
         .allowsHitTesting(toasts.current != nil)
     }
 }
-
-/// The toast itself: inverted surface, message, its action (or a dismiss button when it has none).
-struct ToastView: View {
-    let toast: Toast
-    let run: () -> Void
-    let dismiss: () -> Void
-
-    var body: some View {
-        HStack(spacing: 14) {
-            if toast.tone == .danger {
-                Image(systemName: "exclamationmark.triangle").accessibilityHidden(true)
-            }
-            Text(toast.message).font(ReinsFont.body)
-            if let action = toast.action {
-                Button(action: run) {
-                    Label(action.title, systemImage: action.systemImage).font(ReinsFont.bodyStrong)
-                }
-                .buttonStyle(.reins(.inverse))
-            } else {
-                Button(action: dismiss) { Image(systemName: "xmark").accessibilityLabel("Dismiss") }
-                    .buttonStyle(.reins(.inverse))
-            }
-        }
-        .foregroundStyle(Palette.background)
-        .padding(.leading, 16)
-        .padding(.trailing, 8)
-        .padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous).fill(Palette.text))
-        .shadow(color: Palette.overlayShadow, radius: 14, y: 8)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(toast.message)
-    }
-}

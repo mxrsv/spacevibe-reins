@@ -6,9 +6,9 @@ struct HintBar: View {
 
     var body: some View {
         let all = [KeyHint(keys: "\u{2318}K", label: "Search or run")] + hints + [KeyHint(keys: "Esc", label: "Close")]
-        HStack(spacing: 18) {
+        HStack(spacing: Space.s16) {
             ForEach(all, id: \.self) { hint in
-                HStack(spacing: 6) {
+                HStack(spacing: Space.s6) {
                     Kbd(hint.keys)
                     Text(hint.label)
                 }
@@ -17,12 +17,11 @@ struct HintBar: View {
             }
             Spacer(minLength: 0)
         }
-        .font(ReinsFont.small)
-        .foregroundStyle(Palette.textTertiary)
+        .reinsText(.caption, tone: .tertiary)
         .padding(.horizontal, Metrics.pagePadding)
         .frame(height: Metrics.hintBarHeight)
         .frame(maxWidth: .infinity)
-        .background(Palette.sidebar)
+        .background(Palette.well)
         .overlay(alignment: .top) { Hairline() }
     }
 }

@@ -7,74 +7,29 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Color.clear.frame(height: Metrics.trafficLightsInset)
-            VStack(spacing: 2) {
+            VStack(spacing: Space.s2) {
                 ForEach(shell.tabs, id: \.id) { tab in
-                    SidebarItem(tab: tab, isActive: tab.id == shell.activeID) { shell.select(tab.id) }
+                    SidebarItem(
+                        title: tab.title, systemImage: tab.systemImage, count: tab.badge?.value, alert: tab.badge?.alert ?? false,
+                        spokenCount: tab.badge?.spoken, isActive: tab.id == shell.activeID
+                    ) { shell.select(tab.id) }
                 }
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Sections")
             Spacer(minLength: 0)
-            HStack(spacing: 8) {
+            HStack(spacing: Space.s8) {
                 if let status = shell.statusMessage {
                     Text(status)
-                        .font(ReinsFont.small)
-                        .foregroundStyle(Palette.textTertiary)
+                        .reinsText(.caption, tone: .tertiary)
                         .lineLimit(1)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
                 Spacer(minLength: 0)
                 ThemeToggle()
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, Space.s4)
         }
-        .padding(.horizontal, 10)
-        .padding(.bottom, 12)
-        .frame(width: Metrics.sidebarWidth)
-        .frame(maxHeight: .infinity)
-        .background(Palette.sidebar)
-        .overlay(alignment: .trailing) {
-            Rectangle().fill(Palette.border).frame(width: 1).accessibilityHidden(true)
-        }
-    }
-}
-
-private struct SidebarItem: View {
-    let tab: any ReinsTab
-    let isActive: Bool
-    let select: () -> Void
-
-    @State private var hovering = false
-
-    var body: some View {
-        let badge = tab.badge
-        let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
-        Button(action: select) {
-            HStack(spacing: 10) {
-                Image(systemName: tab.systemImage)
-                    .imageScale(.medium)
-                    .frame(width: 16)
-                    .accessibilityHidden(true)
-                Text(tab.title)
-                Spacer(minLength: 0)
-                if let badge {
-                    Text("\(badge.value)")
-                        .font(badge.alert ? ReinsType.countStrong.font : ReinsType.count.font)
-                        .foregroundStyle(badge.alert ? Palette.dangerInk : (isActive ? Palette.textSecondary : Palette.textTertiary))
-                }
-            }
-            .font(isActive ? ReinsFont.bodyStrong : ReinsFont.body)
-            .foregroundStyle(isActive ? Palette.text : Palette.textSecondary)
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .background(shape.fill(isActive ? Palette.selection : (hovering ? Palette.hover : .clear)))
-            .contentShape(shape)
-        }
-        .buttonStyle(.plain)
-        .reinsFocusable(cornerRadius: Metrics.controlRadius)
-        .onHover { hovering = $0 }
-        .accessibilityAddTraits(isActive ? .isSelected : [])
-        .accessibilityLabel(badge.map { "\(tab.title), \($0.spoken ?? String($0.value))" } ?? tab.title)
+        .sidebarSurface()
     }
 }
