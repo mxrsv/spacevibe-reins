@@ -46,12 +46,14 @@ struct GroupedList<Content: View>: View {
         let shape = edges.shape
         VStack(spacing: 0) {
             Group(subviews: content) { subviews in
-                ForEach(subviews.indices, id: \.self) { index in
+                // Keyed by each subview's own identity, so a row's hover and focus state stay with the row when rows are
+                // removed or filtered out above it.
+                ForEach(Array(subviews.enumerated()), id: \.element.id) { offset, subview in
                     separator(
-                        after: index == subviews.startIndex ? nil : subviews[index - 1].containerValues.groupedListPart,
-                        before: subviews[index].containerValues.groupedListPart
+                        after: offset == 0 ? nil : subviews[offset - 1].containerValues.groupedListPart,
+                        before: subview.containerValues.groupedListPart
                     )
-                    subviews[index]
+                    subview
                 }
             }
         }

@@ -6,6 +6,10 @@ struct ComponentGalleryContent: View {
     @State private var file = "shared"
     @State private var scope = "global"
     @State private var chip = "all"
+    @State private var draft = ""
+    @State private var badDraft = "Bash(npm test"
+    @FocusState private var draftFocused: Bool
+    @FocusState private var badDraftFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -69,6 +73,14 @@ struct ComponentGalleryContent: View {
                     Spacer(minLength: 0)
                 }
             }
+            section("Text input: normal and invalid") {
+                HStack(spacing: Rhythm.tools) {
+                    TextInputField(label: "Rule", placeholder: "Bash(npm test *)", text: $draft, code: true, focused: $draftFocused) {}
+                    TextInputField(label: "Rule", placeholder: "Bash(npm test *)", text: $badDraft, code: true, invalid: true, focused: $badDraftFocused) {}
+                    Text("Write the rule as Tool(pattern).").reinsText(.caption, tone: .danger)
+                    Spacer(minLength: 0)
+                }
+            }
             section("Cards, rows and the five usage states") { DemoLoadoutList() }
             section("Rows") {
                 GroupedList {
@@ -86,6 +98,10 @@ struct ComponentGalleryContent: View {
                     Row(onActivate: {}) { RowText("Session with a state", subtitle: "spacevibe-bench \u{00B7} just now") }
                         .lead { CLIDot(.codex) }
                         .cells { StateCell { Tag("not measurable", systemImage: "exclamationmark.triangle") }; NumberCell(text: "~$148.20") }
+                    Row(onActivate: {}) { RowText("A row with nothing to change", subtitle: "Owned by a plugin") }
+                        .lead { Image(systemName: "sparkles") }
+                        .cells { FixedCell { Tag("\u{00D7}3") }; NumberCell(text: "~$1.33") }
+                        .actions { HStack(spacing: Space.s4) { EmptyActionSlot(); ReadOnlyMark(reason: "Read-only: owned by a plugin") } }
                     Row(tall: true) {
                         VStack(alignment: .leading, spacing: 0) {
                             RowText("pnpm tsc --noEmit", subtitle: "exit 2 \u{00B7} spacevibe-bench \u{00B7} last 1 h ago", mono: true, codeSubtitle: false)
@@ -95,6 +111,7 @@ struct ComponentGalleryContent: View {
                     .lead { CLIDot(.claude) }
                     .cells { Tag("\u{00D7}8", tone: .danger) }
                     EmptyRow("Nothing matches this filter.")
+                    ShowMoreRow(reveal: 8, hiddenAfter: 12) {}
                 }
             }
             section("Section rows inside one card") {
@@ -117,6 +134,54 @@ struct ComponentGalleryContent: View {
                     ],
                     shared: ["Cost is estimated from logged tokens at API prices (API-equivalent), not what you are billed."]
                 )
+            }
+            section("Inset box and warning, as inside a confirmation") {
+                VStack(alignment: .leading, spacing: Space.s12) {
+                    InsetBox {
+                        HStack(spacing: Space.s8) { Tag("Deny", tone: .danger); Text("Bash(git push *)").reinsText(.code, tone: .primary) }
+                        HStack(spacing: Space.s8) { Tag("Allow"); Text("Bash(vercel *)").reinsText(.code, tone: .primary) }
+                    }
+                    WarningNote(text: "A rule that stays in this file still wins, so Push and deploy will read Ask, not Allow.")
+                }
+                .frame(maxWidth: Metrics.wideDialogWidth)
+            }
+            section("Confirmation") {
+                ConfirmationDialog("Stop Fix leaderboard rank tie?", message: "The current turn ends and work already done stays. This cannot be undone.", cancel: {}) {
+                    Button("Cancel") {}.buttonStyle(.reins(.normal))
+                    Button("Stop") {}.buttonStyle(.reins(.danger))
+                }
+                .frame(height: Metrics.galleryOverlayHeight)
+                .clipShape(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous))
+            }
+            section("Sidebar items and the command palette") {
+                HStack(alignment: .top, spacing: Space.s24) {
+                    VStack(spacing: Space.s2) {
+                        SidebarItem(title: "Loadout", systemImage: "square.stack.3d.up", count: 22, isActive: true) {}
+                        SidebarItem(title: "Rules", systemImage: "checkmark.shield", count: 11, isActive: false) {}
+                        SidebarItem(title: "Activity", systemImage: "waveform.path.ecg", count: 2, alert: true, isActive: false) {}
+                    }
+                    .sidebarSurface()
+                    .frame(height: Metrics.galleryOverlayHeight)
+                    PaletteCard {
+                        Text("Search skills, hooks, rules, or run an action").paletteField()
+                        Hairline()
+                        VStack(alignment: .leading, spacing: 0) {
+                            PaletteSectionTitle(title: "Go to")
+                            PaletteRow(entry: PaletteEntry(id: "g.loadout", title: "Loadout", systemImage: "square.stack.3d.up", trailing: "\u{2318}1") {}, isHighlighted: true) {}
+                            PaletteRow(entry: PaletteEntry(id: "g.rules", title: "Rules", systemImage: "checkmark.shield", trailing: "\u{2318}2") {}, isHighlighted: false) {}
+                            PaletteSectionTitle(title: "Skills")
+                            PaletteRow(entry: PaletteEntry(id: "s.ponytail", title: "ponytail", subtitle: "Pick the laziest solution", systemImage: "sparkles") {}, isHighlighted: false) {}
+                            PaletteEmptyRow(text: "No matches")
+                        }
+                        .paletteList()
+                        Hairline()
+                        PaletteFooter {
+                            PaletteHint(text: "navigate") { Image(systemName: "arrow.up.arrow.down") }
+                            PaletteHint(text: "close") { Kbd("Esc") }
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
             }
             section("Banner") {
                 VStack(spacing: Space.s12) {

@@ -76,6 +76,7 @@ All tasks run on this Mac: SwiftUI compiles on macOS only, and the shot harness 
 ## Handoff
 
 - Checkout: `main`, commits `28b55b7` to `9193a76` for T0 to T9. Uncommitted and not this plan's: Electron files, `scripts/shots.mjs`, and session `spacevibe-reins-4f`'s edits to `Rules/RulesToolbar.swift`, `Rules/RulesScopes.swift`, `Tests/ReinsTests/ActivityFormatTests.swift`, `Tests/ReinsTests/RulesScopesTests.swift`.
+- Added after T9 (2026-11-03): gallery sections for `TextInputField`, `ConfirmationDialog`, `InsetBox`, `WarningNote`, `ShowMoreRow`, `SidebarItem`, the palette parts, `ReadOnlyMark`, `EmptyActionSlot` and `FixedCell`; `GroupedList` keys children by their own identity (it keyed by index, so hover and focus state moved to the next row after a remove).
 - Left: after `spacevibe-reins-4f` commits, move `RulesToolbar` onto components (its 5 literals), delete `ReinsFont` from `Metrics.swift`, empty the allowlist, rerun `scripts/test.sh` and the Rules shots, tick T6 and T10. Then T11.
 - Peer sessions: `spacevibe-reins-3b` (Limits, new `ReinsCore/Limits*` files) will message before it touches `Shell/`; its UI must use the components (told 2026-11-03).
 

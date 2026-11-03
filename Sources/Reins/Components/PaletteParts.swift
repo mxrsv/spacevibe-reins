@@ -34,6 +34,7 @@ extension View {
     /// The palette's search line: `paletteInput` type, 48 pt high.
     func paletteField() -> some View {
         reinsText(.paletteInput, tone: .primary)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Space.s16)
             .frame(height: Metrics.paletteFieldHeight)
     }

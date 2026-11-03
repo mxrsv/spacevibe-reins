@@ -78,6 +78,8 @@ enum Metrics {
     static let fileCLIsWidth: CGFloat = 40
     static let fileMetaWidth: CGFloat = 230
 
+    /// The gallery's frame for an overlay specimen (a confirmation, the sidebar).
+    static let galleryOverlayHeight: CGFloat = 300
     static let paletteWidth: CGFloat = 600
     static let paletteFieldHeight: CGFloat = 48
     static let paletteFooterHeight: CGFloat = 36
