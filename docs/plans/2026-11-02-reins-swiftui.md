@@ -98,7 +98,7 @@ Own plan: [2026-11-03-reins-tokens.md](2026-11-03-reins-tokens.md), after S2 and
 
 - [ ] S8.1 AC5: run the packaged app with the network off and open all four tabs.
 - [ ] S8.2 AC1: the owner times the permission task (find, remove, undo) under one minute.
-- [ ] S8.3 Parity reached: delete `core/`, `electron/`, the Electron renderer, `e2e/`, the Node build files and the Electron lines in `AGENTS.md` and `README.md`/`CHANGELOG.md` where they exist (D8, D12), after the owner agrees. Mark this plan historical (D1).
+- [ ] S8.3 Parity reached: delete `core/`, `scripts/make-golden.mjs`, `scripts/golden/`, `test.mjs`, the root `package.json` and the "Node core" section of `AGENTS.md` (D8, D12), after the owner agrees. Done on 2026-11-04 at the owner's request: `electron/`, the Electron renderer (`src/`), `web/`, `e2e/`, the Electron and TypeScript build files and the Electron lines of `AGENTS.md` (backup outside git). Mark this plan historical (D1) when the rest is done.
 
 ## Progress log (2026-11-03)
 
@@ -190,7 +190,7 @@ no blocker. The 11 medium findings were fixed by parallel Sonnet agents in two w
 
 ## Handoff
 
-- Checkout: `main`. The Electron renderer and its IPC are uncommitted in the working tree and belong to the superseded plan; do not delete them before S8.3.
+- Checkout: `main`. The Electron app was deleted on 2026-11-04 (its uncommitted renderer and IPC work with it); `core/` stays until S8.3.
 - Known facts carried over: Codex permission schema, live-state findings, hook error root cause, Rules mapping table and capability semantics are in the Electron plan's task evidence; `core/` is the behavior reference including `stopSession` and compressed Codex logs.
 - Remaining: everything above.
 

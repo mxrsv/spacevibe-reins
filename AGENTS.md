@@ -4,7 +4,7 @@
 
 ## Swift app (current direction)
 
-The product is being rebuilt as a native SwiftUI app: [spec](docs/specs/2026-11-02-reins.md), [plan](docs/plans/2026-11-02-reins-swiftui.md). Everything below this section describes the superseded Electron app and the Node `core/`; it is deleted at plan task S8.3, not before.
+The product is being rebuilt as a native SwiftUI app: [spec](docs/specs/2026-11-02-reins.md), [plan](docs/plans/2026-11-02-reins-swiftui.md). The Electron app is gone (removed 2026-11-04); the Node `core/` stays as the parity oracle until plan task S8.3 (see "Node core" below).
 
 Stack: SwiftPM, swift-tools 6.0, Swift 5 language mode, macOS 15+, Command Line Tools only (no Xcode). Everything in this repo's Swift code, comments and tests is English.
 
@@ -22,7 +22,7 @@ Layout: `Sources/CZstd` (vendored decompress-only zstd, see its README), `Source
 
 Design language: [docs/DESIGN-LANGUAGE.md](docs/DESIGN-LANGUAGE.md). Screens only compose [`Sources/Reins/Components`](Sources/Reins/Components) and the tokens in [`Sources/Reins/Tokens`](Sources/Reins/Tokens); [`StyleBoundaryTests`](Tests/ReinsTests/StyleBoundaryTests.swift) fails on a font, colour, radius or spacing literal in a screen folder. Inter (OFL, `Resources/Fonts`) is the only typeface.
 
-Public site: [`site/`](site/README.md) is the page for `reins.spacevibe.dev` (Next.js static export + Tailwind, its own `package.json` and lockfile, built with `npm run build` inside `site/`). It is independent of the root Electron `package.json` and of the Swift build; its example rows mirror the synthetic fixture home, never a real `~/.claude` (S-R2).
+Public site: [`site/`](site/README.md) is the page for `reins.spacevibe.dev` (Next.js static export + Tailwind, its own `package.json` and lockfile, built with `npm run build` inside `site/`). It is independent of the root `package.json` (core tests only) and of the Swift build; its example rows mirror the synthetic fixture home, never a real `~/.claude` (S-R2).
 
 Toolchain rules (taken from `spacevibe-board`, re-verified here):
 
@@ -36,56 +36,29 @@ Toolchain rules (taken from `spacevibe-board`, re-verified here):
 - **B8. The update signing key is load-bearing.** The private half of `SUPublicEDKey` ([Info.plist](Resources/Info.plist)) is in the owner's login Keychain under the Sparkle account `dev.spacevibe.reins`. Never regenerate it once a release has shipped: installed copies would refuse every later update. On another machine move it with `generate_keys -x` and `-f`. `Sparkle` is linked by the `Reins` target only, never `ReinsCore` (B7), and [`build-app.sh`](scripts/build-app.sh) signs its helpers inside out before the app.
 - **B9. A release is `scripts/release.sh --notarize` on a clean `main`.** It builds from `git archive HEAD`, signs with a secure timestamp, notarizes through the Keychain profile named in `REINS_NOTARY_PROFILE` (created once with `xcrun notarytool store-credentials`), staples, and writes the DMG, `SHA256SUMS` and the signed `appcast.xml` to `build/distribution/`. Both version keys in [Info.plist](Resources/Info.plist) change on every release: `CFBundleVersion` is the whole number Sparkle compares, and the script refuses one that is not above the last `v*` tag. Shipped copies read the feed at `https://github.com/mxrsv/spacevibe-reins/releases/latest/download/appcast.xml`, so every GitHub release carries the DMG plus an asset named exactly `appcast.xml`, and the repository must stay public under that name or installed copies stop updating. The tag, the push and `gh release create` are done by hand; the script prints them.
 
-Boundary rules for the Swift app (the Electron rules R1 to R6 below keep applying to the Node code until it is deleted):
+Boundary rules for the Swift app:
 
 - **S-R1. Tests and agents never touch the real config.** Tests build a `TempHome` or use `FixtureHome`. [`Roots.resolve`](Sources/ReinsCore/Roots.swift) throws when `REINS_TEST=1` and a root, or the real path behind it (symlinks included), is under the real home from `getpwuid`; [`scripts/test.sh`](scripts/test.sh) sets that flag. `scripts/dev.sh` and the built app read the real `~/.claude` and `~/.codex`: set `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `REINS_HOME` to a temporary folder before testing a write by hand.
-- **S-R2. No real data in committed files.** Fixtures and goldens come from `scripts/fixture-home.mjs` (synthetic names only) through [`make-golden.mjs`](scripts/make-golden.mjs), which refuses a tree containing the real home path or user name; [`FixtureHomeTests`](Tests/ReinsCoreTests/FixtureHomeTests.swift) re-checks. Screenshots from a real config stay out of git (R2 above).
+- **S-R2. No real data in committed files.** Fixtures and goldens come from `scripts/fixture-home.mjs` (synthetic names only) through [`make-golden.mjs`](scripts/make-golden.mjs), which refuses a tree containing the real home path or user name; [`FixtureHomeTests`](Tests/ReinsCoreTests/FixtureHomeTests.swift) re-checks. Screenshots from a real config stay out of git (they go in the gitignored `shots/`).
 - **S-R3. Secrets are never read into the UI or logged.** Errors from `OrderedJSON`, `TOMLReader` and `ZstdStream` carry a position or a fixed reason, never file content; keep it that way in new code.
 - **S-R4. The app never executes a hook or a recorded command.** The only processes it will start are the fixed `ps`, `lsof` and `kill` of the Activity engine, with the pid re-validated first, and Sparkle's own installer helpers.
 - **S-R5. The app opens no network listener, and its only requests are Sparkle's update check and download**, started by [`UpdateController`](Sources/Reins/App/UpdateController.swift) in a normal launch of a build with `REINS_UPDATE_FEED_URL` set; a build without it, fixture launches and `REINS_TEST=1` make none. No crash reporter, no analytics, no system profile, no other request.
 
 The Node `core/` is an oracle for parity and is deleted at plan task S8.3. Do not change its behavior to suit Swift; when a golden has to change, run `node scripts/make-golden.mjs`, read the diff and commit it with the test that needs it.
 
-## Electron app (superseded)
+## Node core (parity oracle)
 
-Local app to see and control what Claude Code and Codex CLI are equipped with. Stack: Electron (main process in TypeScript) with a React, Tailwind CSS v4 and shadcn/ui (Base UI) renderer, built by electron-vite. The engine in [core/](core) is plain Node ESM (`.mjs`, JSDoc), unbundled.
+The Electron app was removed on 2026-11-04 (its code is in git history before that commit). What remains of the Node side is [core/](core), the plain Node ESM engine (inventory, usage scan, mutations, journal, Activity) that the Swift core was ported from and that generates the golden files; plan task S8.3 deletes it with `scripts/make-golden.mjs` and `scripts/golden/` once the owner agrees the goldens no longer need regenerating.
 
-## Common commands
+| Command | Purpose |
+| --- | --- |
+| `npm test` | `test.mjs` and `core/*.test.mjs`, against a temporary `HOME` |
+| `node scripts/make-golden.mjs [section]` | Rewrites `Tests/ReinsCoreTests/Fixtures` from the Node core (see above) |
 
-| Command             | Purpose                                                                 |
-| ------------------- | ----------------------------------------------------------------------- |
-| `npm run dev`       | App with hot reload. Reads and writes the real `~/.claude` and `~/.codex` |
-| `npm run build`     | Builds `out/` (main, preload, renderer)                                 |
-| `npm start`         | Runs the built app from `out/` (no dev server)                          |
-| `npm run typecheck` | `tsc` for [electron/](electron) and [src/](src)                         |
-| `npm test`          | Core and IPC handler tests, against a temporary `HOME`                  |
-| `npm run e2e:smoke` | Headless run of the built app against fixture logs ([e2e/smoke.mjs](e2e/smoke.mjs)) |
-| `npm run pack`      | Unpacked macOS app in `release/` (`electron-builder --dir`, unsigned)    |
-
-## Layout
-
-- [core/](core): the engine (inventory, usage scan, mutations, journal). Never imports Electron.
-- [electron/main.ts](electron/main.ts): app start, window, usage worker. [electron/ipc/](electron/ipc): one file per area, each exports `handlers`; [electron/register-ipc.ts](electron/register-ipc.ts) picks them up by glob.
-- [src/lib/ipc-contract.ts](src/lib/ipc-contract.ts): the one list of channels and payload types. A new channel is this file plus one handler file.
-- [src/](src): the renderer. It only sees `window.reins.invoke(channel, request)`.
-- `web/` is the old prototype. It cannot run any more (its server is gone) and is deleted with the Loadout screen in the [plan](docs/plans/2026-11-02-reins-electron.md) task 4.4.
-- `mocks/` holds earlier throwaway mocks kept for reference, outside git. Do not import from them. The exception is `mocks/tokens-board/`, tracked with synthetic data as the target for the [Tokens plan](docs/plans/2026-11-03-reins-tokens.md) and deleted when that plan's T8 passes.
-
-## Repo-specific rules
-
-- **R1.** `npm run dev` and `npm start` read and write the real `~/.claude` and `~/.codex`. Agents testing a write must set `HOME` (and `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `REINS_HOME`) to a temporary folder. With `REINS_TEST=1` the app runs headless (no window, counts only on stdout) and `roots()` throws when a root is under the real home.
-- **R2.** Screenshots and fixtures from real configs or logs are never committed: they contain real skill names, hook commands and prompts. Keep them in the gitignored `shots/`.
-- **R3.** Values in settings files that may be secrets are never read into the UI or logged.
-- **R4.** The app never executes a hook or a recorded command.
-- **R5.** The built app opens no network listener and loads from `file:`. The renderer reaches `core/` only through the channels in `src/lib/ipc-contract.ts`: the preload refuses any other channel, and main refuses a sender that is not the app's own top frame. The window stays `contextIsolation` + `sandbox`, with navigation and `window.open` denied, no auto-updater and no crash reporter. Do not widen any of these to make a feature easier.
-- **R6.** [`stopSession`](core/activity.mjs) is the only code that signals a process, and it sends SIGTERM only to a pid it found itself and matched to the session at that moment (Claude: status file plus process start time; Codex: thread lock). A handler takes a session id, never a pid. With `REINS_TEST=1` it answers from the fake and signals nothing.
+- `mocks/` holds earlier throwaway mocks kept for reference. Do not import from them. The exception is `mocks/tokens-board/`, tracked with synthetic data as the target for the [Tokens plan](docs/plans/2026-11-03-reins-tokens.md) and deleted when that plan's T8 passes.
+- **R6.** [`stopSession`](core/activity.mjs) is the only Node code that signals a process, and it sends SIGTERM only to a pid it found itself and matched to the session at that moment. With `REINS_TEST=1` it answers from the fixture.
 
 ## Known traps
 
-- The CSP in [src/index.html](src/index.html) forbids inline `style` attributes and inline scripts (`style-src 'self'`). Setting `element.style` from React is fine; markup strings with `style=` are not. The dev server gets a looser policy from `electron.vite.config.ts`, so a clean dev console proves nothing: run `npm run build && npm run e2e:smoke`, which fails on any CSP violation.
-- `core/` is imported as `#core/*.mjs` (`imports` in `package.json`) and left external by the bundler. A relative path gets rewritten wrongly, and a bundled copy would break the usage Worker, which needs a real file. Packaged, `core/` is `asarUnpack`ed and the Worker path swaps `app.asar` for `app.asar.unpacked` ([electron/lib/worker-path.ts](electron/lib/worker-path.ts)).
-- The preload must be CommonJS (`out/preload/index.cjs`): a sandboxed preload cannot be ESM, even though the package is `"type": "module"`. The contract file is bundled into it, so it imports nothing from Node or Electron.
-- Errors cross IPC as a value, `{ ok: false, error, status }`, never as a thrown error: `ipcMain.handle` rewrites thrown messages and drops `status`. Unexpected errors log only their code or name, never the message (R3).
-- Handlers in `electron/ipc/` must not import `electron`, so `npm test` can run them under plain node. Anything that needs Electron goes in `main.ts`, `register-ipc.ts` or `harden.ts`.
 - Codex keeps older rollouts as `.jsonl.zst`. Find and open logs through [core/log-files.mjs](core/log-files.mjs), which handles both forms; a reader that only matches `.jsonl` silently misses most of a machine's Codex history.
 - A hook's identity is the hash of event plus command. Hashing the command alone inflates run counts.
