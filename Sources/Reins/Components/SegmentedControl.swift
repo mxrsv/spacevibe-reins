@@ -15,14 +15,16 @@ struct SegmentOption<Value: Hashable>: Identifiable {
 }
 
 /// A one-of-N switch (Allow / Ask / Deny, Shared / Local). Always has a selection. Left and Right arrows move it while a
-/// segment has focus. A 28 pt frame with 24 pt segments inside it; the selected segment is semibold, and every segment
-/// reserves its semibold width so the control never changes width.
+/// segment has focus. A 28 pt frame with 24 pt segments inside it, no outline: the frame takes the control ground's fill and
+/// the selected segment the `selection` tint. The selected segment is semibold, and every segment reserves its semibold
+/// width so the control never changes width.
 struct SegmentedControl<Value: Hashable>: View {
     let label: String
     let options: [SegmentOption<Value>]
     @Binding var selection: Value
 
     @FocusState private var focused: Value?
+    @Environment(\.controlGround) private var ground
 
     var body: some View {
         let frame = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
@@ -33,8 +35,7 @@ struct SegmentedControl<Value: Hashable>: View {
         }
         .padding(Space.s2)
         .frame(height: Metrics.controlHeight)
-        .background(frame.fill(Palette.surface))
-        .overlay(frame.strokeBorder(Palette.border, lineWidth: 1))
+        .background(frame.fill(ground.fill))
         .onKeyPress(.leftArrow) { move(-1) }
         .onKeyPress(.rightArrow) { move(1) }
         .accessibilityElement(children: .contain)
@@ -57,8 +58,7 @@ struct SegmentedControl<Value: Hashable>: View {
             }
             .padding(.horizontal, Space.s8)
             .frame(height: Metrics.segmentHeight)
-            .background(shape.fill(isOn ? Palette.surfaceRaised : .clear))
-            .overlay(shape.strokeBorder(isOn ? Palette.border : .clear, lineWidth: 1))
+            .background(shape.fill(isOn ? Palette.selection : .clear))
             .contentShape(shape)
         }
         .buttonStyle(.plain)

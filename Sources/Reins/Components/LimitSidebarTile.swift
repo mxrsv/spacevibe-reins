@@ -1,7 +1,7 @@
 import ReinsCore
 import SwiftUI
 
-/// One CLI in the sidebar's Limits block: its mark, name and the share left of its tightest window, with a thin bar under
+/// One CLI in the sidebar's Limits block: its mark, name and the share left of its tightest window, with a ruler under
 /// them. Filled with the CLI's tint, or warn or danger when nearly out. A CLI with no reading is `muted` (plain surface,
 /// the reason in `caption` under the name instead of a number, no bar).
 struct LimitSidebarTile: View {
@@ -9,7 +9,7 @@ struct LimitSidebarTile: View {
     let name: String
     let value: String
     var tone: LimitTone = .normal
-    /// The bar's fill, 0...1; nil draws no bar.
+    /// The ruler's fill, 0...1; nil draws no ruler.
     var fraction: Double?
     var isMuted = false
 
@@ -33,7 +33,7 @@ struct LimitSidebarTile: View {
                         Text(value).reinsText(.bodyStrong, tone: tone.figureTone).lineLimit(1)
                     }
                     if let fraction {
-                        LimitBar(fraction: fraction, fill: tone.barFill ?? cli.fill, height: Metrics.barHeight)
+                        Ruler(share: fraction, fill: tone.barFill ?? cli.fill)
                     }
                 }
             }

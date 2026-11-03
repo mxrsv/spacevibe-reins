@@ -37,6 +37,8 @@ struct LimitNoteTile: View {
         .padding(Space.s16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous).fill(Palette.surfaceRaised))
+        // The tile is already `surfaceRaised`, so its button takes `surface` to stand out.
+        .controlGround(.well)
         .accessibilityElement(children: .contain)
     }
 }

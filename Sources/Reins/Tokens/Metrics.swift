@@ -15,6 +15,8 @@ enum Metrics {
 
     /// Card, banner, toast and palette.
     static let groupRadius: CGFloat = 12
+    /// A row's hover and selection block inside a card.
+    static let rowRadius: CGFloat = 8
     static let paletteRadius: CGFloat = 12
     /// Buttons, scope picker, sidebar items.
     static let controlRadius: CGFloat = 8
@@ -22,7 +24,7 @@ enum Metrics {
     static let fieldRadius: CGFloat = 8
     /// A segment inside the segmented control (the frame's radius less its padding).
     static let segmentRadius: CGFloat = 6
-    static let tagRadius: CGFloat = 4
+    static let tagRadius: CGFloat = 6
     static let kbdRadius: CGFloat = 4
 
     /// Every row: 6 pt above and below a 20 + 16 two-line block, or around a 28 pt control.
@@ -31,12 +33,23 @@ enum Metrics {
     /// A row of three or more lines.
     static let tallRowVerticalPadding: CGFloat = 12
     static let rowSpacing: CGFloat = 12
+    /// Where a card's content starts: the row block's inset plus the row's own padding inside it.
     static let rowHorizontalPadding: CGFloat = 16
+    /// A row is a block inset this far from the card's edges, so its hover and selection fill never touch them.
+    static let rowInset: CGFloat = 8
+    /// Inside that block, before the lead slot and after the last cell.
+    static var rowInnerPadding: CGFloat { rowHorizontalPadding - rowInset }
     static let rowLeadWidth: CGFloat = 20
-    /// Where a separator between rows starts: padding, lead and the gap after it.
-    static var separatorInset: CGFloat { rowHorizontalPadding + rowLeadWidth + rowSpacing }
+    /// Where a row's text starts, from the card's edge: padding, lead and the gap after it.
+    static var rowTextInset: CGFloat { rowHorizontalPadding + rowLeadWidth + rowSpacing }
+    /// The divider between two rows starts this far from the row block's leading edge (where the text starts) and ends this
+    /// far from its trailing edge.
+    static let dividerLeadingInset: CGFloat = 40
+    static let dividerTrailingInset: CGFloat = 8
 
-    static let cardHeaderHeight: CGFloat = 48
+    static let cardHeaderHeight: CGFloat = 56
+    /// Space under a card's last row.
+    static let cardBottomPadding: CGFloat = 8
     static let sectionRowHeight: CGFloat = 32
 
     /// One CLI's usage column: bar plus number. Header cells use the same width so columns line up.
@@ -52,23 +65,33 @@ enum Metrics {
     /// Rules' grid: the Claude Code column (segmented control plus a "mixed" tag) and the Codex column.
     static let rulesClaudeColumn: CGFloat = 280
     static let rulesCodexColumn: CGFloat = 300
-    static let barHeight: CGFloat = 6
     static let legendSwatchWidth: CGFloat = 22
+
+    /// The usage and limit ruler: ten cells, each a tenth of the real track width with this gap at its trailing end.
+    static let rulerCellCount = 10
+    static let rulerHeight: CGFloat = 8
+    static let rulerCellGap: CGFloat = 3
 
     /// Every control: button, chip, segmented frame, scope picker, search field.
     static let controlHeight: CGFloat = 28
     static let chipHeight: CGFloat = 28
     /// A segment inside its 28 pt frame.
     static let segmentHeight: CGFloat = 24
-    static let tagHeight: CGFloat = 20
-    static let sidebarItemHeight: CGFloat = 32
-    static let sidebarIconWidth: CGFloat = 16
+    static let tagHeight: CGFloat = 24
+    /// The state dot at a tag's leading edge.
+    static let tagDotSize: CGFloat = 6
+    static let kbdHeight: CGFloat = 20
+    static let sidebarItemHeight: CGFloat = 48
+    static let sidebarItemSpacing: CGFloat = 8
+    /// Inside a sidebar item, before the icon and after the count.
+    static let sidebarItemPadding: CGFloat = 16
+    static let sidebarIconSize: CGFloat = 22
+    /// The icon slot of a palette row.
+    static let paletteIconWidth: CGFloat = 16
 
     static let emptyStateMessageWidth: CGFloat = 360
 
-    /// Limits: a window tile's bar (the lead tile's is thicker), its icon square, and the CLI mark beside a card title.
-    static let limitBarHeight: CGFloat = 10
-    static let limitLeadBarHeight: CGFloat = 12
+    /// Limits: a window tile's icon square, and the CLI mark beside a card title.
     static let limitTileIconSize: CGFloat = 32
     static let cliMarkSize: CGFloat = 40
     static let cliMarkSmallSize: CGFloat = 24
@@ -82,7 +105,7 @@ enum Metrics {
     /// Confirmation cards (Stop, a rule write).
     static let dialogWidth: CGFloat = 420
     static let wideDialogWidth: CGFloat = 460
-    /// Overlays only (palette, confirmation): elevation everywhere else is a border.
+    /// Overlays only (palette, confirmation, toast). Cards are fill on the well, with no border and no shadow.
     static let overlayShadowRadius: CGFloat = 30
     static let overlayShadowOffset: CGFloat = 24
     static let toastShadowRadius: CGFloat = 14

@@ -2,7 +2,7 @@ import ReinsCore
 import SwiftUI
 
 enum ReinsButtonKind {
-    /// Surface fill, border. The default.
+    /// Filled, no outline: `surface` on the well, `surfaceRaised` inside a card. The default.
     case normal
     /// Solid accent. One per surface at most.
     case primary
@@ -43,6 +43,7 @@ struct ReinsButtonStyle: ButtonStyle {
         @Environment(\.isEnabled) private var isEnabled
         @Environment(\.isFocused) private var isFocused
         @Environment(\.actionsConcealed) private var concealed
+        @Environment(\.controlGround) private var ground
         @State private var hovering = false
 
         var body: some View {
@@ -54,7 +55,6 @@ struct ReinsButtonStyle: ButtonStyle {
                 .padding(.horizontal, horizontalPadding)
                 .frame(width: kind == .icon || kind == .plainIcon ? Metrics.controlHeight : nil, height: Metrics.controlHeight)
                 .background(shape.fill(fill))
-                .overlay { outline(shape) }
                 .overlay(shape.fill(Palette.hover).opacity(hovering && isEnabled && kind != .primary ? 1 : 0).allowsHitTesting(false))
                 .brightness(hovering && isEnabled && kind == .primary ? 0.08 : 0)
                 .contentShape(shape)
@@ -79,7 +79,7 @@ struct ReinsButtonStyle: ButtonStyle {
 
         private var fill: Color {
             switch kind {
-            case .normal, .danger, .icon: Palette.surfaceRaised
+            case .normal, .danger, .icon: ground.fill
             case .primary: Palette.accentSolid
             case .ghost, .plainIcon: .clear
             case .inverse: Palette.background.opacity(0.14)
@@ -94,16 +94,6 @@ struct ReinsButtonStyle: ButtonStyle {
             case .ghost: Palette.textSecondary
             case .plainIcon: hovering ? Palette.text : Palette.textSecondary
             case .inverse: Palette.background
-            }
-        }
-
-        @ViewBuilder
-        private func outline(_ shape: RoundedRectangle) -> some View {
-            switch kind {
-            case .normal, .danger, .icon:
-                shape.strokeBorder(Palette.border, lineWidth: 1)
-            case .primary, .inverse, .ghost, .plainIcon:
-                EmptyView()
             }
         }
     }

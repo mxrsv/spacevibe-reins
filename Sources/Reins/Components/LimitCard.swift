@@ -41,6 +41,7 @@ struct LimitCard<Detail: View, Trailing: View, Content: View>: View {
         .padding(Space.s16)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous).fill(Palette.surface))
+        .controlGround(.card)
         .accessibilityElement(children: .contain)
     }
 }

@@ -1,7 +1,7 @@
 import ReinsCore
 import SwiftUI
 
-/// How close a window is to its limit. Tints the lead tile and the bar: low at 20% left, out at 5%.
+/// How close a window is to its limit. Tints the lead tile and the ruler: low at 20% left, out at 5%.
 enum LimitTone: Equatable {
     case normal, low, out
 
@@ -43,10 +43,10 @@ struct LimitTileTag: Equatable {
 }
 
 /// One usage-limit window as its own block, not a row in a list: a clock square, the window's name with its tags and the
-/// reset line, the share left on the right, and a bar the full width below. A CLI card holds one tile per window.
+/// reset line, the share left on the right, and a ruler the full width below. A CLI card holds one tile per window.
 ///
 /// `isLead` marks the window that decides how much is usable: it is tinted (the CLI's colour, or warn or danger when
-/// nearly out), shows the share in `figure` and has a thicker bar. The others sit on `surfaceRaised` with the share in `title`.
+/// nearly out) and shows the share in `figure`. The others sit on `surfaceRaised` with the share in `title`.
 /// No border and no divider: the fill and the space around it separate the tiles.
 struct LimitTile: View {
     let cli: LimitsCLI
@@ -80,7 +80,7 @@ struct LimitTile: View {
                 Spacer(minLength: Space.s8)
                 figure
             }
-            LimitBar(fraction: fraction, fill: tone.barFill ?? cli.fill, height: isLead ? Metrics.limitLeadBarHeight : Metrics.limitBarHeight)
+            Ruler(share: fraction, fill: tone.barFill ?? cli.fill)
         }
         .padding(Space.s16)
         .background(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous).fill(background))
@@ -108,30 +108,5 @@ struct LimitTile: View {
         case .unknown:
             Text("unknown").reinsText(.title, tone: .secondary)
         }
-    }
-}
-
-/// A rounded track with the fill from the leading edge; dashed and empty when the share is not known.
-struct LimitBar: View {
-    let fraction: Double?
-    let fill: Color
-    let height: CGFloat
-
-    var body: some View {
-        Group {
-            if let fraction {
-                Capsule()
-                    .fill(Palette.text.opacity(0.14))
-                    .overlay(alignment: .leading) {
-                        GeometryReader { proxy in
-                            Capsule().fill(fill).frame(width: max(height, proxy.size.width * min(1, max(0, fraction))))
-                        }
-                    }
-            } else {
-                Capsule().strokeBorder(Palette.textTertiary, style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
-            }
-        }
-        .frame(height: height)
-        .accessibilityHidden(true)
     }
 }

@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// One tab in the sidebar: icon, title, and a count on the right (in the danger tone when it is an alert). 32 pt high,
-/// radius 8; the active tab is semibold on the selection tint.
+/// One tab in the sidebar: icon, title, and a count on the right (in the danger tone when it is an alert). 48 pt high in
+/// the `title` role in every state, radius 8, 16 pt inside at both ends; the icon is 22 pt in the secondary tone. The
+/// active tab changes only its fill (`surface` on the well), never its text, weight or icon.
 struct SidebarItem: View {
     let title: String
     let systemImage: String
@@ -19,19 +20,20 @@ struct SidebarItem: View {
         Button(action: select) {
             HStack(spacing: Space.s8) {
                 Image(systemName: systemImage)
-                    .imageScale(.medium)
-                    .frame(width: Metrics.sidebarIconWidth)
+                    .imageScale(.large)
+                    .foregroundStyle(TextTone.secondary.color)
+                    .frame(width: Metrics.sidebarIconSize, height: Metrics.sidebarIconSize)
                     .accessibilityHidden(true)
                 Text(title)
                 Spacer(minLength: 0)
                 if let count {
-                    Text("\(count)").reinsText(alert ? .countStrong : .count, tone: alert ? .danger : (isActive ? .secondary : .tertiary))
+                    Text("\(count)").reinsText(alert ? .bodyStrong : .body, tone: alert ? .danger : .tertiary)
                 }
             }
-            .reinsText(isActive ? .bodyStrong : .body, tone: isActive ? .primary : .secondary)
-            .padding(.horizontal, Space.s8)
+            .reinsText(.title, tone: .primary)
+            .padding(.horizontal, Metrics.sidebarItemPadding)
             .frame(height: Metrics.sidebarItemHeight)
-            .background(shape.fill(isActive ? Palette.selection : (hovering ? Palette.hover : .clear)))
+            .background(shape.fill(isActive ? Palette.surface : (hovering ? Palette.hover : .clear)))
             .contentShape(shape)
         }
         .buttonStyle(.plain)
@@ -43,16 +45,17 @@ struct SidebarItem: View {
 }
 
 extension View {
-    /// The sidebar column: fixed width, the sidebar colour and its trailing hairline, room for the traffic lights on top.
+    /// The sidebar column: fixed width on the same `well` as the content area, one 1 pt divider on its trailing edge, room
+    /// for the traffic lights on top.
     func sidebarSurface() -> some View {
         padding(.top, Metrics.trafficLightsInset)
             .padding(.horizontal, Space.s8)
             .padding(.bottom, Space.s12)
             .frame(width: Metrics.sidebarWidth)
             .frame(maxHeight: .infinity)
-            .background(Palette.sidebar)
+            .background(Palette.well)
             .overlay(alignment: .trailing) {
-                Rectangle().fill(Palette.border).frame(width: 1).accessibilityHidden(true)
+                Rectangle().fill(Palette.divider).frame(width: 1).accessibilityHidden(true)
             }
     }
 }

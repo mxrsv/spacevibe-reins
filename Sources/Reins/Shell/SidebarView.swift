@@ -7,7 +7,7 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(spacing: Space.s2) {
+            VStack(spacing: Metrics.sidebarItemSpacing) {
                 ForEach(shell.tabs, id: \.id) { tab in
                     SidebarItem(
                         title: tab.title, systemImage: tab.systemImage, count: tab.badge?.value, alert: tab.badge?.alert ?? false,

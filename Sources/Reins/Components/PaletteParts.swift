@@ -24,6 +24,7 @@ struct PaletteCard<Content: View>: View {
             .clipShape(shape)
             .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
             .shadow(color: Palette.overlayShadow, radius: Metrics.overlayShadowRadius, y: Metrics.overlayShadowOffset)
+            .controlGround(.card)
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Command palette")
             .accessibilityAddTraits(.isModal)
@@ -84,7 +85,7 @@ struct PaletteRow: View {
             HStack(spacing: Space.s8) {
                 if let systemImage = entry.systemImage {
                     Image(systemName: systemImage)
-                        .frame(width: Metrics.sidebarIconWidth)
+                        .frame(width: Metrics.paletteIconWidth)
                         .accessibilityHidden(true)
                 }
                 Text(entry.title).lineLimit(1)

@@ -35,9 +35,7 @@ struct UsageCell: View {
             }
         case .pending(let reason):
             HStack(spacing: Metrics.rowSpacing) {
-                Capsule()
-                    .strokeBorder(Palette.textTertiary, style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
-                    .frame(height: Metrics.barHeight)
+                Ruler(share: nil, fill: cli.fill)
                 Text("\u{00B7}\u{00B7}\u{00B7}")
                     .foregroundStyle(Palette.textTertiary)
                     .frame(width: Metrics.usageNumberWidth, alignment: .trailing)
@@ -58,7 +56,7 @@ struct UsageCell: View {
             .accessibilityHint(reason)
         case .counted(let runs):
             HStack(spacing: Metrics.rowSpacing) {
-                UsageBar(fraction: UsageCellModel.barFraction(runs: runs, max: max), fill: cli.fill)
+                Ruler(share: UsageCellModel.barFraction(runs: runs, max: max), fill: cli.fill)
                 Text(runs.formatted(.number.locale(Locale(identifier: "en_US"))))
                     .font(runs == 0 ? ReinsType.numberStrong.font : ReinsType.number.font)
                     .foregroundStyle(runs == 0 ? Palette.dangerInk : Palette.text)
@@ -67,23 +65,5 @@ struct UsageCell: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(runs == 0 ? "\(cli.label): never ran" : "\(cli.label): \(runs) runs")
         }
-    }
-}
-
-/// A 6 pt capsule track with a fill from the leading edge.
-struct UsageBar: View {
-    let fraction: Double
-    let fill: Color
-
-    var body: some View {
-        Capsule()
-            .fill(Palette.track)
-            .frame(height: Metrics.barHeight)
-            .overlay(alignment: .leading) {
-                GeometryReader { proxy in
-                    Capsule().fill(fill).frame(width: proxy.size.width * fraction)
-                }
-            }
-            .accessibilityHidden(true)
     }
 }

@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// The first line inside a card: the group's name in `title` with its count, an optional muted detail, and column labels
-/// over the cells below ("● Claude Code", "● Codex"). 48 pt high on the card's own surface, so the card reads as one
-/// block and the name is the one thing in it at 16 pt. `lead` sits in the rows' lead slot (usually a `CLIDot`).
+/// over the cells below ("● Claude Code", "● Codex"). 56 pt high on the card's own surface with no line under it, so the
+/// card reads as one block and the name is the one thing in it at 16 pt. `lead` sits in the rows' lead slot (usually a
+/// `CLIDot`).
 struct CardHeader<Lead: View, Columns: View>: View {
     let title: String
     var count: Int?

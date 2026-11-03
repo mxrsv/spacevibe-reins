@@ -4,6 +4,9 @@ import SwiftUI
 /// (usage cells, counts, tags) and trailing actions that appear on hover, on keyboard focus and while selected. `tall`
 /// is for three lines or more: 12 pt above and below instead of 6.
 ///
+/// The row is a block inset 8 pt from the card's edges, with no border. Hover (on a row with `onActivate`) and selection
+/// fill that block with radius 8, and the card hides the dividers on both sides of it.
+///
 ///     Row { RowText("ponytail", subtitle: "Pick the laziest solution") }
 ///         .lead { Image(systemName: "sparkles") }
 ///         .cells { UsageCell(cli: .claude, model: .counted(runs: 142), max: 142) }
@@ -27,6 +30,7 @@ struct Row<Lead: View, Main: View, Cells: View, Actions: View>: View {
 
     var body: some View {
         let revealed = hovering || selected || revealActions || focused
+        let block = RoundedRectangle(cornerRadius: Metrics.rowRadius, style: .continuous)
         HStack(spacing: Metrics.rowSpacing) {
             // The slot keeps its width when a row has no lead, so titles line up down the list.
             Color.clear
@@ -36,19 +40,23 @@ struct Row<Lead: View, Main: View, Cells: View, Actions: View>: View {
             cellsView
             actionsView.environment(\.actionsConcealed, !revealed)
         }
-        .padding(.horizontal, Metrics.rowHorizontalPadding)
+        .padding(.horizontal, Metrics.rowInnerPadding)
         .padding(.vertical, tall ? Metrics.tallRowVerticalPadding : Metrics.rowVerticalPadding)
         .frame(minHeight: Metrics.rowMinHeight)
-        .background(background)
-        .contentShape(Rectangle())
+        .background(block.fill(fill))
+        .contentShape(block)
         .onHover { hovering = $0 }
         .modifier(RowActivation(onActivate: onActivate, focused: $focused))
-        .focusRing(focused, cornerRadius: 0, inset: true)
+        .focusRing(focused, cornerRadius: Metrics.rowRadius, inset: true)
+        .padding(.horizontal, Metrics.rowInset)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(selected ? .isSelected : [])
+        .containerValue(\.groupedListFilled, isFilled)
     }
 
-    private var background: Color {
+    private var isFilled: Bool { selected || (hovering && onActivate != nil) }
+
+    private var fill: Color {
         if selected { return Palette.selection }
         if hovering && onActivate != nil { return Palette.hover }
         return .clear

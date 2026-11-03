@@ -15,25 +15,26 @@ import SwiftUI
 /// - `claude` and `codex` are the two CLI colours. They are fills (bars, dots). Text in those colours
 ///   uses the `...Ink` twin, which is darker in light mode so it keeps 4.5:1 on its own tint.
 /// - `success`, `warn` and `danger` mark state only; never decoration.
-/// - Elevation is a border (`border`), never a shadow, except for overlays (`overlay`, palette and toast).
+/// - A card is a `surface` block on the `well`, with no border; rows inside it are separated by `divider`. Only overlays
+///   (palette, confirmation, toast) keep a `border` and a shadow.
 ///
 /// Contrast measured for these values (WCAG, text on its real background): `text` 12.8 to 17.3,
-/// `textSecondary` 5.9 to 9.6, `textTertiary` 4.9 to 8.1 (dark) and 4.3 to 6.0 (light; the one pair under
-/// 4.5 is tertiary on the selected sidebar row, where the count switches to `textSecondary`), every `...Ink`
+/// `textSecondary` 5.9 to 9.6, `textTertiary` 4.4 to 8.1 (dark) and 4.9 to 6.0 (light; the one pair under
+/// 4.5 is tertiary on a selected row in dark, 4.4 since the v3 surface), tag text on `surfaceRaised` 5.1 to 7.7, every `...Ink`
 /// on its 15 percent tint 5.1 to 6.3, white on `accentSolid` 4.9 (dark) and 6.4 (light), the focus ring
 /// 6.1 to 7.5 on every surface. `border` is decoration (1.3 to 1.4 against its surface), not a control
 /// boundary on its own.
 enum Palette {
     // Surfaces
     static let background = Color(light: 0xF8FAFE, dark: 0x121721)
-    /// The content area behind cards: one step darker than a card in light, the background itself in dark, so cards read
-    /// as blocks. Reuses existing values (light `surfaceRaised`, dark `background`).
+    /// The ground of the content area and the sidebar: one step darker than a card in light, the background itself in dark,
+    /// so cards read as blocks. Reuses existing values (light `surfaceRaised`, dark `background`).
     static let well = Color(light: 0xF0F4FA, dark: 0x121721)
-    static let sidebar = Color(light: 0xE7EDF8, dark: 0x090E1A)
     static let surface = Color(light: 0xFFFFFF, dark: 0x232B38)
     static let surfaceRaised = Color(light: 0xF0F4FA, dark: 0x2C3544)
     static let border = Color(light: 0xD3D8E0, dark: 0x363D4B, darkAlpha: 0.7)
-    static let track = Color(light: 0xE1E5EB, dark: 0x2B313B)
+    /// The text colour at 8%: between two rows of a card, and between the sidebar and the content area.
+    static let divider = Color(light: 0x141B26, dark: 0xF0F2F6, lightAlpha: 0.08, darkAlpha: 0.08)
 
     // Interaction
     static let hover = Color(light: 0xD7DEEC, dark: 0x262E3D, lightAlpha: 0.6, darkAlpha: 0.55)

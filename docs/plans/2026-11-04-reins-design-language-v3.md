@@ -53,6 +53,7 @@ Facts this plan rests on, read 2026-11-04:
 - Controls (`ReinsButtonStyle`, `SegmentedControl`, `FilterChip`, `ScopePicker`, `SearchField`, `Kbd`): no outline, fills per spec.
 - Gallery: every component in every state, both appearances.
 - Verification: `RulerTests` (DL8), gallery shots read against mock v3's component sheet.
+- Done 2026-11-04 on `claude/reins-design-v3`. The V2 `Metrics` items (48, 56, 24, radius 6, ruler) landed here, with their first reader; `Palette.sidebar` and `Palette.track` are gone, `Palette.divider` (text at 8%) and `ControlGround` are new. Readings where the spec is silent, all reversible: no line under a card header; 8 pt above the first row of a card that has no header (the add-rule card), to match the 8 below; a row block keeps 8 pt of padding inside its 8 pt inset, so text stays 16 pt from the card's edge and the divider starts where the text starts (40 from the block); a ruler cell is a tenth of the track with the 3 pt gap at its trailing end, capsule-shaped like the old bar; the sidebar item's 16 pt is its own inner padding (the column keeps 8). Not checked by eye: dark `hover` (0x262E3D at 55%) is now almost the colour of the brighter dark `surface`, so a hovered row in dark barely shows.
 
 ### V4. Icons
 - `scripts/generate-icons.mjs` and `ReinsIcon` (a `View` taking the icon, size and tone) with the generated data; the licence text (Solar by 480 Design, CC BY 4.0) in the About or licences surface, and in `docs/DESIGN-LANGUAGE.md`.
