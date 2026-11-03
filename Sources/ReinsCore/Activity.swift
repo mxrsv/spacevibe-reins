@@ -143,6 +143,17 @@ public actor ActivityEngine {
         var subs: [LogFile]
     }
 
+    /// What the Codex builder reads from one `readActivity` call. Nested because `LogIndex` and `CacheEntry` are private to the actor.
+    private struct ReadContext {
+        var roots: Roots
+        var nowMs: Double
+        var options: ActivityOptions
+        var proc: any ProcessAdapter
+        var memo: ProjectNameMemo
+        var index: LogIndex
+        var foldedByPath: [String: CacheEntry]
+    }
+
     private var cache: [String: CacheEntry] = [:]
     private static let maxSubagentLogs = 50
     private static let childHeadBytes = 64 * 1024
@@ -337,23 +348,7 @@ public actor ActivityEngine {
         let memo = ProjectNameMemo()
 
         // 1. Live processes.
-        var claudeLive: [ClaudeLive] = []
-        let sessionsDir = roots.claude.root.appendingPathComponent("sessions", isDirectory: true)
-        let names = ((try? FileManager.default.contentsOfDirectory(atPath: sessionsDir.path)) ?? []).filter(Self.isStatusFileName).sorted()
-        for name in names {
-            guard let s = Self.readJSON(sessionsDir.appendingPathComponent(name)), let pid = s["pid"]?.integerValue,
-                  let sessionId = s["sessionId"]?.stringValue else { continue }
-            var alive = await proc.isAlive(pid: pid)
-            if alive, let procStart = s["procStart"]?.stringValue, !procStart.isEmpty, let started = await proc.startTime(pid: pid), !started.isEmpty {
-                // A reused pid has a different start time; two readings that disagree mean another process.
-                if ActivityText.collapse(started) != ActivityText.collapse(procStart) { alive = false }
-            }
-            let subs = (index.claudeSubs[sessionId] ?? []).enumerated().sorted { a, b in
-                a.element.mtimeMs != b.element.mtimeMs ? a.element.mtimeMs > b.element.mtimeMs : a.offset < b.offset
-            }.map(\.element)
-            claudeLive.append(ClaudeLive(status: s, pid: pid, sessionId: sessionId, alive: alive, main: index.claudeMain[sessionId], subs: subs))
-        }
-        let threads = await proc.codexThreads()
+        let (claudeLive, threads) = await liveProcesses(roots: roots, index: index, proc: proc)
         let codexPids = Set(threads.filter { $0.threadId != nil }.map(\.pid))
 
         // 2. Which logs to fold: live ones in full, the rest only if recent.
@@ -383,6 +378,54 @@ public actor ActivityEngine {
         for path in cache.keys where !wanted.contains(path) { cache[path] = nil }
 
         // 3. Sessions.
+        let ctx = ReadContext(roots: roots, nowMs: nowMs, options: options, proc: proc, memo: memo, index: index, foldedByPath: foldedByPath)
+        var sessions = claudeSessions(claudeLive, foldedByPath: foldedByPath, nowMs: nowMs, options: options, memo: memo)
+            + (await codexSessions(threads, codexPids: codexPids, ctx))
+        sessions = sessions.enumerated().sorted { a, b in
+            if a.element.cli != b.element.cli { return a.element.cli.rawValue < b.element.cli.rawValue }
+            let ka = a.element.lastWriteAgoMs ?? .infinity, kb = b.element.lastWriteAgoMs ?? .infinity
+            return ka != kb ? ka < kb : a.offset < b.offset
+        }.map(\.element)
+
+        // 4. Cross-session lists.
+        let sessionByPath = Dictionary(index.files.map { ($0.path, $0.session) }, uniquingKeysWith: { first, _ in first })
+        let logs = folded.map { item -> ActivityLogEntry in
+            let st = item.entry.state
+            return ActivityLogEntry(state: st, session: "\(st.cli.rawValue):\(sessionByPath[item.file.path] ?? item.file.path)", project: projectName(st.cwd, hint: st.worktreeOriginal, memo: memo))
+        }
+        return ActivityReport(
+            sessions: sessions,
+            failures: ActivityGroups.groupFailures(logs, limit: options.failureLimit),
+            files: ActivityGroups.groupFiles(logs, limit: options.fileLimit),
+            unmeasurable: Self.limitCodes.map { ActivityLimit(cli: $0.0, code: $0.1, text: $0.1.text) },
+            stats: ActivityStats(logs: folded.count, truncated: folded.filter { $0.entry.truncated }.count)
+        )
+    }
+
+    /// Claude status files checked against the process table, and the Codex threads that live processes hold.
+    private func liveProcesses(roots: Roots, index: LogIndex, proc: any ProcessAdapter) async -> (claudeLive: [ClaudeLive], threads: [CodexThread]) {
+        var claudeLive: [ClaudeLive] = []
+        let sessionsDir = roots.claude.root.appendingPathComponent("sessions", isDirectory: true)
+        let names = ((try? FileManager.default.contentsOfDirectory(atPath: sessionsDir.path)) ?? []).filter(Self.isStatusFileName).sorted()
+        for name in names {
+            guard let s = Self.readJSON(sessionsDir.appendingPathComponent(name)), let pid = s["pid"]?.integerValue,
+                  let sessionId = s["sessionId"]?.stringValue else { continue }
+            var alive = await proc.isAlive(pid: pid)
+            if alive, let procStart = s["procStart"]?.stringValue, !procStart.isEmpty, let started = await proc.startTime(pid: pid), !started.isEmpty {
+                // A reused pid has a different start time; two readings that disagree mean another process.
+                if ActivityText.collapse(started) != ActivityText.collapse(procStart) { alive = false }
+            }
+            let subs = (index.claudeSubs[sessionId] ?? []).enumerated().sorted { a, b in
+                a.element.mtimeMs != b.element.mtimeMs ? a.element.mtimeMs > b.element.mtimeMs : a.offset < b.offset
+            }.map(\.element)
+            claudeLive.append(ClaudeLive(status: s, pid: pid, sessionId: sessionId, alive: alive, main: index.claudeMain[sessionId], subs: subs))
+        }
+        let threads = await proc.codexThreads()
+        return (claudeLive, threads)
+    }
+
+    /// One row per Claude status file, ended sessions older than `endedKeepMs` dropped.
+    private func claudeSessions(_ claudeLive: [ClaudeLive], foldedByPath: [String: CacheEntry], nowMs: Double, options: ActivityOptions, memo: ProjectNameMemo) -> [ActivitySession] {
         var sessions: [ActivitySession] = []
         for c in claudeLive {
             let entry = c.main.flatMap { foldedByPath[$0.path] }
@@ -411,6 +454,13 @@ public actor ActivityEngine {
                 ageMs: Self.truthy(startedAt).map { max(0, nowMs - $0) }, lastWriteAgoMs: lastWriteAgoMs, cost: cost, costNote: costNote
             ))
         }
+        return sessions
+    }
+
+    /// One row per live `codex` process; a child rollout, or a thread-less row whose pid already holds a thread, gets none.
+    private func codexSessions(_ threads: [CodexThread], codexPids: Set<Int>, _ ctx: ReadContext) async -> [ActivitySession] {
+        let (roots, index, foldedByPath, nowMs, options, proc, memo) = (ctx.roots, ctx.index, ctx.foldedByPath, ctx.nowMs, ctx.options, ctx.proc, ctx.memo)
+        var sessions: [ActivitySession] = []
         let threadNames = Self.codexThreadNames(roots)
         for t in threads {
             let f = t.threadId.flatMap { index.codexById[$0] }
@@ -442,25 +492,7 @@ public actor ActivityEngine {
                 ageMs: Self.truthy(st.startedAt).map { max(0, nowMs - $0) }, lastWriteAgoMs: lastWriteAgoMs, cost: cost, costNote: costNote
             ))
         }
-        sessions = sessions.enumerated().sorted { a, b in
-            if a.element.cli != b.element.cli { return a.element.cli.rawValue < b.element.cli.rawValue }
-            let ka = a.element.lastWriteAgoMs ?? .infinity, kb = b.element.lastWriteAgoMs ?? .infinity
-            return ka != kb ? ka < kb : a.offset < b.offset
-        }.map(\.element)
-
-        // 4. Cross-session lists.
-        let sessionByPath = Dictionary(index.files.map { ($0.path, $0.session) }, uniquingKeysWith: { first, _ in first })
-        let logs = folded.map { item -> ActivityLogEntry in
-            let st = item.entry.state
-            return ActivityLogEntry(state: st, session: "\(st.cli.rawValue):\(sessionByPath[item.file.path] ?? item.file.path)", project: projectName(st.cwd, hint: st.worktreeOriginal, memo: memo))
-        }
-        return ActivityReport(
-            sessions: sessions,
-            failures: ActivityGroups.groupFailures(logs, limit: options.failureLimit),
-            files: ActivityGroups.groupFiles(logs, limit: options.fileLimit),
-            unmeasurable: Self.limitCodes.map { ActivityLimit(cli: $0.0, code: $0.1, text: $0.1.text) },
-            stats: ActivityStats(logs: folded.count, truncated: folded.filter { $0.entry.truncated }.count)
-        )
+        return sessions
     }
 
     static func isStatusFileName(_ name: String) -> Bool {
