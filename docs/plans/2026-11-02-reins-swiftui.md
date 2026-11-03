@@ -105,7 +105,7 @@ Own plan: [2026-11-03-reins-tokens.md](2026-11-03-reins-tokens.md), after S2 and
 Built by parallel subagents; the orchestrator re-ran `scripts/test.sh` (267 tests, 28 suites, pass) and `swift build` after the last change. Figures not marked otherwise are the agents' reports.
 
 - Review (`review-change`, run `aeze29`, range `d366edc..694e39a`): correctness, tests and security-code all ran. Fixed in `887bc9c`, `a7a02d1`, `58fbb31`, `3d632fb`: fixtures hidden by a global gitignore; concurrent writes losing journal entries and edits (one process-wide recursive lock, unique temp names, a byte re-check before rename); project-scope symlink escape; symlinked Claude root; denied paths read as missing; unbounded TOML recursion; zstd memory (ring buffer, 512 MiB cap) and an exact-128-KB truncation bug; Rules confirmation bound to its scope; Loadout row, toast and double-click findings; test gaps for the pid guard, rollbacks and hook timeouts.
-- Debt accepted (optimize or harden later): trash backups of edited settings are never pruned and may hold `env` secrets; Undo trusts paths in `journal.json`; Stop takes a Claude pid from a writable status file (needs the confirmation click; the pid is re-checked by start time only); the fixture tree lives at the fixed path `/private/tmp/reins-fixture-home`; the write lock covers this process only (another process is caught by the byte re-check, with a small window before `rename`); failed-command text shown in Activity is not redacted (same as the Node core; owner decision pending); `Components/`, `Gallery/` and the Shell views were not reviewed; the app target has no unit tests (the Sparkle session added `Tests/ReinsTests`); no `NavigationSplitView`, so the sidebar cannot collapse; palette has no real combobox role.
+- Debt accepted (optimize or harden later): trash backups of edited settings are never pruned and may hold `env` secrets; Undo trusts paths in `journal.json`; Stop takes a Claude pid from a writable status file (needs the confirmation click; the pid is re-checked by start time only); the fixture tree lives at the fixed path `/private/tmp/reins-fixture-home`; the write lock covers this process only (another process is caught by the byte re-check, with a small window before `rename`); failed-command text shown in Activity is not redacted (same as the Node core; owner decision pending); no `NavigationSplitView`, so the sidebar cannot collapse; palette has no real combobox role.
 - Not verified: hover, focus ring, keyboard flow, VoiceOver, window drag, the real `Menu` and `TextField` in a live window, polling, Stop against a live process, TCC prompts (S0.3), Linux build (S0.6), `scripts/build-app.sh` after the Sparkle change (another session owns it), a clean-checkout test run after `887bc9c`.
 
 ## Security remediation (2026-11-03)
@@ -138,6 +138,35 @@ the remaining UI, real-CLI, portability or release gates.
   CLI configuration was edited; process-identity regressions use a fake adapter.
 - Remaining limits of these fixes: process start identity has the precision of `ps lstart`; the OS check-to-signal race,
   crash recovery between config and journal persistence, and cross-process write races remain outside this change.
+
+## Code-quality review and fixes (2026-11-03)
+
+Three Fable 5.1 reviewers (architecture, clean code in `ReinsCore`, clean code in the app; run `dyo08c` at `de30381`) found
+no blocker. The 11 medium findings were fixed by parallel Sonnet agents in two waves: commits `61b4dca`, `3d4a639`,
+`dd87449`, `3021eba`, `35341a8`, `28b55b7` and `bdbd8d7`.
+
+- One JavaScript-text helper set (`ActivityText`) and one SHA-1 (`Inventory.sha`) in `ReinsCore`; `readActivity` split into
+  `liveProcesses`, `claudeSessions` and `codexSessions` (pure move); `ActivityCLI` and the app's `CLIKind` folded into
+  `InventoryCLI`, colours in `Components/CLIStyle.swift`.
+- `Journal` fails closed: a `journal.json` that exists but is not a JSON array makes `record` and `undo` throw 409 instead of
+  being read as empty and overwritten. Deliberate break from the Node core; display reads stay lenient.
+- One `ShotHarness` and one `ShotFit`; `REINS_SHOT_SCREEN=shell|loadout|rules|activity` is the only selector and CI loops all
+  four. Before, the fixture variables selected Activity, so the Loadout and Rules shot assertions never ran in CI.
+  `scripts/dev-fixture.sh --shots` without the variable now renders the demo shell, not Activity.
+- `reinsFocusable` owns focus state and ring (Row and SegmentedControl keep theirs); `ScopePicker` shared by Loadout and
+  Rules; `Metrics.fieldRadius/segmentRadius/kbdRadius/paletteRowHeight/paletteSectionHeight` and `ReinsFont.emptyStateIcon`;
+  `TempHome.roots/strayTempFiles/mode` replace the per-suite copies, with the stricter `.tmp` filter everywhere.
+- `Tests/ReinsTests` gained PaletteSearch, ShellModel, LoadoutRows, RulesScopes and ActivityFormat suites, then the
+  Activity wording, scope option and Rules title/`scrubbed` tests the change review asked for.
+- Change review (`review-change`, run `vfgila`, range `de30381..28b55b7`, six in-scope commits): correctness 0 blocker, 0
+  high, 3 low still open (the journal refusal message says "not valid JSON" for `{}`, an unreadable file or a folder; an
+  empty 0-byte `journal.json` now also blocks writes; the `--shots` default moved); tests 2 medium and 1 low closed by
+  `bdbd8d7`; security-code 0 findings.
+- Verification on the shared checkout: `scripts/test.sh` 360 tests in 39 suites pass; `swift build` clean; the four shot
+  runs exit 0 (shell 16, loadout 20, rules 30, activity 10 PNGs; 62 `ok:` checks).
+- Still open from the review (low): `ActivityText` is the module-wide text helper under an Activity name;
+  `Sources/Reins/Tokens/` is the theme folder while the Tokens tab lands elsewhere; `Journal.history` and
+  `Mutate.addSkill/addAgent` have no app caller; CI has no `tokens` shot case until the Tokens plan adds one.
 
 ## Acceptance map
 
