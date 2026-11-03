@@ -5,10 +5,12 @@ extension View {
     /// type and colours, and the accent for system controls.
     @MainActor
     func reinsRoot(shell: ShellModel, toasts: ToastCenter, env: AppEnvironment? = nil) -> some View {
-        self
+        let env = env ?? .shared
+        return self
             .environment(shell)
             .environment(toasts)
-            .environment(env ?? .shared)
+            .environment(env)
+            .environment(env.limits)
             .environment(shell.appearance)
             .reinsText(.body, tone: .primary)
             .tint(Palette.accent)

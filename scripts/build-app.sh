@@ -64,6 +64,9 @@ ditto "${BINARY_DIR}/Sparkle.framework" "${APP_BUNDLE}/Contents/Frameworks/Spark
 # Inter, the only typeface (OFL); InterFont registers it from here at launch.
 mkdir -p "${APP_BUNDLE}/Contents/Resources/Fonts"
 cp Resources/Fonts/InterVariable.woff2 Resources/Fonts/OFL.txt "${APP_BUNDLE}/Contents/Resources/Fonts/"
+# The CLI brand marks Limits draws (CLIMark reads them from here).
+mkdir -p "${APP_BUNDLE}/Contents/Resources/Brand"
+cp Resources/Brand/*.svg "${APP_BUNDLE}/Contents/Resources/Brand/"
 printf 'APPL????' > "${APP_BUNDLE}/Contents/PkgInfo"
 # The app icon, rendered from the mark on every build so the artwork has one source. Resources and frameworks are
 # copied here, before codesign: anything added to a signed bundle invalidates the signature.

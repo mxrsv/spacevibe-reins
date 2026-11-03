@@ -5,7 +5,7 @@ Parent plan: [the SwiftUI plan](2026-11-02-reins-swiftui.md), whose packaging an
 Mock: `~/scratch/spacevibe-reins/limits/index.html`, outside git, synthetic data, typical and edge data in light and dark;
 its direction B is the target. Placement B, chosen by the owner on 2026-11-03: a sidebar block on every tab, detail in a
 popover.
-Status: engine done (L1), placement picked (L2); L3 to L5 open. Started 2026-11-03.
+Status: engine (L1), placement B (L2), model and wording (L3) and the view (L4) done; L5 open (`distill`/`clarify` and the owner's eye approval). Started 2026-11-03.
 
 ## Approach
 
@@ -63,7 +63,7 @@ lines record it. Consequences for the tasks below:
 - `LimitsModel` lives at app scope (created beside `ShellModel`) and is injected through the environment, because every
   tab shows the block.
 
-### L3. Model and wording
+### L3. Model and wording (done 2026-11-03)
 
 - `LimitsModel` (`@MainActor`, observable, app scope): reads `Limits.read` off the main thread at launch, when the window
   becomes key, every 60 s while the window is visible, and on Refresh. A read never blocks the UI and never throws to it.
@@ -73,7 +73,7 @@ lines record it. Consequences for the tasks below:
   marker (reading older than 6 hours).
 - Tests in `LimitsWordingTests` against fixed dates. AC10 wording half.
 
-### L4. View
+### L4. View (done 2026-11-03)
 
 - Built only from `Sources/Reins/Components` and `ReinsType` roles; no style literal in the screen folder
   (`StyleBoundaryTests`, which must see `Sources/Reins/Limits/`). Sidebar block, detail popover (card per CLI, tile per
@@ -100,6 +100,15 @@ lines record it. Consequences for the tasks below:
 
 - Checkout: `main`, shared with the design-language session (`spacevibe-reins-6c`), which owns
   `Sources/Reins/{Components,Tokens,Gallery,Loadout,Activity,Rules,Shell}`. Commit with `git commit -- <paths>`.
-- Remaining: L3 to L5.
+- Done in L4: `Components/` gained `CLIMark`, `LimitCard`, `LimitTile`, `LimitNoteTile`, `LimitSidebarTile` (the shell owner agreed
+  on 2026-11-03; it asked the owner to confirm the borderless tile and `figure` outside Tokens and will record that in the
+  design-language spec, which this plan does not edit). `LimitsModel` hangs off `AppEnvironment.limits` and `reinsRoot` injects
+  it. `Resources/Brand/*.svg` (copied from `spacevibe-board` and `spacevibe-bench`; Gemini flattened to one path with spaced arc
+  flags because CoreSVG rejects gradients and packed flags) are copied into the bundle by `build-app.sh`.
+- Shots: `REINS_FIXTURE_LIMITS=typical|edge REINS_SHOT_SCREEN=limits scripts/dev-fixture.sh --shots <dir>` writes the sidebar,
+  the detail and the detail with inactive windows, light and dark. The fixture section is opt-in so the golden home is unchanged.
+- Verification 2026-11-03: `scripts/test.sh` → `Test run with 368 tests in 40 suites passed`; the six shots per variant were
+  looked at.
+- Remaining: L5 (`impeccable distill` and `clarify` on the surface, owner eye approval of the shots against the mock).
 
 `/goal` Build Reins Limits per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-03-reins-limits.md tasks L3 to L5 in placement B (recorded under L2), so that AC10 holds in scripts/test.sh and the surface matches ~/scratch/spacevibe-reins/limits/ in light and dark shots; stop and report if the shell owner has not agreed to the sidebar and component edits, and never send a request, read a credential, start a CLI, push or release.

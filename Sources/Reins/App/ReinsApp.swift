@@ -32,7 +32,7 @@ struct ReinsApp: App {
         .windowBackgroundDragBehavior(.enabled)
         .defaultSize(width: 1180, height: 760)
         .commands {
-            ShellCommands(shell: shell)
+            ShellCommands(shell: shell, limits: env.limits)
             CommandGroup(after: .appInfo) {
                 Button("Check for Updates\u{2026}") { updates.checkForUpdates() }
             }

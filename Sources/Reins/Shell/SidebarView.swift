@@ -18,6 +18,8 @@ struct SidebarView: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Sections")
             Spacer(minLength: 0)
+            LimitsSidebarBlock()
+                .padding(.bottom, Space.s12)
             HStack(spacing: Space.s8) {
                 if let status = shell.statusMessage {
                     Text(status)

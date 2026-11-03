@@ -183,6 +183,9 @@ struct ComponentGalleryContent: View {
                     Spacer(minLength: 0)
                 }
             }
+            section("Limits: CLI card, window tiles (lead, normal, warn 20%, danger 5%, unknown), note tile, sidebar tiles") {
+                LimitsSpecimens()
+            }
             section("Banner") {
                 VStack(spacing: Space.s12) {
                     Banner(.error, message: "Could not read settings.json", detail: "Line 14: unexpected comma. Nothing was changed.", actionTitle: "Try again") {}
@@ -306,5 +309,61 @@ private struct Swatches: View {
             }
         }
         .accessibilityHidden(true)
+    }
+}
+
+/// The Limits blocks in every state, on the page well: the lead tile in each tone, a plain tile, one whose reset has passed,
+/// a note tile, and the sidebar's tiles.
+private struct LimitsSpecimens: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: Space.s16) {
+            VStack(spacing: Space.s16) {
+                LimitCard(.claude, title: "Claude Code", plan: nil) {
+                    Text("read 4 min ago").reinsText(.caption, tone: .secondary)
+                } trailing: {
+                    Image(systemName: "info.circle")
+                } content: {
+                    LimitTile(cli: .claude, title: "Weekly", detail: "Resets in 2 d 22 h \u{00B7} Fri 16:00", reading: .share(left: 92, tone: .normal), isLead: true)
+                    LimitTile(cli: .claude, title: "Weekly \u{00B7} Fable", detail: "Resets in 2 d 22 h \u{00B7} Fri 16:00", tags: [LimitTileTag(text: "not in use")], reading: .share(left: 100, tone: .normal))
+                }
+                LimitCard(.codex, title: "Codex", plan: "Plus") {
+                    Tag("read 5 h ago", tone: .warn, systemImage: "clock")
+                } trailing: {
+                    Image(systemName: "info.circle")
+                } content: {
+                    LimitTile(cli: .codex, title: "Weekly", detail: "Resets in 1 d 3 h \u{00B7} Wed 21:00", reading: .share(left: 18, tone: .low), isLead: true)
+                    LimitTile(cli: .codex, title: "5-hour", detail: "Reset at 17:34 \u{00B7} no newer reading", tags: [LimitTileTag(text: "reset passed", tone: .warn, systemImage: "clock")], reading: .unknown)
+                }
+            }
+            VStack(spacing: Space.s16) {
+                LimitCard(.codex, title: "Codex", plan: "Pro") {
+                    EmptyView()
+                } trailing: {
+                    EmptyView()
+                } content: {
+                    LimitTile(cli: .codex, title: "Weekly", detail: "Resets in 1 d 3 h \u{00B7} Wed 21:00", reading: .share(left: 4, tone: .out), isLead: true)
+                    LimitTile(cli: .codex, title: "5-hour", detail: "Resets in 3 h 12 min \u{00B7} 21:12", reading: .share(left: 77, tone: .normal))
+                }
+                LimitCard(.gemini, title: "Gemini CLI") {
+                    EmptyView()
+                } trailing: {
+                    EmptyView()
+                } content: {
+                    LimitNoteTile(title: "Not measurable", text: "Gemini CLI keeps no usage limit on disk, and Reins does not go online for it.", isWarn: true)
+                    LimitNoteTile(title: "No reading yet", text: "Claude Code has not fetched usage on this Mac.", action: ("Copy /usage", "doc.on.doc", {}))
+                }
+                VStack(spacing: Space.s6) {
+                    LimitSidebarTile(cli: .claude, name: "Claude Code", value: "92% left", fraction: 0.92)
+                    LimitSidebarTile(cli: .codex, name: "Codex", value: "18% left", tone: .low, fraction: 0.18)
+                    LimitSidebarTile(cli: .codex, name: "Codex", value: "4% left", tone: .out, fraction: 0.04)
+                    LimitSidebarTile(cli: .gemini, name: "Gemini CLI", value: "not measurable", isMuted: true)
+                }
+                .padding(Space.s8)
+                .frame(width: Metrics.sidebarWidth)
+                .background(Palette.sidebar)
+            }
+        }
+        .padding(Metrics.pagePadding)
+        .background(Palette.well)
     }
 }

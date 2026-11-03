@@ -1,0 +1,137 @@
+import ReinsCore
+import SwiftUI
+
+/// How close a window is to its limit. Tints the lead tile and the bar: low at 20% left, out at 5%.
+enum LimitTone: Equatable {
+    case normal, low, out
+
+    var barFill: Color? {
+        switch self {
+        case .normal: nil
+        case .low: Palette.warn
+        case .out: Palette.danger
+        }
+    }
+
+    var tint: Color? {
+        switch self {
+        case .normal: nil
+        case .low: Palette.warnTint
+        case .out: Palette.dangerTint
+        }
+    }
+
+    var figureTone: TextTone {
+        switch self {
+        case .normal: .primary
+        case .low: .warn
+        case .out: .danger
+        }
+    }
+}
+
+/// What a window tile reads out: the share left, or nothing known once its reset has passed.
+enum LimitReading: Equatable {
+    case share(left: Int, tone: LimitTone)
+    case unknown
+}
+
+struct LimitTileTag: Equatable {
+    let text: String
+    var tone: TagTone = .neutral
+    var systemImage: String?
+}
+
+/// One usage-limit window as its own block, not a row in a list: a clock square, the window's name with its tags and the
+/// reset line, the share left on the right, and a bar the full width below. A CLI card holds one tile per window.
+///
+/// `isLead` marks the window that decides how much is usable: it is tinted (the CLI's colour, or warn or danger when
+/// nearly out), shows the share in `figure` and has a thicker bar. The others sit on `surfaceRaised` with the share in `title`.
+/// No border and no divider: the fill and the space around it separate the tiles.
+struct LimitTile: View {
+    let cli: LimitsCLI
+    let title: String
+    let detail: String
+    var tags: [LimitTileTag] = []
+    let reading: LimitReading
+    var isLead = false
+
+    private var tone: LimitTone {
+        if case .share(_, let tone) = reading { return tone }
+        return .normal
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s12) {
+            HStack(spacing: Space.s12) {
+                Image(systemName: "clock")
+                    .imageScale(.medium)
+                    .foregroundStyle(cli.ink)
+                    .frame(width: Metrics.limitTileIconSize, height: Metrics.limitTileIconSize)
+                    .background(RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous).fill(Palette.surface))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: Space.s8) {
+                        Text(title).reinsText(.title, tone: .primary).lineLimit(1)
+                        ForEach(tags, id: \.text) { Tag($0.text, tone: $0.tone, systemImage: $0.systemImage) }
+                    }
+                    Text(detail).reinsText(.body, tone: .secondary).lineLimit(2)
+                }
+                Spacer(minLength: Space.s8)
+                figure
+            }
+            LimitBar(fraction: fraction, fill: tone.barFill ?? cli.fill, height: isLead ? Metrics.limitLeadBarHeight : Metrics.limitBarHeight)
+        }
+        .padding(Space.s16)
+        .background(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous).fill(background))
+        .accessibilityElement(children: .combine)
+    }
+
+    private var fraction: Double? {
+        if case .share(let left, _) = reading { return Double(left) / 100 }
+        return nil
+    }
+
+    private var background: Color {
+        guard isLead else { return Palette.surfaceRaised }
+        return tone.tint ?? cli.tint
+    }
+
+    @ViewBuilder
+    private var figure: some View {
+        switch reading {
+        case .share(let left, let tone):
+            VStack(alignment: .trailing, spacing: 0) {
+                Text("\(left)%").reinsText(isLead ? .figure : .title, tone: tone.figureTone)
+                Text("left").reinsText(.caption, tone: .secondary)
+            }
+        case .unknown:
+            Text("unknown").reinsText(.title, tone: .secondary)
+        }
+    }
+}
+
+/// A rounded track with the fill from the leading edge; dashed and empty when the share is not known.
+struct LimitBar: View {
+    let fraction: Double?
+    let fill: Color
+    let height: CGFloat
+
+    var body: some View {
+        Group {
+            if let fraction {
+                Capsule()
+                    .fill(Palette.text.opacity(0.14))
+                    .overlay(alignment: .leading) {
+                        GeometryReader { proxy in
+                            Capsule().fill(fill).frame(width: max(height, proxy.size.width * min(1, max(0, fraction))))
+                        }
+                    }
+            } else {
+                Capsule().strokeBorder(Palette.textTertiary, style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+            }
+        }
+        .frame(height: height)
+        .accessibilityHidden(true)
+    }
+}

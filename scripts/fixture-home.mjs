@@ -338,8 +338,42 @@ function activitySection(ctx) {
   }));
 }
 
+// Limits: only when REINS_FIXTURE_LIMITS is set, so the golden fixture (and every count derived from it) stays as it was.
+// "typical": Claude Code read 2 days ago, Codex read 4 minutes ago, Gemini CLI present but not measurable.
+// "edge": no Claude Code reading, Codex 5-hour window already reset and the weekly one at 4% left, no Gemini CLI.
+function limitsSection(ctx) {
+  const variant = process.env.REINS_FIXTURE_LIMITS;
+  if (!variant) return;
+  const { claude, codex, now, put } = ctx;
+  const MIN = 60_000, H = 3_600_000;
+  const epoch = (ms) => Math.floor(ms / 1000);
+  const edge = variant === 'edge';
+  if (!edge) {
+    const iso = (ms) => new Date(ms).toISOString().replace('Z', '+00:00');
+    const weeklyReset = now + 2 * DAY + 22 * H;
+    put(join(claude, '.claude.json'), JSON.stringify({
+      numStartups: 3,
+      cachedUsageUtilization: {
+        fetchedAtMs: now - 2 * DAY - 2 * H,
+        utilization: {
+          limits: [
+            { kind: 'weekly_all', group: 'weekly', percent: 8, severity: 'normal', resets_at: iso(weeklyReset), scope: null, is_active: true },
+            { kind: 'weekly_scoped', group: 'weekly', percent: 0, severity: 'normal', resets_at: iso(weeklyReset), scope: { model: { id: null, display_name: 'Fable' }, surface: null }, is_active: false },
+          ],
+        },
+      },
+    }));
+    mkdirSync(join(ctx.dir, '.gemini'), { recursive: true });
+  }
+  const readAt = edge ? now - 5 * H : now - 4 * MIN;
+  const limits = edge
+    ? { primary: { used_percent: 88, window_minutes: 300, resets_at: epoch(now - 26 * MIN) }, secondary: { used_percent: 96, window_minutes: 10080, resets_at: epoch(now + DAY + 3 * H) }, plan_type: 'plus' }
+    : { primary: { used_percent: 23, window_minutes: 300, resets_at: epoch(now + 3 * H + 12 * MIN) }, secondary: { used_percent: 61, window_minutes: 10080, resets_at: epoch(now + 6 * DAY + 16 * H) }, plan_type: 'pro' };
+  put(join(codex, 'sessions', '2026', '11', '03', 'rollout-limits.jsonl'), `${JSON.stringify({ timestamp: new Date(readAt).toISOString(), type: 'event_msg', payload: { type: 'token_count', info: null, rate_limits: limits } })}\n`);
+}
+
 // Order matters: config first (logs name its hook commands), logs after. Feature agents append here.
-const SECTIONS = [configSection, claudeLogsSection, codexLogsSection, loadoutProjectSection, rulesSection, activitySection];
+const SECTIONS = [configSection, claudeLogsSection, codexLogsSection, loadoutProjectSection, rulesSection, activitySection, limitsSection];
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dir = process.argv[2];

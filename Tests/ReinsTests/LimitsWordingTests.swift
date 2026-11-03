@@ -33,6 +33,13 @@ struct LimitsWordingTests {
         #expect(LimitsWording.tone(window(used: 95)) == .out)
     }
 
+    @Test("a plan reads capitalised in its tag")
+    func planName() {
+        #expect(LimitsWording.planName("pro") == "Pro")
+        #expect(LimitsWording.planName("plus") == "Plus")
+        #expect(LimitsWording.planName("") == "")
+    }
+
     @Test("window names: known lengths, a scope, whole hours or days, and the record's own name")
     func names() {
         #expect(LimitsWording.name(window(minutes: 300, used: 0, resets: 1)) == "5-hour")

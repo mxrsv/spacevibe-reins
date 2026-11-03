@@ -29,6 +29,9 @@ enum LimitsWording {
         }
     }
 
+    /// The plan the record names, as a tag: "pro" reads "Pro".
+    static func planName(_ plan: String) -> String { plan.prefix(1).uppercased() + plan.dropFirst() }
+
     // MARK: Windows
 
     private static func exactShareLeft(_ window: LimitWindow) -> Double { max(0, 100 - window.usedPercent) }

@@ -26,6 +26,8 @@ final class AppEnvironment {
     let startupProblem: String?
     let proc: any ProcessAdapter
     let toasts: ToastCenter
+    /// The Limits readings, shared by the sidebar block on every tab and its detail.
+    @ObservationIgnored lazy var limits = LimitsModel(env: self)
 
     init(roots: Roots?, startupProblem: String? = nil, proc: any ProcessAdapter, toasts: ToastCenter? = nil) {
         self.roots = roots
