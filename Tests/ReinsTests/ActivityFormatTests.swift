@@ -48,12 +48,12 @@ struct ActivityFormatTests {
     }
 
     private func failure(
-        kind: ActivityFailure.Kind = .command, reason: String = "", exit: Int? = nil,
-        last: String?, hook: ActivityFailure.Hook? = nil
+        kind: ActivityFailure.Kind = .command, cli: InventoryCLI = .claude, count: Int = 3, reason: String = "", exit: Int? = nil,
+        last: String?, laterPass: String? = nil, hook: ActivityFailure.Hook? = nil
     ) -> ActivityFailure {
         ActivityFailure(
-            kind: kind, cli: .claude, key: "k", title: "demo-check --all", count: 3, exit: exit, reason: reason,
-            projects: [], sessions: 1, first: last, last: last, laterPass: nil, hook: hook
+            kind: kind, cli: cli, key: "k", title: "demo-check --all", count: count, exit: exit, reason: reason,
+            projects: [], sessions: 1, first: last, last: last, laterPass: laterPass, hook: hook
         )
     }
 
@@ -94,5 +94,161 @@ struct ActivityFormatTests {
         #expect(FailureWording(hook, now: now).how == "Stop hook \u{00B7} exit 2 \u{00B7} last 1 h ago")
         let command = failure(exit: 2, last: iso(hoursAgo: 1))
         #expect(FailureWording(command, now: now).how.hasPrefix("exit 2"))
+    }
+
+    // MARK: ActivityRows filters
+
+    private func session(
+        _ cli: InventoryCLI = .claude, _ state: ActivitySessionState = .running, id: String = "s1", project: String? = nil,
+        reason: String = "log written 2 s ago", tool: ActivityTool? = nil, age: Double? = nil, lastWrite: Double? = nil
+    ) -> ActivitySession {
+        ActivitySession(
+            cli: cli, id: id, title: "demo task", project: project, pid: 100, state: state, stateReason: reason,
+            currentTool: tool, ageMs: age, lastWriteAgoMs: lastWrite
+        )
+    }
+
+    @Test("sessions keeps only the asked CLI and drops ended ones, while idle, waiting and unmeasurable stay")
+    func sessionsFilter() {
+        let all = ActivityReport(
+            sessions: [
+                session(.claude, .running, id: "a"), session(.claude, .ended, id: "b"), session(.claude, .waiting, id: "c"),
+                session(.claude, .idle, id: "d"), session(.claude, .unmeasurable, id: "e"),
+                session(.codex, .idle, id: "f"), session(.codex, .ended, id: "g"),
+            ],
+            failures: [], files: [], unmeasurable: [], stats: ActivityStats(logs: 0, truncated: 0)
+        )
+        #expect(ActivityRows.sessions(all, cli: .claude).map(\.id) == ["a", "c", "d", "e"])
+        #expect(ActivityRows.sessions(all, cli: .codex).map(\.id) == ["f"])
+    }
+
+    @Test("failures and limits keep only the asked CLI")
+    func failuresAndLimitsFilter() {
+        let limit = { (cli: InventoryCLI, code: ActivityReason) in ActivityLimit(cli: cli, code: code, text: code.text) }
+        let all = ActivityReport(
+            sessions: [], failures: [failure(cli: .claude, last: nil), failure(cli: .codex, last: nil), failure(cli: .claude, last: nil)],
+            files: [], unmeasurable: [limit(.claude, .claudePromptVsBusy), limit(.codex, .codexToolSilent), limit(.codex, .codexNoRollout)],
+            stats: ActivityStats(logs: 0, truncated: 0)
+        )
+        #expect(ActivityRows.failures(all, cli: .claude).count == 2)
+        #expect(ActivityRows.failures(all, cli: .codex).count == 1)
+        #expect(ActivityRows.limits(all, cli: .claude).map(\.code) == [.claudePromptVsBusy])
+        #expect(ActivityRows.limits(all, cli: .codex).map(\.code) == [.codexToolSilent, .codexNoRollout])
+    }
+
+    // MARK: SessionWording
+
+    private static let dot = " \u{00B7} "
+
+    @Test("a running session is tagged success whichever CLI it is; waiting is a warning; unmeasurable carries the triangle; idle is neutral")
+    func tagPerState() {
+        let running = SessionWording(session(.claude, .running), elapsedMs: 0)
+        #expect((running.tagText, running.tagTone, running.tagIcon) == ("running", .success, nil))
+        #expect(SessionWording(session(.codex, .running), elapsedMs: 0).tagTone == .success)
+        let waiting = SessionWording(session(.claude, .waiting), elapsedMs: 0)
+        #expect((waiting.tagText, waiting.tagTone, waiting.tagIcon) == ("waiting for you", .warn, nil))
+        let unmeasurable = SessionWording(session(.codex, .unmeasurable), elapsedMs: 0)
+        #expect((unmeasurable.tagText, unmeasurable.tagTone, unmeasurable.tagIcon) == ("not measurable", .neutral, "exclamationmark.triangle"))
+        let idle = SessionWording(session(.claude, .idle), elapsedMs: 0)
+        #expect((idle.tagText, idle.tagTone, idle.tagIcon) == ("idle", .neutral, nil))
+    }
+
+    @Test("the help text is the engine's reason, for every state")
+    func helpIsTheReason() {
+        for state in [ActivitySessionState.running, .waiting, .idle, .unmeasurable] {
+            #expect(SessionWording(session(.claude, state, reason: "because of \(state)"), elapsedMs: 0).help == "because of \(state)")
+        }
+    }
+
+    @Test("a running session reads project, tool with its target, then how long ago it wrote")
+    func subtitleRunning() {
+        let tool = ActivityTool(name: "Bash", target: "swift test")
+        let wording = SessionWording(session(project: "demo-app", tool: tool, lastWrite: 5_000), elapsedMs: 0)
+        #expect(wording.subtitle == ["demo-app", "Bash \u{00B7} swift test", "just now"].joined(separator: Self.dot))
+        #expect(SessionWording(session(tool: ActivityTool(name: "Read", target: "")), elapsedMs: 0).subtitle == "Read")
+    }
+
+    @Test("a waiting session says it needs an answer, even while a tool call is open")
+    func subtitleWaiting() {
+        let tool = ActivityTool(name: "Bash", target: "swift test")
+        let wording = SessionWording(session(.codex, .waiting, project: "demo-app", tool: tool, lastWrite: 2 * Self.minute), elapsedMs: 0)
+        #expect(wording.subtitle == ["demo-app", "needs your answer", "2 min ago"].joined(separator: Self.dot))
+    }
+
+    @Test("an unmeasurable session says so unless a tool call is known")
+    func subtitleUnmeasurable() {
+        #expect(SessionWording(session(.claude, .unmeasurable, project: "demo-app"), elapsedMs: 0).subtitle == "demo-app\(Self.dot)state not measurable")
+        let tool = ActivityTool(name: "Edit", target: "a.swift")
+        #expect(SessionWording(session(.claude, .unmeasurable, tool: tool), elapsedMs: 0).subtitle == "Edit \u{00B7} a.swift")
+    }
+
+    @Test("the time part adds the time since the report, and falls back to the start age when no log write is known")
+    func subtitleElapsed() {
+        #expect(SessionWording(session(lastWrite: 30_000), elapsedMs: 0).subtitle == "just now")
+        #expect(SessionWording(session(lastWrite: 30_000), elapsedMs: 40_000).subtitle == "1 min ago")
+        #expect(SessionWording(session(age: 18 * Self.minute), elapsedMs: 2 * Self.minute).subtitle == "started 20 min ago")
+        #expect(SessionWording(session(age: 18 * Self.minute, lastWrite: 3 * Self.minute), elapsedMs: 0).subtitle == "3 min ago")
+        #expect(SessionWording(session(), elapsedMs: 0).subtitle == "")
+    }
+
+    // MARK: ActivityFormat wording
+
+    private func isoAgo(seconds: Double) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: now.addingTimeInterval(-seconds))
+    }
+
+    @Test("a later pass is worded as a fact about the log: counts the failures, says one pass is not proof, never says fixed")
+    func laterPassWording() throws {
+        let pass = isoAgo(seconds: 2 * 3600)
+        let clock = ActivityFormat.clock(pass, now: now)
+        let many = try #require(ActivityFormat.laterPass(failure(count: 3, last: iso(hoursAgo: 3), laterPass: pass), now: now))
+        #expect(many == "passed once at \(clock) after 3 failures; one pass is not proof")
+        let single = try #require(ActivityFormat.laterPass(failure(count: 1, last: iso(hoursAgo: 3), laterPass: pass), now: now))
+        #expect(single == "passed once at \(clock) after 1 failure; one pass is not proof")
+        for text in [many, single] {
+            #expect(text.contains("not proof"))
+            #expect(!text.lowercased().contains("fix"))
+        }
+    }
+
+    @Test("no later pass means no sentence")
+    func laterPassAbsent() {
+        #expect(ActivityFormat.laterPass(failure(last: iso(hoursAgo: 1), laterPass: nil), now: now) == nil)
+    }
+
+    @Test("projects: nothing for none, the names for one or two, a count for more")
+    func projectsWording() {
+        #expect(ActivityFormat.projects([]) == nil)
+        #expect(ActivityFormat.projects(["app-a"]) == "app-a")
+        #expect(ActivityFormat.projects(["app-a", "app-b"]) == "app-a, app-b")
+        #expect(ActivityFormat.projects(["app-a", "app-b", "app-c"]) == "3 projects")
+    }
+
+    @Test("the engine's fallback title is recognised, a real request is not",
+          arguments: [("2026-11-02 \u{00B7} 1a2b3c4d", true), ("unknown date \u{00B7} 1a2b3c4d", true), ("2026-11-02 \u{00B7} ", true),
+                      ("Fix the login form", false), ("2026-11-02 \u{00B7} 1a2b3c4d5", false), ("2026-11-02 \u{00B7} two words", false),
+                      ("2026-1-02 \u{00B7} 1a2b3c4d", false), ("", false)])
+    func fallbackTitle(title: String, expected: Bool) {
+        #expect(ActivityFormat.isFallbackTitle(title) == expected)
+    }
+
+    @Test("ago: just now under a minute, minutes and hours, yesterday up to two days, then a date")
+    func agoWording() {
+        #expect(ActivityFormat.ago(isoAgo(seconds: 30), now: now) == "just now")
+        #expect(ActivityFormat.ago(isoAgo(seconds: -30), now: now) == "just now")
+        #expect(ActivityFormat.ago(isoAgo(seconds: 4 * 60), now: now) == "4 min ago")
+        #expect(ActivityFormat.ago(isoAgo(seconds: 3600), now: now) == "1 h ago")
+        #expect(ActivityFormat.ago(isoAgo(seconds: 23 * 3600), now: now) == "23 h ago")
+        #expect(ActivityFormat.ago(isoAgo(seconds: 30 * 3600), now: now) == "yesterday")
+        let dated = ActivityFormat.ago(isoAgo(seconds: 3 * 86_400), now: now)
+        #expect(dated.range(of: #"^[A-Z][a-z]{2} \d{1,2}$"#, options: .regularExpression) != nil)
+    }
+
+    @Test("ago says unknown when the time is missing or not a date")
+    func agoUnknown() {
+        #expect(ActivityFormat.ago(nil, now: now) == "unknown")
+        #expect(ActivityFormat.ago("not a date", now: now) == "unknown")
     }
 }

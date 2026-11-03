@@ -109,4 +109,107 @@ struct RulesScopesTests {
             RulesProject(dir: "/work/web", name: "web"),
         ])
     }
+
+    // MARK: title
+
+    private let projects = [RulesProject(dir: "/work/a/app", name: "a/app"), RulesProject(dir: "/work/web", name: "web")]
+
+    @Test("Global reads Global whichever file the selection names")
+    func titleGlobal() {
+        #expect(RulesScopes.title(for: .global, projects: projects) == "Global")
+        #expect(RulesScopes.title(for: RulesSelection(dir: nil, file: .local), projects: projects) == "Global")
+    }
+
+    @Test("a discovered project reads its display name, marked shared or local")
+    func titleKnownProject() {
+        #expect(RulesScopes.title(for: RulesSelection(dir: "/work/a/app"), projects: projects) == "a/app (shared)")
+        #expect(RulesScopes.title(for: RulesSelection(dir: "/work/a/app", file: .local), projects: projects) == "a/app (local)")
+    }
+
+    @Test("a folder that is no longer discovered falls back to its folder name")
+    func titleUnknownProject() {
+        #expect(RulesScopes.title(for: RulesSelection(dir: "/work/gone/old-thing"), projects: projects) == "old-thing (shared)")
+        #expect(RulesScopes.title(for: RulesSelection(dir: "/work/gone/old-thing", file: .local), projects: []) == "old-thing (local)")
+    }
+
+    // MARK: scrubbed
+
+    private struct Unrelated: Error, Equatable {}
+
+    /// A store over a temporary home, with no project known. The folder is removed by the caller.
+    private func makeStore() throws -> (store: RulesStore, home: URL) {
+        let base = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        let home = base.appendingPathComponent("reins-scrubbed-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
+        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+        let env = [
+            "HOME": home.path, "CLAUDE_CONFIG_DIR": home.appendingPathComponent(".claude").path,
+            "CODEX_HOME": home.appendingPathComponent(".codex").path, "REINS_HOME": home.appendingPathComponent(".reins").path,
+            "REINS_TEST": "1",
+        ]
+        return (RulesStore(roots: try Roots.resolve(env: env), projects: { [] }), home)
+    }
+
+    @Test("a ReinsError that names the settings file comes back with the scope's label and the same status")
+    func scrubbedReplacesThePath() throws {
+        let (store, home) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: home) }
+        let path = try store.file(for: .global).path
+        #expect(path.hasPrefix(home.path))
+        let thrown = ReinsError("\(path) is not valid JSON, so Reins left it alone.", status: 409)
+        #expect(throws: ReinsError("~/.claude/settings.json is not valid JSON, so Reins left it alone.", status: 409)) {
+            try RulesScopes.scrubbed(store: store, scope: .global) { () throws -> Void in throw thrown }
+        }
+    }
+
+    @Test("an error that is not a ReinsError passes through unchanged, and a result passes through untouched")
+    func scrubbedPassesOtherThingsThrough() throws {
+        let (store, home) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: home) }
+        #expect(throws: Unrelated()) {
+            try RulesScopes.scrubbed(store: store, scope: .global) { () throws -> Void in throw Unrelated() }
+        }
+        #expect(try RulesScopes.scrubbed(store: store, scope: .global) { 42 } == 42)
+    }
+
+    @Test("when the scope's file cannot be resolved, the original ReinsError is rethrown as it was")
+    func scrubbedKeepsTheErrorWhenThereIsNoPath() throws {
+        let (store, home) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: home) }
+        let original = ReinsError("keep /work/gone/old-thing as written", status: 409)
+        #expect(throws: original) {
+            try RulesScopes.scrubbed(store: store, scope: .project("/work/gone/old-thing")) { () throws -> Void in throw original }
+        }
+    }
+
+    // MARK: Rules toolbar scope options
+
+    private let discovered = RulesScopes.projects(from: ["/work/a/app", "/work/b/app", "/work/web"])
+
+    @Test("the options start with Global (no id), then one per project keyed by its folder and labelled with its name")
+    func scopeOptionsOrder() {
+        let options = RulesToolbar.scopeOptions(projects: discovered)
+        #expect(options.first == ScopeOption(id: nil, label: "Global"))
+        #expect(options.dropFirst().map(\.id) == ["/work/a/app", "/work/b/app", "/work/web"])
+        #expect(options.dropFirst().map(\.label) == ["a/app", "b/app", "web"])
+        #expect(RulesToolbar.scopeOptions(projects: []) == [ScopeOption(id: nil, label: "Global")])
+    }
+
+    @Test("every option has its own id, so the picker's checkmark marks exactly one")
+    func scopeOptionIdsAreUnique() {
+        let ids = RulesToolbar.scopeOptions(projects: discovered).map(\.id)
+        #expect(Set(ids).count == ids.count)
+    }
+
+    @Test("the current scope is the matching option; no selected folder means Global")
+    func currentScopeMatches() {
+        let options = RulesToolbar.scopeOptions(projects: discovered)
+        #expect(RulesToolbar.currentScope(options: options, dir: nil) == ScopeOption(id: nil, label: "Global"))
+        #expect(RulesToolbar.currentScope(options: options, dir: "/work/b/app") == ScopeOption(id: "/work/b/app", label: "b/app"))
+    }
+
+    @Test("a selected folder that is no longer discovered shows as Project and keeps its folder as the id")
+    func currentScopeFallback() {
+        let options = RulesToolbar.scopeOptions(projects: discovered)
+        #expect(RulesToolbar.currentScope(options: options, dir: "/work/gone") == ScopeOption(id: "/work/gone", label: "Project"))
+    }
 }

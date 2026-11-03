@@ -5,18 +5,22 @@ struct RulesToolbar: View {
     let model: RulesModel
     let snapshot: RulesSnapshot
 
-    private var scopeOptions: [ScopeOption] {
-        [ScopeOption(id: nil, label: "Global")] + snapshot.projects.map { ScopeOption(id: $0.dir, label: $0.name) }
+    static func scopeOptions(projects: [RulesProject]) -> [ScopeOption] {
+        [ScopeOption(id: nil, label: "Global")] + projects.map { ScopeOption(id: $0.dir, label: $0.name) }
     }
 
     /// A selected project that is no longer discovered still shows as "Project".
-    private var currentScope: ScopeOption {
-        scopeOptions.first { $0.id == snapshot.selection.dir } ?? ScopeOption(id: snapshot.selection.dir, label: "Project")
+    static func currentScope(options: [ScopeOption], dir: String?) -> ScopeOption {
+        options.first { $0.id == dir } ?? ScopeOption(id: dir, label: "Project")
     }
 
     var body: some View {
+        let options = Self.scopeOptions(projects: snapshot.projects)
         HStack(spacing: 10) {
-            ScopePicker(options: scopeOptions, current: currentScope, minWidth: 130, onSelect: { model.selectProject($0.id) })
+            ScopePicker(
+                options: options, current: Self.currentScope(options: options, dir: snapshot.selection.dir),
+                minWidth: 130, onSelect: { model.selectProject($0.id) }
+            )
             if snapshot.selection.dir != nil {
                 SegmentedControl(
                     label: "Settings file",

@@ -39,7 +39,7 @@ enum RulesScopes {
         }
     }
 
-    /// "Global", "spacevibe-api" or "spacevibe-api (local)".
+    /// "Global", "spacevibe-api (shared)" or "spacevibe-api (local)".
     static func title(for selection: RulesSelection, projects: [RulesProject]) -> String {
         guard let dir = selection.dir else { return "Global" }
         let name = projects.first { $0.dir == dir }?.name ?? (dir as NSString).lastPathComponent
