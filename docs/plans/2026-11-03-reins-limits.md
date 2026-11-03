@@ -2,9 +2,10 @@
 
 Spec: [2026-11-02-reins.md](../specs/2026-11-02-reins.md) (Interface: Limits; Scope: Limits; acceptance criteria AC5, AC6, AC10).
 Parent plan: [the SwiftUI plan](2026-11-02-reins-swiftui.md), whose packaging and cut-over phases still apply.
-Mock: `~/scratch/spacevibe-reins/limits/index.html`, outside git, synthetic data, three placements (A own tab, B sidebar
-block on every tab, C first card of Tokens), each with typical and edge data in light and dark.
-Status: engine done (L1); waiting for the owner to pick a placement (L2). Started 2026-11-03.
+Mock: `~/scratch/spacevibe-reins/limits/index.html`, outside git, synthetic data, typical and edge data in light and dark;
+its direction B is the target. Placement B, chosen by the owner on 2026-11-03: a sidebar block on every tab, detail in a
+popover.
+Status: engine done (L1), placement picked (L2); L3 to L5 open. Started 2026-11-03.
 
 ## Approach
 
@@ -50,31 +51,35 @@ Facts this plan rests on, read 2026-11-03 on the owner's Mac:
   360 pass; the one failure (2 issues) is in `ActivityFormatTests.swift`, another session's uncommitted test. A scratch binary outside
   the repo read the real home: Claude Code and Codex measured, Gemini CLI not measurable, in 0.063 s.
 
-### L2. Placement (owner)
+### L2. Placement (done 2026-11-03)
 
-The owner picks A, B or C on the mock, or a mix. Record the pick in the spec's Interface line and delete the other two
-from this plan. What separates them besides taste:
+The owner picked B (sidebar block on every tab, detail in a popover) and no Limits tab. The spec's Interface and shell
+lines record it. Consequences for the tasks below:
 
-- A (own tab): one `TabRegistry` entry; nothing else in the spec changes.
-- B (sidebar block): Gemini CLI on every tab, against the spec line "no other tab does", and `SidebarView` is being
-  migrated by the design-language session.
-- C (first card of Tokens): the SwiftUI Tokens tab does not exist yet (its plan has no Swift written), so C waits for that
-  whole plan; it also changes the accepted Board direction and the Tokens out-of-scope line on other tools.
+- Gemini CLI appears on every tab, as the third tile of the block and a card in the detail; the spec line now allows it
+  there and nowhere else.
+- `SidebarView`, `ShellCommands` and `Components/` belong to the design-language session (`spacevibe-reins-6c`): the block
+  slot, the new borderless tile component and `⌘L` need its go-ahead.
+- `LimitsModel` lives at app scope (created beside `ShellModel`) and is injected through the environment, because every
+  tab shows the block.
 
 ### L3. Model and wording
 
-- `LimitsModel` (`@MainActor`, observable): reads `Limits.read` off the main thread at launch, when the window becomes key,
-  every 60 s while visible, and on Refresh. A read never blocks the UI and never throws to it.
+- `LimitsModel` (`@MainActor`, observable, app scope): reads `Limits.read` off the main thread at launch, when the window
+  becomes key, every 60 s while the window is visible, and on Refresh. A read never blocks the UI and never throws to it.
 - `LimitsWording`: share left, tone, "Resets in 3 h 12 min · 21:12", "read 2 days ago", the state lines, window names
   (`5-hour`, `Weekly`, `Weekly · <model>`, unknown length → the record's own name). A passed reset reads "unknown".
+  Also the short states the sidebar tiles use ("no reading", "not installed", "not measurable", "unreadable") and the stale
+  marker (reading older than 6 hours).
 - Tests in `LimitsWordingTests` against fixed dates. AC10 wording half.
 
 ### L4. View
 
 - Built only from `Sources/Reins/Components` and `ReinsType` roles; no style literal in the screen folder
-  (`StyleBoundaryTests`). Placement from L2.
-- Shell edits (`TabRegistry`, `SidebarView`) are coordinated with the design-language session first; message it before
-  touching them.
+  (`StyleBoundaryTests`, which must see `Sources/Reins/Limits/`). Sidebar block, detail popover (card per CLI, tile per
+  window, tightest leading) as in mock direction B.
+- Shell edits (`SidebarView`, `ShellCommands` for `⌘L`) and the new tile component are coordinated with the design-language
+  session first; message it before touching them. The tile is borderless (fill and space), a step from the v2 card rules.
 - `Copy /usage` copies text only; nothing is run (S-R4).
 
 ### L5. Shots and eye approval
@@ -95,6 +100,6 @@ from this plan. What separates them besides taste:
 
 - Checkout: `main`, shared with the design-language session (`spacevibe-reins-6c`), which owns
   `Sources/Reins/{Components,Tokens,Gallery,Loadout,Activity,Rules,Shell}`. Commit with `git commit -- <paths>`.
-- Remaining: L2 to L5.
+- Remaining: L3 to L5.
 
-`/goal` Build Reins Limits per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-03-reins-limits.md tasks L3 to L5 in the placement recorded under L2, so that AC10 holds in scripts/test.sh and the surface matches ~/scratch/spacevibe-reins/limits/ in light and dark shots; stop and report if L2 has no recorded pick, and never send a request, read a credential, start a CLI, push or release.
+`/goal` Build Reins Limits per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-03-reins-limits.md tasks L3 to L5 in placement B (recorded under L2), so that AC10 holds in scripts/test.sh and the surface matches ~/scratch/spacevibe-reins/limits/ in light and dark shots; stop and report if the shell owner has not agreed to the sidebar and component edits, and never send a request, read a credential, start a CLI, push or release.
