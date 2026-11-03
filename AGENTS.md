@@ -20,6 +20,8 @@ Stack: SwiftPM, swift-tools 6.0, Swift 5 language mode, macOS 15+, Command Line 
 
 Layout: `Sources/CZstd` (vendored decompress-only zstd, see its README), `Sources/ReinsCore` (the engine; Foundation only, no UI import), `Sources/Reins` (the app), `Tests/ReinsCoreTests` (swift-testing; `Support/` has `TempHome` and `FixtureHome`), `Tests/ReinsTests` (app logic that needs no window).
 
+Design language: [docs/DESIGN-LANGUAGE.md](docs/DESIGN-LANGUAGE.md). Screens only compose [`Sources/Reins/Components`](Sources/Reins/Components) and the tokens in [`Sources/Reins/Tokens`](Sources/Reins/Tokens); [`StyleBoundaryTests`](Tests/ReinsTests/StyleBoundaryTests.swift) fails on a font, colour, radius or spacing literal in a screen folder. Inter (OFL, `Resources/Fonts`) is the only typeface.
+
 Public site: [`site/`](site/README.md) is the page for `reins.spacevibe.dev` (Next.js static export + Tailwind, its own `package.json` and lockfile, built with `npm run build` inside `site/`). It is independent of the root Electron `package.json` and of the Swift build; its example rows mirror the synthetic fixture home, never a real `~/.claude` (S-R2).
 
 Toolchain rules (taken from `spacevibe-board`, re-verified here):
