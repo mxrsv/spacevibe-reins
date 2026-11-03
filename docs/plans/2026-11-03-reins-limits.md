@@ -26,7 +26,7 @@ Facts this plan rests on, read 2026-11-03 on the owner's Mac:
   Claude Code does not refresh it per session.
 - Gemini CLI 0.63 keeps no quota under `~/.gemini`; its numbers come only from Google's internal `retrieveUserQuota` call.
 - No Kimi CLI on this Mac: only Superset's wrapper `~/.superset/bin/kimi` and `~/.kimi-code/config.toml` with hooks.
-- `spacevibe-board` already wraps Claude Code's `statusLine` on this Mac to capture quota. Reins must not install a
+- `spacevibe-board` wraps Claude Code's `statusLine` on this Mac to capture quota (checked 2026-11-03: the command names it). Reins must not install a
   second wrapper or read Board's capture folder (workspace rule: no shared data between repos).
 
 ## Decisions made in this plan (reversible)
@@ -48,12 +48,18 @@ Facts this plan rests on, read 2026-11-03 on the owner's Mac:
   not installed. `Roots.claudeState` follows `CLAUDE_CONFIG_DIR`; both new paths are under the REINS_TEST guard.
 - Verification: `scripts/test.sh --filter "Limits|Roots"` → `Test run with 24 tests in 3 suites passed`. Full run: 359 of
   360 pass; the one failure (2 issues) is in `ActivityFormatTests.swift`, another session's uncommitted test. A scratch binary outside
-  the repo read the real home: Claude weekly 8% (fetched 2026-11-01), Codex weekly 8%, Gemini not measurable, 0.063 s.
+  the repo read the real home: Claude Code and Codex measured, Gemini CLI not measurable, in 0.063 s.
 
 ### L2. Placement (owner)
 
 The owner picks A, B or C on the mock, or a mix. Record the pick in the spec's Interface line and delete the other two
-from this plan.
+from this plan. What separates them besides taste:
+
+- A (own tab): one `TabRegistry` entry; nothing else in the spec changes.
+- B (sidebar block): Gemini CLI on every tab, against the spec line "no other tab does", and `SidebarView` is being
+  migrated by the design-language session.
+- C (first card of Tokens): the SwiftUI Tokens tab does not exist yet (its plan has no Swift written), so C waits for that
+  whole plan; it also changes the accepted Board direction and the Tokens out-of-scope line on other tools.
 
 ### L3. Model and wording
 
