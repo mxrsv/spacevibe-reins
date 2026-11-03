@@ -85,6 +85,9 @@ public struct HistoryItem: Equatable, Sendable {
 /// The undo journal: `<data>/journal.json`, a JSON array, newest first, at most 200 entries. Same file and entry shape
 /// as the Node core, so either side can read what the other wrote.
 ///
+/// One deliberate break from the Node core: a `journal.json` that exists but is not a JSON array makes every write path
+/// refuse (409) instead of reading it as empty, so a corrupt undo history is never replaced by a fresh one. Parity is dropped here on purpose.
+///
 /// Labels are written verbatim: callers pass a sentence about what changed (a rule name, an item name), never file content.
 public enum Journal {
     public static let limit = 200
@@ -92,13 +95,25 @@ public enum Journal {
     /// Op kinds `undo` can reverse. The two hook kinds are written by Mutate (see MutateHooks.swift for how they are undone).
     static let undoable: Set<String> = ["file-edited", "created", "moved", "link-removed", "hook-added", "hook-removed"]
 
+    /// Shown when a write path meets a journal it cannot read. Fixed text: it never quotes the file (S-R3).
+    public static let unreadableMessage = "The undo history (journal.json) is not valid JSON, so it was not written. Fix or move the file, then try again."
+
     static func journalPath(_ roots: Roots) -> String { roots.data.appendingPathComponent(fileName).path }
 
-    /// All entries, newest first. A missing or unreadable journal reads as empty, as in the Node core.
+    /// All entries, newest first, for display. A missing or unreadable journal reads as empty; write paths use `entriesForWriting`.
     public static func entries(_ roots: Roots) -> [JournalEntry] {
-        guard let data = FileManager.default.contents(atPath: journalPath(roots)),
+        (try? entriesForWriting(roots)) ?? []
+    }
+
+    /// Entries for a write. Missing file: empty. Existing but unreadable or not a JSON array: refused, so a corrupt journal is never replaced by a fresh one.
+    private static func entriesForWriting(_ roots: Roots) throws -> [JournalEntry] {
+        let path = journalPath(roots)
+        guard FileManager.default.fileExists(atPath: path) else { return [] }
+        guard let data = FileManager.default.contents(atPath: path),
               let document = try? OrderedJSON(data: data),
-              let items = document.root.arrayValue else { return [] }
+              let items = document.root.arrayValue else {
+            throw ReinsError(unreadableMessage, status: 409)
+        }
         return items.compactMap(JournalEntry.init(json:))
     }
 
@@ -110,7 +125,7 @@ public enum Journal {
     @discardableResult
     public static func record(_ roots: Roots, label: String, ops: [JournalOp]) throws -> JournalEntry {
         let entry = JournalEntry(id: UUID().uuidString.lowercased(), at: timestamp(), label: label, undone: false, ops: ops)
-        try WriteLock.run { try write(roots, [entry] + entries(roots)) }
+        try WriteLock.run { try write(roots, [entry] + entriesForWriting(roots)) }
         return entry
     }
 
@@ -121,7 +136,7 @@ public enum Journal {
     }
 
     private static func undoLocked(_ roots: Roots, id: String) throws -> String {
-        let all = entries(roots)
+        let all = try entriesForWriting(roots)
         guard let entry = all.first(where: { $0.id == id }) else { throw ReinsError("That history entry is gone.", status: 404) }
         guard !entry.undone else { throw ReinsError("This was already undone.", status: 409) }
         if entry.ops.contains(where: { !undoable.contains($0.type) }) {

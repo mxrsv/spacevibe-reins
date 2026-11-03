@@ -303,4 +303,35 @@ struct JournalTests {
         #expect(Journal.history(r).first?.undone == false)
         #expect(Journal.entries(r).first?.ops.first?.type == "teleported", "the foreign op is kept as written")
     }
+
+    // MARK: A journal that is not a JSON array fails closed
+
+    @Test("a journal.json that is not JSON makes record throw 409 and leaves the file untouched")
+    func corruptJournalRefusesRecord() throws {
+        let home = try TempHome()
+        let r = try roots(home)
+        let file = try home.write(".reins/journal.json", "{ not json")
+        let before = try read(file)
+
+        let error = #expect(throws: ReinsError.self) { try Journal.record(r, label: "later", ops: []) }
+        #expect(error?.status == 409)
+        #expect(error?.message == Journal.unreadableMessage)
+        #expect(try read(file) == before, "the corrupt file is not replaced by a fresh history")
+        #expect(Journal.history(r).isEmpty, "display still reads it as empty")
+    }
+
+    @Test("a journal.json holding a JSON object is refused the same way, by record and by undo (409, not 404)")
+    func objectJournalRefusesRecordAndUndo() throws {
+        let home = try TempHome()
+        let r = try roots(home)
+        let file = try home.write(".reins/journal.json", "{}")
+        let before = try read(file)
+
+        let recorded = #expect(throws: ReinsError.self) { try Journal.record(r, label: "later", ops: []) }
+        #expect(recorded?.status == 409 && recorded?.message == Journal.unreadableMessage)
+
+        let undone = #expect(throws: ReinsError.self) { try Journal.undo(r, id: "any") }
+        #expect(undone?.status == 409 && undone?.message == Journal.unreadableMessage)
+        #expect(try read(file) == before)
+    }
 }
