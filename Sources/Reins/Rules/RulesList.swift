@@ -1,15 +1,15 @@
 import ReinsCore
 import SwiftUI
 
-/// "Claude Code rules at <scope>": the scope's rules grouped Deny, Ask first, Allow, each with the verdict tag, the rule in
-/// monospace, a way to change the verdict and a remove button (shown on hover or focus).
+/// "Claude Code rules at <scope>": the scope's rules grouped Deny, Ask first, Allow, each the rule as code with its
+/// verdict tag after it, a way to change the verdict and a remove button (shown on hover or focus).
 struct RulesList: View {
     let model: RulesModel
     let snapshot: RulesSnapshot
 
     var body: some View {
-        GroupLabel("Claude Code rules at \(snapshot.title)", count: snapshot.rules.count) { CLIDot(.claude, decorative: true) }
         GroupedList {
+            CardHeader("Claude Code rules at \(snapshot.title)", count: snapshot.rules.count, lead: { CLIDot(.claude, decorative: true) })
             if snapshot.rules.isEmpty {
                 EmptyRow(emptyText)
             }
@@ -39,11 +39,11 @@ private struct RulesRuleRow: View {
     let item: RuleItem
 
     var body: some View {
+        // The verdict sits right after its pattern: this card is Claude Code only, so it does not borrow the grid's columns.
         Row(revealActions: model.revealRowActions) {
-            RowText(item.rule, mono: true)
-        }
-        .cells {
-            Tag(RulesWording.title(item.verdict), tone: RulesWording.tone(item.verdict))
+            RowText(item.rule, mono: true) {
+                Tag(RulesWording.title(item.verdict), tone: RulesWording.tone(item.verdict))
+            }
         }
         .actions {
             RulesVerdictMenu(item: item) { model.move(item, to: $0) }

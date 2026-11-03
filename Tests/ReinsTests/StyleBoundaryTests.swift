@@ -27,10 +27,6 @@ struct StyleBoundaryTests {
 
     /// Today's counts (2026-11-03, design-language plan T3; zero literals stopped counting in T5). Lower an entry when a file sheds literals; delete it at zero.
     static let allowed: [String: Int] = [
-        "Rules/RulesAddRow.swift": 15,
-        "Rules/RulesConfirmation.swift": 32,
-        "Rules/RulesGrid.swift": 21,
-        "Rules/RulesScreen.swift": 2,
         "Rules/RulesToolbar.swift": 5,
     ]
 

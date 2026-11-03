@@ -3,8 +3,8 @@ import SwiftUI
 
 /// Column widths shared by the heading, the rows and the expanded detail so everything lines up.
 enum RulesColumns {
-    static let claude: CGFloat = 256
-    static let codex: CGFloat = 300
+    static let claude = Metrics.rulesClaudeColumn
+    static let codex = Metrics.rulesCodexColumn
 }
 
 /// The capability grid: an inset grouped table, one row per capability, a Claude Code column you can set and a Codex column that only shows.
@@ -14,27 +14,19 @@ struct RulesGrid: View {
 
     var body: some View {
         GroupedList {
-            HeadRow("What the agent may do") {
-                head(.claude, width: RulesColumns.claude)
-                head(.codex, width: RulesColumns.codex)
-            }
+            CardHeader("What the agent may do", columns: {
+                CLIColumnHead(.claude, width: RulesColumns.claude)
+                CLIColumnHead(.codex, width: RulesColumns.codex)
+            })
             ForEach(snapshot.grid, id: \.capability) { cell in
                 let open = model.expanded.contains(cell.capability)
                 RulesGridRow(model: model, snapshot: snapshot, cell: cell, isOpen: open)
                 if open {
                     RulesGridDetail(cell: cell, codex: CodexCellWording.cell(cell.capability, snapshot.codex))
+                        .groupedListPart(.detail)
                 }
             }
         }
-    }
-
-    private func head(_ cli: InventoryCLI, width: CGFloat) -> some View {
-        HStack(spacing: 6) {
-            CLIDot(cli, decorative: true)
-            Text(cli.label)
-        }
-        .frame(width: width, alignment: .leading)
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -71,7 +63,7 @@ private struct RulesClaudeCell: View {
     let problemsInFile: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Space.s8) {
             SegmentedControl(
                 label: "\(cell.label) for Claude Code",
                 options: RulesWording.verdicts.map { SegmentOption(RulesWording.title($0), value: Optional($0)) },
@@ -108,20 +100,19 @@ private struct RulesCodexCell: View {
     let view: CodexCellView
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Space.s8) {
             switch view.tone {
             case .none:
-                Text(view.label).foregroundStyle(Palette.textTertiary)
+                Text(view.label).reinsText(.body, tone: .tertiary)
             case .warn:
                 Tag(view.label, tone: .warn)
             case .neutral:
                 Tag(view.label)
             }
             if let key = view.keys.first {
-                Text(key.shortKey).font(ReinsFont.mono).foregroundStyle(Palette.textTertiary).lineLimit(1).truncationMode(.middle)
+                Text(key.shortKey).reinsText(.code, tone: .secondary).lineLimit(1).truncationMode(.middle)
             }
         }
-        .font(ReinsFont.body)
         .accessibilityElement(children: .combine)
     }
 }
@@ -133,33 +124,33 @@ private struct RulesGridDetail: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: Metrics.rowSpacing) {
-            Color.clear.frame(width: Metrics.rowLeadWidth, height: 1)
+            ColumnSpacer(width: Metrics.rowLeadWidth)
             Spacer(minLength: 0)
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Space.s6) {
                 if cell.rules.isEmpty {
-                    Text("No rule behind this cell.").font(ReinsFont.small).foregroundStyle(Palette.textTertiary)
+                    Text("No rule behind this cell.").reinsText(.caption, tone: .tertiary)
                 }
                 ForEach(Array(cell.rules.enumerated()), id: \.offset) { _, rule in
-                    HStack(spacing: 8) {
+                    HStack(spacing: Space.s8) {
                         Tag(RulesWording.title(rule.verdict), tone: RulesWording.tone(rule.verdict))
-                        Text(rule.rule).font(ReinsFont.mono).foregroundStyle(Palette.text).lineLimit(1).truncationMode(.middle)
+                        Text(rule.rule).reinsText(.code, tone: .primary).lineLimit(1).truncationMode(.middle)
                     }
                 }
             }
             .frame(width: RulesColumns.claude, alignment: .leading)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Space.s4) {
                 ForEach(codex.keys, id: \.key) { key in
-                    Text("\(key.key) = \(key.value)").font(ReinsFont.mono).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
+                    Text("\(key.key) = \(key.value)").reinsText(.code, tone: .primary).fixedSize(horizontal: false, vertical: true)
                 }
                 if let note = codex.note {
-                    Text(note).font(ReinsFont.small).foregroundStyle(Palette.textTertiary).fixedSize(horizontal: false, vertical: true)
+                    Text(note).reinsText(.caption, tone: .tertiary).fixedSize(horizontal: false, vertical: true)
                 }
             }
             .frame(width: RulesColumns.codex, alignment: .leading)
         }
         .padding(.horizontal, Metrics.rowHorizontalPadding)
-        .padding(.top, 4)
-        .padding(.bottom, 12)
+        .padding(.top, Space.s4)
+        .padding(.bottom, Space.s12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
     }

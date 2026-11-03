@@ -11,76 +11,32 @@ struct RulesConfirmation: View {
     let confirm: () -> Void
 
     var body: some View {
-        ZStack {
-            Palette.overlay
-                .ignoresSafeArea()
-                .onTapGesture(perform: cancel)
-                .accessibilityHidden(true)
-            card
-        }
-        .onExitCommand(perform: cancel)
-    }
-
-    private var card: some View {
-        let shape = RoundedRectangle(cornerRadius: Metrics.paletteRadius, style: .continuous)
-        return VStack(alignment: .leading, spacing: 8) {
-            Text(pending.question)
-                .font(ReinsFont.bodyStrong)
-                .foregroundStyle(Palette.text)
-                .lineLimit(2)
-            Text(pending.location)
-                .font(ReinsFont.body)
-                .foregroundStyle(Palette.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+        ConfirmationDialog(pending.question, message: pending.location, width: Metrics.wideDialogWidth, cancel: cancel) {
             group("Replaces", rules: pending.preview.replaces, empty: "Nothing: no rule here yet.")
             group("Writes", rules: pending.preview.writes, empty: "")
-            if let warning = pending.warning {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle").foregroundStyle(Palette.warnInk).accessibilityHidden(true)
-                    Text(warning).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
-                }
-                .font(ReinsFont.small)
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous).fill(Palette.warnTint))
-            }
-            HStack(spacing: 8) {
-                Spacer(minLength: 0)
-                Button("Cancel", action: cancel)
-                    .buttonStyle(.reins(.normal))
-                    .keyboardShortcut(.cancelAction)
-                Button("Set to \(RulesWording.title(pending.verdict))", action: confirm)
-                    .buttonStyle(.reins(.primary))
-                    .reinsFocusable(cornerRadius: Metrics.controlRadius, focusOnAppear: true)
-            }
-            .padding(.top, 10)
+            if let warning = pending.warning { WarningNote(text: warning) }
+        } actions: {
+            Button("Cancel", action: cancel)
+                .buttonStyle(.reins(.normal))
+                .keyboardShortcut(.cancelAction)
+            Button("Set to \(RulesWording.title(pending.verdict))", action: confirm)
+                .buttonStyle(.reins(.primary))
+                .reinsFocusable(cornerRadius: Metrics.controlRadius, focusOnAppear: true)
         }
-        .padding(18)
-        .frame(width: 460)
-        .background(shape.fill(Palette.surface))
-        .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
-        .shadow(color: Palette.overlayShadow, radius: 30, y: 24)
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(.isModal)
-        .accessibilityLabel(pending.question)
     }
 
     private func group(_ title: String, rules: [VerdictRule], empty: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(ReinsFont.smallStrong).foregroundStyle(Palette.textSecondary).padding(.top, 6)
-            VStack(alignment: .leading, spacing: 6) {
-                if rules.isEmpty { Text(empty).font(ReinsFont.small).foregroundStyle(Palette.textTertiary) }
+        VStack(alignment: .leading, spacing: Space.s6) {
+            Text(title).reinsText(.captionStrong, tone: .secondary).padding(.top, Space.s6)
+            InsetBox {
+                if rules.isEmpty { Text(empty).reinsText(.caption, tone: .tertiary) }
                 ForEach(rules, id: \.self) { rule in
-                    HStack(spacing: 8) {
+                    HStack(spacing: Space.s8) {
                         Tag(RulesWording.title(rule.verdict), tone: RulesWording.tone(rule.verdict))
-                        Text(rule.rule).font(ReinsFont.mono).foregroundStyle(Palette.text).lineLimit(1).truncationMode(.middle)
+                        Text(rule.rule).reinsText(.code, tone: .primary).lineLimit(1).truncationMode(.middle)
                     }
                 }
             }
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous).fill(Palette.surfaceRaised))
-            .overlay(RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous).strokeBorder(Palette.border, lineWidth: 1))
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(title)

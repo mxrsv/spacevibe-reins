@@ -37,9 +37,9 @@ struct RulesScreen: View {
                         VStack(alignment: .leading, spacing: 0) {
                             banners(snapshot)
                             RulesGrid(model: model, snapshot: snapshot)
-                            RulesList(model: model, snapshot: snapshot)
-                            RulesAddRow(model: model).id(Self.addRowID)
-                            RulesCodexGroup(snapshot: snapshot)
+                            RulesList(model: model, snapshot: snapshot).padding(.top, Rhythm.regions)
+                            RulesAddRow(model: model).id(Self.addRowID).padding(.top, Rhythm.laneCards)
+                            RulesCodexGroup(snapshot: snapshot).padding(.top, Rhythm.regions)
                         }
                         .modifier(ShotFit())
                     }
@@ -61,7 +61,7 @@ struct RulesScreen: View {
 
     @ViewBuilder
     private func banners(_ snapshot: RulesSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Space.s12) {
             if let failure = model.failure {
                 Banner(.error, message: "The last read failed, so this may be out of date.", detail: failure, actionTitle: "Retry", action: model.retry)
             }
@@ -72,6 +72,6 @@ struct RulesScreen: View {
                 Banner(.warn, message: snapshot.codex.warnings.first ?? "Both Codex permission models are set.", detail: "Reins shows both and writes neither.")
             }
         }
-        .padding(.bottom, snapshot.problems.isEmpty && model.failure == nil && snapshot.codex.model != .both ? 0 : 12)
+        .padding(.bottom, snapshot.problems.isEmpty && model.failure == nil && snapshot.codex.model != .both ? 0 : Rhythm.cards)
     }
 }

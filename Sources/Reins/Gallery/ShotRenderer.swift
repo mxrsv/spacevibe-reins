@@ -69,7 +69,7 @@ enum ShotRenderer {
         let shell = ShellModel(tabs: DemoTabs.make(), appearance: AppearanceStore(forced: choice))
         return VStack(alignment: .leading, spacing: 0) {
             Text("Component gallery")
-                .font(ReinsFont.title)
+                .reinsText(.title)
                 .padding(.horizontal, Metrics.pagePadding)
                 .padding(.top, 20)
                 .padding(.bottom, 4)

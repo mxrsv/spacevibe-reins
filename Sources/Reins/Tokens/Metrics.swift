@@ -49,6 +49,9 @@ enum Metrics {
     static let stateWidth: CGFloat = 120
     /// Loadout's trailing actions: one 28 pt slot per CLI and 4 pt between.
     static let loadoutActionsWidth: CGFloat = 60
+    /// Rules' grid: the Claude Code column (segmented control plus a "mixed" tag) and the Codex column.
+    static let rulesClaudeColumn: CGFloat = 280
+    static let rulesCodexColumn: CGFloat = 300
     static let barHeight: CGFloat = 6
     static let legendSwatchWidth: CGFloat = 22
 

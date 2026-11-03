@@ -7,8 +7,8 @@ struct RulesCodexGroup: View {
 
     var body: some View {
         let codex = snapshot.codex
-        GroupLabel("Codex", detail: "~/.codex/config.toml, read only") { CLIDot(.codex, decorative: true) }
         GroupedList {
+            CardHeader("Codex", detail: "~/.codex/config.toml, read only", lead: { CLIDot(.codex, decorative: true) })
             if !codex.present {
                 EmptyRow("There is no ~/.codex/config.toml. Codex runs on its defaults.")
             }

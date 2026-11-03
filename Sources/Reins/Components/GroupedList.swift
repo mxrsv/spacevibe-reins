@@ -2,7 +2,8 @@ import SwiftUI
 
 /// What a child of a `GroupedList` is, so the list knows which separator goes between two children.
 enum GroupedListPart {
-    case row, header, section, plain
+    /// `detail`: an expansion under the row above it, so no line between them.
+    case row, header, section, plain, detail
 }
 
 // Written out: the `@Entry` macro needs SwiftUI's macro plugin, which the Command Line Tools do not ship.
@@ -66,7 +67,7 @@ struct GroupedList<Content: View>: View {
     @ViewBuilder
     private func separator(after previous: GroupedListPart?, before part: GroupedListPart) -> some View {
         switch (previous, part) {
-        case (nil, _), (.section?, _):
+        case (nil, _), (.section?, _), (_, .detail):
             EmptyView()
         case (.header?, _), (_, .header):
             Hairline()

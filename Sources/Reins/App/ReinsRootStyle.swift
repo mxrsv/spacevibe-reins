@@ -10,8 +10,7 @@ extension View {
             .environment(toasts)
             .environment(env ?? .shared)
             .environment(shell.appearance)
-            .font(ReinsFont.body)
-            .foregroundStyle(Palette.text)
+            .reinsText(.body, tone: .primary)
             .tint(Palette.accent)
     }
 }
