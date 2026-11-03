@@ -30,8 +30,8 @@ enum Palette {
     /// as blocks. Reuses existing values (light `surfaceRaised`, dark `background`).
     static let well = Color(light: 0xF0F4FA, dark: 0x121721)
     static let sidebar = Color(light: 0xE7EDF8, dark: 0x090E1A)
-    static let surface = Color(light: 0xFFFFFF, dark: 0x1B212B)
-    static let surfaceRaised = Color(light: 0xF0F4FA, dark: 0x242A36)
+    static let surface = Color(light: 0xFFFFFF, dark: 0x232B38)
+    static let surfaceRaised = Color(light: 0xF0F4FA, dark: 0x2C3544)
     static let border = Color(light: 0xD3D8E0, dark: 0x363D4B, darkAlpha: 0.7)
     static let track = Color(light: 0xE1E5EB, dark: 0x2B313B)
 

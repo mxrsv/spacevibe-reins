@@ -42,7 +42,7 @@ Facts this plan rests on, read 2026-11-04:
 ### V2. Tokens
 - `Palette`: dark `surface` #232B38 and `surfaceRaised` #2C3544; remove `sidebar` when nothing reads it (V4 stops using it).
 - `Metrics`: sidebar item 48, card header 56, tag 24, tag radius 6, ruler (cell gap 3, height 8), tile sizes already added for Limits kept; remove constants that become unused.
-- `ReinsType`: add `display` 72/72 600, tracking −0.03 em, tabular. DL2 test: no size outside 12, 14, 16, 24, 72 exists.
+- `ReinsType`: add `display` 72/88 600 (88 is the face's own height at 72, so the line box never clips), tracking −0.03 em, tabular. DL2 test: no size outside 12, 14, 16, 24, 72 exists.
 - Verification: `scripts/test.sh` passes; gallery shots still render.
 
 ### V3. Components

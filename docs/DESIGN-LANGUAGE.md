@@ -22,7 +22,7 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
   ([`InterFont`](../Sources/Reins/Tokens/InterFont.swift), `Resources/Fonts/InterVariable.woff2` with its `OFL.txt`).
   It registers per process on first use: from `Contents/Resources/Fonts` in the app
   ([`build-app.sh`](../scripts/build-app.sh) copies it before signing) and, in debug builds only, from the checkout.
-- **Sizes 12, 14 and 16**, plus `figure` (24) for one leading number per Tokens card. Each role in
+- **Sizes 12, 14 and 16**, plus `figure` (24) for one leading number per Tokens card and `display` (72, line box 88) for the share left on the Limits page. Each role in
   [`ReinsType`](../Sources/Reins/Tokens/ReinsType.swift) fixes size, weight (400, 500, 600), line box (16, 20, 24) and
   tracking. Views take a role with `.reinsText(_:tone:)` and a colour by meaning with `TextTone`.
 - **Hierarchy within a size comes from weight and tone.** Card title `title` 16/600, row name `rowTitle` 14/500, second

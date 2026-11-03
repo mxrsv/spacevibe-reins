@@ -12,7 +12,7 @@ struct InterFontTests {
         }
     }
 
-    @Test("text roles use only 12, 14 and 16, plus the figure exception, on a 4 pt line box")
+    @Test("text roles use only 12, 14 and 16, plus the figure and display exceptions, on a 4 pt line box")
     func rolesStayOnTheScale() {
         let text: [ReinsType] = [.caption, .captionStrong, .label, .body, .bodyStrong, .rowTitle, .title, .paletteInput, .code, .codeTitle, .number, .numberStrong, .count, .countStrong]
         for role in text {
@@ -21,6 +21,9 @@ struct InterFontTests {
             #expect(role.lineBox >= role.naturalLineHeight)
         }
         #expect(ReinsType.figure.size == 24 && ReinsType.figure.lineBox == 32)
+        let display = ReinsType.display
+        #expect(display.size == 72 && display.lineBox == 88 && display.lineBox >= display.naturalLineHeight)
+        #expect(display.lineBox.truncatingRemainder(dividingBy: 4) == 0)
     }
 
     @Test("numbers in columns are tabular, prose is not (Inter's tnum widens the hyphen), machine strings disambiguate")

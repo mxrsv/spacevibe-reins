@@ -71,6 +71,8 @@ struct ReinsType {
     static let countStrong = ReinsType(size: 12, weight: .semibold, lineBox: 16, tabular: true)
     /// The one exception to 12/14/16: a single leading number per Tokens card.
     static let figure = ReinsType(size: 24, weight: .semibold, lineBox: 32, trackingEm: -0.01, tabular: true)
+    /// The other exception (v3): the share left on the Limits page, one at a time. The line box is the face's own height at 72.
+    static let display = ReinsType(size: 72, weight: .semibold, lineBox: 88, trackingEm: -0.03, tabular: true)
     /// SF Symbol size for an empty state's icon. Not a text role.
     static let symbolLarge = ReinsType(size: 24, weight: .regular, lineBox: 32)
 }
