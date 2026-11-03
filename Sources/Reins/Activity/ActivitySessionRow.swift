@@ -21,7 +21,7 @@ struct ActivitySessionRow: View {
                 help: session.title
             )
         }
-        .lead { CLIDot(session.cli.kind, decorative: true) }
+        .lead { CLIDot(session.cli, decorative: true) }
         .cells {
             HStack(spacing: Metrics.rowSpacing) {
                 Tag(wording.tagText, tone: wording.tagTone, systemImage: wording.tagIcon)
@@ -31,7 +31,7 @@ struct ActivitySessionRow: View {
             }
         }
         .actions { RowActionButton(title: "Stop", kind: .normal, action: onStop) }
-        .accessibilityLabel("\(session.cli.kind.label), \(session.title), \(wording.tagText)")
+        .accessibilityLabel("\(session.cli.label), \(session.title), \(wording.tagText)")
     }
 
     @ViewBuilder

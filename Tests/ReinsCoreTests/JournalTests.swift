@@ -5,7 +5,6 @@ import Testing
 
 @Suite("Journal")
 struct JournalTests {
-    private func roots(_ home: TempHome) throws -> Roots { try Roots.resolve(env: home.env) }
     private func read(_ url: URL) throws -> Data { try Data(contentsOf: url) }
     private func hex(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
 
@@ -24,7 +23,7 @@ struct JournalTests {
     @Test("record writes the Node layout: newest first, key order, lowercase id, ms timestamp, mode 0600")
     func recordLayout() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let first = try Journal.record(r, label: "first", ops: [.created(path: "/x/one")])
         let second = try Journal.record(r, label: "second", ops: [])
 
@@ -41,16 +40,14 @@ struct JournalTests {
         let parsed = try #require(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [[String: Any]])
         #expect(parsed.count == 2)
 
-        let attributes = try FileManager.default.attributesOfItem(atPath: home.reins.appendingPathComponent("journal.json").path)
-        #expect((attributes[.posixPermissions] as? Int) == 0o600)
-        let trash = try FileManager.default.attributesOfItem(atPath: home.reins.appendingPathComponent("trash").path)
-        #expect((trash[.posixPermissions] as? Int) == 0o700)
+        #expect(try home.mode(of: home.reins.appendingPathComponent("journal.json")) == 0o600)
+        #expect(try home.mode(of: home.reins.appendingPathComponent("trash")) == 0o700)
     }
 
     @Test("keeps at most 200 entries")
     func limit() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         for i in 0..<205 { try Journal.record(r, label: "entry \(i)", ops: []) }
         let history = Journal.history(r)
         #expect(history.count == 200)
@@ -60,7 +57,7 @@ struct JournalTests {
     @Test("reads a journal written by the Node core, undoes an entry, refuses one already undone (409), and keeps foreign ops intact")
     func crossReadNodeJournal() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let settings = try home.write(".claude/settings.json", "{\"model\":\"y\"}\n")
         let backup = try home.write(".reins/trash/1793637068527-ff71479b/settings.json", "{\"model\":\"x\"}\n")
         let created = try home.write(".claude/skills/new/SKILL.md", "---\nname: new\n---\n")
@@ -143,7 +140,7 @@ struct JournalTests {
     @Test("an entry written here has the shape the Node core reads")
     func nodeCanReadOurEntry() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let file = try home.write(".claude/settings.json", "{}\n")
         let entry = try #require(try FileEdit.editJSON(r, file: file, label: "Added") { try $0.setting(["model"], to: "x") })
         _ = try Journal.undo(r, id: entry.id)
@@ -161,7 +158,7 @@ struct JournalTests {
     @Test("unknown id is 404 and a second undo is 409")
     func undoErrors() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let missing = #expect(throws: ReinsError.self) { try Journal.undo(r, id: "nope") }
         #expect(missing?.status == 404)
 
@@ -175,7 +172,7 @@ struct JournalTests {
     @Test("created, moved and link-removed ops undo in reverse order")
     func fileOps() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let skill = try home.write(".claude/skills/a/SKILL.md", "---\nname: a\n---\n")
         let skillDir = skill.deletingLastPathComponent()
         let shared = try home.write("shared/b/SKILL.md", "---\nname: b\n---\n")
@@ -200,7 +197,7 @@ struct JournalTests {
     @Test("an entry that cannot be undone fully changes nothing")
     func neverPartial() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let created = try home.write("made/file.txt", "keep me")
         let edited = try home.write("edited.json", "{\"a\":1}\n")
         let backup = try home.write(".reins/trash/1-aaaaaaaa/edited.json", "{}\n")
@@ -225,7 +222,7 @@ struct JournalTests {
     @Test("moved: when a later-reversed op refuses, the op already reversed is moved back to the trash")
     func movedRollsBack() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let other = try home.write("work/other.txt", "back again")
         let otherTrash = try trashCopy(home, "other.txt")
         let mine = try home.write("work/mine.txt", "mine")
@@ -245,7 +242,7 @@ struct JournalTests {
     @Test("moved: refuses (409) when the original path exists again, and when the saved copy is gone")
     func movedRefusals() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let there = try home.write("work/there.txt", "new file")
         let trash = try trashCopy(home, "there.txt", "old file")
         let exists = try Journal.record(r, label: "exists", ops: [.moved(from: there.path, to: trash.path)])
@@ -265,7 +262,7 @@ struct JournalTests {
     @Test("link-removed: refuses (409) when something exists at the path again")
     func linkRemovedRefusal() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let path = try home.write("skills/b", "a file now")
         let entry = try Journal.record(r, label: "link", ops: [.linkRemoved(path: path.path, target: "/somewhere/else")])
         let error = #expect(throws: ReinsError.self) { try Journal.undo(r, id: entry.id) }
@@ -277,7 +274,7 @@ struct JournalTests {
     @Test("file-edited: refuses (409) when the saved copy is gone, and leaves the file as it is")
     func fileEditedBackupGone() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let file = try home.write("settings.json", "{\"a\":1}\n")
         let op = JournalOp.fileEdited(
             file: file.path, existed: true, backup: home.url(".reins/trash/1-aaaaaaaa/settings.json").path,
@@ -293,7 +290,7 @@ struct JournalTests {
     @Test("an op type this version does not know is refused (400) before anything is reversed")
     func unknownOpType() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let made = try home.write("made/file.txt", "keep me").deletingLastPathComponent()
         let mystery = JournalOp(json: .object([JSONMember("type", "teleported"), JSONMember("path", .string(made.path))]))
         let entry = try Journal.record(r, label: "Future op", ops: [mystery, .created(path: made.path)])
@@ -309,7 +306,7 @@ struct JournalTests {
     @Test("a journal.json that is not JSON makes record throw 409 and leaves the file untouched")
     func corruptJournalRefusesRecord() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let file = try home.write(".reins/journal.json", "{ not json")
         let before = try read(file)
 
@@ -323,7 +320,7 @@ struct JournalTests {
     @Test("a journal.json holding a JSON object is refused the same way, by record and by undo (409, not 404)")
     func objectJournalRefusesRecordAndUndo() throws {
         let home = try TempHome()
-        let r = try roots(home)
+        let r = try home.roots
         let file = try home.write(".reins/journal.json", "{}")
         let before = try read(file)
 

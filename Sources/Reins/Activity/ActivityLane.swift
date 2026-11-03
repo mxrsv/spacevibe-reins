@@ -3,7 +3,7 @@ import SwiftUI
 
 /// One CLI: its live sessions, its failed commands, and what cannot be measured for it.
 struct ActivityLane: View {
-    let cli: ActivityCLI
+    let cli: InventoryCLI
     let report: ActivityReport
     let now: Date
     let elapsedMs: Double
@@ -15,15 +15,14 @@ struct ActivityLane: View {
     private static let costLimit = "Cost is estimated from logged tokens at API prices (API-equivalent), not what you are billed."
 
     var body: some View {
-        let kind = cli.kind
         let sessions = ActivityRows.sessions(report, cli: cli)
         let failures = ActivityRows.failures(report, cli: cli)
         VStack(alignment: .leading, spacing: 0) {
-            GroupLabel(kind.label, count: sessions.isEmpty ? nil : sessions.count, detail: sessions.isEmpty ? nil : (sessions.count == 1 ? "session" : "sessions")) {
-                CLIDot(kind, decorative: true)
+            GroupLabel(cli.label, count: sessions.isEmpty ? nil : sessions.count, detail: sessions.isEmpty ? nil : (sessions.count == 1 ? "session" : "sessions")) {
+                CLIDot(cli, decorative: true)
             }
             GroupedList {
-                if sessions.isEmpty { EmptyRow("No \(kind.label) session is running.") }
+                if sessions.isEmpty { EmptyRow("No \(cli.label) session is running.") }
                 ForEach(sessions) { session in
                     ActivitySessionRow(session: session, elapsedMs: elapsedMs, revealActions: revealActions) { onStop(session) }
                 }
@@ -49,7 +48,7 @@ struct ActivityLane: View {
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(kind.label)
+        .accessibilityLabel(cli.label)
     }
 
     private func limitLine(_ text: String) -> some View {

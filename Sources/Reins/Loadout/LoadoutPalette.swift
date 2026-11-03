@@ -11,7 +11,7 @@ extension LoadoutModel {
                 out.append(PaletteEntry(
                     id: "loadout.remove-dead.\(member.id)",
                     title: "Remove dead hook \(row.name)",
-                    subtitle: "\(member.cli.uiKind.label): \(row.detail)",
+                    subtitle: "\(member.cli.label): \(row.detail)",
                     systemImage: "trash",
                     keywords: ["delete", "hook", "script not found"]
                 ) { [weak self] in self?.remove(row, member: member) })
@@ -22,7 +22,7 @@ extension LoadoutModel {
             guard count > 1 else { continue }
             out.append(PaletteEntry(
                 id: "loadout.remove-all-dead.\(cli.rawValue)",
-                title: "Remove all \(count) dead hooks from \(cli.uiKind.label)",
+                title: "Remove all \(count) dead hooks from \(cli.label)",
                 systemImage: "trash",
                 keywords: ["delete", "hooks", "script not found"]
             ) { [weak self] in self?.removeDeadHooks(cli: cli) })
@@ -37,7 +37,7 @@ extension LoadoutModel {
             for cli in InventoryCLI.allCases where LoadoutRows.copyPlan(row, to: cli, events: data.events) != nil {
                 out.append(PaletteEntry(
                     id: "loadout.copy.\(row.key).\(cli.rawValue)",
-                    title: "Copy \(row.kind.noun) \(row.name) to \(cli.uiKind.label)",
+                    title: "Copy \(row.kind.noun) \(row.name) to \(cli.label)",
                     subtitle: "Loadout",
                     systemImage: "doc.on.doc",
                     keywords: ["add", "install"]

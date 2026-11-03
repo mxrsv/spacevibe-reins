@@ -19,7 +19,7 @@ struct RulesTests {
 
         init() throws {
             home = try TempHome()
-            roots = try Roots.resolve(env: home.env)
+            roots = try home.roots
             store = RulesStore(roots: roots)
         }
 
@@ -37,16 +37,10 @@ struct RulesTests {
         func bytes(_ url: URL? = nil) throws -> Data { try Data(contentsOf: url ?? settings) }
         func text(_ url: URL? = nil) throws -> String { String(decoding: try bytes(url), as: UTF8.self) }
         func parsed(_ url: URL? = nil) throws -> JSONValue { try OrderedJSON(data: try bytes(url)).root }
-        func mode(_ url: URL? = nil) throws -> Int {
-            (try FileManager.default.attributesOfItem(atPath: (url ?? settings).path)[.posixPermissions] as! NSNumber).intValue & 0o777
-        }
         func setMode(_ mode: Int, _ url: URL? = nil) throws {
             try FileManager.default.setAttributes([.posixPermissions: mode], ofItemAtPath: (url ?? settings).path)
         }
         func journalText() -> String { (try? String(contentsOf: roots.data.appendingPathComponent("journal.json"), encoding: .utf8)) ?? "" }
-        func strayTempFiles(in folder: URL) -> [String] {
-            ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).filter { $0.hasSuffix(".tmp") }
-        }
         func undo(_ entry: JournalEntry?) throws {
             _ = try Journal.undo(roots, id: try #require(entry).id)
         }
@@ -166,7 +160,7 @@ struct RulesTests {
             #expect(parsed["model"] == "x" && parsed["hooks"] == .object([]))
             #expect(afterAdd.hasPrefix("{\n\(indent)\"env\""), "indent kept")
             #expect(afterAdd.hasSuffix("}\n"))
-            #expect(try sb.mode() == 0o640)
+            #expect(try sb.home.mode(of: sb.settings) == 0o640)
 
             let moved = try sb.store.changeVerdict(scope: .global, rule: "Bash(rm *)", from: .deny, to: .ask)
             // the new list goes at the end of the block, after the lists that were already there
@@ -178,8 +172,8 @@ struct RulesTests {
 
             try sb.undo(removed); try sb.undo(moved); try sb.undo(added)
             #expect(try sb.bytes() == before, "undo restored the exact bytes")
-            #expect(try sb.mode() == 0o640)
-            #expect(sb.strayTempFiles(in: sb.roots.claude.root).isEmpty)
+            #expect(try sb.home.mode(of: sb.settings) == 0o640)
+            #expect(sb.home.strayTempFiles(in: sb.roots.claude.root).isEmpty)
         }
     }
 
@@ -208,7 +202,7 @@ struct RulesTests {
         let local = sb.home.url("proj/.claude/settings.local.json")
         let entry = try sb.store.addRule(scope: .local(proj), verdict: .allow, rule: "Bash(git status)")
         #expect(try sb.parsed(local) == .object([JSONMember("permissions", Self.permissionsObject(["Bash(git status)"]))]))
-        #expect(try sb.mode(local) == 0o600)
+        #expect(try sb.home.mode(of: local) == 0o600)
         try sb.undo(entry)
         #expect(!FileManager.default.fileExists(atPath: local.path))
 
@@ -256,7 +250,7 @@ struct RulesTests {
         #expect(try sb.bytes() == before)
         #expect(try sb.store.listRules().problems.first?.contains("is not valid JSON") == true)
         #expect(Journal.history(sb.roots).isEmpty)
-        #expect(sb.strayTempFiles(in: sb.roots.claude.root).isEmpty)
+        #expect(sb.home.strayTempFiles(in: sb.roots.claude.root).isEmpty)
         #expect(!sb.journalText().contains(Self.canary))
 
         try sb.home.write(".claude/settings.json", #"{"permissions":{"allow":"Read"}}"#)
@@ -388,7 +382,7 @@ struct RulesTests {
         #expect(entries.count == 2)
         _ = try Journal.undo(sb.roots, id: entries[1].id)
         #expect(try sb.bytes() == before)
-        #expect(sb.strayTempFiles(in: sb.roots.claude.root).isEmpty)
+        #expect(sb.home.strayTempFiles(in: sb.roots.claude.root).isEmpty)
     }
 
     @Test("push and secrets cells write their canonical rules and report a rule that still wins")
@@ -491,7 +485,7 @@ struct RulesTests {
         try FileManager.default.createDirectory(at: home.codex, withIntermediateDirectories: true)
         if let config { try home.write(".codex/config.toml", config) }
         for (name, text) in rules { try home.write(".codex/rules/\(name)", text) }
-        return CodexPermissions.read(roots: try Roots.resolve(env: home.env))
+        return CodexPermissions.read(roots: try home.roots)
     }
 
     @Test("Codex reader: legacy model, comments, multi-line arrays, inline tables, and nothing from mcp or env tables")

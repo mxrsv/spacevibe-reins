@@ -23,7 +23,7 @@ struct ActivityFailureRow: View {
             if isHook {
                 Image(systemName: "bolt").accessibilityLabel("Hook")
             } else {
-                CLIDot(failure.cli.kind, decorative: true)
+                CLIDot(failure.cli, decorative: true)
             }
         }
         .cells {
@@ -31,6 +31,6 @@ struct ActivityFailureRow: View {
                 Tag("\u{00D7}\(failure.count)", tone: failure.count >= Self.repeatAlert ? .danger : .neutral)
             }
         }
-        .accessibilityLabel("\(failure.cli.kind.label), \(failure.title), failed \(failure.count) \(failure.count == 1 ? "time" : "times")")
+        .accessibilityLabel("\(failure.cli.label), \(failure.title), failed \(failure.count) \(failure.count == 1 ? "time" : "times")")
     }
 }

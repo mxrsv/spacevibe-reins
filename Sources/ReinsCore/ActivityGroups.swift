@@ -10,7 +10,7 @@ public struct ActivityFailure: Equatable, Sendable {
     }
 
     public var kind: Kind
-    public var cli: ActivityCLI
+    public var cli: InventoryCLI
     /// Command: sha of the normalized command. Hook: the inventory hash `sha(event|command)`.
     public var key: String
     /// The command, one form for every failure (a long one is cut at 120 characters).
@@ -34,7 +34,7 @@ public struct ActivityFileRow: Equatable, Sendable {
     public var edits: Int
     public var sessions: Int
     public var last: String?
-    public var clis: [ActivityCLI]
+    public var clis: [InventoryCLI]
     public var projects: [String]
 }
 
@@ -57,7 +57,7 @@ enum ActivityGroups {
 
     private struct Group {
         var kind: ActivityFailure.Kind
-        var cli: ActivityCLI
+        var cli: InventoryCLI
         var key: String
         var title: String
         var hook: ActivityFailure.Hook?
@@ -75,7 +75,7 @@ enum ActivityGroups {
         var order: [String] = []
         var groups: [String: Group] = [:]
         var seen = Set<String>()
-        func add(_ cli: ActivityCLI, _ gkey: String, _ base: Group, id: String, at: Double, exit: Int?, reason: String, session: String, project: String?) {
+        func add(_ cli: InventoryCLI, _ gkey: String, _ base: Group, id: String, at: Double, exit: Int?, reason: String, session: String, project: String?) {
             let dedupe = "\(cli.rawValue)|\(id)"
             if seen.contains(dedupe) { return } // forked or resumed logs repeat earlier events
             seen.insert(dedupe)
@@ -181,7 +181,7 @@ enum ActivityGroups {
         return rows.enumerated().map { i, f in
             ActivityFileRow(
                 path: f.path, label: labels[i], edits: f.edits, sessions: f.sessions.count, last: iso(f.lastAt),
-                clis: ActivityText.sortedStrings(f.clis).compactMap(ActivityCLI.init(rawValue:)), projects: ActivityText.sortedStrings(f.projects)
+                clis: ActivityText.sortedStrings(f.clis).compactMap(InventoryCLI.init(rawValue:)), projects: ActivityText.sortedStrings(f.projects)
             )
         }
     }

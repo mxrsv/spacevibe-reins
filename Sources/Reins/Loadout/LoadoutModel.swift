@@ -205,7 +205,7 @@ final class LoadoutModel {
 
     func removeDeadHooks(cli: InventoryCLI) {
         let count = deadHookCount(cli: cli)
-        let label = "Removed \(count) dead \(count == 1 ? "hook" : "hooks") from \(cli.uiKind.label)"
+        let label = "Removed \(count) dead \(count == 1 ? "hook" : "hooks") from \(cli.label)"
         perform(guardKey: "remove-dead:\(cli.rawValue)", label: label) { roots in
             try Mutate.removeDeadHooks(roots: roots, cli: cli)
         }

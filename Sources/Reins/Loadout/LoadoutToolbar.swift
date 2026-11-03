@@ -8,7 +8,12 @@ struct LoadoutToolbar: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            LoadoutScopePicker(model: model, current: view.scope, scopes: scopes)
+            ScopePicker(
+                options: scopes.map { ScopeOption(id: $0.value, label: $0.label) },
+                current: ScopeOption(id: view.scope.value, label: view.scope.label),
+                minWidth: 110,
+                onSelect: { model.setScope($0.id ?? LoadoutRows.globalScope) }
+            )
             HStack(spacing: 6) {
                 ForEach(LoadoutFilter.allCases, id: \.self) { filter in
                     FilterChip(filter.title, count: filter.count(in: view.counts), isOn: model.filter == filter) { model.filter = filter }
@@ -27,53 +32,5 @@ struct LoadoutToolbar: View {
         .padding(.horizontal, Metrics.pagePadding)
         .padding(.bottom, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-/// Global or one discovered project. A menu in the app; headless screenshots cannot draw one, so they get the closed label.
-private struct LoadoutScopePicker: View {
-    let model: LoadoutModel
-    let current: LoadoutScope
-    let scopes: [LoadoutScope]
-    @Environment(\.isShotRendering) private var isShotRendering
-
-    var body: some View {
-        if isShotRendering {
-            label
-        } else {
-            Menu {
-                ForEach(scopes, id: \.value) { scope in
-                    Button {
-                        model.setScope(scope.value)
-                    } label: {
-                        if scope.value == current.value { Label(scope.label, systemImage: "checkmark") } else { Text(scope.label) }
-                    }
-                }
-            } label: {
-                label
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .reinsFocusable(cornerRadius: Metrics.controlRadius)
-            .accessibilityLabel("Scope")
-            .accessibilityValue(current.label)
-        }
-    }
-
-    private var label: some View {
-        let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
-        return HStack(spacing: 8) {
-            Text(current.label).lineLimit(1)
-            Image(systemName: "chevron.up.chevron.down").imageScale(.small).foregroundStyle(Palette.textTertiary).accessibilityHidden(true)
-        }
-        .font(ReinsFont.body)
-        .foregroundStyle(Palette.text)
-        .padding(.horizontal, 10)
-        .frame(minWidth: 110, alignment: .leading)
-        .frame(height: Metrics.controlHeight)
-        .background(shape.fill(Palette.surface))
-        .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
-        .contentShape(shape)
     }
 }

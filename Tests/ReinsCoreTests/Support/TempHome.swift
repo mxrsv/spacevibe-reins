@@ -1,4 +1,5 @@
 import Foundation
+import ReinsCore
 
 /// A throwaway HOME. Every test that touches files builds one; nothing reads the real ~/.claude or ~/.codex.
 final class TempHome {
@@ -29,7 +30,22 @@ final class TempHome {
         ]
     }
 
+    /// `Roots` resolved from `env`, so the real-home guard (S-R1) runs on every test home.
+    var roots: Roots { get throws { try Roots.resolve(env: env) } }
+
     func url(_ relative: String) -> URL { root.appendingPathComponent(relative) }
+
+    /// Any temp file left in the folders. Every `.tmp` counts, not only Reins's own `.reins-*.tmp`: the stricter check, and no fixture or script ships one.
+    func strayTempFiles(in folders: URL...) -> [String] {
+        folders.flatMap { folder in
+            ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).filter { $0.hasSuffix(".tmp") }
+        }
+    }
+
+    /// The permission bits of a file or folder (`0o600`, not the type bits).
+    func mode(of url: URL) throws -> Int {
+        (try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as! NSNumber).intValue & 0o777
+    }
 
     @discardableResult
     func write(_ relative: String, _ text: String) throws -> URL {

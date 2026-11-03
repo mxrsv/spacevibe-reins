@@ -48,16 +48,16 @@ enum LoadoutFormat {
     }
 
     static func removeLabel(row: LoadoutRow, member: LoadoutMember) -> String {
-        let cli = member.cli.uiKind.label
+        let cli = member.cli.label
         if case .hook(let hook) = member { return "Removed \(hook.event) hook from \(cli)" }
         return "Removed \(row.kind.noun) \(row.name) from \(cli)"
     }
 
     static func addLabel(row: LoadoutRow, to cli: InventoryCLI) -> String {
-        "Added \(row.kind.noun) \(row.name) to \(cli.uiKind.label)"
+        "Added \(row.kind.noun) \(row.name) to \(cli.label)"
     }
 
     static func removeAction(row: LoadoutRow, member: LoadoutMember) -> String {
-        "Remove \(row.name) from \(member.cli.uiKind.label)"
+        "Remove \(row.name) from \(member.cli.label)"
     }
 }

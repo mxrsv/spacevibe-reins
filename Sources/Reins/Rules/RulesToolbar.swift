@@ -5,9 +5,18 @@ struct RulesToolbar: View {
     let model: RulesModel
     let snapshot: RulesSnapshot
 
+    private var scopeOptions: [ScopeOption] {
+        [ScopeOption(id: nil, label: "Global")] + snapshot.projects.map { ScopeOption(id: $0.dir, label: $0.name) }
+    }
+
+    /// A selected project that is no longer discovered still shows as "Project".
+    private var currentScope: ScopeOption {
+        scopeOptions.first { $0.id == snapshot.selection.dir } ?? ScopeOption(id: snapshot.selection.dir, label: "Project")
+    }
+
     var body: some View {
         HStack(spacing: 10) {
-            RulesScopePicker(model: model, snapshot: snapshot)
+            ScopePicker(options: scopeOptions, current: currentScope, minWidth: 130, onSelect: { model.selectProject($0.id) })
             if snapshot.selection.dir != nil {
                 SegmentedControl(
                     label: "Settings file",
@@ -27,62 +36,5 @@ struct RulesToolbar: View {
             Spacer(minLength: 12)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-/// A menu in the app; headless screenshots cannot draw one, so they get the closed label.
-private struct RulesScopePicker: View {
-    let model: RulesModel
-    let snapshot: RulesSnapshot
-    @Environment(\.isShotRendering) private var isShotRendering
-
-    var body: some View {
-        if isShotRendering {
-            label
-        } else {
-            Menu {
-                choice("Global", dir: nil)
-                ForEach(snapshot.projects, id: \.dir) { project in
-                    choice(project.name, dir: project.dir)
-                }
-            } label: {
-                label
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .reinsFocusable(cornerRadius: Metrics.controlRadius)
-            .accessibilityLabel("Scope")
-            .accessibilityValue(name)
-        }
-    }
-
-    private var name: String {
-        guard let dir = snapshot.selection.dir else { return "Global" }
-        return snapshot.projects.first { $0.dir == dir }?.name ?? "Project"
-    }
-
-    private func choice(_ title: String, dir: String?) -> some View {
-        Button {
-            model.selectProject(dir)
-        } label: {
-            if dir == snapshot.selection.dir { Label(title, systemImage: "checkmark") } else { Text(title) }
-        }
-    }
-
-    private var label: some View {
-        let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
-        return HStack(spacing: 8) {
-            Text(name).lineLimit(1)
-            Image(systemName: "chevron.up.chevron.down").imageScale(.small).foregroundStyle(Palette.textTertiary).accessibilityHidden(true)
-        }
-        .font(ReinsFont.body)
-        .foregroundStyle(Palette.text)
-        .padding(.horizontal, 10)
-        .frame(minWidth: 130, alignment: .leading)
-        .frame(height: Metrics.controlHeight)
-        .background(shape.fill(Palette.surface))
-        .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
-        .contentShape(shape)
     }
 }

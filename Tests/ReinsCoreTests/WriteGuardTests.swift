@@ -12,7 +12,7 @@ struct WriteGuardTests {
 
         init() throws {
             home = try TempHome()
-            roots = try Roots.resolve(env: home.env)
+            roots = try home.roots
         }
 
         func store(projects: [String] = []) -> RulesStore { RulesStore(roots: roots, projects: { projects }) }
@@ -20,7 +20,6 @@ struct WriteGuardTests {
         var journalEmpty: Bool { Journal.history(roots).isEmpty }
         func folderNames(_ url: URL) -> [String] { ((try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []).sorted() }
         var trashSlots: [String] { folderNames(roots.data.appendingPathComponent("trash")) }
-        func strayTemps(_ folder: URL) -> [String] { folderNames(folder).filter { $0.hasSuffix(".tmp") } }
     }
 
     /// chmod that is put back when the scope ends, so TempHome can delete the folder.
@@ -172,7 +171,7 @@ struct WriteGuardTests {
         }
         #expect(error?.status == 409 && error?.message.contains("not a regular file") == true)
         #expect(sb.folderNames(settings).isEmpty)
-        #expect(sb.strayTemps(settings.deletingLastPathComponent()).isEmpty)
+        #expect(sb.home.strayTempFiles(in: settings.deletingLastPathComponent()).isEmpty)
         #expect(sb.journalEmpty && sb.trashSlots.isEmpty)
     }
 
@@ -247,6 +246,6 @@ struct WriteGuardTests {
         #expect(now.root["model"]?.stringValue == "by-hand")
         #expect(Inventory.read(roots: sb.roots).hooks.filter { $0.command == "echo made" }.isEmpty)
         #expect(Journal.history(sb.roots).first?.undone == true)
-        #expect(sb.strayTemps(file.deletingLastPathComponent()).isEmpty)
+        #expect(sb.home.strayTempFiles(in: file.deletingLastPathComponent()).isEmpty)
     }
 }

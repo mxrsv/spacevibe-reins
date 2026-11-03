@@ -1,3 +1,4 @@
+import ReinsCore
 import SwiftUI
 
 /// The column heading row at the top of a `GroupedList`. `title` sits over the text block; `columns` sit over the cells.
@@ -63,9 +64,9 @@ struct SectionRow: View {
 
 /// The CLI heading over a usage column: dot and name, as wide as a `UsageCell` so they line up.
 struct CLIColumnHead: View {
-    let cli: CLIKind
+    let cli: InventoryCLI
 
-    init(_ cli: CLIKind) { self.cli = cli }
+    init(_ cli: InventoryCLI) { self.cli = cli }
 
     var body: some View {
         HStack(spacing: 6) {

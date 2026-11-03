@@ -4,10 +4,6 @@ import Foundation
 // Read-only on logs; it never executes a recorded command or hook (AGENTS.md R4). All process access goes through
 // `ProcessAdapter`. Field names in `ActivityReport.jsonObject` are the Node output's, so the golden compares directly.
 
-public enum ActivityCLI: String, Sendable, CaseIterable {
-    case claude, codex
-}
-
 public enum ActivitySessionState: String, Sendable {
     case running, waiting, idle, ended, unmeasurable
 }
@@ -43,7 +39,7 @@ public struct ActivityCost: Equatable, Sendable {
 }
 
 public struct ActivitySession: Equatable, Sendable, Identifiable {
-    public var cli: ActivityCLI
+    public var cli: InventoryCLI
     /// Claude: the session id. Codex: the thread id, or `pid:<n>:<start-ms>` before the first prompt.
     /// An unknown process start uses `pid:<n>:unknown` and cannot authorize Stop.
     public var id: String
@@ -65,7 +61,7 @@ public struct ActivitySession: Equatable, Sendable, Identifiable {
 
 /// What cannot be measured, listed even when no session is live.
 public struct ActivityLimit: Equatable, Sendable {
-    public var cli: ActivityCLI
+    public var cli: InventoryCLI
     public var code: ActivityReason
     public var text: String
 }
@@ -121,7 +117,7 @@ public actor ActivityEngine {
 
     private struct LogFile {
         var url: URL
-        var cli: ActivityCLI
+        var cli: InventoryCLI
         var session: String
         var sub: Bool
         var mtimeMs: Double
@@ -333,7 +329,7 @@ public actor ActivityEngine {
         return StateInfo(state: .idle, reason: nil, text: text, tool: nil)
     }
 
-    static let limitCodes: [(ActivityCLI, ActivityReason)] = [
+    static let limitCodes: [(InventoryCLI, ActivityReason)] = [
         (.claude, .claudePromptVsBusy), (.codex, .codexToolSilent), (.codex, .codexNoRollout), (.codex, .codexHookRuns),
     ]
 

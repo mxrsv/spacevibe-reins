@@ -26,7 +26,7 @@ struct RulesProject: Equatable, Hashable {
     let name: String
 }
 
-/// Pure helpers for the scope list and for keeping paths out of the UI. Checked through the screenshots (no test target for the app).
+/// Pure helpers for the scope list and for keeping paths out of the UI. Covered by `RulesScopesTests`.
 enum RulesScopes {
     /// The folder name; two projects with the same folder name also show their parent folder.
     static func projects(from dirs: [String]) -> [RulesProject] {

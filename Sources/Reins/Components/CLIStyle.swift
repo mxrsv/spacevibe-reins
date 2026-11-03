@@ -1,11 +1,8 @@
+import ReinsCore
 import SwiftUI
 
-/// The two agents Reins compares. Colour means the CLI everywhere it appears.
-enum CLIKind: String, CaseIterable, Identifiable {
-    case claude, codex
-
-    var id: String { rawValue }
-
+/// Colour means the CLI everywhere it appears.
+extension InventoryCLI {
     var label: String {
         switch self {
         case .claude: "Claude Code"

@@ -36,7 +36,7 @@ struct ActivityScreen: View {
                 content: {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(alignment: .top, spacing: 20) {
-                            ForEach(ActivityCLI.allCases, id: \.rawValue) { cli in
+                            ForEach(InventoryCLI.allCases, id: \.rawValue) { cli in
                                 ActivityLane(cli: cli, report: report, now: now, elapsedMs: elapsedMs, revealActions: model.revealRowActions) { model.requestStop($0) }
                             }
                         }

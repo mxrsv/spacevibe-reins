@@ -128,7 +128,7 @@ struct ActivitySandbox {
 
     init() throws { home = try TempHome() }
 
-    var roots: Roots { get throws { try Roots.resolve(env: home.env) } }
+    var roots: Roots { get throws { try home.roots } }
 
     @discardableResult
     func put(_ relative: String, _ text: String, ageMs: Double = 0) throws -> URL {

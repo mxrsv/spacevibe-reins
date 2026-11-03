@@ -1,9 +1,10 @@
+import ReinsCore
 import SwiftUI
 
 /// One CLI's usage evidence for one row. The five states look different from each other on purpose
 /// (see `UsageCellModel`). Fixed width so the two CLI columns line up down a list.
 struct UsageCell: View {
-    let cli: CLIKind
+    let cli: InventoryCLI
     let model: UsageCellModel
     /// Largest run count among the compared rows; scales the bar.
     var max: Int = 1

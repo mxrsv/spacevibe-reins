@@ -38,7 +38,7 @@ struct ActivityPendingCall {
 
 /// The mutable per-log state. A class on purpose: logs reach hundreds of MB and a copy per line is too slow.
 final class ActivityLogState {
-    let cli: ActivityCLI
+    let cli: InventoryCLI
     var invalid = 0
     var id: String?
     var cwd: String?
@@ -66,7 +66,7 @@ final class ActivityLogState {
     var legacyEdits: [ActivityEditEvent] = []
     var sawFileChange = false
 
-    init(cli: ActivityCLI) { self.cli = cli }
+    init(cli: InventoryCLI) { self.cli = cli }
 
     struct CodexTokens {
         var input = 0.0

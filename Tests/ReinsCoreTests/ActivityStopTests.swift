@@ -30,7 +30,7 @@ struct ActivityStopTests {
         try status(sb, 12)
         try status(sb, 13)
         let roots = try sb.roots
-        let cases: [(ActivityCLI, String, FakeProcess)] = [
+        let cases: [(InventoryCLI, String, FakeProcess)] = [
             (.claude, activitySid(12), FakeProcess(alive: [12], starts: [12: "Tue Nov  3 01:00:00 2026"])), // pid reused
             (.claude, activitySid(12), FakeProcess(alive: [12])), // start time unknown: not proven to be the same process
             (.claude, activitySid(13), FakeProcess(starts: [13: Self.start])), // dead

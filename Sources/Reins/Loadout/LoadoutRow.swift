@@ -1,14 +1,6 @@
 import Foundation
 import ReinsCore
 
-extension InventoryCLI {
-    var uiKind: CLIKind { self == .claude ? .claude : .codex }
-}
-
-extension CLIKind {
-    var engine: InventoryCLI { self == .claude ? .claude : .codex }
-}
-
 enum LoadoutKind: CaseIterable {
     case skill, agent, hook
 

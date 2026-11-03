@@ -14,24 +14,13 @@ struct FileEditTests {
 
         init() throws {
             home = try TempHome()
-            roots = try Roots.resolve(env: home.env)
+            roots = try home.roots
             settings = home.claude.appendingPathComponent("settings.json")
         }
 
         func bytes(_ url: URL? = nil) throws -> Data { try Data(contentsOf: url ?? settings) }
         func text(_ url: URL? = nil) throws -> String { String(decoding: try bytes(url), as: UTF8.self) }
-        func mode(_ url: URL? = nil) throws -> Int {
-            Int(try FileManager.default.attributesOfItem(atPath: (url ?? settings).path)[.posixPermissions] as! NSNumber)
-        }
         func journalBytes() -> Data { (try? Data(contentsOf: roots.data.appendingPathComponent("journal.json"))) ?? Data() }
-
-        /// Anything the edit machinery left next to the file or in the data folder that is not a result.
-        func strayTempFiles() -> [String] {
-            let folders = [settings.deletingLastPathComponent(), roots.data]
-            return folders.flatMap { folder in
-                ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).filter { $0.contains(".reins-") && $0.hasSuffix(".tmp") }
-            }
-        }
 
         func trashFiles() -> [String] {
             let trash = roots.data.appendingPathComponent("trash")
@@ -65,7 +54,7 @@ struct FileEditTests {
             let entry = try #require(try FileEdit.editJSON(sandbox.roots, file: sandbox.settings, label: "Added allow rule Read (global)", change: addRule("Read")))
             let after = try sandbox.text()
             #expect(after != original)
-            #expect(try sandbox.mode() == 0o640)
+            #expect(try sandbox.home.mode(of: sandbox.settings) == 0o640)
             if original.contains("\r\n") { #expect(after.contains("\r\n") && !after.replacingOccurrences(of: "\r\n", with: "").contains("\n")) }
             if original.contains("\t") { #expect(after.contains("\t\"model\"")) }
             let parsed = try JSONSerialization.jsonObject(with: try sandbox.bytes()) as? [String: Any]
@@ -74,8 +63,8 @@ struct FileEditTests {
 
             #expect(try Journal.undo(sandbox.roots, id: entry.id) == "Added allow rule Read (global)")
             #expect(try sandbox.bytes() == before)
-            #expect(try sandbox.mode() == 0o640)
-            #expect(sandbox.strayTempFiles().isEmpty)
+            #expect(try sandbox.home.mode(of: sandbox.settings) == 0o640)
+            #expect(sandbox.home.strayTempFiles(in: sandbox.home.claude, sandbox.roots.data).isEmpty)
         }
     }
 
@@ -116,14 +105,14 @@ struct FileEditTests {
         }
         #expect(error?.message == "rejected")
         #expect(try sandbox.bytes() == before)
-        #expect(sandbox.strayTempFiles().isEmpty)
+        #expect(sandbox.home.strayTempFiles(in: sandbox.home.claude, sandbox.roots.data).isEmpty)
         #expect(sandbox.trashFiles().isEmpty, "no backup left for an edit that never happened")
         #expect(Journal.history(sandbox.roots).isEmpty)
 
         // A throwing `change` is the same.
         #expect(throws: ReinsError.self) { try FileEdit.edit(sandbox.roots, file: sandbox.settings, label: "Never") { _ in throw ReinsError("no") } }
         #expect(try sandbox.bytes() == before)
-        #expect(sandbox.strayTempFiles().isEmpty)
+        #expect(sandbox.home.strayTempFiles(in: sandbox.home.claude, sandbox.roots.data).isEmpty)
     }
 
     @Test("invalid JSON and wrong shapes are refused with a 409 that never quotes content")
@@ -147,7 +136,7 @@ struct FileEditTests {
             #expect(try sandbox.bytes() == before)
         }
         #expect(Journal.history(sandbox.roots).isEmpty)
-        #expect(sandbox.strayTempFiles().isEmpty)
+        #expect(sandbox.home.strayTempFiles(in: sandbox.home.claude, sandbox.roots.data).isEmpty)
 
         // The same file is also refused when the new bytes would not parse.
         try sandbox.home.write(".claude/settings.json", "{}\n")
@@ -170,12 +159,12 @@ struct FileEditTests {
         let entry = try #require(try FileEdit.editJSON(sandbox.roots, file: sandbox.settings, label: "Added", change: addRule("Read")))
         #expect((try? FileManager.default.destinationOfSymbolicLink(atPath: sandbox.settings.path)) == target.path)
         #expect(try sandbox.text(target).contains("\"Read\""))
-        #expect(try sandbox.mode(target) == 0o600)
+        #expect(try sandbox.home.mode(of: target) == 0o600)
 
         _ = try Journal.undo(sandbox.roots, id: entry.id)
         #expect((try? FileManager.default.destinationOfSymbolicLink(atPath: sandbox.settings.path)) == target.path)
         #expect(try sandbox.text(target) == "{}\n")
-        #expect(sandbox.strayTempFiles().isEmpty)
+        #expect(sandbox.home.strayTempFiles(in: sandbox.home.claude, sandbox.roots.data).isEmpty)
     }
 
     @Test("a link to nothing is refused instead of being replaced")
@@ -195,7 +184,7 @@ struct FileEditTests {
         let sandbox = try Sandbox()
         let project = sandbox.home.url("proj/.claude/settings.local.json")
         let entry = try #require(try FileEdit.editJSON(sandbox.roots, file: project, label: "Added", change: addRule("Bash(git status)")))
-        #expect(try sandbox.mode(project) == 0o600)
+        #expect(try sandbox.home.mode(of: project) == 0o600)
         let text = try sandbox.text(project)
         #expect(text.hasSuffix("}\n"))
         let parsed = try JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any]

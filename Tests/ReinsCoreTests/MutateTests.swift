@@ -31,7 +31,7 @@ struct MutateTests {
         init() throws {
             home = try TempHome()
             try FixtureHome.materialize(into: home.root)
-            roots = try Roots.resolve(env: home.env)
+            roots = try home.roots
         }
 
         func read(_ relative: String) throws -> String { try String(contentsOf: home.url(relative), encoding: .utf8) }
@@ -414,7 +414,7 @@ struct MutateTests {
     @Test("hook ops written by the Node core (no restore data) are undone by editing the hooks")
     func undoNodeHookOps() throws {
         let home = try TempHome()
-        let roots = try Roots.resolve(env: home.env)
+        let roots = try home.roots
         let file = home.url(".claude/settings.json")
         try home.write(".claude/settings.json", "{\n  \"env\": {\"T\": \"\(Self.canary)\"},\n  \"hooks\": {\n    \"Stop\": [\n      {\n        \"hooks\": [\n          { \"type\": \"command\", \"command\": \"echo kept\" },\n          { \"type\": \"command\", \"command\": \"echo added\", \"timeout\": 5 }\n        ]\n      }\n    ]\n  }\n}")
         try home.write(".reins/journal.json", """

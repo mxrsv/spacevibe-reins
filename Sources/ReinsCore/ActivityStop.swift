@@ -28,7 +28,7 @@ func codexProcessID(pid: Int, start: String?) -> String? {
 }
 
 /// The pid of a live session, decided from the system now and never taken from the caller: pids get reused.
-private func livePid(roots: Roots, cli: ActivityCLI, id: String, proc: any ProcessAdapter) async -> Int? {
+private func livePid(roots: Roots, cli: InventoryCLI, id: String, proc: any ProcessAdapter) async -> Int? {
     if cli == .codex {
         let threads = await proc.codexThreads()
         for thread in threads {
@@ -56,7 +56,7 @@ private func livePid(roots: Roots, cli: ActivityCLI, id: String, proc: any Proce
 /// The engine never asks the user; the UI confirms before it calls this. The pid is looked up again from the live system
 /// (the Claude status file with its start time, or the Codex thread lock), so a stale row cannot signal a reused pid.
 /// - Throws: `ReinsError` 404 when the session is no longer running, 403 when it belongs to another user, 500 for any other signal error.
-public func stopSession(roots: Roots, cli: ActivityCLI, id: String, proc: any ProcessAdapter, options: StopOptions = StopOptions()) async throws -> StopResult {
+public func stopSession(roots: Roots, cli: InventoryCLI, id: String, proc: any ProcessAdapter, options: StopOptions = StopOptions()) async throws -> StopResult {
     guard let pid = await livePid(roots: roots, cli: cli, id: id, proc: proc) else {
         throw ReinsError("That session is no longer running.", status: 404)
     }

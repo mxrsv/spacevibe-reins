@@ -28,7 +28,7 @@ struct RulesGrid: View {
         }
     }
 
-    private func head(_ cli: CLIKind, width: CGFloat) -> some View {
+    private func head(_ cli: InventoryCLI, width: CGFloat) -> some View {
         HStack(spacing: 6) {
             CLIDot(cli, decorative: true)
             Text(cli.label)

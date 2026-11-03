@@ -1,10 +1,6 @@
 import Foundation
 import ReinsCore
 
-extension ActivityCLI {
-    var kind: CLIKind { self == .claude ? .claude : .codex }
-}
-
 /// What the lanes and the badge show, derived from one report. Pure: the screen only lays these out.
 enum ActivityRows {
     static let failurePage = 8
@@ -13,15 +9,15 @@ enum ActivityRows {
     static let recentFailureMs = 24 * 60 * 60 * 1000.0
 
     /// An ended process is not "running"; the engine keeps it listed for a few minutes only so it does not vanish unexplained.
-    static func sessions(_ report: ActivityReport, cli: ActivityCLI) -> [ActivitySession] {
+    static func sessions(_ report: ActivityReport, cli: InventoryCLI) -> [ActivitySession] {
         report.sessions.filter { $0.cli == cli && $0.state != .ended }
     }
 
-    static func failures(_ report: ActivityReport, cli: ActivityCLI) -> [ActivityFailure] {
+    static func failures(_ report: ActivityReport, cli: InventoryCLI) -> [ActivityFailure] {
         report.failures.filter { $0.cli == cli }
     }
 
-    static func limits(_ report: ActivityReport, cli: ActivityCLI) -> [ActivityLimit] {
+    static func limits(_ report: ActivityReport, cli: InventoryCLI) -> [ActivityLimit] {
         report.unmeasurable.filter { $0.cli == cli }
     }
 
@@ -52,7 +48,7 @@ struct SessionWording {
 
     init(_ session: ActivitySession, elapsedMs: Double) {
         switch session.state {
-        case .running: (tagText, tagTone, tagIcon) = ("running", session.cli.kind.tagTone, nil)
+        case .running: (tagText, tagTone, tagIcon) = ("running", session.cli.tagTone, nil)
         case .waiting: (tagText, tagTone, tagIcon) = ("waiting for you", .warn, nil)
         case .unmeasurable: (tagText, tagTone, tagIcon) = ("not measurable", .neutral, "exclamationmark.triangle")
         case .idle, .ended: (tagText, tagTone, tagIcon) = ("idle", .neutral, nil)

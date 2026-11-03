@@ -18,12 +18,12 @@ struct LoadoutRowView: View {
         }
         .lead { Image(systemName: row.kind.systemImage).accessibilityHidden(true) }
         .cells {
-            ForEach(CLIKind.allCases) { cli in
+            ForEach(InventoryCLI.allCases, id: \.self) { cli in
                 UsageCell(
                     cli: cli,
-                    model: LoadoutFormat.cellModel(row.cells[cli.engine], scanFailure: model.scanFailure),
+                    model: LoadoutFormat.cellModel(row.cells[cli], scanFailure: model.scanFailure),
                     max: max,
-                    onAdd: LoadoutRows.copyPlan(row, to: cli.engine, events: events) == nil ? nil : { model.add(row, to: cli.engine) }
+                    onAdd: LoadoutRows.copyPlan(row, to: cli, events: events) == nil ? nil : { model.add(row, to: cli) }
                 )
             }
         }
@@ -43,7 +43,7 @@ struct LoadoutRowView: View {
                 ForEach(members, id: \.id) { member in
                     Button { model.remove(row, member: member) } label: {
                         HStack(spacing: 5) {
-                            CLIDot(member.cli.uiKind, decorative: true)
+                            CLIDot(member.cli, decorative: true)
                             Image(systemName: "trash")
                         }
                     }
