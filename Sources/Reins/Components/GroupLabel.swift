@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The small heading above a group: "Skills 12", "Failed commands 4". `lead` is usually a `CLIDot`.
+/// A heading above a block that is not a card (the gallery's sections). A card's name goes in its `CardHeader` instead.
 struct GroupLabel<Lead: View>: View {
     let title: String
     var count: Int?
@@ -8,15 +8,15 @@ struct GroupLabel<Lead: View>: View {
     let lead: Lead
 
     var body: some View {
-        HStack(alignment: .center, spacing: 8) {
+        HStack(alignment: .center, spacing: Space.s8) {
             lead
-            Text(title).font(ReinsFont.smallStrong).foregroundStyle(Palette.textSecondary)
-            if let count { Text("\(count)").font(ReinsFont.small).foregroundStyle(Palette.textTertiary) }
-            if let detail { Text(detail).font(ReinsFont.small).foregroundStyle(Palette.textTertiary) }
+            Text(title).reinsText(.captionStrong, tone: .secondary)
+            if let count { Count(count) }
+            if let detail { Text(detail).reinsText(.caption, tone: .tertiary) }
         }
-        .padding(.horizontal, 4)
-        .padding(.top, 20)
-        .padding(.bottom, 7)
+        .padding(.horizontal, Space.s4)
+        .padding(.top, Space.s24)
+        .padding(.bottom, Space.s8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)

@@ -1,12 +1,16 @@
 import SwiftUI
 
-/// A pill that filters a list. Several chips side by side act as one single-choice filter; the caller owns the
-/// state. `count` is how many rows the filter would show.
+/// A pill that filters a list, 28 pt high like every control. Several chips side by side act as one single-choice filter;
+/// the caller owns the state. `count` is how many rows the filter would show.
+///
+/// The dismissible form is an applied scope ("spacevibe-bench ×"): always on, and only the × acts. The × is its own
+/// button with a spoken label, so a keyboard user reaches it directly.
 struct FilterChip: View {
     let title: String
     var count: Int?
     let isOn: Bool
     let action: () -> Void
+    var onDismiss: (() -> Void)?
 
     init(_ title: String, count: Int? = nil, isOn: Bool, action: @escaping () -> Void) {
         self.title = title
@@ -15,24 +19,51 @@ struct FilterChip: View {
         self.action = action
     }
 
+    /// An applied scope that the × clears.
+    init(dismissible title: String, onDismiss: @escaping () -> Void) {
+        self.title = title
+        isOn = true
+        action = {}
+        self.onDismiss = onDismiss
+    }
+
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
+        if let onDismiss {
+            pill(trailing: Space.s8) {
                 Text(title)
-                if let count { Text("\(count)").font(ReinsType.count.font).foregroundStyle(Palette.textTertiary) }
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark").imageScale(.small).foregroundStyle(TextTone.secondary.color)
+                }
+                .buttonStyle(.plain)
+                .reinsFocusable(cornerRadius: Metrics.segmentRadius)
+                .help("Clear \(title)")
+                .accessibilityLabel("Clear \(title)")
             }
-            .font(ReinsFont.body)
-            .foregroundStyle(isOn ? Palette.text : Palette.textSecondary)
-            .padding(.horizontal, 10)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(title)
+        } else {
+            Button(action: action) {
+                pill(trailing: Space.s12) {
+                    Text(title)
+                    if let count { Count(count) }
+                }
+            }
+            .buttonStyle(.plain)
+            .reinsFocusable(cornerRadius: Metrics.chipHeight / 2)
+            .accessibilityAddTraits(isOn ? [.isSelected] : [])
+            .accessibilityLabel(count.map { "\(title), \($0)" } ?? title)
+            .accessibilityHint("Filter")
+        }
+    }
+
+    private func pill<Content: View>(trailing: CGFloat, @ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: Space.s6) { content() }
+            .reinsText(.body, tone: isOn ? .primary : .secondary)
+            .padding(.leading, Space.s12)
+            .padding(.trailing, trailing)
             .frame(height: Metrics.chipHeight)
             .background(Capsule().fill(isOn ? Palette.selection : .clear))
             .overlay(Capsule().strokeBorder(isOn ? .clear : Palette.border, lineWidth: 1))
             .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .reinsFocusable(cornerRadius: Metrics.chipHeight / 2)
-        .accessibilityAddTraits(isOn ? [.isSelected] : [])
-        .accessibilityLabel(count.map { "\(title), \($0)" } ?? title)
-        .accessibilityHint("Filter")
     }
 }

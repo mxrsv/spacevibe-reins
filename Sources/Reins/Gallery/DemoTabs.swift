@@ -50,15 +50,11 @@ private struct DemoLoadoutScreen: View {
 
     var body: some View {
         PageLayout {
-            HStack(spacing: 6) {
+            HStack(spacing: Rhythm.chips) {
                 FilterChip("All", count: 22, isOn: filter == "all") { filter = "all" }
                 FilterChip("In one CLI only", count: 16, isOn: filter == "one") { filter = "one" }
                 FilterChip("Never ran", count: 5, isOn: filter == "never") { filter = "never" }
                 FilterChip("Dead", count: 2, isOn: filter == "dead") { filter = "dead" }
-                Spacer(minLength: 0)
-                Text("Counted from 146 Claude Code and 34 Codex sessions since 2026-10-05")
-                    .font(ReinsFont.small)
-                    .foregroundStyle(Palette.textTertiary)
             }
         } content: {
             DemoLoadoutList()
@@ -69,6 +65,7 @@ private struct DemoLoadoutScreen: View {
 private struct DemoRulesScreen: View {
     @State private var scope = "global"
     @State private var push = "ask"
+    private let column = Metrics.usageCellWidth + Metrics.usageCellWidth / 2
 
     var body: some View {
         PageLayout {
@@ -78,33 +75,35 @@ private struct DemoRulesScreen: View {
             ], selection: $scope)
         } content: {
             GroupedList {
-                HeadRow("What the agent may do") {
-                    CLIColumnHead(.claude)
-                    CLIColumnHead(.codex)
-                }
+                CardHeader("What the agent may do", columns: {
+                    CLIColumnHead(.claude, width: column)
+                    CLIColumnHead(.codex, width: column)
+                })
                 ForEach(["Read files", "Edit files", "Run commands"], id: \.self) { name in
                     Row { RowText(name) }
+                        .lead { Image(systemName: "chevron.right").imageScale(.small) }
                         .cells {
                             SegmentedControl(label: "\(name), Claude Code", options: [
                                 SegmentOption("Allow", value: "allow"),
                                 SegmentOption("Ask", value: "ask"),
                                 SegmentOption("Deny", value: "deny"),
                             ], selection: .constant("allow"))
-                            .frame(width: Metrics.usageCellWidth, alignment: .leading)
-                            Text("no setting").foregroundStyle(Palette.textTertiary)
-                                .frame(width: Metrics.usageCellWidth, alignment: .leading)
+                            .frame(width: column, alignment: .leading)
+                            Text("no setting").reinsText(.body, tone: .tertiary)
+                                .frame(width: column, alignment: .leading)
                         }
                 }
                 Row { RowText("Push and deploy") }
+                    .lead { Image(systemName: "chevron.right").imageScale(.small) }
                     .cells {
                         SegmentedControl(label: "Push and deploy, Claude Code", options: [
                             SegmentOption("Allow", value: "allow"),
                             SegmentOption("Ask", value: "ask"),
                             SegmentOption("Deny", value: "deny"),
                         ], selection: $push)
-                        .frame(width: Metrics.usageCellWidth, alignment: .leading)
+                        .frame(width: column, alignment: .leading)
                         Tag("workspace only", tone: .neutral)
-                            .frame(width: Metrics.usageCellWidth, alignment: .leading)
+                            .frame(width: column, alignment: .leading)
                     }
             }
         }
@@ -114,17 +113,18 @@ private struct DemoRulesScreen: View {
 private struct DemoActivityScreen: View {
     var body: some View {
         PageLayout {
-            Banner(.warn, message: "Codex does not record permission prompts", detail: "A long command and a wait for approval look the same.")
-        } content: {
-            GroupLabel("Running", count: 2) { CLIDot(.claude, decorative: true) }
-            GroupedList {
-                Row { RowText("Fix leaderboard rank tie", subtitle: "demo-bench \u{00B7} Bash \u{00B7} 18 min") }
-                    .lead { CLIDot(.claude) }
-                    .cells { Tag("running", tone: .claude) }
-                Row { RowText("Add cache header", subtitle: "demo-api \u{00B7} 9 min") }
-                    .lead { CLIDot(.codex) }
-                    .cells { Tag("running", tone: .codex) }
-                EmptyRow("No failed commands in the last 14 days.")
+            VStack(alignment: .leading, spacing: Rhythm.regions) {
+                Banner(.warn, message: "Codex does not record permission prompts", detail: "A long command and a wait for approval look the same.")
+                GroupedList {
+                    CardHeader("Running", count: 2, lead: { CLIDot(.claude, decorative: true) })
+                    Row { RowText("Fix leaderboard rank tie", subtitle: "demo-bench \u{00B7} Bash \u{00B7} 18 min") }
+                        .lead { CLIDot(.claude) }
+                        .cells { StateCell { Tag("running", tone: .success) }; NumberCell(text: "~$0.89") }
+                    Row { RowText("Add cache header", subtitle: "demo-api \u{00B7} 9 min") }
+                        .lead { CLIDot(.codex) }
+                        .cells { StateCell { Tag("running", tone: .success) }; NumberCell(text: "~$4.80") }
+                    EmptyRow("No failed commands in the last 14 days.")
+                }
             }
         }
     }

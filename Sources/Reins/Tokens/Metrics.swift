@@ -11,6 +11,7 @@ enum Metrics {
     static let topBarHeight: CGFloat = 48
     static let hintBarHeight: CGFloat = 32
     static let topBarSearchWidth: CGFloat = 270
+    static let scopePickerMinWidth: CGFloat = 120
 
     /// Card, banner, toast and palette.
     static let groupRadius: CGFloat = 12
@@ -42,10 +43,14 @@ enum Metrics {
     static let usageCellWidth: CGFloat = 200
     /// Fits "12,345" in `ReinsType.body`.
     static let usageNumberWidth: CGFloat = 52
-    static let costWidth: CGFloat = 64
+    /// Fits "~$148.20" in `ReinsType.number`.
+    static let costWidth: CGFloat = 72
     /// Activity's state tag column; fits "not measurable" with its icon.
     static let stateWidth: CGFloat = 120
+    /// Loadout's trailing actions: one 28 pt slot per CLI and 4 pt between.
+    static let loadoutActionsWidth: CGFloat = 60
     static let barHeight: CGFloat = 6
+    static let legendSwatchWidth: CGFloat = 22
 
     /// Every control: button, chip, segmented frame, scope picker, search field.
     static let controlHeight: CGFloat = 28
@@ -54,6 +59,8 @@ enum Metrics {
     static let segmentHeight: CGFloat = 24
     static let tagHeight: CGFloat = 20
     static let sidebarItemHeight: CGFloat = 32
+
+    static let emptyStateMessageWidth: CGFloat = 360
 
     static let paletteRowHeight: CGFloat = 36
     /// Estimated height of a section title in the palette list (8 pt above, 4 pt below, one line); it only sizes the list.

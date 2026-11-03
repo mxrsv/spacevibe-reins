@@ -8,25 +8,25 @@ struct EmptyState<Action: View>: View {
     let action: Action
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Space.s8) {
             if let systemImage {
                 Image(systemName: systemImage)
-                    .font(ReinsFont.emptyStateIcon)
+                    .font(ReinsType.symbolLarge.font)
                     .foregroundStyle(Palette.textTertiary)
+                    .padding(.bottom, Space.s4)
                     .accessibilityHidden(true)
             }
-            Text(title).font(ReinsFont.bodyStrong).foregroundStyle(Palette.text)
+            Text(title).reinsText(.bodyStrong, tone: .primary)
             if let message {
                 Text(message)
-                    .font(ReinsFont.small)
-                    .foregroundStyle(Palette.textTertiary)
+                    .reinsText(.caption, tone: .tertiary)
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: 360)
+                    .frame(maxWidth: Metrics.emptyStateMessageWidth)
             }
-            action
+            if Action.self != EmptyView.self { action.padding(.top, Space.s8) }
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 40)
+        .padding(.horizontal, Space.s24)
+        .padding(.vertical, Space.s32)
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .contain)
     }
@@ -58,10 +58,10 @@ struct EmptyRow: View {
 
     var body: some View {
         Text(text)
-            .font(ReinsFont.small)
-            .foregroundStyle(Palette.textTertiary)
+            .reinsText(.caption, tone: .tertiary)
             .padding(.horizontal, Metrics.rowHorizontalPadding)
-            .padding(.vertical, 12)
+            .padding(.vertical, Space.s12)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .groupedListPart(.plain)
     }
 }

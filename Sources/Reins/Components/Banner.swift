@@ -29,14 +29,14 @@ struct Banner: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous)
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: Metrics.rowSpacing) {
             Image(systemName: kind.systemImage)
                 .foregroundStyle(kind.ink)
                 .frame(width: Metrics.rowLeadWidth)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(message).font(ReinsFont.bodyStrong).foregroundStyle(Palette.text)
-                if let detail { Text(detail).font(ReinsFont.small).foregroundStyle(Palette.textSecondary) }
+            VStack(alignment: .leading, spacing: 0) {
+                Text(message).reinsText(.bodyStrong, tone: .primary)
+                if let detail { Text(detail).reinsText(.caption, tone: .secondary) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             if let actionTitle, let action {
@@ -44,7 +44,7 @@ struct Banner: View {
             }
         }
         .padding(.horizontal, Metrics.rowHorizontalPadding)
-        .padding(.vertical, 10)
+        .padding(.vertical, Space.s12)
         .background(shape.fill(kind.tint))
         .overlay(shape.strokeBorder(kind.outline.opacity(0.35), lineWidth: 1))
         .accessibilityElement(children: .contain)

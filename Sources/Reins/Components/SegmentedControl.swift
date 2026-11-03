@@ -14,8 +14,9 @@ struct SegmentOption<Value: Hashable>: Identifiable {
     }
 }
 
-/// A one-of-N switch (Allow / Ask / Deny, Global / Project). Always has a selection. Left and Right arrows
-/// move it while a segment has focus.
+/// A one-of-N switch (Allow / Ask / Deny, Shared / Local). Always has a selection. Left and Right arrows move it while a
+/// segment has focus. A 28 pt frame with 24 pt segments inside it; the selected segment is semibold, and every segment
+/// reserves its semibold width so the control never changes width.
 struct SegmentedControl<Value: Hashable>: View {
     let label: String
     let options: [SegmentOption<Value>]
@@ -24,14 +25,16 @@ struct SegmentedControl<Value: Hashable>: View {
     @FocusState private var focused: Value?
 
     var body: some View {
+        let frame = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
         HStack(spacing: 0) {
             ForEach(options) { option in
                 segment(option)
             }
         }
-        .padding(2)
-        .background(RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous).fill(Palette.surface))
-        .overlay(RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous).strokeBorder(Palette.border, lineWidth: 1))
+        .padding(Space.s2)
+        .frame(height: Metrics.controlHeight)
+        .background(frame.fill(Palette.surface))
+        .overlay(frame.strokeBorder(Palette.border, lineWidth: 1))
         .onKeyPress(.leftArrow) { move(-1) }
         .onKeyPress(.rightArrow) { move(1) }
         .accessibilityElement(children: .contain)
@@ -44,16 +47,16 @@ struct SegmentedControl<Value: Hashable>: View {
         return Button {
             selection = option.value
         } label: {
-            HStack(spacing: 5) {
+            HStack(spacing: Space.s6) {
+                // The hidden semibold copy holds the width; the visible title sits on it.
                 Text(option.title)
-                if let count = option.count {
-                    Text("\(count)").font(ReinsType.count.font).foregroundStyle(Palette.textTertiary)
-                }
+                    .reinsText(.bodyStrong)
+                    .hidden()
+                    .overlay { Text(option.title).reinsText(isOn ? .bodyStrong : .body, tone: isOn ? .primary : .secondary) }
+                if let count = option.count { Count(count) }
             }
-            .font(isOn ? ReinsFont.bodyStrong : ReinsFont.body)
-            .foregroundStyle(isOn ? Palette.text : Palette.textSecondary)
-            .padding(.horizontal, 10)
-            .frame(height: 24)
+            .padding(.horizontal, Space.s8)
+            .frame(height: Metrics.segmentHeight)
             .background(shape.fill(isOn ? Palette.surfaceRaised : .clear))
             .overlay(shape.strokeBorder(isOn ? Palette.border : .clear, lineWidth: 1))
             .contentShape(shape)

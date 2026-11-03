@@ -34,7 +34,7 @@ struct ShellView: View {
             }
             ToastHost()
         }
-        .background(Palette.background)
+        .background(Palette.well)
         .ignoresSafeArea()
     }
 }

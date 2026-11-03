@@ -1,3 +1,4 @@
+import ReinsCore
 import SwiftUI
 
 enum ReinsButtonKind {
@@ -7,8 +8,8 @@ enum ReinsButtonKind {
     case primary
     /// Normal with danger text, for destructive actions.
     case danger
-    /// Dashed outline, for "Add to <CLI>" where a cell is empty.
-    case dashed
+    /// No fill and no outline until hovered, secondary text: "+ Add to Codex" in an empty usage cell.
+    case ghost
     /// On the toast, which is an inverted surface.
     case inverse
     /// Square, icon only; always give it an accessibility label.
@@ -45,10 +46,10 @@ struct ReinsButtonStyle: ButtonStyle {
         var body: some View {
             let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
             configuration.label
-                .font(kind == .primary ? ReinsFont.bodyStrong : ReinsFont.body)
+                .reinsText(kind == .primary ? .bodyStrong : .body)
                 .foregroundStyle(foreground)
                 .lineLimit(1)
-                .padding(.horizontal, kind == .icon ? 0 : 10)
+                .padding(.horizontal, horizontalPadding)
                 .frame(width: kind == .icon ? Metrics.controlHeight : nil, height: Metrics.controlHeight)
                 .background(shape.fill(fill))
                 .overlay { outline(shape) }
@@ -57,6 +58,14 @@ struct ReinsButtonStyle: ButtonStyle {
                 .contentShape(shape)
                 .opacity(opacity)
                 .onHover { hovering = $0 }
+        }
+
+        private var horizontalPadding: CGFloat {
+            switch kind {
+            case .icon: 0
+            case .ghost: Space.s8
+            default: Space.s12
+            }
         }
 
         private var opacity: Double {
@@ -70,7 +79,7 @@ struct ReinsButtonStyle: ButtonStyle {
             switch kind {
             case .normal, .danger, .icon: Palette.surfaceRaised
             case .primary: Palette.accentSolid
-            case .dashed: .clear
+            case .ghost: .clear
             case .inverse: Palette.background.opacity(0.14)
             }
         }
@@ -80,7 +89,7 @@ struct ReinsButtonStyle: ButtonStyle {
             case .normal, .icon: Palette.text
             case .primary: Palette.onAccent
             case .danger: Palette.dangerInk
-            case .dashed: Palette.textTertiary
+            case .ghost: Palette.textSecondary
             case .inverse: Palette.background
             }
         }
@@ -90,9 +99,7 @@ struct ReinsButtonStyle: ButtonStyle {
             switch kind {
             case .normal, .danger, .icon:
                 shape.strokeBorder(Palette.border, lineWidth: 1)
-            case .dashed:
-                shape.strokeBorder(Palette.textTertiary.opacity(0.7), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
-            case .primary, .inverse:
+            case .primary, .inverse, .ghost:
                 EmptyView()
             }
         }
@@ -110,12 +117,20 @@ struct RowActionButton: View {
     var systemImage: String?
     var kind: ReinsButtonKind = .normal
     var iconOnly = false
+    /// A CLI's dot in the icon button's corner: which CLI this action touches ("Remove from Codex").
+    var badge: InventoryCLI?
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             if iconOnly, let systemImage {
-                Image(systemName: systemImage).accessibilityLabel(title)
+                Image(systemName: systemImage)
+                    .foregroundStyle(kind == .danger ? Palette.dangerInk : Palette.text)
+                    .accessibilityLabel(title)
+                    .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
+                    .overlay(alignment: .topTrailing) {
+                        if let badge { CLIDot(badge, decorative: true, size: Space.s6).padding(Space.s4) }
+                    }
             } else if let systemImage {
                 Label(title, systemImage: systemImage)
             } else {

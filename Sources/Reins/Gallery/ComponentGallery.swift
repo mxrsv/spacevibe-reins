@@ -3,60 +3,76 @@ import SwiftUI
 /// Every shared view in every state. Reach it with `REINS_GALLERY=1`; the screenshot mode renders the same content.
 struct ComponentGalleryContent: View {
     @State private var segment = "ask"
+    @State private var file = "shared"
     @State private var scope = "global"
     @State private var chip = "all"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             section("Colour tokens") { Swatches() }
+            section("Text roles: Inter at 12, 14 and 16, plus figure") { TypeRoles() }
             section("Buttons") {
-                HStack(spacing: 10) {
+                HStack(spacing: Rhythm.tools) {
                     Button("Normal") {}.buttonStyle(.reins(.normal))
                     Button("Primary") {}.buttonStyle(.reins(.primary))
                     Button("Remove") {}.buttonStyle(.reins(.danger))
-                    Button("Add to Codex") {}.buttonStyle(.reins(.dashed))
-                    Button { } label: { Image(systemName: "trash").accessibilityLabel("Remove") }.buttonStyle(.reins(.icon))
+                    Button {} label: {
+                        HStack(spacing: Space.s4) { Image(systemName: "plus").imageScale(.small); Text("Add to Codex") }
+                    }
+                    .buttonStyle(.reins(.ghost))
+                    Button {} label: { Image(systemName: "trash").accessibilityLabel("Remove") }.buttonStyle(.reins(.icon))
+                    RowActionButton(title: "Remove from Claude Code", systemImage: "trash", kind: .danger, iconOnly: true, badge: .claude) {}
+                    RowActionButton(title: "Remove from Codex", systemImage: "trash", kind: .danger, iconOnly: true, badge: .codex) {}
                     Button("Disabled") {}.buttonStyle(.reins(.normal)).disabled(true)
                     Spacer(minLength: 0)
                 }
+                .environment(\.actionsConcealed, false)
             }
-            section("Tags, CLI tag and dot, key caps") {
-                HStack(spacing: 10) {
-                    Tag("neutral")
-                    Tag("never ran", tone: .warn)
-                    Tag("17 errors", tone: .danger)
-                    Tag("synced", tone: .success)
+            section("Tags, counts, CLI tag and dot, key caps") {
+                HStack(spacing: Rhythm.tools) {
                     Tag("plugin: neon", systemImage: "lock")
+                    Tag("added recently")
+                    Tag("running", tone: .success)
+                    Tag("waiting for you", tone: .warn)
+                    Tag("17 errors", tone: .warn)
+                    Tag("mixed", tone: .warn, systemImage: "info.circle")
+                    Tag("script not found", tone: .danger, systemImage: "questionmark.folder")
+                    Tag("Deny", tone: .danger)
                     CLITag(.claude)
                     CLITag(.codex)
-                    HStack(spacing: 6) { CLIDot(.claude); CLIDot(.codex) }
+                    HStack(spacing: Space.s6) { CLIDot(.claude); CLIDot(.codex) }
                     Kbd("\u{2318}K")
                     Kbd("Esc")
+                    HStack(spacing: Space.s6) { Text("Skills").reinsText(.captionStrong, tone: .secondary); Count(10) }
+                    HStack(spacing: Space.s6) { Text("Activity").reinsText(.body); Count(2, alert: true) }
                     Spacer(minLength: 0)
                 }
             }
-            section("Segmented control and filter chips") {
-                HStack(spacing: 16) {
+            section("Segmented control, filter chips, scope picker, search field: all 28 pt") {
+                HStack(spacing: Rhythm.tools) {
                     SegmentedControl(label: "Rule", options: [
                         SegmentOption("Allow", value: "allow"),
                         SegmentOption("Ask", value: "ask"),
                         SegmentOption("Deny", value: "deny"),
                     ], selection: $segment)
-                    SegmentedControl(label: "Scope", options: [
-                        SegmentOption("Global", value: "global"),
-                        SegmentOption("Project", value: "project", count: 3),
-                    ], selection: $scope)
-                    HStack(spacing: 6) {
+                    SegmentedControl(label: "Settings file", options: [
+                        SegmentOption("Shared", value: "shared"),
+                        SegmentOption("Local", value: "local", count: 3),
+                    ], selection: $file)
+                    ScopePicker(options: [ScopeOption(id: nil, label: "Global")], current: ScopeOption(id: nil, label: "Global"), minWidth: Metrics.scopePickerMinWidth) { _ in }
+                    HStack(spacing: Rhythm.chips) {
                         FilterChip("All", count: 6, isOn: chip == "all") { chip = "all" }
-                        FilterChip("In one CLI only", count: 4, isOn: chip == "one") { chip = "one" }
                         FilterChip("Never ran", count: 1, isOn: chip == "never") { chip = "never" }
+                        FilterChip(dismissible: "spacevibe-bench") {}
                     }
+                    SearchField(placeholder: "Search or run a command", shortcut: "\u{2318}K", spokenShortcut: "Command K") {}
                     Spacer(minLength: 0)
                 }
             }
-            section("Grouped list, rows and the five usage states") { DemoLoadoutList() }
+            section("Cards, rows and the five usage states") { DemoLoadoutList() }
             section("Rows") {
                 GroupedList {
+                    CardHeader("Rows", count: 5)
                     Row { RowText("Plain row", subtitle: "Second line in the muted colour") }
                         .lead { Image(systemName: "sparkles") }
                     Row(selected: true, revealActions: true, onActivate: {}) {
@@ -67,14 +83,43 @@ struct ComponentGalleryContent: View {
                         RowActionButton(title: "Copy to Codex", systemImage: "doc.on.doc") {}
                         RowActionButton(title: "Remove", systemImage: "trash", kind: .danger, iconOnly: true) {}
                     }
-                    Row(onActivate: {}) { RowText("PostToolUse \u{00B7} Edit|Write", subtitle: "prettier --write \"$FILE\"", mono: true) }
-                        .lead { Image(systemName: "bolt") }
-                        .cells { CLIDot(.claude); CLIDot(.codex) }
+                    Row(onActivate: {}) { RowText("Session with a state", subtitle: "spacevibe-bench \u{00B7} just now") }
+                        .lead { CLIDot(.codex) }
+                        .cells { StateCell { Tag("not measurable", systemImage: "exclamationmark.triangle") }; NumberCell(text: "~$148.20") }
+                    Row(tall: true) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            RowText("pnpm tsc --noEmit", subtitle: "exit 2 \u{00B7} spacevibe-bench \u{00B7} last 1 h ago", mono: true, codeSubtitle: false)
+                            Text("lib/leaderboard/rank.ts(41,9): error TS2322").reinsText(.code, tone: .secondary)
+                        }
+                    }
+                    .lead { CLIDot(.claude) }
+                    .cells { Tag("\u{00D7}8", tone: .danger) }
                     EmptyRow("Nothing matches this filter.")
                 }
             }
+            section("Section rows inside one card") {
+                GroupedList {
+                    CardHeader("Claude Code rules at Global", count: 4, lead: { CLIDot(.claude, decorative: true) })
+                    SectionRow("Deny", count: 2)
+                    Row { RowText("Bash(rm -rf:*)", mono: true) { Tag("Deny", tone: .danger) } }
+                    Row { RowText("Read(.env*)", mono: true) { Tag("Deny", tone: .danger) } }
+                    SectionRow("Allow", count: 2)
+                    Row { RowText("Read(*)", mono: true) { Tag("Allow") } }
+                    Row { RowText("Bash(git status)", mono: true) { Tag("Allow") } }
+                }
+            }
+            section("Notes") {
+                NoteRegion(
+                    title: "Cannot be measured",
+                    columns: [
+                        .init(cli: .claude, notes: ["Claude Code does not record permission prompts, so a long tool run and a wait for approval look the same."]),
+                        .init(cli: .codex, notes: ["Codex does not log hook runs, so failed hooks are not shown for Codex."]),
+                    ],
+                    shared: ["Cost is estimated from logged tokens at API prices (API-equivalent), not what you are billed."]
+                )
+            }
             section("Banner") {
-                VStack(spacing: 10) {
+                VStack(spacing: Space.s12) {
                     Banner(.error, message: "Could not read settings.json", detail: "Line 14: unexpected comma. Nothing was changed.", actionTitle: "Try again") {}
                     Banner(.warn, message: "Usage counting is slower than usual", detail: "Showing counts from the last scan.", actionTitle: "Rescan") {}
                     Banner(.warn, message: "Codex does not record hook runs")
@@ -88,21 +133,52 @@ struct ComponentGalleryContent: View {
                 }
             }
             section("Toast") {
-                HStack(spacing: 14) {
+                HStack(spacing: Space.s16) {
                     ToastView(toast: Toast(message: "Removed ponytail", tone: .info, action: .undo {}), run: {}, dismiss: {})
                     ToastView(toast: Toast(message: "Could not write settings.json", tone: .danger, action: nil), run: {}, dismiss: {})
                     Spacer(minLength: 0)
                 }
             }
+            section("Hint bar") {
+                HintBar(hints: [KeyHint(keys: "Tab", label: "Row actions")])
+                    .clipShape(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous))
+            }
         }
         .padding(.horizontal, Metrics.pagePadding)
-        .padding(.bottom, 28)
+        .padding(.bottom, Metrics.pageBottomPadding)
+        .background(Palette.well)
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             GroupLabel(title)
             content()
+        }
+    }
+}
+
+/// Every text role with its size, line box and weight, set in itself.
+private struct TypeRoles: View {
+    private let roles: [(String, ReinsType)] = [
+        ("caption", .caption), ("captionStrong", .captionStrong), ("label", .label), ("count", .count),
+        ("body", .body), ("bodyStrong", .bodyStrong), ("rowTitle", .rowTitle), ("number", .number),
+        ("code", .code), ("codeTitle", .codeTitle), ("title", .title), ("figure", .figure),
+    ]
+
+    var body: some View {
+        GroupedList {
+            ForEach(roles, id: \.0) { name, role in
+                HStack(spacing: Metrics.rowSpacing) {
+                    Text(name).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth, alignment: .leading)
+                    Text("\(Int(role.size)) / \(Int(role.lineBox))").reinsText(.count, tone: .tertiary).frame(width: Metrics.costWidth, alignment: .leading)
+                    Text(role.code ? "Bash(rm -rf:*) 0O lI1" : "ponytail \u{00B7} Add to Codex \u{00B7} 1,204")
+                        .reinsText(role, tone: .primary)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, Metrics.rowHorizontalPadding)
+                .frame(minHeight: Metrics.rowMinHeight)
+            }
         }
     }
 }
@@ -115,7 +191,7 @@ struct ComponentGalleryWindow: View {
         ZStack {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
-                    Text("Component gallery").font(ReinsFont.title).accessibilityAddTraits(.isHeader)
+                    Text("Component gallery").reinsText(.title).accessibilityAddTraits(.isHeader)
                     Spacer(minLength: 0)
                     Button("Toast with Undo") { toasts.show("Removed ponytail", undo: { toasts.show("Undone: removed ponytail") }) }
                         .buttonStyle(.reins(.normal))
@@ -131,14 +207,14 @@ struct ComponentGalleryWindow: View {
             }
             ToastHost()
         }
-        .background(Palette.background)
+        .background(Palette.well)
         .ignoresSafeArea()
     }
 }
 
 private struct Swatches: View {
     private let tokens: [(String, Color)] = [
-        ("background", Palette.background), ("sidebar", Palette.sidebar), ("surface", Palette.surface),
+        ("background", Palette.background), ("well", Palette.well), ("sidebar", Palette.sidebar), ("surface", Palette.surface),
         ("surfaceRaised", Palette.surfaceRaised), ("border", Palette.border), ("track", Palette.track),
         ("selection", Palette.selection), ("hover", Palette.hover), ("accent", Palette.accent),
         ("accentSolid", Palette.accentSolid), ("text", Palette.text), ("textSecondary", Palette.textSecondary),
@@ -147,7 +223,7 @@ private struct Swatches: View {
     ]
 
     var body: some View {
-        let rows = stride(from: 0, to: tokens.count, by: 9).map { Array(tokens[$0..<min($0 + 9, tokens.count)]) }
+        let rows = stride(from: 0, to: tokens.count, by: 10).map { Array(tokens[$0..<min($0 + 10, tokens.count)]) }
         VStack(alignment: .leading, spacing: 10) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 HStack(alignment: .top, spacing: 10) {
@@ -157,7 +233,7 @@ private struct Swatches: View {
                                 .fill(token.1)
                                 .frame(height: 28)
                                 .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Palette.border, lineWidth: 1))
-                            Text(token.0).font(ReinsFont.tiny).foregroundStyle(Palette.textTertiary).lineLimit(1)
+                            Text(token.0).reinsText(.caption, tone: .tertiary).lineLimit(1)
                         }
                         .frame(maxWidth: .infinity)
                     }

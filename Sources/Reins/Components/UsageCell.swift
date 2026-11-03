@@ -21,16 +21,20 @@ struct UsageCell: View {
         switch model {
         case .missing:
             if let onAdd {
-                Button("Add to \(cli.label)", action: onAdd)
-                    .buttonStyle(.reins(.dashed))
+                Button(action: onAdd) {
+                    HStack(spacing: Space.s4) {
+                        Image(systemName: "plus").imageScale(.small).accessibilityHidden(true)
+                        Text("Add to \(cli.label)")
+                    }
+                }
+                .buttonStyle(.reins(.ghost))
             } else {
                 Text("not installed")
-                    .font(ReinsFont.body)
-                    .foregroundStyle(Palette.textTertiary)
+                    .reinsText(.body, tone: .tertiary)
                     .accessibilityLabel("\(cli.label): not installed")
             }
         case .pending(let reason):
-            HStack(spacing: 10) {
+            HStack(spacing: Metrics.rowSpacing) {
                 Capsule()
                     .strokeBorder(Palette.textTertiary, style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
                     .frame(height: Metrics.barHeight)
@@ -43,18 +47,17 @@ struct UsageCell: View {
             .accessibilityLabel("\(cli.label): not counted yet")
             .accessibilityHint(reason ?? "")
         case .unmeasurable(let reason):
-            HStack(spacing: 6) {
+            HStack(spacing: Space.s6) {
                 Image(systemName: "exclamationmark.triangle").imageScale(.small)
                 Text("not measurable")
             }
-            .font(ReinsFont.body)
-            .foregroundStyle(Palette.textTertiary)
+            .reinsText(.body, tone: .tertiary)
             .help(reason)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(cli.label): not measurable")
             .accessibilityHint(reason)
         case .counted(let runs):
-            HStack(spacing: 10) {
+            HStack(spacing: Metrics.rowSpacing) {
                 UsageBar(fraction: UsageCellModel.barFraction(runs: runs, max: max), fill: cli.fill)
                 Text(runs.formatted(.number.locale(Locale(identifier: "en_US"))))
                     .font(runs == 0 ? ReinsType.numberStrong.font : ReinsType.number.font)

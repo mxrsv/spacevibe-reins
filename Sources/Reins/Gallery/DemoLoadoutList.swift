@@ -1,9 +1,11 @@
+import ReinsCore
 import SwiftUI
 
-/// Made-up Loadout rows that exercise every usage state. Synthetic names only; used by the gallery and the
-/// demo tabs, never by a real screen.
+/// Made-up Loadout cards that exercise every usage state. Synthetic names only; used by the gallery and the demo tabs,
+/// never by a real screen.
 struct DemoLoadoutList: View {
     var selectedName: String? = "impeccable"
+    var note: String? = "Counted from 146 Claude Code and 34 Codex sessions since 2026-10-05"
 
     private struct Item {
         var name: String
@@ -12,55 +14,72 @@ struct DemoLoadoutList: View {
         var claude: UsageCellModel
         var codex: UsageCellModel
         var tags: [(String, TagTone, String?)] = []
-        var mono = false
+        var codeSubtitle = false
+        var removable: [InventoryCLI] = [.claude]
     }
 
     private let skills: [Item] = [
         Item(name: "ponytail", subtitle: "Counted in Claude Code, not installed in Codex", claude: .counted(runs: 142), codex: .missing),
-        Item(name: "impeccable", subtitle: "Counted in both", claude: .counted(runs: 87), codex: .counted(runs: 31)),
-        Item(name: "review-change", subtitle: "Installed, never ran", claude: .counted(runs: 0), codex: .missing, tags: [("never ran", .warn, nil)]),
-        Item(name: "skill-creator", subtitle: "Added today, not counted yet", claude: .pending(reason: "Added after the last scan; counted on the next one."), codex: .missing),
-        Item(name: "neon-postgres", subtitle: "Owned by a plugin, read-only", claude: .counted(runs: 11), codex: .missing, tags: [("plugin: neon", .neutral, "lock")]),
+        Item(name: "impeccable", subtitle: "Counted in both", claude: .counted(runs: 87), codex: .counted(runs: 31), removable: [.claude, .codex]),
+        Item(name: "review-change", subtitle: "Installed, never ran", claude: .counted(runs: 0), codex: .missing),
+        Item(name: "skill-creator", subtitle: "Added today, not counted yet", claude: .pending(reason: "Added after the last scan; counted on the next one."), codex: .missing, tags: [("added recently", .neutral, nil)]),
+        Item(name: "neon-postgres", subtitle: "Owned by a plugin, read-only", claude: .counted(runs: 11), codex: .missing, tags: [("plugin: neon", .neutral, "lock")], removable: []),
     ]
     private let hooks: [Item] = [
-        Item(name: "Stop \u{00B7} notify-done.sh", subtitle: "Codex does not log hook runs", icon: "bolt", claude: .counted(runs: 203), codex: .unmeasurable(reason: "Codex does not log hook runs."), mono: true),
-        Item(name: "PostToolUse \u{00B7} Edit|Write", subtitle: "prettier --write \"$FILE\"", icon: "bolt", claude: .counted(runs: 1204), codex: .missing, tags: [("17 errors", .warn, nil)], mono: true),
+        Item(name: "Stop", subtitle: "Codex does not log hook runs", icon: "bolt", claude: .counted(runs: 203), codex: .unmeasurable(reason: "Codex does not log hook runs."), removable: [.claude, .codex]),
+        Item(name: "PostToolUse \u{00B7} Edit|Write", subtitle: "prettier --write \"$FILE\"", icon: "bolt", claude: .counted(runs: 12_345), codex: .missing, tags: [("17 errors", .warn, nil)], codeSubtitle: true),
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            GroupedList {
-                HeadRow("Name") {
-                    CLIColumnHead(.claude)
-                    CLIColumnHead(.codex)
-                }
-                SectionRow("Skills", count: skills.count)
-                ForEach(skills, id: \.name) { row($0) }
-                SectionRow("Hooks", count: hooks.count)
-                ForEach(hooks, id: \.name) { row($0) }
+        VStack(alignment: .leading, spacing: Rhythm.cards) {
+            card("Skills", skills, max: 142)
+            VStack(alignment: .leading, spacing: Rhythm.caption) {
+                card("Hooks", hooks, max: 12_345)
+                UsageLegend(note: note)
             }
-            UsageLegend()
         }
     }
 
-    private func row(_ item: Item) -> some View {
-        let isSelected = item.name == selectedName
-        return Row(selected: isSelected, onActivate: {}) {
-            RowText(item.name, subtitle: item.subtitle, mono: item.mono) {
+    private func card(_ title: String, _ items: [Item], max: Int) -> some View {
+        GroupedList {
+            CardHeader(title, count: items.count, columns: {
+                CLIColumnHead(.claude)
+                CLIColumnHead(.codex)
+                Color.clear.frame(width: Metrics.loadoutActionsWidth, height: 1)
+            })
+            ForEach(items, id: \.name) { row($0, max: max) }
+        }
+    }
+
+    private func row(_ item: Item, max: Int) -> some View {
+        Row(selected: item.name == selectedName, onActivate: {}) {
+            RowText(item.name, subtitle: item.subtitle, codeSubtitle: item.codeSubtitle) {
                 ForEach(item.tags, id: \.0) { tag in Tag(tag.0, tone: tag.1, systemImage: tag.2) }
             }
         }
         .lead { Image(systemName: item.icon) }
         .cells {
-            UsageCell(cli: .claude, model: item.claude, max: 203, onAdd: nil)
-            UsageCell(cli: .codex, model: item.codex, max: 203, onAdd: item.codex == .missing ? {} : nil)
+            UsageCell(cli: .claude, model: item.claude, max: max, onAdd: nil)
+            UsageCell(cli: .codex, model: item.codex, max: max, onAdd: item.codex == .missing ? {} : nil)
         }
         .actions {
-            if item.tags.contains(where: { $0.2 == "lock" }) {
-                Image(systemName: "lock").foregroundStyle(Palette.textTertiary).frame(width: Metrics.controlHeight, height: Metrics.controlHeight).accessibilityLabel("Owned by a plugin")
-            } else {
-                RowActionButton(title: "Remove \(item.name)", systemImage: "trash", kind: .danger, iconOnly: true) {}
+            HStack(spacing: Space.s4) {
+                if item.removable.isEmpty {
+                    Color.clear.frame(width: Metrics.controlHeight, height: 1)
+                    Image(systemName: "lock").foregroundStyle(Palette.textTertiary)
+                        .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
+                        .accessibilityLabel("Owned by a plugin")
+                } else {
+                    ForEach(InventoryCLI.allCases, id: \.self) { cli in
+                        if item.removable.contains(cli) {
+                            RowActionButton(title: "Remove from \(cli.label)", systemImage: "trash", kind: .danger, iconOnly: true, badge: cli) {}
+                        } else {
+                            Color.clear.frame(width: Metrics.controlHeight, height: 1)
+                        }
+                    }
+                }
             }
+            .frame(width: Metrics.loadoutActionsWidth, alignment: .trailing)
         }
     }
 }

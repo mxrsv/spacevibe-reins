@@ -1,7 +1,8 @@
 import ReinsCore
 import SwiftUI
 
-/// The column heading row at the top of a `GroupedList`. `title` sits over the text block; `columns` sit over the cells.
+/// Column labels with no group name, for a card whose header is only labels. Prefer `CardHeader`, which carries the name;
+/// this goes once the last screen moves to it (design-language plan T6).
 struct HeadRow<Columns: View>: View {
     let title: String
     let columns: Columns
@@ -12,12 +13,12 @@ struct HeadRow<Columns: View>: View {
             Text(title).frame(maxWidth: .infinity, alignment: .leading)
             columns
         }
-        .font(ReinsFont.small)
-        .foregroundStyle(Palette.textTertiary)
+        .reinsText(.caption, tone: .tertiary)
         .padding(.horizontal, Metrics.rowHorizontalPadding)
-        .frame(minHeight: 34)
-        .background(Palette.surfaceRaised)
+        .frame(height: Metrics.cardHeaderHeight)
+        .background(Palette.surface)
         .accessibilityElement(children: .contain)
+        .groupedListPart(.header)
     }
 }
 
@@ -35,7 +36,8 @@ extension HeadRow where Columns == EmptyView {
     }
 }
 
-/// A divider row inside one group: "Skills 6", "Agents 5", "Hooks 1".
+/// A sub-group inside one card: "Deny 3", "Ask first 2". 32 pt, no fill and no line under it: the 16 pt of space the card
+/// puts before it does the separating.
 struct SectionRow: View {
     let title: String
     var count: Int?
@@ -48,32 +50,36 @@ struct SectionRow: View {
     var body: some View {
         HStack(spacing: Metrics.rowSpacing) {
             Color.clear.frame(width: Metrics.rowLeadWidth, height: 1)
-            HStack(spacing: 8) {
-                Text(title).font(ReinsFont.smallStrong).foregroundStyle(Palette.textSecondary)
-                if let count { Text("\(count)").font(ReinsFont.small).foregroundStyle(Palette.textTertiary) }
+            HStack(spacing: Space.s6) {
+                Text(title).reinsText(.captionStrong, tone: .secondary)
+                if let count { Count(count) }
             }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, Metrics.rowHorizontalPadding)
-        .frame(minHeight: 32)
-        .background(Palette.surfaceRaised)
+        .frame(height: Metrics.sectionRowHeight)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
+        .groupedListPart(.section)
     }
 }
 
 /// The CLI heading over a usage column: dot and name, as wide as a `UsageCell` so they line up.
 struct CLIColumnHead: View {
     let cli: InventoryCLI
+    var width: CGFloat = Metrics.usageCellWidth
 
-    init(_ cli: InventoryCLI) { self.cli = cli }
+    init(_ cli: InventoryCLI, width: CGFloat = Metrics.usageCellWidth) {
+        self.cli = cli
+        self.width = width
+    }
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Space.s6) {
             CLIDot(cli, decorative: true)
             Text(cli.label)
         }
-        .frame(width: Metrics.usageCellWidth, alignment: .leading)
+        .frame(width: width, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 }

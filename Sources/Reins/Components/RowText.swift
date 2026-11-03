@@ -1,48 +1,53 @@
 import SwiftUI
 
-/// The text block of a `Row`: a title with optional tags beside it, and a muted second line.
-/// `mono` is for commands and paths.
+/// The text block of a `Row`: a name with optional tags beside it, and muted lines below. The name is `rowTitle`, or
+/// `codeTitle` when it is a machine string (a command, a rule pattern); a second line is `caption`, or `code` for a
+/// command or path. Prose is never set as code.
 struct RowText<Tags: View>: View {
     let title: String
     var subtitle: String?
-    var mono = false
+    var codeTitle = false
+    var codeSubtitle = false
     let tags: Tags
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(spacing: Space.s8) {
                 Text(title)
-                    .font(mono ? ReinsFont.monoStrong : ReinsFont.bodyStrong)
-                    .foregroundStyle(Palette.text)
+                    .reinsText(codeTitle ? .codeTitle : .rowTitle, tone: .primary)
                     .lineLimit(1)
                     .truncationMode(.tail)
                 tags
             }
+            .frame(minHeight: ReinsType.rowTitle.lineBox)
             if let subtitle {
                 Text(subtitle)
-                    .font(mono ? ReinsFont.mono : ReinsFont.small)
-                    .foregroundStyle(Palette.textTertiary)
+                    .reinsText(codeSubtitle ? .code : .caption, tone: .tertiary)
                     .lineLimit(1)
                     .truncationMode(.middle)
+                    .frame(minHeight: ReinsType.caption.lineBox)
             }
         }
     }
 }
 
 extension RowText where Tags == EmptyView {
-    init(_ title: String, subtitle: String? = nil, mono: Bool = false) {
+    /// `mono` sets both lines as machine strings.
+    init(_ title: String, subtitle: String? = nil, mono: Bool = false, codeSubtitle: Bool? = nil) {
         self.title = title
         self.subtitle = subtitle
-        self.mono = mono
-        self.tags = EmptyView()
+        codeTitle = mono
+        self.codeSubtitle = codeSubtitle ?? mono
+        tags = EmptyView()
     }
 }
 
 extension RowText {
-    init(_ title: String, subtitle: String? = nil, mono: Bool = false, @ViewBuilder tags: () -> Tags) {
+    init(_ title: String, subtitle: String? = nil, mono: Bool = false, codeSubtitle: Bool? = nil, @ViewBuilder tags: () -> Tags) {
         self.title = title
         self.subtitle = subtitle
-        self.mono = mono
+        codeTitle = mono
+        self.codeSubtitle = codeSubtitle ?? mono
         self.tags = tags()
     }
 }

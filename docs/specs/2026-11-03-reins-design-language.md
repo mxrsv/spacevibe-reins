@@ -42,7 +42,7 @@ Accepted by the owner on 2026-11-03 ("ok chốt"): all of mock v2 including the 
 - **Heights:** 20 (tag, key cap), 24 (segment inside its frame), 28 (every control: button, chip, segmented frame, scope picker, search field), 32 (sidebar item, section row, hint bar), 36 (palette row), 48 (every row, card header, top bar). A row with three or more lines grows from 48 with 12 pt vertical padding.
 - **Radii:** 4 (tag, key cap), 6 (segment), 8 (control, field, sidebar item), 12 (card, banner, toast, palette); filter chips are capsules. An inner radius equals the outer radius minus the padding between them.
 - **Colour values in `Palette.swift` do not change.** One semantic token is added: `well`, the content area behind cards (light: the `surfaceRaised` value; dark: the `background` value). Cards stay `surface`, so they read as blocks against the well.
-- Fixed widths that hold numbers: usage number 52 (fits "12,345"), cost 64, Activity state column 120, Loadout actions 60 (two 28 pt slots and 4 pt between).
+- Fixed widths that hold numbers: usage number 52 (fits "12,345"), cost 72 (fits "~$148.20" in Inter; 64 was measured with SF), Activity state column 120, Loadout actions 60 (two 28 pt slots and 4 pt between).
 
 ### Components
 

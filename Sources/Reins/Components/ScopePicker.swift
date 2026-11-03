@@ -6,8 +6,8 @@ struct ScopeOption: Hashable {
     let label: String
 }
 
-/// The scope menu of the Loadout and Rules toolbars: Global or one discovered project. A menu in the app;
-/// headless screenshots cannot draw one, so they get the closed label.
+/// The scope menu of the Loadout and Rules toolbars: Global or one discovered project. 28 pt like every control. A menu in
+/// the app; headless screenshots cannot draw one, so they get the closed label.
 struct ScopePicker: View {
     let options: [ScopeOption]
     let current: ScopeOption
@@ -41,14 +41,16 @@ struct ScopePicker: View {
 
     private var label: some View {
         let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
-        return HStack(spacing: 8) {
+        return HStack(spacing: Space.s8) {
             Text(current.label).lineLimit(1)
+            Spacer(minLength: 0)
             Image(systemName: "chevron.up.chevron.down").imageScale(.small).foregroundStyle(Palette.textTertiary).accessibilityHidden(true)
         }
-        .font(ReinsFont.body)
-        .foregroundStyle(Palette.text)
-        .padding(.horizontal, 10)
+        .reinsText(.body, tone: .primary)
+        .padding(.leading, Space.s12)
+        .padding(.trailing, Space.s8)
         .frame(minWidth: minWidth, alignment: .leading)
+        .fixedSize()
         .frame(height: Metrics.controlHeight)
         .background(shape.fill(Palette.surface))
         .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))

@@ -26,7 +26,9 @@ enum TagTone {
     }
 }
 
-/// A small status label next to a title: "never ran", "plugin: neon", "17 errors". Colour marks state only.
+/// A small status label next to a title: "plugin: neon", "17 errors", "running". 20 pt high, `label` type, radius 4.
+/// Tone marks state: neutral is a fact, success is live or done (with a dot), warn needs a look, danger is broken; the CLI
+/// tones mark identity only (`CLITag`).
 struct Tag: View {
     let text: String
     var tone: TagTone = .neutral
@@ -39,17 +41,20 @@ struct Tag: View {
     }
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: Space.s4) {
+            if tone == .success {
+                Circle().fill(tone.foreground).frame(width: Space.s6, height: Space.s6).accessibilityHidden(true)
+            }
             if let systemImage {
                 Image(systemName: systemImage).imageScale(.small).accessibilityHidden(true)
             }
             Text(text)
         }
-        .font(ReinsFont.tiny)
+        .reinsText(.label)
         .lineLimit(1)
         .foregroundStyle(tone.foreground)
-        .padding(.horizontal, 7)
-        .frame(height: 20)
+        .padding(.horizontal, Space.s8)
+        .frame(height: Metrics.tagHeight)
         .background(RoundedRectangle(cornerRadius: Metrics.tagRadius, style: .continuous).fill(tone.background))
         .fixedSize()
         .accessibilityElement(children: .combine)

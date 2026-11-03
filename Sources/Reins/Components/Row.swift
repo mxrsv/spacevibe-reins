@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// One line of a `GroupedList`: a 20 pt lead slot, the growing text block (`RowText`), always-visible cells
-/// (usage cells, counts, tags) and trailing actions that appear on hover, on keyboard focus and while selected.
+/// One line of a `GroupedList`, 48 pt high: a 20 pt lead slot, the growing text block (`RowText`), always-visible cells
+/// (usage cells, counts, tags) and trailing actions that appear on hover, on keyboard focus and while selected. `tall`
+/// is for three lines or more: 12 pt above and below instead of 6.
 ///
 ///     Row { RowText("ponytail", subtitle: "Pick the laziest solution") }
 ///         .lead { Image(systemName: "sparkles") }
@@ -12,6 +13,7 @@ import SwiftUI
 /// Actions must be `RowActionButton`s (or any `ReinsButtonStyle` button) so they hide and reveal with the row.
 struct Row<Lead: View, Main: View, Cells: View, Actions: View>: View {
     var selected = false
+    var tall = false
     /// Keeps the actions visible without hover (the gallery uses it; selected rows reveal them anyway).
     var revealActions = false
     var onActivate: (() -> Void)?
@@ -35,7 +37,7 @@ struct Row<Lead: View, Main: View, Cells: View, Actions: View>: View {
             actionsView.environment(\.actionsConcealed, !revealed)
         }
         .padding(.horizontal, Metrics.rowHorizontalPadding)
-        .padding(.vertical, 8)
+        .padding(.vertical, tall ? Metrics.tallRowVerticalPadding : Metrics.rowVerticalPadding)
         .frame(minHeight: Metrics.rowMinHeight)
         .background(background)
         .contentShape(Rectangle())
@@ -76,8 +78,9 @@ private struct RowActivation: ViewModifier {
 }
 
 extension Row where Lead == EmptyView, Cells == EmptyView, Actions == EmptyView {
-    init(selected: Bool = false, revealActions: Bool = false, onActivate: (() -> Void)? = nil, @ViewBuilder main: () -> Main) {
+    init(selected: Bool = false, tall: Bool = false, revealActions: Bool = false, onActivate: (() -> Void)? = nil, @ViewBuilder main: () -> Main) {
         self.selected = selected
+        self.tall = tall
         self.revealActions = revealActions
         self.onActivate = onActivate
         self.leadView = EmptyView()
@@ -89,17 +92,17 @@ extension Row where Lead == EmptyView, Cells == EmptyView, Actions == EmptyView 
 
 extension Row {
     func lead<L: View>(@ViewBuilder _ build: () -> L) -> Row<L, Main, Cells, Actions> {
-        Row<L, Main, Cells, Actions>(selected: selected, revealActions: revealActions, onActivate: onActivate,
+        Row<L, Main, Cells, Actions>(selected: selected, tall: tall, revealActions: revealActions, onActivate: onActivate,
                                      leadView: build(), main: main, cellsView: cellsView, actionsView: actionsView)
     }
 
     func cells<C: View>(@ViewBuilder _ build: () -> C) -> Row<Lead, Main, C, Actions> {
-        Row<Lead, Main, C, Actions>(selected: selected, revealActions: revealActions, onActivate: onActivate,
+        Row<Lead, Main, C, Actions>(selected: selected, tall: tall, revealActions: revealActions, onActivate: onActivate,
                                     leadView: leadView, main: main, cellsView: build(), actionsView: actionsView)
     }
 
     func actions<A: View>(@ViewBuilder _ build: () -> A) -> Row<Lead, Main, Cells, A> {
-        Row<Lead, Main, Cells, A>(selected: selected, revealActions: revealActions, onActivate: onActivate,
+        Row<Lead, Main, Cells, A>(selected: selected, tall: tall, revealActions: revealActions, onActivate: onActivate,
                                   leadView: leadView, main: main, cellsView: cellsView, actionsView: build())
     }
 }
