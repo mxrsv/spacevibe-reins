@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Left column: room for the traffic lights, the tabs with their counts, and a footer with scan status and the
-/// theme toggle. Tabs are plain buttons; `⌘1`..`⌘3` (View menu) switch too.
+/// Left column: room for the traffic lights, the tabs with their counts and the Limits entry after them, the Limits tiles
+/// above the footer, and a footer with scan status and the theme toggle. Tabs are plain buttons; `⌘1`..`⌘3` (View menu)
+/// switch too, and `⌘L` opens Limits.
 struct SidebarView: View {
     @Environment(ShellModel.self) private var shell
 
@@ -14,6 +15,7 @@ struct SidebarView: View {
                         spokenCount: tab.badge?.spoken, isActive: tab.id == shell.activeID && !shell.isLimitsOpen
                     ) { shell.select(tab.id) }
                 }
+                LimitsSidebarItem()
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Sections")

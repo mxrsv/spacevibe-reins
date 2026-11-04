@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// One tab in the sidebar: icon, title, and a count on the right (in the danger tone when it is an alert). 48 pt high in
-/// the `title` role in every state, radius 8, 16 pt inside at both ends; the icon is 22 pt in the secondary tone. The
-/// active tab changes only its fill (`surface` on the well), never its text, weight or icon.
-struct SidebarItem: View {
+/// One entry in the sidebar list (a tab, or the Limits page): icon, title, an optional mark right after the title (Limits'
+/// stale clock), and a count on the right (in the danger tone when it is an alert). 48 pt high in the `title` role in every
+/// state, radius 8, 16 pt inside at both ends; the icon is 22 pt in the secondary tone. The active entry changes only its
+/// fill (`surface` on the well), never its text, weight or icon.
+struct SidebarItem<Mark: View>: View {
     let title: String
     let icon: ReinsGlyph
     var count: Int?
@@ -11,6 +12,7 @@ struct SidebarItem: View {
     /// What VoiceOver says for the count ("2 sessions running"); the number when nil.
     var spokenCount: String?
     let isActive: Bool
+    let mark: Mark
     let select: () -> Void
 
     @State private var hovering = false
@@ -21,6 +23,7 @@ struct SidebarItem: View {
             HStack(spacing: Space.s8) {
                 ReinsIcon(icon, size: .sidebar).foregroundStyle(TextTone.secondary.color)
                 Text(title)
+                mark
                 Spacer(minLength: 0)
                 if let count {
                     Text("\(count)").reinsText(alert ? .bodyStrong : .body, tone: alert ? .danger : .tertiary)
@@ -37,6 +40,21 @@ struct SidebarItem: View {
         .onHover { hovering = $0 }
         .accessibilityAddTraits(isActive ? .isSelected : [])
         .accessibilityLabel(count.map { "\(title), \(spokenCount ?? String($0))" } ?? title)
+    }
+}
+
+extension SidebarItem where Mark == EmptyView {
+    init(title: String, icon: ReinsGlyph, count: Int? = nil, alert: Bool = false, spokenCount: String? = nil, isActive: Bool,
+         select: @escaping () -> Void) {
+        self.init(title: title, icon: icon, count: count, alert: alert, spokenCount: spokenCount, isActive: isActive,
+                  mark: EmptyView(), select: select)
+    }
+}
+
+extension SidebarItem {
+    init(title: String, icon: ReinsGlyph, isActive: Bool, @ViewBuilder mark: () -> Mark, select: @escaping () -> Void) {
+        self.init(title: title, icon: icon, count: nil, alert: false, spokenCount: nil, isActive: isActive, mark: mark(),
+                  select: select)
     }
 }
 

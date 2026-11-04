@@ -1,9 +1,26 @@
 import ReinsCore
 import SwiftUI
 
-/// The Limits block above the sidebar footer, on every tab: one tile per CLI with the share left of its tightest window.
-/// Clicking it (or `⌘L`) opens the Limits page in the content area. Reads run while the window is active (launch, each time
-/// it becomes active, then every minute).
+/// The Limits entry in the sidebar list, after the tabs (owner, 2026-11-04): active while the page is open, with a warn
+/// clock after the title when a reading is older than six hours.
+struct LimitsSidebarItem: View {
+    @Environment(LimitsModel.self) private var model
+    @Environment(ShellModel.self) private var shell
+
+    var body: some View {
+        TimelineView(.everyMinute) { context in
+            SidebarItem(title: LimitsPage.title, icon: .limits, isActive: shell.isLimitsOpen) {
+                if LimitsSidebarBlock.hasStaleReading(model.results, now: context.date) { StaleMark() }
+            } select: {
+                shell.openLimits()
+            }
+        }
+    }
+}
+
+/// The Limits tiles above the sidebar footer, on every tab: one tile per CLI with the share left of its tightest window.
+/// Clicking them (or the Limits entry, or `⌘L`) opens the Limits page in the content area. Reads run while the window is
+/// active (launch, each time it becomes active, then every minute).
 struct LimitsSidebarBlock: View {
     @Environment(LimitsModel.self) private var model
     @Environment(ShellModel.self) private var shell
@@ -13,15 +30,6 @@ struct LimitsSidebarBlock: View {
         TimelineView(.everyMinute) { context in
             Button { shell.openLimits() } label: {
                 VStack(alignment: .leading, spacing: Space.s6) {
-                    HStack(spacing: Space.s6) {
-                        ReinsIcon(.limits)
-                        Text("Limits")
-                        if hasStaleReading(now: context.date) { StaleMark() }
-                        Spacer(minLength: 0)
-                        Chevron(.right)
-                    }
-                    .reinsText(.bodyStrong, tone: .primary)
-                    .padding(.horizontal, Metrics.sidebarItemPadding)
                     ForEach(LimitsCLI.allCases, id: \.self) { cli in
                         tile(cli, now: context.date)
                     }
@@ -30,9 +38,7 @@ struct LimitsSidebarBlock: View {
             }
             .buttonStyle(.plain)
             .reinsFocusable(cornerRadius: Metrics.controlRadius)
-            .accessibilityLabel("Limits")
-            .accessibilityHint("Shows every usage limit window")
-            .accessibilityAddTraits(shell.isLimitsOpen ? .isSelected : [])
+            .accessibilityHint("Opens Limits")
         }
         .task(id: scenePhase == .active) {
             guard scenePhase == .active else { return }
@@ -40,8 +46,8 @@ struct LimitsSidebarBlock: View {
         }
     }
 
-    private func hasStaleReading(now: Date) -> Bool {
-        model.results.contains { limits in
+    static func hasStaleReading(_ results: [CLILimits], now: Date) -> Bool {
+        results.contains { limits in
             if case .measured(let at, _) = limits.state { return LimitsWording.isStale(at: at, now: now) }
             return false
         }

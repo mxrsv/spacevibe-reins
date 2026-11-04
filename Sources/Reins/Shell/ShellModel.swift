@@ -10,8 +10,8 @@ final class ShellModel {
     let appearance: AppearanceStore
 
     var activeID: String
-    /// The Limits page shows in the content area instead of the active tab (spec, Interface: Limits). It has no sidebar
-    /// entry: the sidebar block and `⌘L` open it, choosing a tab closes it.
+    /// The Limits page shows in the content area instead of the active tab (spec, Interface: Limits). Its sidebar entry, the
+    /// sidebar tiles and `⌘L` open it; choosing a tab closes it.
     var isLimitsOpen = false
     var isPaletteOpen = false
     var paletteQuery = ""

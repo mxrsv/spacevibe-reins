@@ -8,7 +8,7 @@ enum LimitsPage {
     static let hints = [KeyHint(keys: "\u{2318}R", label: "Refresh")]
 }
 
-/// The Limits page (spec, Interface: Limits, layout H), in the content area when the sidebar block or `⌘L` opens it.
+/// The Limits page (spec, Interface: Limits, layout H), in the content area when the sidebar entry, its tiles or `⌘L` open it.
 /// Every window of every CLI is a tile in the list on the left with its ruler and share left, and Gemini CLI (or any CLI
 /// without a reading) is a tile with its state; the selected one is on the right: its name, the share left in `display`, a
 /// ruler and three facts, with the reading's source under them. The window with the least left is selected first. Only
