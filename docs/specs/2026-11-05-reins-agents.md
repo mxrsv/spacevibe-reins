@@ -92,7 +92,7 @@ Mocks, tracked in [`mocks/agents/`](../../mocks/agents/index.html) with syntheti
     - Turning off domain enforcement while the network is on adds a warn note: the network becomes open to every domain.
     - `workspace_roots`, `unix_sockets`, `glob_scan_max_depth` and the proxy settings are edited in Advanced.
     - **When both models are set,** a card offers two choices. "Keep sandbox_mode", which is what Codex uses now, removes `default_permissions`. "Keep the profile" removes `sandbox_mode` and `[sandbox_workspace_write]`.
-    - Mock: `agents-panel.html#open=codex/permissions&codex=profiles`, and `&codex=both`.
+    - Mock: `agents-panel.html#open=codex/permissions&codex=profiles`, and `&codex=both`. The owner picked it on 2026-11-05.
   - At a project: Trust (Not set, Trusted, Untrusted) and a note that everything else comes from Global.
 - **Hooks.**
   - Each row shows the event and matcher, the command, and its runs.
