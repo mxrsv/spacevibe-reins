@@ -18,35 +18,38 @@ import SwiftUI
 /// - A card is a `surface` block on the `well`, with no border; rows inside it are separated by `divider`. Only overlays
 ///   (palette, confirmation, toast) keep a `border` and a shadow.
 ///
-/// Contrast measured for these values (WCAG, text on its real background): `text` 12.8 to 17.3,
-/// `textSecondary` 5.9 to 9.6, `textTertiary` 4.4 to 8.1 (dark) and 4.9 to 6.0 (light; the one pair under
-/// 4.5 is tertiary on a selected row in dark, 4.4 since the v3 surface), tag text on `surfaceRaised` 5.1 to 7.7, every `...Ink`
+/// The surfaces, borders, hover, dividers and text greys are neutral (R = G = B) since 2026-11-04: the earlier navy tint
+/// (`0x121721` and friends) read as a blue cast on every screen. The accent, selection and the CLI and state colours are unchanged.
+///
+/// Contrast measured for the neutral surfaces (WCAG, text on `well`, `surface` and `surfaceRaised`): `text` 11.1 to 18.4,
+/// `textSecondary` 5.9 to 9.3, `textTertiary` 4.9 to 7.2 (dark) and 5.8 to 6.5 (light). The values below this line were
+/// measured on the earlier navy surfaces and not repeated: tertiary on a selected row, tag text on `surfaceRaised` 5.1 to 7.7, every `...Ink`
 /// on its 15 percent tint 5.1 to 6.3, white on `accentSolid` 4.9 (dark) and 6.4 (light), the focus ring
 /// 6.1 to 7.5 on every surface. `border` is decoration (1.3 to 1.4 against its surface), not a control
 /// boundary on its own.
 enum Palette {
     // Surfaces
-    static let background = Color(light: 0xF8FAFE, dark: 0x121721)
+    static let background = Color(light: 0xF8F8F8, dark: 0x161616)
     /// The ground of the content area and the sidebar: one step darker than a card in light, the background itself in dark,
     /// so cards read as blocks. Reuses existing values (light `surfaceRaised`, dark `background`).
-    static let well = Color(light: 0xF0F4FA, dark: 0x121721)
-    static let surface = Color(light: 0xFFFFFF, dark: 0x232B38)
-    static let surfaceRaised = Color(light: 0xF0F4FA, dark: 0x2C3544)
-    static let border = Color(light: 0xD3D8E0, dark: 0x363D4B, darkAlpha: 0.7)
+    static let well = Color(light: 0xF2F2F2, dark: 0x161616)
+    static let surface = Color(light: 0xFFFFFF, dark: 0x2A2A2A)
+    static let surfaceRaised = Color(light: 0xF2F2F2, dark: 0x343434)
+    static let border = Color(light: 0xDADADA, dark: 0x3A3A3A, darkAlpha: 0.7)
     /// The text colour at 8%: between two rows of a card, and between the sidebar and the content area.
-    static let divider = Color(light: 0x141B26, dark: 0xF0F2F6, lightAlpha: 0.08, darkAlpha: 0.08)
+    static let divider = Color(light: 0x141414, dark: 0xF2F2F2, lightAlpha: 0.08, darkAlpha: 0.08)
 
     // Interaction
-    static let hover = Color(light: 0xD7DEEC, dark: 0x262E3D, lightAlpha: 0.6, darkAlpha: 0.55)
+    static let hover = Color(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.05, darkAlpha: 0.07)
     static let selection = Color(light: 0x4164ED, dark: 0x496CEF, lightAlpha: 0.14, darkAlpha: 0.28)
     static let accent = Color(light: 0x3250D8, dark: 0x82A5FF)
     static let accentSolid = Color(light: 0x3250D8, dark: 0x4164ED)
     static let onAccent = Color(light: 0xFFFFFF, dark: 0xFFFFFF)
 
     // Text
-    static let text = Color(light: 0x141B26, dark: 0xF0F2F6)
-    static let textSecondary = Color(light: 0x474D58, dark: 0xB2B8C1)
-    static let textTertiary = Color(light: 0x5D646F, dark: 0xA2A8B2)
+    static let text = Color(light: 0x141414, dark: 0xF2F2F2)
+    static let textSecondary = Color(light: 0x474747, dark: 0xB3B3B3)
+    static let textTertiary = Color(light: 0x5E5E5E, dark: 0xA3A3A3)
 
     // The two CLIs: fill and text-safe ink
     static let claude = Color(light: 0xCD632D, dark: 0xF69A65)
@@ -70,8 +73,8 @@ enum Palette {
     static let dangerTint = Color(light: 0xD01C29, dark: 0xFF7F7F, lightAlpha: 0.10, darkAlpha: 0.15)
 
     // Overlays (palette scrim, toast)
-    static let overlay = Color(light: 0x11161F, dark: 0x010309, lightAlpha: 0.35, darkAlpha: 0.5)
-    static let overlayShadow = Color(light: 0x11161F, dark: 0x010309, lightAlpha: 0.22, darkAlpha: 0.5)
+    static let overlay = Color(light: 0x111111, dark: 0x000000, lightAlpha: 0.35, darkAlpha: 0.5)
+    static let overlayShadow = Color(light: 0x111111, dark: 0x000000, lightAlpha: 0.22, darkAlpha: 0.5)
 }
 
 extension Color {

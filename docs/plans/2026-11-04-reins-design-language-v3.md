@@ -40,7 +40,7 @@ Facts this plan rests on, read 2026-11-04:
 - Update `docs/DESIGN-LANGUAGE.md` (tokens table, components table, icons, attribution) in the commit that ships each token, not before (D1).
 
 ### V2. Tokens
-- `Palette`: dark `surface` #232B38 and `surfaceRaised` #2C3544; remove `sidebar` when nothing reads it (V4 stops using it).
+- `Palette`: neutral greys for every surface, border, hover, divider and text (see the spec's colour line; navy first tried on 2026-11-04, replaced the same day); remove `sidebar` when nothing reads it (V4 stops using it).
 - `Metrics`: sidebar item 48, card header 56, tag 24, tag radius 6, ruler (cell gap 3, height 8), tile sizes already added for Limits kept; remove constants that become unused.
 - `ReinsType`: add `display` 72/88 600 (88 is the face's own height at 72, so the line box never clips), tracking −0.03 em, tabular. DL2 test: no size outside 12, 14, 16, 24, 72 exists.
 - Verification: `scripts/test.sh` passes; gallery shots still render.
