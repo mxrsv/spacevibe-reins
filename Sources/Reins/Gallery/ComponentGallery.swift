@@ -51,10 +51,10 @@ struct ComponentGalleryContent: View {
             }
             section("Status lead in each tone, and the bar about the other CLI") {
                 VStack(spacing: Space.s12) {
-                    StatusLead(tone: .warn, sentence: "Runs any command and changes any file without asking", detail: #"sandbox_mode = "danger-full-access" · approval_policy = "never""#)
+                    StatusLead(tone: .warn, sentence: "Has no sandbox and never asks, except for 1 command rule", detail: #"sandbox_mode = "danger-full-access" · approval_policy = "never""#)
                     StatusLead(tone: .success, sentence: "Writes only inside the workspace and asks when it needs more", detail: #"sandbox_mode = "workspace-write""#)
                     StatusLead(tone: .neutral, sentence: "Runs on its defaults: there is no ~/.codex/config.toml")
-                    CLISummaryBar(cli: .codex, message: "Runs any command and changes any file without asking", warn: true, actionTitle: "Open Codex") {}
+                    CLISummaryBar(cli: .codex, message: "Has no sandbox and never asks, except for 1 command rule", warn: true, actionTitle: "Open Codex") {}
                     CLISummaryBar(cli: .claude, message: "Asks before push and deploy, blocks secrets (.env)", actionTitle: "Open Claude Code") {}
                 }
             }

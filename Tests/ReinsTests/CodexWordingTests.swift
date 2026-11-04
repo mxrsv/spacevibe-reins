@@ -82,7 +82,7 @@ struct CodexWordingTests {
         """, rules: #"prefix_rule(pattern=["git", "push"], decision="allow")"#)
         let status = CodexWording.status(codex)
         #expect(status.tone == .warn)
-        #expect(status.sentence == "Runs any command and changes any file without asking")
+        #expect(status.sentence == "Has no sandbox and never asks")
         let rows = CodexWording.rows(codex)
         #expect(rows.first { $0.title == "Asks before acting" }?.value == .options(["Unless allowed", "When needed", "Never"], picked: "Never", warn: true))
         #expect(rows.first { $0.title == "Sandbox" }?.value == .options(["Read only", "Workspace", "Full access"], picked: "Full access", warn: true))
@@ -90,13 +90,18 @@ struct CodexWordingTests {
         #expect(rows.first { $0.title == "Can write to" }?.value == .tag("anywhere", tone: .warn))
     }
 
-    @Test("forbidden command rules are named in the warning, since they still stop Codex")
-    func unrestrictedWithForbidden() throws {
+    @Test("command rules that forbid or prompt are named in the warning, since they still hold Codex back")
+    func unrestrictedWithRules() throws {
         let codex = try permissions("""
         approval_policy = "never"
         sandbox_mode = "danger-full-access"
-        """, rules: #"prefix_rule(pattern=["rm", "-rf"], decision="forbidden")"#)
-        #expect(CodexWording.status(codex).sentence == "Runs any command and changes any file without asking, except 1 forbidden command")
+        """, rules: """
+        prefix_rule(pattern=["rm", "-rf"], decision="forbidden")
+        prefix_rule(pattern=["git", "push"], decision="prompt")
+        """)
+        #expect(CodexWording.status(codex).sentence == "Has no sandbox and never asks, except for 2 command rules")
+        let asking = try permissions("approval_policy = \"on-request\"\nsandbox_mode = \"danger-full-access\"\n")
+        #expect(CodexWording.status(asking) == CodexStatus(tone: .warn, sentence: "Has no sandbox and asks when it needs more", detail: #"sandbox_mode = "danger-full-access" · approval_policy = "on-request""#))
     }
 
     @Test("the workspace sandbox that asks when needed reads as safe; network and folders come from its table")

@@ -72,12 +72,10 @@ enum CodexWording {
         let approval = approval(codex)
         switch codex.sandboxMode {
         case "danger-full-access":
-            if approval == "never" {
-                let forbidden = codex.rules.forbidden
-                let except = forbidden > 0 ? ", except \(forbidden) forbidden \(forbidden == 1 ? "command" : "commands")" : ""
-                return CodexStatus(tone: .warn, sentence: "Runs any command and changes any file without asking\(except)", detail: detail)
-            }
-            return CodexStatus(tone: .warn, sentence: "Has no sandbox: it can change any file on this Mac", detail: detail)
+            // Literal to the config: command rules that forbid or prompt still apply, so they are named, not assumed away.
+            let held = codex.rules.forbidden + codex.rules.prompt
+            let except = approval == "never" && held > 0 ? ", except for \(held) command \(held == 1 ? "rule" : "rules")" : ""
+            return CodexStatus(tone: .warn, sentence: "Has no sandbox\(askClause(approval))\(except)", detail: detail)
         case "workspace-write":
             return CodexStatus(tone: approval == "never" ? .neutral : .success, sentence: "Writes only inside the workspace\(askClause(approval))", detail: detail)
         case "read-only":
@@ -160,7 +158,7 @@ enum CodexWording {
             return [
                 sandbox,
                 CodexSettingRow(title: "Network", key: "No sandbox, so nothing limits it", keyIsCode: false, value: .tag("open", tone: .warn)),
-                CodexSettingRow(title: "Can write to", key: "No sandbox, so nothing limits it", keyIsCode: false, value: .tag("anywhere", tone: .warn)),
+                CodexSettingRow(title: "Can write to", key: "Full access ignores writable_roots", keyIsCode: false, value: .tag("anywhere", tone: .warn)),
             ]
         case "read-only":
             return [

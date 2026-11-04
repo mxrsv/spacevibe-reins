@@ -53,7 +53,7 @@ enum RulesShots {
                 continue
             }
             if codex.unrestricted {
-                try ShotHarness.check(CodexWording.status(codex).sentence.hasPrefix("Runs any command"), "no sandbox and never asking is said in plain words")
+                try ShotHarness.check(CodexWording.status(codex).sentence.hasPrefix("Has no sandbox and never asks"), "no sandbox and never asking is said in plain words")
                 try shot("claude-codex-unrestricted")
                 model.selectCLI(.codex)
                 try shot("codex-unrestricted")
