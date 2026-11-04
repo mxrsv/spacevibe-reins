@@ -71,13 +71,21 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
   - `MenuPicker`.
 
   Each gets a gallery specimen (AG7, AG8).
-- [ ] A8. The Agents screen behind `REINS_AGENTS=1`, in debug builds only, while Rules stays the default:
-  - the cards and panel routing;
-  - per-panel scopes remembered per agent;
-  - drafts, the review dialog, and the toast with Undo;
-  - the Claude Code panels (AG1, AG2, AG7).
+- [ ] A8. The Agents screen behind `REINS_AGENTS=1`, while Rules stays the default.
+  - The switch is honoured in debug builds, and in any build only when `REINS_TEST=1` is also set.
+  - The second case lets the owner test the release bundle from `scripts/build-app.sh` on a synthetic home. No user sets both, and `REINS_TEST=1` makes `Roots.resolve` refuse the real home.
+  - The A8 screen covers:
+    - the cards and panel routing;
+    - per-panel scopes remembered per agent;
+    - drafts, the review dialog, the toast with Undo, and the error toasts;
+    - the Claude Code panels (AG1, AG2, AG7).
 - [ ] A9. The Codex panels, including the profile editor and the both-models state picked in A0b (AG6).
-- [ ] A10. Shots: `REINS_SHOT_SCREEN=agents` for every panel, both appearances, with drafts, confirmations and errors. Extend `StyleBoundaryTests` to cover `Agents/`.
+- [ ] A10. Shots: `REINS_SHOT_SCREEN=agents` for every panel, both appearances, with drafts, confirmations and errors. Extend `StyleBoundaryTests` to cover `Agents/`. Synthetic fixture homes through `scripts/fixture-home.mjs` (S-R2) for:
+  - Codex legacy, profiles and both models;
+  - MCP `env` and `headers`, plus a plain `DISABLE_TELEMETRY`;
+  - a dead hook.
+
+  Then write a "Test tomorrow" list in Handoff: one launch command per fixture, verified, and what to click.
 - [ ] A11. Real-CLI check, run with the owner like the parent plan's S0.5: a throwaway home needs the owner's sign-in, and real sessions spend their quota. `claude` and `codex` load a permission, a hook, an MCP server, a model and an instruction-file change written by Reins (AG9).
 - [ ] A12. Cut-over:
   - run `impeccable distill` and `clarify`, then get the owner's eye approval of the shots next to the mock (AG10);
