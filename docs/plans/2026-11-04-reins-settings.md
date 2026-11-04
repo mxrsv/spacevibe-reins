@@ -3,7 +3,7 @@
 Spec: [2026-11-04-reins-settings.md](../specs/2026-11-04-reins-settings.md) (ST1 to ST7).
 Mock: `~/scratch/spacevibe-reins/settings/index.html`, combination A2.
 Checkout: `spacevibe-reins` on `main`, shared with other sessions; commit with `git commit -- <paths>` only.
-Started 2026-11-04. Status: S1 to S9 done and committed; S10 waits for the owner's eye approval.
+Started 2026-11-04. Status: S1 to S9 done and committed (`9ba6917`, `3088300`, and the follow-up for Sparkle's no-update error); S10 waits for the owner's eye approval.
 
 ## Approach
 
@@ -54,16 +54,23 @@ Verified:
   rerunning rebuilt it and everything passed (not caused by this change; see the trap below).
 - `scripts/build-app.sh`: signed `build/Reins.app`, `vtool` prints `minos 15.0`.
 - `REINS_SHOT_SCREEN=settings scripts/dev-fixture.sh --shots <dir>`: 26 PNGs (both themes: Appearance, System chosen,
-  Large, six Update states, the palette over Settings, Loadout, Activity and Rules at Large) and the checks "Settings
-  opens on Appearance", "the palette opens over Settings", "choosing a tab closes Settings". At Large, Loadout's
-  `12,345` wrapped before the `Metrics` widths followed the size and fits after.
+  Large, six Update states, the palette over Settings, and the demo shell's Loadout, Activity and Rules tabs at Large,
+  not the screens read from the fixture) and the checks "Settings opens on Appearance", "the palette opens over
+  Settings", "choosing a tab closes Settings". At Large, the demo Loadout's `12,345` wrapped before the `Metrics` widths
+  followed the size and fits after.
+- Sparkle source (2.x, `SPUProbingUpdateDriver.m` builds an `SPUBasicUpdateDriver`, whose not-found path calls
+  `updaterDidNotFindUpdate:error:`): a probe that finds nothing reports `Up to date`. `status(afterCycle:)` also maps
+  `SUNoUpdateError` to `Up to date` in case a cycle ends without that callback.
 - `impeccable distill` and `clarify` on the surface: one copy change, a failed check now says "Could not read the update
   source." instead of the time of the check that failed.
 
 Not verified here (no Screen Recording or keystroke permission for this session):
 - In a live window: System following macOS, the theme tiles' colours, the back button's line with the window buttons,
   `⌘,` and `Esc`.
-- `scripts/test-update.sh`: the owner's `/Applications/Reins.app` was running, and the script needs no Reins running.
+- `scripts/test-update.sh`: the owner's `/Applications/Reins.app` was running, and the script needs no Reins running. So
+  the `Check Now` round trip against a real feed has no end-to-end check.
+- Font size changing a live window without a relaunch: every shot renders fresh with the step already set.
+- The real Loadout, Rules and Activity screens (fixture runs) at Large.
 - Limits at Large (its shots need the Limits fixture; not added to the settings run).
 
 Departures from mock A2: `Checking…` carries the refresh icon, not a spinner; the failed state is new; the Language card

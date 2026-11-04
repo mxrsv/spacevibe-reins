@@ -129,11 +129,13 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
         ToastAction(title: "View", icon: .download, run: run)
     }
 
-    /// What a finished check leaves: the found or not-found callback has set the result; a cycle that ended without either
-    /// was a failure when it carried an error, and otherwise says nothing new.
+    /// What a finished check leaves: the found or not-found callback has set the result (a probe reaches both through
+    /// `SPUBasicUpdateDriver`); a cycle that ended without either is up to date when its error is Sparkle's "no update",
+    /// a failure for any other error, and otherwise says nothing new.
     nonisolated static func status(afterCycle current: Status, error: Error?) -> Status {
         guard current == .checking else { return current }
-        return error == nil ? .notChecked : .failed
+        guard let error = error as NSError? else { return .notChecked }
+        return error.domain == SUSparkleErrorDomain && error.code == Int(SUError.noUpdateError.rawValue) ? .upToDate : .failed
     }
 
     // MARK: SPUUpdaterDelegate

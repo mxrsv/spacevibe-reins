@@ -1,4 +1,5 @@
 import Foundation
+import Sparkle
 import Testing
 @testable import Reins
 
@@ -93,6 +94,8 @@ struct UpdateControllerTests {
         #expect(UpdateController.status(afterCycle: .checking, error: Offline()) == .failed)
         #expect(UpdateController.status(afterCycle: .checking, error: nil) == .notChecked)
         #expect(UpdateController.status(afterCycle: .notChecked, error: Offline()) == .notChecked)
+        let noUpdate = NSError(domain: SUSparkleErrorDomain, code: Int(SUError.noUpdateError.rawValue))
+        #expect(UpdateController.status(afterCycle: .checking, error: noUpdate) == .upToDate)
     }
 }
 

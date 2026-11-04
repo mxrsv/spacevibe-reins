@@ -7,9 +7,10 @@
 #
 # Environment: REINS_FIXTURE_ACTIVITY=empty (no live session) or =loading (the first process question waits 20 s, so the
 # screen sits on "Reading logs...") is passed to scripts/fixture-home.mjs. REINS_BUILD_PATH overrides the scratch path.
-# REINS_SHOT_SCREEN=shell|loadout|rules|activity|limits picks the --shots run (default shell: the demo shell states and the
-# gallery); loadout, rules and activity read this synthetic home and assert their writes, Undo included; limits reads the
-# files REINS_FIXTURE_LIMITS=typical|edge adds and shoots the sidebar block and the page. Nothing else selects a screen.
+# REINS_SHOT_SCREEN=shell|loadout|rules|activity|limits|settings picks the --shots run (default shell: the demo shell states
+# and the gallery); loadout, rules and activity read this synthetic home and assert their writes, Undo included; limits reads
+# the files REINS_FIXTURE_LIMITS=typical|edge adds and shoots the sidebar block and the page; settings shoots Settings and the
+# demo tabs at the Large font size. Nothing else selects a screen.
 #
 # What the fake process list says (written by fixture-home.mjs to <home>/.reins/activity-proc.json, used because
 # REINS_TEST=1 and REINS_PROC_FIXTURE name it; the pids are made up and only the fake answers for them):
