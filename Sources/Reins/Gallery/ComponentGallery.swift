@@ -441,9 +441,9 @@ private struct LimitsSpecimens: View {
                     .groupedListPart(.plain)
                 }
                 VStack(spacing: Space.s6) {
-                    LimitSidebarTile(cli: .claude, name: "Claude Code", value: "92% left", fraction: 0.92)
-                    LimitSidebarTile(cli: .codex, name: "Codex", value: "18% left", tone: .low, fraction: 0.18)
-                    LimitSidebarTile(cli: .codex, name: "Codex", value: "4% left", tone: .out, fraction: 0.04)
+                    LimitSidebarTile(cli: .claude, name: "Claude Code", value: "92% left")
+                    LimitSidebarTile(cli: .codex, name: "Codex", value: "18% left", tone: .low)
+                    LimitSidebarTile(cli: .codex, name: "Codex", value: "4% left", tone: .out)
                     LimitSidebarTile(cli: .gemini, name: "Gemini CLI", value: "not measurable", isMuted: true)
                 }
                 .padding(Space.s8)

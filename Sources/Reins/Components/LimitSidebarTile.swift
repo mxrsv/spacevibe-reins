@@ -1,16 +1,14 @@
 import ReinsCore
 import SwiftUI
 
-/// One CLI in the sidebar's Limits block: its mark, name and the share left of its tightest window, with a ruler under
-/// them. Filled with the CLI's tint, or warn or danger when nearly out. A CLI with no reading is `muted` (plain surface,
-/// the reason in `caption` under the name instead of a number, no bar).
+/// One CLI in the sidebar's Limits block: its mark, name and the share left of its tightest window, as a number only (the
+/// Limits page draws the ruler). Filled with the CLI's tint, or warn or danger when nearly out. A CLI with no reading is
+/// `muted` (plain surface, the reason in `caption` under the name instead of a number).
 struct LimitSidebarTile: View {
     let cli: LimitsCLI
     let name: String
     let value: String
     var tone: LimitTone = .normal
-    /// The ruler's fill, 0...1; nil draws no ruler.
-    var fraction: Double?
     var isMuted = false
 
     var body: some View {
@@ -25,16 +23,11 @@ struct LimitSidebarTile: View {
                     Spacer(minLength: 0)
                 }
             } else {
-                VStack(alignment: .leading, spacing: Space.s8) {
-                    HStack(spacing: Space.s8) {
-                        CLIMark(cli, small: true)
-                        Text(name).reinsText(.bodyStrong, tone: .primary).lineLimit(1).layoutPriority(1)
-                        Spacer(minLength: Space.s4)
-                        Text(value).reinsText(.bodyStrong, tone: tone.figureTone).lineLimit(1)
-                    }
-                    if let fraction {
-                        Ruler(share: fraction, fill: tone.barFill ?? cli.fill)
-                    }
+                HStack(spacing: Space.s8) {
+                    CLIMark(cli, small: true)
+                    Text(name).reinsText(.bodyStrong, tone: .primary).lineLimit(1).layoutPriority(1)
+                    Spacer(minLength: Space.s4)
+                    Text(value).reinsText(.bodyStrong, tone: tone.figureTone).lineLimit(1)
                 }
             }
         }
