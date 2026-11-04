@@ -29,21 +29,27 @@ extension LimitsCLI {
     }
 }
 
-/// A CLI's brand mark in a tinted rounded square: 40 pt beside a card title, 24 pt (`small`) in a sidebar tile. Claude Code
-/// and Codex are drawn as a template in the CLI's ink on its tint; Gemini CLI keeps its own colours. Decorative: the name
-/// is always written beside it.
+/// A CLI's brand mark in a tinted rounded square: 40 pt (`large`), 28 pt (`medium`) on the Limits page's tiles and detail
+/// title, 24 pt (`small`) in a sidebar tile. Claude Code and Codex are drawn as a template in the CLI's ink on its tint;
+/// Gemini CLI keeps its own colours. Decorative: the name is always written beside it.
 struct CLIMark: View {
-    let cli: LimitsCLI
-    var small = false
+    enum Size { case large, medium, small }
 
-    init(_ cli: LimitsCLI, small: Bool = false) {
+    let cli: LimitsCLI
+    var size: Size = .large
+
+    init(_ cli: LimitsCLI, size: Size = .large) {
         self.cli = cli
-        self.small = small
+        self.size = size
     }
 
     var body: some View {
-        let side = small ? Metrics.cliMarkSmallSize : Metrics.cliMarkSize
-        let shape = RoundedRectangle(cornerRadius: small ? Metrics.controlRadius : Metrics.groupRadius, style: .continuous)
+        let side = switch size {
+        case .large: Metrics.cliMarkSize
+        case .medium: Metrics.cliMarkMediumSize
+        case .small: Metrics.cliMarkSmallSize
+        }
+        let shape = RoundedRectangle(cornerRadius: size == .large ? Metrics.groupRadius : Metrics.controlRadius, style: .continuous)
         ZStack {
             shape.fill(cli.tint)
             if let image = BrandMark.image(cli) {

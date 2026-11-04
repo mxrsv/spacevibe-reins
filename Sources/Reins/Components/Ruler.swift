@@ -29,13 +29,16 @@ enum RulerLayout: Equatable {
 }
 
 /// The Limits progress display, used nowhere else (Loadout and Activity keep the continuous `UsageBar`): ten square-ended
-/// cells, 8 pt high, 3 pt apart, as wide as the space it is given. Filled cells take `fill` and the last filled one is cut
-/// at the share; empty cells are `surfaceRaised`. An unknown share (`nil`) draws a dashed
-/// outline instead ("not counted yet", a window past its reset). Decorative: the number beside it carries the meaning.
+/// cells, 3 pt apart, as wide as the space it is given; 8 pt high in the window list, `rulerDetailHeight` under the figure.
+/// Filled cells take `fill` and the last filled one is cut at the share; empty cells are `surfaceRaised`, or
+/// `trackOnSelection` on a selected tile. An unknown share (`nil`) draws a dashed outline instead ("not counted yet", a
+/// window past its reset). Decorative: the number beside it carries the meaning.
 struct Ruler: View {
     /// 0 to 1, or nil when not known.
     let share: Double?
     let fill: Color
+    var height: CGFloat = Metrics.rulerHeight
+    var emptyFill: Color = Palette.surfaceRaised
 
     var body: some View {
         GeometryReader { proxy in
@@ -43,21 +46,21 @@ struct Ruler: View {
             case .outline:
                 Rectangle()
                     .strokeBorder(Palette.textTertiary, style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
-                    .frame(width: proxy.size.width, height: Metrics.rulerHeight)
+                    .frame(width: proxy.size.width, height: height)
             case .cells(let cells):
                 ZStack(alignment: .topLeading) {
                     ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
                         Rectangle()
-                            .fill(Palette.surfaceRaised)
+                            .fill(emptyFill)
                             .overlay(alignment: .leading) { Rectangle().fill(fill).frame(width: cell.filled) }
-                            .frame(width: cell.width, height: Metrics.rulerHeight)
+                            .frame(width: cell.width, height: height)
                             .offset(x: cell.x)
                     }
                 }
-                .frame(width: proxy.size.width, height: Metrics.rulerHeight, alignment: .topLeading)
+                .frame(width: proxy.size.width, height: height, alignment: .topLeading)
             }
         }
-        .frame(height: Metrics.rulerHeight)
+        .frame(height: height)
         .accessibilityHidden(true)
     }
 }

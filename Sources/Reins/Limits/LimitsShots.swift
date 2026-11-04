@@ -23,6 +23,10 @@ enum LimitsShots {
             env.limits.showInactive = true
             try ShotRenderer.write(page(shell, toasts, env), name: "limits-page-inactive", choice: choice, to: directory)
             env.limits.showInactive = false
+            // Claude Code's entry carries the source line with `Copy /usage` (a window), or its state note (no reading).
+            env.limits.selectedID = entries.first { $0.cli == .claude }?.id
+            try ShotRenderer.write(page(shell, toasts, env), name: "limits-page-claude", choice: choice, to: directory)
+            env.limits.selectedID = nil
             shell.select("rules")
             try ShotHarness.check(!shell.isLimitsOpen, "choosing a tab closes the page")
         }

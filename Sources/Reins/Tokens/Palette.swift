@@ -44,6 +44,8 @@ enum Palette {
     // Interaction
     static let hover = Color(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.05, darkAlpha: 0.07)
     static let selection = Color(light: 0x4164ED, dark: 0x496CEF, lightAlpha: 0.14, darkAlpha: 0.28)
+    /// The text colour at 14%: a ruler's empty cells on a selected tile, where `surfaceRaised` would read as grey patches.
+    static let trackOnSelection = Color(light: 0x141414, dark: 0xF2F2F2, lightAlpha: 0.14, darkAlpha: 0.14)
     static let accent = Color(light: 0x3250D8, dark: 0x82A5FF)
     static let accentSolid = Color(light: 0x3250D8, dark: 0x4164ED)
     static let onAccent = Color(light: 0xFFFFFF, dark: 0xFFFFFF)

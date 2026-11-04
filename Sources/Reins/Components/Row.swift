@@ -63,7 +63,9 @@ struct Row<Lead: View, Main: View, Cells: View, Actions: View>: View {
     }
 }
 
-private struct RowActivation: ViewModifier {
+/// Focusable, Return and Space act, a click acts, and VoiceOver's default action acts; nothing without `onActivate`.
+/// `LimitWindowTile` uses it too, so a tile and a row answer the same keys.
+struct RowActivation: ViewModifier {
     let onActivate: (() -> Void)?
     var focused: FocusState<Bool>.Binding
 

@@ -29,20 +29,22 @@ enum LimitTone: Equatable {
     }
 }
 
-/// The share left of the window the Limits page shows: the `display` number with "left" after it, in the warn or danger
-/// ink when nearly out. A share that is not known (its reset has passed) reads "unknown" on the same line box.
+/// The share left of the window the Limits page shows: the `display` number with "left of this window" after it, in the
+/// warn or danger ink when nearly out. A share that is not known (its reset has passed) reads as a tertiary dash on the same
+/// line box.
 struct LimitFigure: View {
     /// Whole percent left; nil when not known.
     let left: Int?
     var tone: LimitTone = .normal
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: Space.s8) {
+        HStack(alignment: .firstTextBaseline, spacing: Space.s12) {
             if let left {
                 Text("\(left)%").reinsText(.display, tone: tone.figureTone).lineLimit(1)
-                Text("left").reinsText(.title, tone: .secondary)
+                Text("left of this window").reinsText(.body, tone: .secondary).lineLimit(1)
             } else {
-                Text("unknown").reinsText(.title, tone: .secondary)
+                Text("\u{2014}").reinsText(.display, tone: .tertiary).lineLimit(1)
+                Text("unknown until the next reading").reinsText(.body, tone: .secondary).lineLimit(1)
             }
         }
         .frame(minHeight: ReinsType.display.lineBox, alignment: .leading)

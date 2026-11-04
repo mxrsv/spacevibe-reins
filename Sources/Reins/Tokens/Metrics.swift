@@ -72,6 +72,8 @@ enum Metrics {
     static let barHeight: CGFloat = 6
     static let rulerCellCount = 10
     static let rulerHeight: CGFloat = 8
+    /// The ruler under the Limits page's figure.
+    static let rulerDetailHeight: CGFloat = 32
     static let rulerCellGap: CGFloat = 3
 
     /// Every control: button, chip, segmented frame, scope picker, search field.
@@ -100,9 +102,12 @@ enum Metrics {
 
     static let emptyStateMessageWidth: CGFloat = 360
 
-    /// Limits: the CLI mark (40, or 24 in a sidebar tile).
+    /// Limits: the CLI mark (40, 28 in the page's list and detail title, 24 in a sidebar tile).
     static let cliMarkSize: CGFloat = 40
+    static let cliMarkMediumSize: CGFloat = 28
     static let cliMarkSmallSize: CGFloat = 24
+    /// The Limits page's window list; the selected window's detail takes the rest of the width.
+    static let limitsListWidth: CGFloat = 340
     /// The glyph's share of its mark square.
     static let cliMarkGlyphFraction: CGFloat = 0.6
 

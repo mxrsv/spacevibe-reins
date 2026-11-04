@@ -49,16 +49,24 @@ struct LimitsWordingTests {
         #expect(LimitsWording.name(window("monthly_cap", minutes: nil, used: 0, resets: 1)) == "Monthly cap")
     }
 
-    @Test("resets: remaining time and clock, then 'no newer reading' once the reset has passed")
-    func resets() {
+    @Test("a list line names the CLI and the time to the reset, or that the reset has passed")
+    func entryLine() {
         let soon = window(used: 23, resets: 3 * Self.hour + 12 * 60)
-        #expect(LimitsWording.resets(soon, now: Self.now, calendar: Self.calendar) == "Resets in 3 h 12 min · 21:12")
+        #expect(LimitsWording.entryLine(soon, cli: .codex, now: Self.now) == "Codex · resets in 3 h 12 min")
         let week = window(minutes: 10080, used: 8, resets: 2 * 86_400 + 22 * Self.hour)
-        #expect(LimitsWording.resets(week, now: Self.now, calendar: Self.calendar) == "Resets in 2 d 22 h · Fri 16:00")
-        let far = window(minutes: 10080, used: 8, resets: 7 * 86_400)
-        #expect(LimitsWording.resets(far, now: Self.now, calendar: Self.calendar) == "Resets in 7 d 0 h · Nov 10")
+        #expect(LimitsWording.entryLine(week, cli: .claude, now: Self.now) == "Claude Code · resets in 2 d 22 h")
         let passed = window(used: 88, resets: -26 * 60)
-        #expect(LimitsWording.resets(passed, now: Self.now, calendar: Self.calendar) == "Reset at 17:34 · no newer reading")
+        #expect(LimitsWording.entryLine(passed, cli: .codex, now: Self.now) == "Codex · reset passed")
+    }
+
+    @Test("the first fact counts down to the reset, then says how long ago it passed")
+    func resetFact() {
+        let soon = window(used: 23, resets: 3 * Self.hour + 12 * 60)
+        #expect(LimitsWording.resetFact(soon, now: Self.now).label == "Resets in")
+        #expect(LimitsWording.resetFact(soon, now: Self.now).value == "3 h 12 min")
+        let passed = window(used: 88, resets: -26 * 60)
+        #expect(LimitsWording.resetFact(passed, now: Self.now).label == "Reset was")
+        #expect(LimitsWording.resetFact(passed, now: Self.now).value == "26 min ago")
     }
 
     @Test("the tightest window is the current, active one with the least left; a passed reset never leads")
@@ -122,9 +130,9 @@ struct LimitsWordingTests {
     func readingAge() {
         #expect(!LimitsWording.isStale(at: Self.now.addingTimeInterval(-6 * Self.hour), now: Self.now))
         #expect(LimitsWording.isStale(at: Self.now.addingTimeInterval(-6 * Self.hour - 1), now: Self.now))
-        #expect(LimitsWording.readAge(at: Self.now.addingTimeInterval(-4 * 60), now: Self.now) == "read 4 min ago")
-        #expect(LimitsWording.readAge(at: Self.now.addingTimeInterval(-5 * Self.hour), now: Self.now) == "read 5 h ago")
-        #expect(LimitsWording.readAge(at: Self.now.addingTimeInterval(-2 * 86_400 - 2 * Self.hour), now: Self.now) == "read 2 days ago")
+        #expect(LimitsWording.readAge(at: Self.now.addingTimeInterval(-4 * 60), now: Self.now) == "4 min ago")
+        #expect(LimitsWording.readAge(at: Self.now.addingTimeInterval(-5 * Self.hour), now: Self.now) == "5 h ago")
+        #expect(LimitsWording.readAge(at: Self.now.addingTimeInterval(-2 * 86_400 - 2 * Self.hour), now: Self.now) == "2 days ago")
     }
 
     @Test("sidebar summary: the lead window's share, unknown after every reset, and the short state words")

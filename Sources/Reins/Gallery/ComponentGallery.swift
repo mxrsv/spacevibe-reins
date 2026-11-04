@@ -395,50 +395,39 @@ private struct RulerSpecimens: View {
     }
 }
 
-/// The Limits page's parts in every state, on the page well: share cells in a list card, the figure in each tone, the
-/// fact tiles inside a card, and the sidebar's tiles.
+/// The Limits page's parts in every state, on the page well: window tiles (selected, low, out, passed, not in use, no
+/// reading), the figure in each tone and unknown, the detail ruler and facts in a card, and the sidebar's tiles.
 private struct LimitsSpecimens: View {
     var body: some View {
-        HStack(alignment: .top, spacing: Rhythm.cards) {
-            GroupedList {
-                CardHeader("Windows", count: 4)
-                SectionRow("Codex")
-                Row(selected: true, onActivate: {}) { RowText("Weekly", subtitle: "Resets in 1 d 3 h \u{00B7} Wed 21:00") }
-                    .cells { LimitShareCell(share: 0.04, text: "4%", fill: Palette.danger, tone: .danger) }
-                Row(onActivate: {}) { RowText("5-hour", subtitle: "Reset at 17:34 \u{00B7} no newer reading") }
-                    .cells { LimitShareCell(share: nil, text: "\u{2014}", fill: Palette.codex) }
-                SectionRow("Claude Code")
-                Row(onActivate: {}) { RowText("Weekly", subtitle: "Resets in 2 d 22 h \u{00B7} Fri 16:00") }
-                    .cells { LimitShareCell(share: 0.18, text: "18%", fill: Palette.warn, tone: .warn) }
-                Row(onActivate: {}) { RowText("Weekly \u{00B7} Fable", subtitle: "Resets in 2 d 22 h \u{00B7} Fri 16:00") { Tag("not in use") } }
-                    .cells { LimitShareCell(share: 0.92, text: "92%", fill: Palette.claude) }
-                SectionRow("Gemini CLI")
-                Row(onActivate: {}) { RowText("Not measurable") }
-                    .cells { LimitShareCell(share: nil, text: "\u{2014}", fill: Palette.textSecondary) }
+        HStack(alignment: .top, spacing: Rhythm.listDetail) {
+            VStack(spacing: Rhythm.tiles) {
+                LimitWindowTile(cli: .codex, title: "Weekly", subtitle: "Codex \u{00B7} resets in 1 d 3 h",
+                                meter: .share(0.04, fill: Palette.danger), value: "4%", valueTone: .danger, selected: true, onActivate: {})
+                LimitWindowTile(cli: .codex, title: "5-hour", subtitle: "Codex \u{00B7} reset passed", meter: .unknown,
+                                value: "unknown", onActivate: {})
+                LimitWindowTile(cli: .claude, title: "Weekly", subtitle: "Claude Code \u{00B7} resets in 2 d 22 h",
+                                meter: .share(0.18, fill: Palette.warn), value: "18%", valueTone: .warn, onActivate: {})
+                LimitWindowTile(cli: .claude, title: "Weekly \u{00B7} Fable", subtitle: "Claude Code \u{00B7} resets in 2 d 22 h",
+                                meter: .share(0.92, fill: Palette.claude), value: "92%", onActivate: {}) { Tag("not in use") }
+                LimitWindowTile(cli: .gemini, title: "Gemini CLI", subtitle: "Not measurable", meter: .none, value: "\u{2014}", onActivate: {})
             }
+            .frame(width: Metrics.limitsListWidth)
             VStack(alignment: .leading, spacing: Rhythm.cards) {
-                GroupedList {
-                    CardHeader("Weekly", detail: "Codex \u{00B7} Plus")
+                ContentCard {
                     VStack(alignment: .leading, spacing: Space.s16) {
-                        HStack(spacing: Rhythm.cards) {
-                            LimitFigure(left: 92)
-                            LimitFigure(left: 18, tone: .low)
-                            LimitFigure(left: 4, tone: .out)
-                            LimitFigure(left: nil)
-                        }
-                        Ruler(share: 0.04, fill: Palette.danger)
+                        LimitFigure(left: 92)
+                        LimitFigure(left: 18, tone: .low)
+                        LimitFigure(left: 4, tone: .out)
+                        LimitFigure(left: nil)
+                        Ruler(share: 0.04, fill: Palette.danger, height: Metrics.rulerDetailHeight)
+                        Ruler(share: nil, fill: Palette.codex, height: Metrics.rulerDetailHeight)
                         HStack(alignment: .top, spacing: Rhythm.tiles) {
                             FactTile("Resets in", value: "1 d 3 h")
-                            FactTile("Reset at", value: "17:34", note: "no newer reading")
-                            FactTile("Reading", value: "read 2 days ago", tone: .warn, note: "From Claude Code's own cache") {
-                                Button {} label: { HStack(spacing: Space.s6) { ReinsIcon(.copy); Text("Copy /usage") } }.buttonStyle(.reins(.normal))
-                            }
+                            FactTile("Reset at", value: "17:34")
+                            FactTile("Reading", value: "2 days ago", tone: .warn)
                         }
                         .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(.horizontal, Metrics.rowHorizontalPadding)
-                    .padding(.bottom, Space.s8)
-                    .groupedListPart(.plain)
                 }
                 VStack(spacing: Space.s6) {
                     LimitSidebarTile(cli: .claude, name: "Claude Code", value: "92% left")

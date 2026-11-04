@@ -82,11 +82,16 @@ enum LimitsWording {
         clock(window.resetsAt, now: now, calendar: calendar)
     }
 
-    /// "Resets in 3 h 12 min · 21:12", or "Reset at 17:34 · no newer reading" once the reset has passed.
-    static func resets(_ window: LimitWindow, now: Date, calendar: Calendar = .current) -> String {
-        let when = clock(window.resetsAt, now: now, calendar: calendar)
-        if window.isCurrent(at: now) { return "Resets in \(span(window.resetsAt.timeIntervalSince(now))) · \(when)" }
-        return "Reset at \(when) · no newer reading"
+    /// The second line of a window in the page's list: "Codex · resets in 3 h 12 min", or "Codex · reset passed".
+    static func entryLine(_ window: LimitWindow, cli: LimitsCLI, now: Date) -> String {
+        let reset = resetsIn(window, now: now).map { "resets in \($0)" } ?? "reset passed"
+        return "\(cliName(cli)) · \(reset)"
+    }
+
+    /// The detail's first fact: "Resets in" and "3 h 12 min", or "Reset was" and "26 min ago" once it has passed.
+    static func resetFact(_ window: LimitWindow, now: Date) -> (label: String, value: String) {
+        if let left = resetsIn(window, now: now) { return ("Resets in", left) }
+        return ("Reset was", ago(now.timeIntervalSince(window.resetsAt)))
     }
 
     // MARK: Page
@@ -129,8 +134,8 @@ enum LimitsWording {
 
     static func isStale(at: Date, now: Date) -> Bool { now.timeIntervalSince(at) > staleAfter }
 
-    /// "read 4 min ago", "read 2 days ago".
-    static func readAge(at: Date, now: Date) -> String { "read \(ago(now.timeIntervalSince(at)))" }
+    /// "4 min ago", "2 days ago": the value under the "Reading" label.
+    static func readAge(at: Date, now: Date) -> String { ago(now.timeIntervalSince(at)) }
 
     static func summary(_ limits: CLILimits, now: Date) -> Summary {
         switch limits.state {
