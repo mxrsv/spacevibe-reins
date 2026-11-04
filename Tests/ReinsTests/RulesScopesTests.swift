@@ -212,4 +212,18 @@ struct RulesScopesTests {
         let options = RulesToolbar.scopeOptions(projects: discovered)
         #expect(RulesToolbar.currentScope(options: options, dir: "/work/gone") == ScopeOption(id: "/work/gone", label: "Project"))
     }
+
+    // MARK: The Claude Code line on the Codex page
+
+    private func cell(_ capability: Capability, _ state: CapabilityState) -> CapabilityCell {
+        CapabilityCell(capability: capability, label: capability.label, state: state, editable: state != .mixed, rules: [])
+    }
+
+    @Test("the Claude Code summary names what the file asks before and blocks, and falls back to a count")
+    func claudeSummary() {
+        let grid = [cell(.read, .allow), cell(.run, .mixed), cell(.network, .ask), cell(.push, .ask), cell(.secrets, .deny)]
+        #expect(RulesWording.summary(grid, ruleCount: 11) == "Asks before network access and push and deploy, blocks secrets (.env)")
+        #expect(RulesWording.summary([cell(.run, .mixed)], ruleCount: 2) == "2 rules here, none decides a whole row")
+        #expect(RulesWording.summary([cell(.run, .none)], ruleCount: 0) == "No rules in this file")
+    }
 }

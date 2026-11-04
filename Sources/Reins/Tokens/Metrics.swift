@@ -62,9 +62,12 @@ enum Metrics {
     static let stateWidth: CGFloat = 128
     /// Loadout's trailing actions: one 28 pt slot per CLI and 4 pt between.
     static let loadoutActionsWidth: CGFloat = 60
-    /// Rules' grid: the Claude Code column (segmented control plus a "mixed" tag) and the Codex column.
+    /// Rules: the Claude Code grid's value column (segmented control plus a "mixed" tag), and the value column of the Codex
+    /// page (its widest readout, "Unless allowed | When needed | Never", is 275 in Inter 14/600).
     static let rulesClaudeColumn: CGFloat = 280
     static let rulesCodexColumn: CGFloat = 300
+    /// The tinted tile that leads a `StatusLead`.
+    static let statusTileSize: CGFloat = 40
     static let legendSwatchWidth: CGFloat = 22
 
     /// The usage and limit ruler: ten cells, each a tenth of the real track width with this gap at its trailing end.

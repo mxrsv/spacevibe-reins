@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import Observation
 import ReinsCore
 
@@ -16,6 +16,10 @@ final class RulesModel {
     /// The last read could not run. With a snapshot on screen it shows as a banner over the stale data.
     private(set) var failure: String?
     private(set) var selection = RulesSelection.global
+    /// The page on screen: Claude Code's rules or Codex's settings. Both read from the same snapshot.
+    private(set) var cli = InventoryCLI.claude
+    /// The Codex page lists every project's trust level instead of the first few.
+    private(set) var showsAllTrust = false
     /// Grid rows opened to show the rules and Codex keys behind them.
     private(set) var expanded: Set<Capability> = []
     /// The grid write waiting for Confirm or Cancel.
@@ -118,6 +122,29 @@ final class RulesModel {
         select(RulesSelection(dir: selection.dir, file: file))
     }
 
+    /// Shows one CLI's page. A grid confirmation belongs to the Claude Code page, so leaving it closes the confirmation.
+    func selectCLI(_ choice: InventoryCLI) {
+        guard choice != cli else { return }
+        cli = choice
+        pending = nil
+    }
+
+    func showAllTrust() { showsAllTrust = true }
+
+    /// From the palette: the Codex page, brought forward.
+    func jumpToCodex() {
+        selectCLI(.codex)
+        shell?.select(RulesTab.tabID)
+    }
+
+    /// Selects `~/.codex/config.toml` (or the Codex folder when there is none) in the Finder. Editing stays in the user's
+    /// editor; Reins starts no other app (AGENTS.md S-R4).
+    func revealCodexConfig() {
+        guard let root = env.roots?.codex.root else { return }
+        let file = root.appendingPathComponent("config.toml")
+        NSWorkspace.shared.activateFileViewerSelecting([FileManager.default.fileExists(atPath: file.path) ? file : root])
+    }
+
     func toggle(_ capability: Capability) {
         if expanded.contains(capability) { expanded.remove(capability) } else { expanded.insert(capability) }
     }
@@ -125,12 +152,15 @@ final class RulesModel {
     func setExpanded(_ capabilities: Set<Capability>) { expanded = capabilities }
 
     /// From the palette: show a scope and bring the tab forward.
+    /// The scope jumps name Claude Code settings files, so they open the Claude Code page.
     func jump(to choice: RulesSelection) {
+        selectCLI(.claude)
         select(choice)
         shell?.select(RulesTab.tabID)
     }
 
     func focusAddRule() {
+        selectCLI(.claude)
         shell?.select(RulesTab.tabID)
         addFocusToken += 1
     }

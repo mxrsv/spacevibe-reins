@@ -10,7 +10,8 @@ import SwiftUI
 ///     scripts/rules-shots.sh <dir>            # all three Codex variants
 ///
 /// `REINS_FIXTURE_CODEX=unrestricted|both` (read by `scripts/fixture-home.mjs`) changes the Codex config; in those runs only
-/// the `codex-*` shot is written so the runs do not overwrite each other.
+/// the Codex page (and, for `unrestricted`, the Claude Code page's summary bar) is shot, under names of their own so the runs
+/// do not overwrite each other.
 ///
 /// The "written" shot makes the real write through the confirmation (`requestSet`, `confirmPending`) in the synthetic HOME,
 /// draws the toast, then presses Undo through the journal and checks the grid reads as before. "Invalid" corrupts one
@@ -34,6 +35,7 @@ enum RulesShots {
                 try ShotRenderer.write(ShotHarness.view(shell, env: env), name: "rules-\(name)", choice: choice, to: directory)
             }
             func reset() throws {
+                model.selectCLI(.claude)
                 model.setExpanded([])
                 model.revealRowActions = false
                 model.draft = ""
@@ -45,18 +47,32 @@ enum RulesShots {
 
             try reset()
             if codex.model == .both {
-                model.setExpanded([.run, .network])
+                model.selectCLI(.codex)
+                try ShotHarness.check(CodexWording.status(codex).tone == .warn, "two Codex permission models read as a warning")
                 try shot("codex-both")
                 continue
             }
             if codex.unrestricted {
-                model.setExpanded([.run, .network])
+                try ShotHarness.check(CodexWording.status(codex).sentence.hasPrefix("Runs any command"), "no sandbox and never asking is said in plain words")
+                try shot("claude-codex-unrestricted")
+                model.selectCLI(.codex)
                 try shot("codex-unrestricted")
                 continue
             }
 
             try shot("default")
             try shot("loading", RulesModel(env: env))
+
+            // The Codex page: the fixture's workspace sandbox that asks when needed, then one project's trust.
+            model.selectCLI(.codex)
+            try ShotHarness.check(CodexWording.status(codex).tone == .success, "the workspace sandbox that asks when needed reads as safe")
+            try shot("codex")
+            try select(model, name: "spacevibe-bench", file: .shared)
+            try ShotHarness.check(model.cli == .codex, "a scope switch keeps the Codex page")
+            try shot("codex-project")
+            model.focusAddRule()
+            try ShotHarness.check(model.cli == .claude, "Add a Claude Code rule opens the Claude Code page")
+            try reset()
 
             model.setExpanded([.run, .network, .push])
             model.revealRowActions = true

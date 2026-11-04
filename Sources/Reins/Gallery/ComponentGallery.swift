@@ -1,3 +1,4 @@
+import ReinsCore
 import SwiftUI
 
 /// Every shared view in every state. Reach it with `REINS_GALLERY=1`; the screenshot mode renders the same content.
@@ -6,6 +7,7 @@ struct ComponentGalleryContent: View {
     @State private var file = "shared"
     @State private var scope = "global"
     @State private var chip = "all"
+    @State private var rulesCLI = InventoryCLI.claude
     @State private var draft = ""
     @State private var badDraft = "Bash(npm test"
     @FocusState private var draftFocused: Bool
@@ -28,6 +30,32 @@ struct ComponentGalleryContent: View {
                 VStack(alignment: .leading, spacing: Space.s12) {
                     controls
                     GroupedList { controls.padding(.horizontal, Metrics.rowHorizontalPadding) }
+                }
+            }
+            section("CLI switch with brand glyphs, then read-only readouts: neutral, a value that needs a look, and nothing set") {
+                VStack(alignment: .leading, spacing: Space.s12) {
+                    SegmentedControl(label: "Rules for", options: [
+                        SegmentOption("Claude Code", value: InventoryCLI.claude, cli: .claude),
+                        SegmentOption("Codex", value: InventoryCLI.codex, cli: .codex),
+                    ], selection: $rulesCLI)
+                    GroupedList {
+                        HStack(spacing: Rhythm.tools) {
+                            SegmentReadout(label: "Sandbox", options: ["Read only", "Workspace", "Full access"], selected: "Workspace")
+                            SegmentReadout(label: "Asks before acting", options: ["Unless allowed", "When needed", "Never"], selected: "Never", warn: true)
+                            SegmentReadout(label: "Network", options: ["Off", "On"], selected: nil)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, Metrics.rowHorizontalPadding)
+                    }
+                }
+            }
+            section("Status lead in each tone, and the bar about the other CLI") {
+                VStack(spacing: Space.s12) {
+                    StatusLead(tone: .warn, sentence: "Runs any command and changes any file without asking", detail: #"sandbox_mode = "danger-full-access" · approval_policy = "never""#)
+                    StatusLead(tone: .success, sentence: "Writes only inside the workspace and asks when it needs more", detail: #"sandbox_mode = "workspace-write""#)
+                    StatusLead(tone: .neutral, sentence: "Runs on its defaults: there is no ~/.codex/config.toml")
+                    CLISummaryBar(cli: .codex, message: "Runs any command and changes any file without asking", warn: true, actionTitle: "Open Codex") {}
+                    CLISummaryBar(cli: .claude, message: "Asks before push and deploy, blocks secrets (.env)", actionTitle: "Open Claude Code") {}
                 }
             }
             section("Text input: normal and invalid") {

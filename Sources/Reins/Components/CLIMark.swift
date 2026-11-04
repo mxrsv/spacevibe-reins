@@ -29,11 +29,17 @@ extension LimitsCLI {
     }
 }
 
+extension LimitsCLI {
+    /// The same CLI as the inventory names it (Claude Code or Codex).
+    init(_ cli: InventoryCLI) { self = cli == .claude ? .claude : .codex }
+}
+
 /// A CLI's brand mark in a tinted rounded square: 40 pt (`large`), 28 pt (`medium`) on the Limits page's tiles and detail
-/// title, 24 pt (`small`) in a sidebar tile. Claude Code and Codex are drawn as a template in the CLI's ink on its tint;
-/// Gemini CLI keeps its own colours. Decorative: the name is always written beside it.
+/// title, 24 pt (`small`) in a sidebar tile and the Rules summary bar. `glyph` is the bare 14 pt glyph in the CLI's ink, with
+/// no square, for a segment label. Claude Code and Codex are drawn as a template in the CLI's ink on its tint; Gemini CLI
+/// keeps its own colours. Decorative: the name is always written beside it.
 struct CLIMark: View {
-    enum Size { case large, medium, small }
+    enum Size { case large, medium, small, glyph }
 
     let cli: LimitsCLI
     var size: Size = .large
@@ -43,28 +49,41 @@ struct CLIMark: View {
         self.size = size
     }
 
+    init(_ cli: InventoryCLI, size: Size = .large) {
+        self.init(LimitsCLI(cli), size: size)
+    }
+
     var body: some View {
-        let side = switch size {
-        case .large: Metrics.cliMarkSize
-        case .medium: Metrics.cliMarkMediumSize
-        case .small: Metrics.cliMarkSmallSize
-        }
-        let shape = RoundedRectangle(cornerRadius: size == .large ? Metrics.groupRadius : Metrics.controlRadius, style: .continuous)
-        ZStack {
-            shape.fill(cli.tint)
-            if let image = BrandMark.image(cli) {
-                Image(nsImage: image)
-                    .resizable()
-                    .renderingMode(cli == .gemini ? .original : .template)
-                    .scaledToFit()
-                    .foregroundStyle(cli.ink)
-                    .frame(width: side * Metrics.cliMarkGlyphFraction, height: side * Metrics.cliMarkGlyphFraction)
-            } else {
-                Circle().fill(cli.fill).frame(width: Space.s8, height: Space.s8)
+        if size == .glyph {
+            glyph(side: Metrics.iconInline).accessibilityHidden(true)
+        } else {
+            let side = switch size {
+            case .large: Metrics.cliMarkSize
+            case .medium: Metrics.cliMarkMediumSize
+            case .small, .glyph: Metrics.cliMarkSmallSize
             }
+            let shape = RoundedRectangle(cornerRadius: size == .large ? Metrics.groupRadius : Metrics.controlRadius, style: .continuous)
+            ZStack {
+                shape.fill(cli.tint)
+                glyph(side: side * Metrics.cliMarkGlyphFraction)
+            }
+            .frame(width: side, height: side)
+            .accessibilityHidden(true)
         }
-        .frame(width: side, height: side)
-        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func glyph(side: CGFloat) -> some View {
+        if let image = BrandMark.image(cli) {
+            Image(nsImage: image)
+                .resizable()
+                .renderingMode(cli == .gemini ? .original : .template)
+                .scaledToFit()
+                .foregroundStyle(cli.ink)
+                .frame(width: side, height: side)
+        } else {
+            Circle().fill(cli.fill).frame(width: Space.s8, height: Space.s8)
+        }
     }
 }
 

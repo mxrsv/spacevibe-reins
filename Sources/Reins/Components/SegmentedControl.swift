@@ -1,16 +1,23 @@
+import ReinsCore
 import SwiftUI
 
 struct SegmentOption<Value: Hashable>: Identifiable {
     let value: Value
     let title: String
     var count: Int?
+    /// A CLI's bare glyph before the title (the Rules `Claude Code | Codex` switch).
+    var cli: InventoryCLI?
+    /// Picks this segment from anywhere in the window while the control is enabled (a hidden tab is disabled).
+    var shortcut: KeyboardShortcut?
 
     var id: Value { value }
 
-    init(_ title: String, value: Value, count: Int? = nil) {
+    init(_ title: String, value: Value, count: Int? = nil, cli: InventoryCLI? = nil, shortcut: KeyboardShortcut? = nil) {
         self.title = title
         self.value = value
         self.count = count
+        self.cli = cli
+        self.shortcut = shortcut
     }
 }
 
@@ -49,6 +56,7 @@ struct SegmentedControl<Value: Hashable>: View {
             selection = option.value
         } label: {
             HStack(spacing: Space.s6) {
+                if let cli = option.cli { CLIMark(cli, size: .glyph) }
                 // The hidden semibold copy holds the width; the visible title sits on it.
                 Text(option.title)
                     .reinsText(.bodyStrong)
@@ -62,6 +70,7 @@ struct SegmentedControl<Value: Hashable>: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .keyboardShortcut(option.shortcut)
         .focused($focused, equals: option.value)
         .focusEffectDisabled()
         .focusRing(focused == option.value, cornerRadius: Metrics.segmentRadius)
@@ -75,5 +84,40 @@ struct SegmentedControl<Value: Hashable>: View {
         selection = next
         focused = next
         return .handled
+    }
+}
+
+/// A one-of-N value that is shown, not set (Codex's `sandbox_mode` on the Rules page): the segmented control's frame with
+/// every option written out and the real one filled, so the alternatives read at a glance. Nothing is focusable or
+/// clickable. The filled segment is `track` (on `surfaceRaised`) with semibold text, or the warn tint and ink for a value
+/// that needs a look. `selected` nil fills nothing.
+struct SegmentReadout: View {
+    let label: String
+    let options: [String]
+    let selected: String?
+    var warn = false
+
+    @Environment(\.controlGround) private var ground
+
+    var body: some View {
+        let frame = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
+        HStack(spacing: 0) {
+            ForEach(options, id: \.self) { option in
+                let isOn = option == selected
+                Text(option)
+                    .reinsText(.bodyStrong)
+                    .hidden()
+                    .overlay { Text(option).reinsText(isOn ? .bodyStrong : .body, tone: isOn ? (warn ? .warn : .primary) : .tertiary) }
+                    .padding(.horizontal, Space.s8)
+                    .frame(height: Metrics.segmentHeight)
+                    .background(RoundedRectangle(cornerRadius: Metrics.segmentRadius, style: .continuous).fill(isOn ? (warn ? Palette.warnTint : Palette.track) : .clear))
+            }
+        }
+        .padding(Space.s2)
+        .frame(height: Metrics.controlHeight)
+        .background(frame.fill(ground.fill))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue(selected ?? "none")
     }
 }

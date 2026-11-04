@@ -41,6 +41,40 @@ enum RulesWording {
 
     static let invalidFileHelp = "Disabled because the settings file is not valid JSON."
 
+    static func ruleCount(_ count: Int) -> String {
+        count == 0 ? "" : "\(count) \(count == 1 ? "rule" : "rules")"
+    }
+
+    /// The Claude Code side in one line, for the Codex page's summary bar: what the scope's file asks before and blocks.
+    static func summary(_ grid: [CapabilityCell], ruleCount: Int) -> String {
+        let asks = grid.filter { $0.state == .ask }.map { object($0.capability) }
+        let blocks = grid.filter { $0.state == .deny }.map { object($0.capability) }
+        var parts: [String] = []
+        if !asks.isEmpty { parts.append("asks before \(list(asks))") }
+        if !blocks.isEmpty { parts.append("blocks \(list(blocks))") }
+        guard let first = parts.first else {
+            return ruleCount == 0 ? "No rules in this file" : "\(Self.ruleCount(ruleCount)) here, none decides a whole row"
+        }
+        let sentence = ([first] + parts.dropFirst()).joined(separator: ", ")
+        return sentence.prefix(1).uppercased() + sentence.dropFirst()
+    }
+
+    private static func object(_ capability: Capability) -> String {
+        switch capability {
+        case .read: "reading files"
+        case .edit: "editing files"
+        case .run: "running commands"
+        case .network: "network access"
+        case .push: "push and deploy"
+        case .secrets: "secrets (.env)"
+        }
+    }
+
+    private static func list(_ items: [String]) -> String {
+        guard items.count > 1, let last = items.last else { return items.first ?? "" }
+        return items.dropLast().joined(separator: ", ") + " and " + last
+    }
+
     static func setLabel(_ capability: Capability, _ verdict: RuleVerdict) -> String {
         "Set \(capability.label) to \(title(verdict))"
     }

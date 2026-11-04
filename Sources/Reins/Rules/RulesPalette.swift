@@ -1,5 +1,6 @@
 /// The Rules entries of the `⌘K` palette. Actions show while the tab is active; the scope jumps are searched from any tab once
-/// the user has typed. Nothing here writes: adding a rule only moves the focus to the field.
+/// the user has typed. Nothing here writes: adding a rule only moves the focus to the field. Every Claude Code entry opens
+/// the Claude Code page; "Rules: Codex" opens the Codex page.
 extension RulesModel {
     var paletteActions: [PaletteEntry] {
         guard snapshot != nil else { return [] }
@@ -16,6 +17,9 @@ extension RulesModel {
     var paletteItems: [PaletteEntry] {
         guard let snapshot else { return [] }
         var out = [jumpEntry(id: "rules.go.global", title: "Rules: Global", subtitle: "~/.claude/settings.json", choice: .global)]
+        out.append(PaletteEntry(id: "rules.go.codex", title: "Rules: Codex", subtitle: "~/.codex/config.toml", icon: .arrowRight, keywords: ["permissions", "sandbox", "approval"]) { [weak self] in
+            self?.jumpToCodex()
+        })
         for project in snapshot.projects {
             out.append(jumpEntry(id: "rules.go.shared.\(project.dir)", title: "Rules: \(project.name)", subtitle: ".claude/settings.json", choice: RulesSelection(dir: project.dir, file: .shared)))
             out.append(jumpEntry(id: "rules.go.local.\(project.dir)", title: "Rules: \(project.name) (local)", subtitle: ".claude/settings.local.json", choice: RulesSelection(dir: project.dir, file: .local)))

@@ -20,7 +20,11 @@ final class RulesTab: ReinsTab {
         model.badge.map { TabBadge(value: $0, spoken: "\($0) \($0 == 1 ? "rule" : "rules")") }
     }
 
-    var hints: [KeyHint] { [KeyHint(keys: "Space", label: "Show the rules behind a row")] }
+    /// The CLI switch on both pages; Space opens a grid row, so only on the Claude Code page.
+    var hints: [KeyHint] {
+        let switches = [KeyHint(keys: "\u{2325}\u{2318}1", label: "Claude Code"), KeyHint(keys: "\u{2325}\u{2318}2", label: "Codex")]
+        return model.cli == .claude ? switches + [KeyHint(keys: "Space", label: "Show the rules behind a row")] : switches
+    }
     var paletteActions: [PaletteEntry] { model.paletteActions }
     var paletteItems: [PaletteEntry] { model.paletteItems }
     var content: AnyView { AnyView(RulesScreen(model: model)) }
