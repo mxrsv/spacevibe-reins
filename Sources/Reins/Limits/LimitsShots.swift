@@ -26,6 +26,11 @@ enum LimitsShots {
             // Claude Code's entry carries the source line with `Copy /usage` (a window), or its state note (no reading).
             env.limits.selectedID = entries.first { $0.cli == .claude }?.id
             try ShotRenderer.write(page(shell, toasts, env), name: "limits-page-claude", choice: choice, to: directory)
+            // The edge fixture has a window past its reset: the dash figure, the dashed ruler and "Reset was".
+            if let passed = entries.first(where: { $0.window.map { !$0.isCurrent(at: Date()) } ?? false }) {
+                env.limits.selectedID = passed.id
+                try ShotRenderer.write(page(shell, toasts, env), name: "limits-page-passed", choice: choice, to: directory)
+            }
             env.limits.selectedID = nil
             shell.select("rules")
             try ShotHarness.check(!shell.isLimitsOpen, "choosing a tab closes the page")
