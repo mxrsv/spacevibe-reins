@@ -1,8 +1,8 @@
 # Reins: design language and component base
 
-Status: decided 2026-11-03; v3 changes decided 2026-11-04 (section "v3 changes"; where v3 and an earlier line disagree, the earlier line below is already rewritten). Parent spec: [2026-11-02-reins.md](2026-11-02-reins.md) (product, interface, acceptance criteria AC1 to AC9). Plans: [2026-11-03-reins-design-language.md](../plans/2026-11-03-reins-design-language.md) (v2, shipped) and [2026-11-04-reins-design-language-v3.md](../plans/2026-11-04-reins-design-language-v3.md).
+Status: decided 2026-11-03; v3 changes decided 2026-11-04, v4 changes decided 2026-11-05 (sections "v3 changes" and "v4 changes"; where a later version and an earlier line disagree, the earlier line below is already rewritten). Parent spec: [2026-11-02-reins.md](2026-11-02-reins.md) (product, interface, acceptance criteria AC1 to AC9). Plans: [2026-11-03-reins-design-language.md](../plans/2026-11-03-reins-design-language.md) (v2, shipped) and [2026-11-04-reins-design-language-v3.md](../plans/2026-11-04-reins-design-language-v3.md).
 
-Mock: `~/scratch/spacevibe-reins/design-language/index.html` on the owner's Mac (synthetic data, outside git; F4). Its screens section toggles `v2` (the target), `v1` and the current app's screenshots; its last table, "Bảng đổi token", is the old-to-new map this spec summarises. Since 2026-11-04 the mock also has `v3` (the default): an overview of Loadout, Rules, Activity and Limits side by side, a v3 component sheet and a v3 section of that table.
+Mock: `~/scratch/spacevibe-reins/design-language/index.html` on the owner's Mac (synthetic data, outside git; F4). Its screens section toggles `v2` (the target), `v1` and the current app's screenshots; its last table, "Bảng đổi token", is the old-to-new map this spec summarises. Since 2026-11-04 the mock also has `v3` (the default): an overview of Loadout, Rules, Activity and Limits side by side, a v3 component sheet and a v3 section of that table. The v4 mock is `~/scratch/spacevibe-reins/agent-navigation/controls.html?icons=tabler&buttons=a`: the Agents page with the page icon set and button family applied, and a sheet of every button kind in every state in both appearances.
 
 ## Why
 
@@ -75,11 +75,57 @@ Accepted by the owner on 2026-11-04 ("ok chốt") after eye review of mock v3 on
 - **Cards.** A `surface` block on the well: no border, radius 12, 8 pt padding below the last row, header 56 high (title `title` 16/600 plus the count). Cards do not nest; the Limits tiles are the one documented exception (one level, they are blocks of their own).
 - **Rows.** No border. Hover and selection fill an 8-radius block inset 8 from the card's edges; the divider rule is under Components.
 - **Sidebar.** Item 48 high in the `title` role (16/600) in every state; icon 22 in `textSecondary`; 8 pt between items; padding 16 at the sides. The active item changes only its fill (`surface`), never text, weight or icon. The count is `body` in `textTertiary`; an alert count stays `danger` and 600. The Limits block sits above the footer (parent spec, Interface).
-- **Icons.** Solar Bold Duotone (480 Design, CC BY 4.0) replaces SF Symbols everywhere, so the licence text must be reachable from the app. Icons are neutral: both layers take one colour (the lighter layer keeps the glyph's 50% opacity). Sizes: 22 in the sidebar, 20 as a row lead, 16 in buttons and tags, never below 14 (the Bold weight loses detail at 12). A state tag or banner tints its icon with the tone's ink; nowhere else is an icon coloured. Each icon is drawn as two SwiftUI shapes from generated code: no SVG at run time and no CoreSVG, which rejects packed arc flags and gradients.
+- **Icons.** Solar Bold Duotone (480 Design, CC BY 4.0) replaces SF Symbols, so the licence text must be reachable from the app. Since v4 it draws navigation only: the sidebar's items and footer. Page content uses Tabler (v4 changes). Icons are neutral: both layers take one colour (the lighter layer keeps the glyph's 50% opacity). Sizes: 22 in the sidebar, 20 as a row lead, 16 in buttons and tags, never below 14 (the Bold weight loses detail at 12). A state tag or banner tints its icon with the tone's ink; nowhere else is an icon coloured. Each icon is drawn as two SwiftUI shapes from generated code: no SVG at run time and no CoreSVG, which rejects packed arc flags and gradients.
 - **Progress.** The ten-cell ruler is for Limits only (owner, 2026-11-04). Its cells are square slices, not capsules; only the ruler's two outer ends round, by a quarter of its height (owner, 2026-11-04, after the mock-H rework): 8 high in the list and 32 under the Limits figure, 3 pt gaps, the last filled cell clipped to the share; empty cells `surfaceRaised`; an unknown share is a dashed outline. Cell width is the track width divided by ten. Tint `warn` at 20% left or less and `danger` at 5% or less. The usage bar of Loadout and Activity (and every other category) keeps the continuous 6 pt capsule on `track`, with the dashed capsule for "not counted yet"; the sidebar's Limits tiles show a number and no bar.
 - **Status badges.** `Tag` is 24 high, radius 6, `surfaceRaised` fill, neutral text and a 6 pt dot in the tone colour; `warn` and `danger` keep their ink for the text. A tag with an icon or without a tone has no dot. CLI tones keep marking identity only.
-- **Controls.** Button, search field, scope picker, segmented control, filter chip and key cap have no outline: `surface` fill on the well, `surfaceRaised` inside a card, `selection` for the chosen state.
+- **Controls.** The search field, text fields and key caps have no outline: `surface` fill on the well, `surfaceRaised` inside a card. Buttons, the scope picker, the segmented control, filter chips and card buttons follow "Buttons" under v4 changes.
 - **Unchanged.** Radii 4, 6, 8, 12 and the spacing scale 2 to 32; sizes 12, 14, 16; weights; Inter only.
+
+### v4 changes (decided 2026-11-05)
+
+Picked by the owner on 2026-11-05 from `controls.html`: Tabler for page icons and button direction A, "Khối có chiều sâu" (a raised block). The owner had said on 2026-11-05 that the sidebar's icon set must not be reused inside pages and that Reins had no button set of its own. Like v3, these apply to the whole app through `Tokens/` and `Components/`, not to the Agents page alone.
+
+- **Two icon sets, split by job.**
+  - The sidebar (its items and its footer) keeps Solar Bold Duotone.
+  - Everything inside a page uses Tabler Icons (MIT): the top bar, cards, rows, buttons, tags, menus, panels, dialogs and toasts.
+  - A page never draws a Solar glyph and the sidebar never draws a Tabler glyph.
+  - Tabler is an outline set on a 24 grid with a 2 stroke and round caps and joins. Sizes stay 16 in buttons and tags, 20 as a row lead and never below 14.
+  - It is generated into Swift path code like Solar, rendered as a stroked shape, with no SVG at run time.
+  - The MIT notice sits beside the Solar credit in the About panel.
+- **Buttons: a raised block.**
+  - **Fill:** the button is a block with a 0.5 pt hairline, a 1 pt-offset shadow with a 2 pt blur, and a 1 pt highlight along its top edge.
+
+    | Token | Light | Dark |
+    | --- | --- | --- |
+    | `controlFill` | `#FFFFFF` | `#3D3D3D` |
+    | `controlFillHover` | `#FAFAFA` | `#454545` |
+    | `controlFillPressed` | `#EBEBEB` | `#323232` |
+    | `controlHairline` | black 16% | black 70% |
+    | `controlShadow` | black 12% | black 45% |
+    | `controlHighlight` | white 90% | white 9% |
+  - **Pressed:** the block moves down 0.5 pt and its shadow turns inner.
+  - **Primary:** `accentSolid` with the same top highlight, a black 25% hairline and an accent-tinted shadow. Hover is `#4A6CF0`, pressed is `#2C47C4`.
+  - **Ghost and icon buttons:** no fill until hover; pressed fills `track`.
+  - **Disabled:** keeps the hairline and shadow, drops the highlight; text in the tertiary tone.
+  - **Loading:** a spinner replaces the leading icon, and the label and the width stay.
+  - **Focus:** the ring is unchanged (2 pt `accent`).
+- **Chosen state is the accent.** A card button whose panel is open, a selected filter chip and the chosen segment fill with `accentSolid`, with white text and icons.
+- **Segmented control.**
+  - The track is sunken: an inner shadow, and in dark a `#1F1F1F` fill below `surface`.
+  - **Verdict pickers** (Allow / Ask / Deny, Allow / Prompt / Forbidden) fill the chosen segment with its tone instead of the accent: `success`, `warn` or `danger`, solid.
+  - The text on those fills (`onSuccess`, `onDanger`) is white on the light success and danger fills and `#141414` on warn and on every dark fill.
+  - A risky option (Never, Full access) takes the solid `warn` fill when chosen.
+- **Card button (new component).**
+  - It is the agent card's way into a panel: a 16 icon, the name in `rowTitle` and its value in `count`, or in `code` for a file or model name.
+  - It is 32 high, the one exception to the 28 control height, because it is the page's main entry point.
+  - Advanced is the same button as a ghost.
+- **New tokens:**
+  - `controlFill`, `controlFillHover`, `controlFillPressed`, `controlHairline`, `controlShadow` and `controlHighlight`;
+  - `accentHover` and `accentPressed`;
+  - `segmentTrack` (sunken);
+  - `onSuccess` and `onDanger`;
+  - `cardButtonHeight` 32.
+- **Unchanged.** Fields, tags, cards, rows, the sidebar item, radii, spacing, type and colours outside the list above.
 
 ### Component base
 
@@ -95,6 +141,8 @@ Accepted by the owner on 2026-11-04 ("ok chốt") after eye review of mock v3 on
 - **DL4.** Changing one role or token in `Tokens/` restyles every screen that uses it, with no screen file edited (follows from DL3; shown once in the gallery).
 - **DL5.** The gallery shows every base component; screenshots of Loadout, Rules, Activity and the shell in both appearances match mock v2 by the owner's eye.
 - **DL6.** `scripts/test.sh` passes and `scripts/build-app.sh` prints `minos 15.0` with the font inside the signed bundle.
-- **DL7.** No `Image(systemName:)` or `systemImage:` remains in `Sources/Reins` outside `Gallery/` (a policy test), every icon comes from the generated Solar set, and the CC BY 4.0 attribution is shown in the app.
+- **DL7.** No `Image(systemName:)` or `systemImage:` remains in `Sources/Reins` outside `Gallery/` (a policy test). Every icon comes from a generated set: Solar in the sidebar, Tabler everywhere else, enforced by a policy test on the sidebar and screen folders. The CC BY 4.0 and MIT notices are shown in the app.
 - **DL8.** A test pins the Limits ruler: the filled cells and the clipped last cell for 0, 4, 39 and 100 percent at a given track width, and that an unknown share draws the dashed outline.
 - **DL9.** Screenshots of Loadout, Rules, Activity, Limits and the shell in both appearances match mock v3 by the owner's eye, in one batch after the last task.
+- **DL10.** The gallery shows every button kind (primary, secondary, ghost, danger, icon, card button, segmented, verdict picker, filter chip, scope picker) in every state it has (default, hover, pressed, focus, chosen, disabled, loading), in both appearances. It matches the v4 mock's sheet by the owner's eye.
+- **DL11.** White on `accentSolid` and on the light success and danger fills, and `#141414` on warn and on the dark fills, each measure at least 4.5:1 in a test that reads the palette.
