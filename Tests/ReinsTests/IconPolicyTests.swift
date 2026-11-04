@@ -18,7 +18,7 @@ struct IconPolicyTests {
     /// Files that name the Solar type without drawing it: the set itself, and each tab naming its sidebar icon.
     static let solarDeclarations: Set<String> = [
         "Components/ReinsIcon.swift", "Components/ReinsIconData.swift", "Shell/ReinsTab.swift",
-        "Loadout/LoadoutTab.swift", "Rules/RulesTab.swift", "Activity/ActivityTab.swift",
+        "Loadout/LoadoutTab.swift", "Rules/RulesTab.swift", "Activity/ActivityTab.swift", "Agents/AgentsTab.swift",
     ]
     static let solarPattern = #"\bReinsIcon\(|\bReinsGlyph\b"#
     static let tablerPattern = #"\bPageIcon\(|\bPageGlyph\b|\bChevron\("#
