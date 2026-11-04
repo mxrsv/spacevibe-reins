@@ -88,8 +88,10 @@ struct AgentsPanelHost: View {
             InstructionsPanel(model: model, base: file)
         case .claudePermissions(let settings, let global)?:
             ClaudePermissionsPanel(model: model, saved: settings, global: global)
-        case .codexPermissions?, .codexTrust?:
-            EmptyState("Codex permissions come next", message: "Plan task A9 adds this panel.", icon: .permissions)
+        case .codexPermissions(let config, let masked, let rules)?:
+            CodexPermissionsPanel(model: model, saved: config, masked: masked, rules: rules)
+        case .codexTrust(let config, let project)?:
+            CodexTrustPanel(model: model, config: config, project: project)
         case .hooks(let hooks, _)?:
             HooksPanel(model: model, agent: open.agent, hooks: hooks)
         case .mcp(let servers, let plugins, let problem)?:
