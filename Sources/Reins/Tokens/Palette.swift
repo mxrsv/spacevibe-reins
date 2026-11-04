@@ -76,6 +76,10 @@ enum Palette {
     static let warnTint = Color(light: 0xD6A62E, dark: 0xE7B643, lightAlpha: 0.20, darkAlpha: 0.15)
     static let dangerTint = Color(light: 0xD01C29, dark: 0xFF7F7F, lightAlpha: 0.10, darkAlpha: 0.15)
 
+    // The Reins mark (`Resources/AppIcon.svg`): the same in both appearances, like the app icon.
+    static let markGround = Color(light: 0x050608, dark: 0x050608)
+    static let markInk = Color(light: 0xF4F5F7, dark: 0xF4F5F7)
+
     // Overlays (palette scrim, toast)
     static let overlay = Color(light: 0x111111, dark: 0x000000, lightAlpha: 0.35, darkAlpha: 0.5)
     static let overlayShadow = Color(light: 0x111111, dark: 0x000000, lightAlpha: 0.22, darkAlpha: 0.5)

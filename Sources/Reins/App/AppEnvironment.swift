@@ -28,6 +28,8 @@ final class AppEnvironment {
     let toasts: ToastCenter
     /// The Limits readings, shared by the sidebar block on every tab and its detail.
     @ObservationIgnored lazy var limits = LimitsModel(env: self)
+    /// The updater and what Settings > Update shows. `ReinsApp` starts it in a normal launch; elsewhere it never runs.
+    @ObservationIgnored lazy var updates = UpdateController(toasts: toasts)
 
     init(roots: Roots?, startupProblem: String? = nil, proc: any ProcessAdapter, toasts: ToastCenter? = nil) {
         self.roots = roots

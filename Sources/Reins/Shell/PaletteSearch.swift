@@ -34,7 +34,14 @@ enum PaletteSearch {
             icon: theme == .light ? .sun : .moon,
             keywords: ["appearance", "dark", "light", "mode"]
         ) { shell.appearance.toggle() }
-        let actions = shell.activeTab.paletteActions + [global]
+        let settings = PaletteEntry(
+            id: "shell.settings",
+            title: "Settings",
+            icon: .settings,
+            trailing: "\u{2318},",
+            keywords: ["preferences", "appearance", "theme", "font size", "update"]
+        ) { shell.openSettings() }
+        let actions = shell.activeTab.paletteActions + [global, settings]
 
         var sections = [
             PaletteSection(title: "Go to", entries: goTo.filter { matches($0, words) }),

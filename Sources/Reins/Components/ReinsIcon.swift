@@ -100,7 +100,7 @@ struct ReinsIcon: View {
 /// `chevrons-up-down-linear` for the pair), 1.5 wide with round caps and joins, scaled with the icon.
 struct Chevron: View {
     enum Direction {
-        case right, down, upDown
+        case right, left, down, upDown
     }
 
     let direction: Direction
@@ -130,6 +130,7 @@ private struct ChevronShape: Shape {
         let points: [[CGPoint]]
         switch direction {
         case .right: points = [[CGPoint(x: 9, y: 5), CGPoint(x: 15, y: 12), CGPoint(x: 9, y: 19)]]
+        case .left: points = [[CGPoint(x: 15, y: 5), CGPoint(x: 9, y: 12), CGPoint(x: 15, y: 19)]]
         case .down: points = [[CGPoint(x: 5, y: 9), CGPoint(x: 12, y: 15), CGPoint(x: 19, y: 9)]]
         case .upDown:
             points = [[CGPoint(x: 18, y: 15), CGPoint(x: 12, y: 21), CGPoint(x: 6, y: 15)],

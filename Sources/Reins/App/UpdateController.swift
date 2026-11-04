@@ -1,22 +1,55 @@
 import AppKit
+import Observation
 import OSLog
 import Sparkle
 
 /// Sparkle owns the check, the update window, signature verification, installation and relaunch. This class decides
-/// whether the updater runs at all and adds a toast when a scheduled check finds an update.
+/// whether the updater runs at all, adds a toast when a scheduled check finds an update, and keeps what Settings > Update
+/// shows: the last check's result and time and the automatic-check switch.
 ///
 /// It is the only code in the app that reaches the network (AGENTS.md S-R5), and only when the build has a feed.
 @MainActor
-final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDelegate {
-    private let toasts: ToastCenter
-    private let logger = Logger(subsystem: "dev.spacevibe.reins", category: "updates")
-    private var controller: SPUStandardUpdaterController?
-    private var unavailableReason: String?
-    private var reminder: UUID?
-    private var showingInFocus = false
+@Observable
+final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDelegate, SPUUpdaterDelegate {
+    /// What Settings > Update says about this launch (spec `docs/specs/2026-11-04-reins-settings.md`, Update).
+    enum Status: Equatable {
+        /// No check has finished since launch: Settings shows the time of the last one only.
+        case notChecked
+        case checking
+        case upToDate
+        case available(version: String)
+        /// The check could not finish (no network, a feed that cannot be read).
+        case failed
+        /// This launch cannot update; the reason is shown as is.
+        case unavailable(String)
+    }
 
-    init(toasts: ToastCenter) {
+    /// Set by `start` and Sparkle's callbacks; the screenshot runs set them, and `isRunning`, to draw each state.
+    var status: Status = .notChecked
+    var lastCheck: Date?
+    /// Sparkle's automatic daily check. Off and disabled while the updater does not run.
+    var automaticChecks = false {
+        didSet {
+            guard let updater = controller?.updater, updater.automaticallyChecksForUpdates != automaticChecks else { return }
+            updater.automaticallyChecksForUpdates = automaticChecks
+        }
+    }
+    /// True once Sparkle's updater has started.
+    var isRunning = false
+    /// `CFBundleShortVersionString` and `CFBundleVersion`; nil outside an app bundle.
+    var version: String?
+    var build: String?
+
+    @ObservationIgnored private let toasts: ToastCenter
+    @ObservationIgnored private let logger = Logger(subsystem: "dev.spacevibe.reins", category: "updates")
+    @ObservationIgnored private var controller: SPUStandardUpdaterController?
+    @ObservationIgnored private var reminder: UUID?
+    @ObservationIgnored private var showingInFocus = false
+
+    init(toasts: ToastCenter, info: [String: Any] = Bundle.main.infoDictionary ?? [:]) {
         self.toasts = toasts
+        version = info["CFBundleShortVersionString"] as? String
+        build = info["CFBundleVersion"] as? String
         super.init()
     }
 
@@ -27,32 +60,42 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
     ) {
         guard controller == nil else { return }
         guard Self.runs(in: mode, environment: environment) else {
-            unavailableReason = "Updates are off in this launch mode."
+            status = .unavailable("Updates are off in this launch mode.")
             return
         }
         if let issue = Self.configurationIssue(in: info) {
-            unavailableReason = issue
+            status = .unavailable(issue)
             logger.notice("Updater off: \(issue, privacy: .public)")
             return
         }
-        let updater = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: nil, userDriverDelegate: self)
+        let updater = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: self)
         do {
             try updater.updater.start()
             controller = updater
+            isRunning = true
+            automaticChecks = updater.updater.automaticallyChecksForUpdates
+            lastCheck = updater.updater.lastUpdateCheckDate
             logger.notice("Updater started, automatic checks: \(updater.updater.automaticallyChecksForUpdates, privacy: .public)")
         } catch {
-            unavailableReason = "Updates could not start. Quit and reopen Reins, then try again."
+            status = .unavailable("Updates could not start. Quit and reopen Reins, then try again.")
             logger.error("Updater failed to start: \(error.localizedDescription, privacy: .public)")
         }
     }
 
-    var isRunning: Bool { controller != nil }
 
+    /// Settings' `Check Now`: Sparkle's background probe, so the result shows in place and no Sparkle window opens.
+    func checkNow() {
+        guard let updater = controller?.updater, updater.canCheckForUpdates, !updater.sessionInProgress, status != .checking else { return }
+        status = .checking
+        updater.checkForUpdateInformation()
+    }
+
+    /// The menu's `Check for Updates…` and Settings' `View Update`: Sparkle's own window.
     func checkForUpdates() {
-        if let unavailableReason {
+        if case .unavailable(let reason) = status {
             let alert = NSAlert()
             alert.messageText = "Updates Unavailable"
-            alert.informativeText = unavailableReason
+            alert.informativeText = reason
             alert.runModal()
             return
         }
@@ -84,6 +127,30 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
 
     static func viewAction(_ run: @escaping @MainActor () -> Void) -> ToastAction {
         ToastAction(title: "View", icon: .download, run: run)
+    }
+
+    /// What a finished check leaves: the found or not-found callback has set the result; a cycle that ended without either
+    /// was a failure when it carried an error, and otherwise says nothing new.
+    nonisolated static func status(afterCycle current: Status, error: Error?) -> Status {
+        guard current == .checking else { return current }
+        return error == nil ? .notChecked : .failed
+    }
+
+    // MARK: SPUUpdaterDelegate
+
+    func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+        status = .available(version: item.displayVersionString)
+    }
+
+    func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: any Error) {
+        status = .upToDate
+    }
+
+    func updater(_ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck, error: (any Error)?) {
+        // Every check, the probe included, moves Sparkle's last check date (SPUUpdater checkForUpdatesWithDriver:).
+        lastCheck = updater.lastUpdateCheckDate
+        status = Self.status(afterCycle: status, error: error)
+        if let error { logger.notice("Update cycle ended: \(error.localizedDescription, privacy: .public)") }
     }
 
     // MARK: SPUStandardUserDriverDelegate

@@ -11,6 +11,7 @@ extension View {
             .environment(toasts)
             .environment(env)
             .environment(env.limits)
+            .environment(env.updates)
             .environment(shell.appearance)
             .reinsText(.body, tone: .primary)
             .tint(Palette.accent)

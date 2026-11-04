@@ -1,12 +1,13 @@
 import SwiftUI
 
 /// The strip at the bottom: `⌘K` and `Esc` are always there, the active tab adds its own hints between them. 32 pt on the
-/// well, with no line above it.
+/// well, with no line above it. Settings shows only its own hints (`shellKeys: false`).
 struct HintBar: View {
     let hints: [KeyHint]
+    var shellKeys = true
 
     var body: some View {
-        let all = [KeyHint(keys: "\u{2318}K", label: "Search or run")] + hints + [KeyHint(keys: "Esc", label: "Close")]
+        let all = shellKeys ? [KeyHint(keys: "\u{2318}K", label: "Search or run")] + hints + [KeyHint(keys: "Esc", label: "Close")] : hints
         HStack(spacing: Space.s16) {
             ForEach(all, id: \.self) { hint in
                 HStack(spacing: Space.s6) {

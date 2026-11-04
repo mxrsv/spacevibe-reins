@@ -65,6 +65,34 @@ struct UpdateControllerTests {
         let updates = UpdateController(toasts: ToastCenter(announce: false))
         updates.start(mode: .normal, environment: ["REINS_TEST": "1"], info: validInfo)
         #expect(updates.isRunning == false)
+        #expect(updates.status == .unavailable("Updates are off in this launch mode."))
+    }
+
+    @Test("a build without a feed says why in Settings and never runs")
+    @MainActor
+    func reasonWithoutFeed() {
+        let updates = UpdateController(toasts: ToastCenter(announce: false))
+        updates.start(mode: .normal, environment: [:], info: [:])
+        #expect(updates.isRunning == false)
+        #expect(updates.status == .unavailable("This build has no update source. Install a release build to receive updates."))
+    }
+
+    @Test("the version and build come from the bundle's Info.plist")
+    @MainActor
+    func versionFromInfo() {
+        let updates = UpdateController(toasts: ToastCenter(announce: false), info: ["CFBundleShortVersionString": "0.1.0", "CFBundleVersion": "1"])
+        #expect(updates.version == "0.1.0" && updates.build == "1")
+        #expect(UpdateController(toasts: ToastCenter(announce: false), info: [:]).version == nil)
+    }
+
+    @Test("a finished cycle keeps a found or not-found result; with neither, an error means the check failed")
+    func statusAfterCycle() {
+        struct Offline: Error {}
+        #expect(UpdateController.status(afterCycle: .upToDate, error: nil) == .upToDate)
+        #expect(UpdateController.status(afterCycle: .available(version: "0.2.0"), error: Offline()) == .available(version: "0.2.0"))
+        #expect(UpdateController.status(afterCycle: .checking, error: Offline()) == .failed)
+        #expect(UpdateController.status(afterCycle: .checking, error: nil) == .notChecked)
+        #expect(UpdateController.status(afterCycle: .notChecked, error: Offline()) == .notChecked)
     }
 }
 

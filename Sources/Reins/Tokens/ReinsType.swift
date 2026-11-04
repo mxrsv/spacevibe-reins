@@ -1,11 +1,13 @@
 import CoreText
+import Foundation
 import SwiftUI
 
 /// A text role: one Inter weight at one of the three sizes, its line box on the 4 pt grid, its tracking, and whether it is a
 /// machine string. Spec: `docs/specs/2026-11-03-reins-design-language.md` (Typography). A view takes a role with
 /// `.reinsText(_:tone:)`; it never builds a font itself, so changing a role here restyles every screen.
 ///
-/// Hierarchy inside one size comes from weight and tone, not size: 12, 14 and 16 are only a step of 1.14 apart.
+/// Hierarchy inside one size comes from weight and tone, not size: 12, 14 and 16 are only a step of 1.14 apart. The Font
+/// size setting moves all three by 1 pt (`TypeScale`); the line boxes stay, so the layout keeps its rhythm.
 struct ReinsType {
     let size: CGFloat
     let weight: InterFont.Weight
@@ -40,39 +42,65 @@ struct ReinsType {
         ReinsType(size: size, weight: weight, lineBox: lineBox, trackingEm: trackingEm, code: code, tabular: tabular)
     }
 
+    /// One role at a Font size step, by default the current one (`TypeScale`): 12, 14 and 16 move by the step, `scales:
+    /// false` keeps a size. Reading `TypeScale.shared.step` here ties the calling view body to the setting. Roles are cached
+    /// per step, so a body never builds a CTFont. Tests pass `step` instead of changing the shared one.
+    static func role(size: CGFloat, scales: Bool = true, step: CGFloat = TypeScale.shared.step, weight: InterFont.Weight, lineBox: CGFloat,
+                     trackingEm: CGFloat = 0, code: Bool = false, tabular: Bool = false) -> ReinsType {
+        let key = RoleKey(size: size + (scales ? step : 0), weight: weight, lineBox: lineBox, trackingEm: trackingEm, code: code, tabular: tabular)
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        if let cached = cache[key] { return cached }
+        let made = ReinsType(size: key.size, weight: weight, lineBox: lineBox, trackingEm: trackingEm, code: code, tabular: tabular)
+        cache[key] = made
+        return made
+    }
+
+    private struct RoleKey: Hashable {
+        let size: CGFloat
+        let weight: InterFont.Weight
+        let lineBox: CGFloat
+        let trackingEm: CGFloat
+        let code: Bool
+        let tabular: Bool
+    }
+
+    private static var cache: [RoleKey: ReinsType] = [:]
+    private static let cacheLock = NSLock()
+
     /// Second lines, column labels, hints, notes, counts.
-    static let caption = ReinsType(size: 12, weight: .regular, lineBox: 16)
+    static var caption: ReinsType { role(size: 12, weight: .regular, lineBox: 16) }
     /// Section rows, note headings.
-    static let captionStrong = ReinsType(size: 12, weight: .semibold, lineBox: 16)
+    static var captionStrong: ReinsType { role(size: 12, weight: .semibold, lineBox: 16) }
     /// Tags and key caps.
-    static let label = ReinsType(size: 12, weight: .medium, lineBox: 16)
+    static var label: ReinsType { role(size: 12, weight: .medium, lineBox: 16) }
     /// Buttons, chips, segments, fields, the sidebar, numbers in cells.
-    static let body = ReinsType(size: 14, weight: .regular, lineBox: 20, trackingEm: -0.006)
+    static var body: ReinsType { role(size: 14, weight: .regular, lineBox: 20, trackingEm: -0.006) }
     /// Banner titles, the primary button, empty-state titles.
-    static let bodyStrong = ReinsType(size: 14, weight: .semibold, lineBox: 20, trackingEm: -0.006)
+    static var bodyStrong: ReinsType { role(size: 14, weight: .semibold, lineBox: 20, trackingEm: -0.006) }
     /// Row names.
-    static let rowTitle = ReinsType(size: 14, weight: .medium, lineBox: 20, trackingEm: -0.006)
+    static var rowTitle: ReinsType { role(size: 14, weight: .medium, lineBox: 20, trackingEm: -0.006) }
     /// The page title and card titles. The palette's input uses it at `.regular`.
-    static let title = ReinsType(size: 16, weight: .semibold, lineBox: 24, trackingEm: -0.011)
+    static var title: ReinsType { role(size: 16, weight: .semibold, lineBox: 24, trackingEm: -0.011) }
     /// The command palette's input.
-    static let paletteInput = ReinsType(size: 16, weight: .regular, lineBox: 24, trackingEm: -0.011)
+    static var paletteInput: ReinsType { role(size: 16, weight: .regular, lineBox: 24, trackingEm: -0.011) }
     /// A command, path or key on a second line.
-    static let code = ReinsType(size: 12, weight: .regular, lineBox: 16, code: true)
+    static var code: ReinsType { role(size: 12, weight: .regular, lineBox: 16, code: true) }
     /// The muted folder before a file name in a path title.
-    static let codeBody = ReinsType(size: 14, weight: .regular, lineBox: 20, trackingEm: -0.006, code: true)
+    static var codeBody: ReinsType { role(size: 14, weight: .regular, lineBox: 20, trackingEm: -0.006, code: true) }
     /// A row name that is a machine string: a failed command, a rule pattern, a file name.
-    static let codeTitle = ReinsType(size: 14, weight: .medium, lineBox: 20, trackingEm: -0.006, code: true)
+    static var codeTitle: ReinsType { role(size: 14, weight: .medium, lineBox: 20, trackingEm: -0.006, code: true) }
     /// A number in a column: runs, cost.
-    static let number = ReinsType(size: 14, weight: .regular, lineBox: 20, trackingEm: -0.006, tabular: true)
+    static var number: ReinsType { role(size: 14, weight: .regular, lineBox: 20, trackingEm: -0.006, tabular: true) }
     /// A count that must stand out (a skill that never ran).
-    static let numberStrong = ReinsType(size: 14, weight: .semibold, lineBox: 20, trackingEm: -0.006, tabular: true)
+    static var numberStrong: ReinsType { role(size: 14, weight: .semibold, lineBox: 20, trackingEm: -0.006, tabular: true) }
     /// A count beside a label or in a column of counts (sidebar, chips, group headers).
-    static let count = ReinsType(size: 12, weight: .regular, lineBox: 16, tabular: true)
-    static let countStrong = ReinsType(size: 12, weight: .semibold, lineBox: 16, tabular: true)
+    static var count: ReinsType { role(size: 12, weight: .regular, lineBox: 16, tabular: true) }
+    static var countStrong: ReinsType { role(size: 12, weight: .semibold, lineBox: 16, tabular: true) }
     /// The one exception to 12/14/16: a single leading number per Tokens card.
-    static let figure = ReinsType(size: 24, weight: .semibold, lineBox: 32, trackingEm: -0.01, tabular: true)
+    static var figure: ReinsType { role(size: 24, scales: false, weight: .semibold, lineBox: 32, trackingEm: -0.01, tabular: true) }
     /// The other exception (v3): the share left on the Limits page, one at a time. The line box is the face's own height at 72.
-    static let display = ReinsType(size: 72, weight: .semibold, lineBox: 88, trackingEm: -0.03, tabular: true)
+    static var display: ReinsType { role(size: 72, scales: false, weight: .semibold, lineBox: 88, trackingEm: -0.03, tabular: true) }
 }
 
 /// Text colours by meaning. Views pick a tone, never a `Palette` colour, so the palette can change in one place.

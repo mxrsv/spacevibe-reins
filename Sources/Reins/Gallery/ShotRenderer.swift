@@ -8,6 +8,8 @@ import SwiftUI
 /// - `shell` (the default): the demo shell states and the gallery, `<name>-<dark|light>.png`, 1440x900 points at 2x for the
 ///   shell states and the gallery at its full height. Synthetic demo data only; it never touches the saved appearance choice
 ///   or the real config folders.
+/// - `settings`: Settings on the demo shell in every update state and at the Large font size, and the demo tabs at Large
+///   (`SettingsShots`). Synthetic data only, like `shell`.
 /// - `loadout`, `rules`, `activity`, `limits`: the real screen read from the synthetic HOME, with checks on the writes
 ///   (`LoadoutShots`, `RulesShots`, `ActivityShots`, which share `ShotHarness`). These need `REINS_TEST=1` and a synthetic
 ///   home, as `scripts/dev-fixture.sh --shots` sets up.
@@ -28,7 +30,8 @@ enum ShotRenderer {
             case "rules": try requireSyntheticHome(environment); try RulesShots.run(into: directory)
             case "activity": try requireSyntheticHome(environment); try ActivityShots.run(into: directory)
             case "limits": try requireSyntheticHome(environment); try LimitsShots.run(into: directory)
-            default: throw ShotHarness.Failure("unknown REINS_SHOT_SCREEN \"\(screen)\" (shell, loadout, rules, activity or limits)")
+            case "settings": try SettingsShots.run(into: directory)
+            default: throw ShotHarness.Failure("unknown REINS_SHOT_SCREEN \"\(screen)\" (shell, loadout, rules, activity, limits or settings)")
             }
         } catch {
             FileHandle.standardError.write(Data("shot mode failed: \(error.localizedDescription)\n".utf8))

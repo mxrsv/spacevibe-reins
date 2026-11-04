@@ -9,7 +9,7 @@ import Testing
 @Suite("Style boundary: screens compose components")
 struct StyleBoundaryTests {
     /// Folders that are screens. `Gallery/` lays out specimens and is exempt; `TokenUsage/` joins when it exists.
-    static let screenFolders = ["Loadout", "Rules", "Activity", "Shell", "TokenUsage", "Limits"]
+    static let screenFolders = ["Loadout", "Rules", "Activity", "Shell", "TokenUsage", "Limits", "Settings"]
 
     /// What only `Tokens/` and `Components/` may contain.
     static let forbidden: [(name: String, pattern: String)] = [

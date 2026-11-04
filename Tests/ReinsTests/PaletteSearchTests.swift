@@ -26,8 +26,8 @@ struct PaletteSearchTests {
         #expect(sections.map(\.title) == ["Go to", "Actions"])
         #expect(titles(sections, "Go to") == ["Loadout", "Rules", "Activity"])
         #expect(sections.first?.entries.map(\.trailing) == ["\u{2318}1", "\u{2318}2", "\u{2318}3"])
-        // The active tab's own actions come first, the global theme switch last (the shell is forced dark).
-        #expect(titles(sections, "Actions") == ["Rescan usage", "Switch to light theme"])
+        // The active tab's own actions come first, then the theme switch (the shell is forced dark) and Settings.
+        #expect(titles(sections, "Actions") == ["Rescan usage", "Switch to light theme", "Settings"])
     }
 
     @Test("a word that matches an item lists it under Items with the tab title as its subtitle")

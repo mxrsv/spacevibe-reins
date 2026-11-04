@@ -29,6 +29,24 @@ struct ShellModelTests {
         #expect(shell.isPaletteOpen)
     }
 
+    @Test("Settings closes the palette, keeps the tab under it, and anything that picks a page closes it")
+    func settingsOpenAndClose() {
+        let shell = ShellModel.forTests()
+        shell.select("rules")
+        shell.openPalette()
+        shell.openSettings()
+        #expect(shell.isSettingsOpen && !shell.isPaletteOpen)
+        #expect(shell.title == "Rules")
+        shell.closeSettings()
+        #expect(!shell.isSettingsOpen && shell.activeID == "rules")
+        shell.openSettings()
+        shell.select(index: 0)
+        #expect(!shell.isSettingsOpen && shell.activeID == "loadout")
+        shell.openSettings()
+        shell.openLimits()
+        #expect(!shell.isSettingsOpen && shell.isLimitsOpen)
+    }
+
     @Test("select(index:) outside the tab list does nothing", arguments: [-1, 3, 99])
     func indexOutOfRange(index: Int) {
         let shell = ShellModel.forTests()

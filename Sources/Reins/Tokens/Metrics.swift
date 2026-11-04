@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Sizes, radii and spacing. One place so a number is never typed twice. Spec: `docs/specs/2026-11-03-reins-design-language.md`
-/// (Spacing, sizes, radii, colour). Text roles live in `ReinsType`.
+/// (Spacing, sizes, radii, colour). Text roles live in `ReinsType`. A width measured for text grows with the Font size
+/// setting (`TypeScale.width(_:at:)`, the size it was measured at) and never shrinks below the measured value.
 enum Metrics {
     static let sidebarWidth: CGFloat = 232
     /// Space above the sidebar items for the native traffic lights (hidden title bar). Set by the window chrome, not the scale.
@@ -55,17 +56,17 @@ enum Metrics {
     /// One CLI's usage column: bar plus number. Header cells use the same width so columns line up.
     static let usageCellWidth: CGFloat = 200
     /// Fits "12,345" in `ReinsType.body`.
-    static let usageNumberWidth: CGFloat = 52
+    static var usageNumberWidth: CGFloat { TypeScale.shared.width(52, at: 14) }
     /// Fits "~$148.20" in `ReinsType.number`.
-    static let costWidth: CGFloat = 72
+    static var costWidth: CGFloat { TypeScale.shared.width(72, at: 14) }
     /// Activity's state tag column; fits "not measurable" with its 16 pt icon (125 measured in Inter 12/500, v3 tag).
-    static let stateWidth: CGFloat = 128
+    static var stateWidth: CGFloat { TypeScale.shared.width(128, at: 12) }
     /// Loadout's trailing actions: one 28 pt slot per CLI and 4 pt between.
     static let loadoutActionsWidth: CGFloat = 60
     /// Rules: the Claude Code grid's value column (segmented control plus a "mixed" tag), and the value column of the Codex
     /// page (its widest readout, "Unless allowed | When needed | Never", is 275 in Inter 14/600).
-    static let rulesClaudeColumn: CGFloat = 280
-    static let rulesCodexColumn: CGFloat = 300
+    static var rulesClaudeColumn: CGFloat { TypeScale.shared.width(280, at: 14) }
+    static var rulesCodexColumn: CGFloat { TypeScale.shared.width(300, at: 14) }
     /// The tinted tile that leads a `StatusLead`.
     static let statusTileSize: CGFloat = 40
     static let legendSwatchWidth: CGFloat = 22
@@ -116,6 +117,21 @@ enum Metrics {
     /// The glyph's share of its mark square.
     static let cliMarkGlyphFraction: CGFloat = 0.6
 
+    /// Settings: the window buttons at the top left (hidden title bar) and the gap after them, where the back button starts;
+    /// the centred column of cards; one rail tab (icon over name); a Theme tile's picture, width over height.
+    static let trafficLightsWidth: CGFloat = 92
+    static let settingsColumnWidth: CGFloat = 720
+    static let railTabWidth: CGFloat = 96
+    static let railTabHeight: CGFloat = 60
+    static let themeThumbnailAspect: CGFloat = 1.6
+    /// The on/off switch: its capsule and the knob inside it, 2 pt from the edge.
+    static let switchWidth: CGFloat = 32
+    static let switchHeight: CGFloat = 20
+    static let switchKnob: CGFloat = 16
+    /// The Reins mark on the Update card, and its corner as a share of its side (`Resources/AppIcon.svg`: 57.5 of 256).
+    static let reinsMarkSize: CGFloat = 56
+    static let reinsMarkRadiusFraction: CGFloat = 57.5 / 256
+
     /// Confirmation cards (Stop, a rule write).
     static let dialogWidth: CGFloat = 420
     static let wideDialogWidth: CGFloat = 460
@@ -126,7 +142,7 @@ enum Metrics {
     static let toastShadowOffset: CGFloat = 8
     /// File history: the CLI dots and the "edits · sessions · when" text.
     static let fileCLIsWidth: CGFloat = 40
-    static let fileMetaWidth: CGFloat = 230
+    static var fileMetaWidth: CGFloat { TypeScale.shared.width(230, at: 12) }
 
     /// The gallery's frame for an overlay specimen (a confirmation, the sidebar).
     static let galleryOverlayHeight: CGFloat = 300

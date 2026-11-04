@@ -6,8 +6,8 @@ How the SwiftUI app looks, and the one rule that keeps it consistent. Decisions 
 ## The rule: screens compose components
 
 Every visual decision lives in [`Sources/Reins/Tokens`](../Sources/Reins/Tokens) and
-[`Sources/Reins/Components`](../Sources/Reins/Components). Screen folders (`Loadout`, `Rules`, `Activity`, `Shell`, and
-`TokenUsage` when it exists) only arrange those pieces. They contain no `.font(`, no `Palette.`, no `Color(`, no
+[`Sources/Reins/Components`](../Sources/Reins/Components). Screen folders (`Loadout`, `Rules`, `Activity`, `Shell`, `Limits`,
+`Settings`, and `TokenUsage` when it exists) only arrange those pieces. They contain no `.font(`, no `Palette.`, no `Color(`, no
 `cornerRadius:` and no non-zero number in `.padding`, `spacing:` or `.frame(width:/height:)`.
 [`StyleBoundaryTests`](../Tests/ReinsTests/StyleBoundaryTests.swift) reads the source and fails on any such literal, so a
 restyle is an edit to a token or a component, never to a screen. A screen that needs something new gets a component
@@ -25,6 +25,10 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
 - **Sizes 12, 14 and 16**, plus `figure` (24) for one leading number per Tokens card and `display` (72, line box 88) for the share left on the Limits page. Each role in
   [`ReinsType`](../Sources/Reins/Tokens/ReinsType.swift) fixes size, weight (400, 500, 600), line box (16, 20, 24) and
   tracking. Views take a role with `.reinsText(_:tone:)` and a colour by meaning with `TextTone`.
+- **Settings > Font size moves 12, 14 and 16 together** by one point (Small 11/13/15, Large 13/15/17) across the whole
+  app, at once: every role reads [`TypeScale`](../Sources/Reins/Tokens/TypeScale.swift), so a view that uses a role
+  re-renders when it changes. Line boxes, spacing, icons, `figure` and `display` stay. Never build a role as a stored
+  constant outside `ReinsType`: it would keep the size it had when it was made.
 - **Hierarchy within a size comes from weight and tone.** Card title `title` 16/600, row name `rowTitle` 14/500, second
   line `caption` 12 in the tertiary tone.
 - **Machine strings stay Inter** with `ss02` and `zero` on (`code`, `codeTitle`, `codeBody`): slashed zero, distinct l,
@@ -78,7 +82,8 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
 | Icons | `ReinsIcon` (a `ReinsGlyph` at an `IconSize`), `Chevron` |
 | Controls | `ReinsButtonStyle` kinds (normal, primary, danger, ghost, icon, plainIcon, inverse), `RowActionButton` (with a CLI badge), `SegmentedControl` (a segment may carry a CLI glyph and a shortcut), [`SegmentReadout`](../Sources/Reins/Components/SegmentedControl.swift) (the same frame for a value that is shown, not set: every option written out, the real one filled with `track`, or the warn tint), `FilterChip` (and its dismissible form), `ScopePicker`, `SearchField`, `TextInputField` |
 | Messages | `Banner`, `EmptyState`, `NoteRegion`, `InsetBox`, `WarningNote`, `UsageLegend`, `ToastView`, `ConfirmationDialog`; [`StatusLead`](../Sources/Reins/Components/StatusLead.swift) (a page's one plain sentence on a `surface` block, led by a 40 pt tile in the tone's tint: neutral, success, warn) and [`CLISummaryBar`](../Sources/Reins/Components/CLISummaryBar.swift) (a 48 pt `surface` block on how the other CLI stands, on a page that shows one) |
-| Page and shell | `PageLayout` (or `.pageTools()`, `.pageContent()`, `.pageBackground()`), `HintBar`, `SidebarItem` (48, `title` role in every state, the active one changes only its fill to `surface`) with `.sidebarSurface()`, `PaletteCard` and its parts, `Scrim` |
+| Settings | [`RailTab`](../Sources/Reins/Components/RailTab.swift) (96 x 60, 24 pt icon over the `label` name, the chosen one filled with `surface`), [`ThemeTile`](../Sources/Reins/Components/ThemeTile.swift) (a small Reins window drawn from the tokens with the appearance forced, System half and half; the chosen tile takes `selection`), [`ReinsSwitch`](../Sources/Reins/Components/ReinsSwitch.swift) (drawn, 32 x 20, `accentSolid` when on: AppKit's switch does not render in the screenshots), [`ReinsMark`](../Sources/Reins/Components/ReinsMark.swift) (the app mark from `Resources/AppIcon.svg` as shapes), [`RaisedBlock`](../Sources/Reins/Components/InsetBox.swift) (a borderless `surfaceRaised` block inside a card, like `FactTile`) |
+| Page and shell | `PageLayout` (or `.pageTools()`, `.pageContent()`, `.pageBackground()`), `HintBar` (`shellKeys: false` drops `⌘K` and `Esc Close`), `SidebarItem` (48, `title` role in every state, the active one changes only its fill to `surface`) with `.sidebarSurface()`, `PaletteCard` and its parts, `Scrim` |
 
 ## Traps
 
@@ -88,4 +93,6 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
 - Solar draws a few icons with overlapping half-opacity shapes (the Loadout `layers` glyph): the browser darkens the overlap,
   one light layer does not. Check a new glyph in the gallery's icon section before using it.
 - Fixed widths that hold text were measured in Inter at these sizes (usage number 52, cost 72, state 128 since the v3 tag icon, Rules' Claude
-  Code column 280, the Codex page's value column 300). Recheck them when a role's size or weight changes.
+  Code column 280, the Codex page's value column 300, the file history line 230). They grow with Font size through
+  `TypeScale.width(_:at:)` and never shrink below the measured value. Recheck them when a role's size or weight changes,
+  and give a new one the same treatment, or Large truncates it.

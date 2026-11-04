@@ -198,6 +198,9 @@ struct ComponentGalleryContent: View {
                 HintBar(hints: [KeyHint(keys: "Tab", label: "Row actions")])
                     .clipShape(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous))
             }
+            section("Settings: rail tabs, theme tiles (System, Light, Dark), the switch on, off and disabled, the Reins mark, a raised block") {
+                SettingsSpecimens()
+            }
         }
         .padding(.horizontal, Metrics.pagePadding)
         .padding(.bottom, Metrics.pageBottomPadding)
@@ -384,6 +387,7 @@ private struct IconSpecimens: View {
                 ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
                     Chevron(.right, size: size).frame(width: Metrics.iconLarge)
                 }
+                Chevron(.left, size: .row)
                 Chevron(.down, size: .row)
                 Chevron(.upDown, size: .control)
                 Spacer(minLength: 0)
@@ -466,6 +470,47 @@ private struct LimitsSpecimens: View {
                 .padding(Space.s8)
                 .frame(width: Metrics.sidebarWidth)
                 .background(Palette.well)
+            }
+        }
+    }
+}
+
+/// The Settings pieces in each state: the rail on the well, then the tiles, switches, mark and raised block in a card.
+private struct SettingsSpecimens: View {
+    @State private var section = SettingsSection.appearance
+    @State private var theme = ThemeSetting.dark
+    @State private var on = true
+    @State private var off = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s16) {
+            HStack(spacing: Space.s4) {
+                ForEach(SettingsSection.allCases) { item in
+                    RailTab(title: item.title, icon: item.icon, isActive: item == section) { section = item }
+                }
+            }
+            GroupedList {
+                HStack(spacing: Rhythm.tiles) {
+                    ForEach(ThemeSetting.allCases, id: \.self) { item in
+                        ThemeTile(title: item.title, icon: item.icon, appearance: item.fixed?.colorScheme, isSelected: item == theme) { theme = item }
+                    }
+                }
+                .frame(width: Metrics.settingsColumnWidth)
+                .padding(.horizontal, Metrics.rowInset)
+                .padding(.top, Space.s8)
+                .groupedListPart(.plain)
+                HStack(spacing: Space.s16) {
+                    ReinsSwitch(label: "On", isOn: $on)
+                    ReinsSwitch(label: "Off", isOn: $off)
+                    ReinsSwitch(label: "Disabled", isOn: .constant(false)).disabled(true)
+                    ReinsMark()
+                    RaisedBlock { Text("A raised block inside a card").reinsText(.body, tone: .secondary) }
+                        .frame(width: Metrics.usageCellWidth * 2)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, Metrics.rowHorizontalPadding)
+                .padding(.top, Space.s8)
+                .groupedListPart(.plain)
             }
         }
     }

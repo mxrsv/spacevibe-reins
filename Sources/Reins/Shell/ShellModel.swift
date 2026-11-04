@@ -13,6 +13,10 @@ final class ShellModel {
     /// The Limits page shows in the content area instead of the active tab (spec, Interface: Limits). Its sidebar entry, the
     /// sidebar tiles and `⌘L` open it; choosing a tab closes it.
     var isLimitsOpen = false
+    /// Settings covers the whole window (spec `docs/specs/2026-11-04-reins-settings.md`); the tab or Limits page under it
+    /// stays as it was and shows again when Settings closes.
+    var isSettingsOpen = false
+    var settingsSection = SettingsSection.appearance
     var isPaletteOpen = false
     var paletteQuery = ""
     /// A short line at the bottom of the sidebar ("Counting usage 3/9"). Nil hides it.
@@ -36,13 +40,22 @@ final class ShellModel {
         guard tabs.contains(where: { $0.id == id }) else { return }
         activeID = id
         isLimitsOpen = false
+        isSettingsOpen = false
         isPaletteOpen = false
     }
 
     func openLimits() {
         isLimitsOpen = true
+        isSettingsOpen = false
         isPaletteOpen = false
     }
+
+    func openSettings() {
+        isSettingsOpen = true
+        isPaletteOpen = false
+    }
+
+    func closeSettings() { isSettingsOpen = false }
 
     /// `⌘1` is index 0.
     func select(index: Int) {
