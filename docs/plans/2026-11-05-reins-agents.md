@@ -4,7 +4,7 @@ Spec: [2026-11-05-reins-agents.md](../specs/2026-11-05-reins-agents.md), AG1 to 
 Depends on [design language v4](2026-11-05-reins-design-language-v4.md) V5 (the components) before any UI task here. The core tasks A1 to A6 can start now.
 Mock: `~/scratch/spacevibe-reins/agent-navigation/agents-panel.html` (C′), with the v4 look at `controls.html?icons=tabler&buttons=a`. Both are outside git and use synthetic data.
 Checkout: `spacevibe-reins` on `main`, shared with other sessions. Commit with `git commit -- <paths>` only.
-Started 2026-11-05. Status: plan written. The write approach below must be approved by the owner before A1 (W9).
+Started 2026-11-05. Status: plan written. Before A1, the owner approves the write approach below (W9) and picks the A0b mock; those are the only stops before the cut-over.
 
 ## Approach
 
@@ -42,12 +42,13 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
 - **Recovery.**
   - Every save can be undone from the toast or from the journal, after a relaunch too.
   - A failed write leaves the target untouched, because the temp file is removed before any rename.
-  - Tests run only against `TempHome` (S-R1). A manual check uses the synthetic home from `scripts/dev-fixture.sh --prepare`, opened with `open -n build/Reins.app --env HOME=… --env CLAUDE_CONFIG_DIR=… --env CODEX_HOME=… --env REINS_HOME=… --env REINS_AGENTS=1`.
+  - Tests run only against `TempHome` (S-R1). A manual check uses the synthetic home from `scripts/dev-fixture.sh --prepare`, opened with `open -n build/Reins.app --env HOME=… --env CLAUDE_CONFIG_DIR=… --env CODEX_HOME=… --env REINS_HOME=… --env REINS_TEST=1 --env REINS_AGENTS=1`. `REINS_TEST=1` keeps the S-R1 guard: `Roots.resolve` throws when a root resolves under the real home.
   - The real `~/.claude` and `~/.codex` are never touched by this work.
 
 ## Tasks
 
 - [x] A0. Spec and plan.
+- [ ] A0b. Before any code, read Codex's `default_permissions` schema from its source or docs (parent spec, "To verify"). Then add the profile editor and the both-models state to mock C′, and the owner picks them together with the W9 approval (AG6).
 - [ ] A1. `SecretMask` for JSON and TOML: detection by key path and name, mask, unmask-merge, the moved-placeholder refusal. Also confirm the mode of the data folder and the trash (AG3).
 - [ ] A2. `TOMLEdit` with golden tests for comments, dotted keys, inline tables, multi-line arrays and quoted table names (AG5).
 - [ ] A3. `ClaudeSettingsEdit` at all three scopes:
@@ -75,9 +76,9 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
   - per-panel scopes remembered per agent;
   - drafts, the review dialog, and the toast with Undo;
   - the Claude Code panels (AG1, AG2, AG7).
-- [ ] A9. The Codex panels. First add the profile editor and the both-models state to mock C′ and get the owner's pick, then build them (AG6).
+- [ ] A9. The Codex panels, including the profile editor and the both-models state picked in A0b (AG6).
 - [ ] A10. Shots: `REINS_SHOT_SCREEN=agents` for every panel, both appearances, with drafts, confirmations and errors. Extend `StyleBoundaryTests` to cover `Agents/`.
-- [ ] A11. Real-CLI check on a throwaway home: `claude` and `codex` load a permission, a hook, an MCP server, a model and an instruction-file change written by Reins (AG9).
+- [ ] A11. Real-CLI check, run with the owner like the parent plan's S0.5: a throwaway home needs the owner's sign-in, and real sessions spend their quota. `claude` and `codex` load a permission, a hook, an MCP server, a model and an instruction-file change written by Reins (AG9).
 - [ ] A12. Cut-over:
   - run `impeccable distill` and `clarify`, then get the owner's eye approval of the shots next to the mock (AG10);
   - in the same change, remove the switch, the Rules tab and its code, and Loadout's hooks (AG1);
@@ -92,6 +93,6 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
 
 ## Handoff
 
-2026-11-05: the plan is written. Waiting for the owner to approve the write approach above before A1.
+2026-11-05: the plan is written. Waiting for the owner to approve the write approach above, and for A0b, before A1.
 
-/goal Build the Reins Agents page per docs/specs/2026-11-05-reins-agents.md and docs/plans/2026-11-05-reins-agents.md: tasks A1 to A11 in order, one commit each, the UI behind REINS_AGENTS=1 after design language v4 V5. Done means scripts/test.sh passes with the AG2 to AG8 tests against TempHome, the agents shots render in light and dark, and the real-CLI check (AG9) passes on a throwaway home. Leave A12 (eye approval and cut-over) to the owner. Never push or release, and never touch the real ~/.claude or ~/.codex.
+/goal Build the Reins Agents page per docs/specs/2026-11-05-reins-agents.md and docs/plans/2026-11-05-reins-agents.md: tasks A1 to A10 in order, one commit each, the UI behind REINS_AGENTS=1 after design language v4 V5. Done means scripts/test.sh passes with the AG2 to AG8 tests against TempHome, and the agents shots render in light and dark. Leave A11 (the real-CLI check with the owner) and A12 (eye approval and cut-over) to the owner. Never push or release, and never touch the real ~/.claude or ~/.codex.
