@@ -10,6 +10,13 @@ import Foundation
 /// - The temp file is re-read and validated before the rename, so a bad write never replaces the file.
 /// - Errors never quote file content.
 public enum FileEdit {
+    /// The end of the message for a file another process wrote between Reins reading it and replacing it.
+    static let changedWhileEditing = " changed while Reins was editing it, so it was left alone. Try again."
+
+    static func isChangedWhileEditing(_ error: Error) -> Bool {
+        (error as? ReinsError).map { $0.status == 409 && $0.message.hasSuffix(changedWhileEditing) } ?? false
+    }
+
     // MARK: Text
 
     /// Edits a text file. `change` gets the current text (nil when the file does not exist) and returns the next text;
@@ -80,7 +87,7 @@ public enum FileEdit {
             }, beforeRename: {
                 // Another process (a CLI, a hand edit) may have written since the read above; never overwrite that.
                 guard FileManager.default.contents(atPath: target.real) == before else {
-                    throw ReinsError("\(target.real) changed while Reins was editing it, so it was left alone. Try again.", status: 409)
+                    throw ReinsError("\(target.real)\(changedWhileEditing)", status: 409)
                 }
             })
         } catch {
