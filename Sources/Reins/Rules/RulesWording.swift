@@ -14,6 +14,15 @@ enum RulesWording {
         }
     }
 
+    /// A verdict picker fills its chosen segment with the verdict's own tone (design language v4).
+    static func segmentTone(_ verdict: RuleVerdict) -> SegmentTone {
+        switch verdict {
+        case .allow: .success
+        case .ask: .warn
+        case .deny: .danger
+        }
+    }
+
     static func groupTitle(_ verdict: RuleVerdict) -> String {
         verdict == .ask ? "Ask first" : title(verdict)
     }

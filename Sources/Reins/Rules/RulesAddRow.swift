@@ -18,7 +18,7 @@ struct RulesAddRow: View {
                     )
                     SegmentedControl(
                         label: "Verdict for the new rule",
-                        options: RulesWording.verdicts.map { SegmentOption(RulesWording.title($0), value: $0) },
+                        options: RulesWording.verdicts.map { SegmentOption(RulesWording.title($0), value: $0, tone: RulesWording.segmentTone($0)) },
                         selection: $model.draftVerdict
                     )
                     Button("Add rule") { model.submitDraft() }
