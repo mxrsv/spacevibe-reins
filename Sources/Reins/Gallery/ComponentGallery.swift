@@ -17,7 +17,8 @@ struct ComponentGalleryContent: View {
         VStack(alignment: .leading, spacing: 0) {
             section("Colour tokens") { Swatches() }
             section("Text roles: Inter at 12, 14 and 16, plus figure and display") { TypeRoles() }
-            section("Buttons on the well, then inside a card (no outline: surface, then surfaceRaised)") {
+            section("Buttons (v4): every kind in every state, on a card") { ButtonSheet() }
+            section("Buttons on the well, then inside a card: the raised block reads the same on both") {
                 VStack(alignment: .leading, spacing: Space.s12) {
                     buttons
                     GroupedList { buttons.padding(.horizontal, Metrics.rowHorizontalPadding) }
@@ -221,6 +222,9 @@ struct ComponentGalleryContent: View {
             RowActionButton(title: "Remove from Claude Code", icon: .trash, kind: .danger, iconOnly: true, badge: .claude) {}
             RowActionButton(title: "Remove from Codex", icon: .trash, kind: .danger, iconOnly: true, badge: .codex) {}
             Button("Disabled") {}.buttonStyle(.reins(.normal)).disabled(true)
+            CardButton("Rules", icon: .file, value: .code("CLAUDE.md"), isOpen: false) {}
+            CardButton("Hooks", icon: .hook, value: .count("4", alert: "1 dead"), isOpen: false) {}
+            CardButton("Advanced", icon: .advanced, kind: .ghost, isOpen: false) {}
             Spacer(minLength: 0)
         }
         .environment(\.actionsConcealed, false)
