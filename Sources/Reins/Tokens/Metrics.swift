@@ -96,6 +96,8 @@ enum Metrics {
     /// The spinner that stands in for a loading button's leading icon, and its ring.
     static let spinnerSize: CGFloat = 14
     static let spinnerStroke: CGFloat = 2
+    /// A disabled control, the hairline and shadow kept.
+    static let disabledOpacity: Double = 0.6
     static let chipHeight: CGFloat = 28
     /// A segment inside its 28 pt frame.
     static let segmentHeight: CGFloat = 24

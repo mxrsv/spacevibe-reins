@@ -6,15 +6,18 @@ struct ScopeOption: Hashable {
     let label: String
 }
 
-/// The scope menu of the Loadout and Rules toolbars: Global or one discovered project. 28 pt like every control, filled with
-/// the control ground and no outline. A menu in the app; headless screenshots cannot draw one, so they get the closed label.
+/// The scope menu of the Loadout and Rules toolbars and the Agents panels: Global or one discovered project. 28 pt like
+/// every control, a raised block (spec v4). Disabled, it keeps its block and drops the chevron. A menu in the app; headless
+/// screenshots cannot draw one, so they get the closed label.
 struct ScopePicker: View {
     let options: [ScopeOption]
     let current: ScopeOption
     let minWidth: CGFloat
     let onSelect: (ScopeOption) -> Void
     @Environment(\.isShotRendering) private var isShotRendering
-    @Environment(\.controlGround) private var ground
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.forcedControlState) private var forced
+    @State private var hovering = false
 
     var body: some View {
         if isShotRendering {
@@ -31,6 +34,7 @@ struct ScopePicker: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
+            .onHover { hovering = $0 }
             .reinsFocusable(cornerRadius: Metrics.controlRadius)
             .accessibilityLabel("Scope")
             .accessibilityValue(current.label)
@@ -39,10 +43,11 @@ struct ScopePicker: View {
 
     private var label: some View {
         let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
+        let pressed = isEnabled && forced == .pressed
         return HStack(spacing: Space.s8) {
             Text(current.label).lineLimit(1)
             Spacer(minLength: 0)
-            Chevron(.upDown).foregroundStyle(Palette.textTertiary)
+            if isEnabled { Chevron(.upDown, size: .inline).foregroundStyle(Palette.textTertiary) }
         }
         .reinsText(.body, tone: .primary)
         .padding(.leading, Space.s12)
@@ -50,7 +55,11 @@ struct ScopePicker: View {
         .frame(minWidth: minWidth, alignment: .leading)
         .fixedSize()
         .frame(height: Metrics.controlHeight)
-        .background(shape.fill(ground.fill))
+        .background {
+            ControlBlock(hovered: isEnabled && (hovering || forced == .hover), pressed: pressed)
+        }
+        .offset(y: pressed ? Metrics.controlPressedOffset : 0)
         .contentShape(shape)
+        .focusRing(forced == .focus, cornerRadius: Metrics.controlRadius)
     }
 }
