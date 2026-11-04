@@ -34,7 +34,7 @@ struct FilterChip: View {
             pill(trailing: Space.s8) {
                 Text(title)
                 Button(action: onDismiss) {
-                    ReinsIcon(.close).foregroundStyle(TextTone.secondary.color)
+                    PageIcon(.close).foregroundStyle(TextTone.secondary.color)
                 }
                 .buttonStyle(.plain)
                 .reinsFocusable(cornerRadius: Metrics.segmentRadius)

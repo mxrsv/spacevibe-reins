@@ -78,5 +78,5 @@ private struct RulesVerdictMenu: View {
         }
     }
 
-    private var icon: some View { ReinsIcon(.swap, label: "Change verdict") }
+    private var icon: some View { PageIcon(.swap, label: "Change verdict") }
 }

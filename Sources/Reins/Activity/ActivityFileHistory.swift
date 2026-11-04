@@ -36,7 +36,7 @@ private struct ActivityFileRowView: View {
         Row {
             ActivityLines(title: title, lines: [ActivityFormat.projects(file.projects)].compactMap { $0 }.map { ActivityLines.Line($0) }, help: file.path)
         }
-        .lead { ReinsIcon(.file, size: .row) }
+        .lead { PageIcon(.file, size: .row) }
         .cells {
             HStack(spacing: Space.s4) {
                 ForEach(file.clis, id: \.rawValue) { CLIDot($0) }

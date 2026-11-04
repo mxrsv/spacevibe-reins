@@ -4,7 +4,7 @@ import SwiftUI
 enum StatusTone: Equatable {
     case neutral, success, warn
 
-    var icon: ReinsGlyph {
+    var icon: PageGlyph {
         switch self {
         case .neutral: .info
         case .success: .check
@@ -42,7 +42,7 @@ struct StatusLead: View {
         HStack(spacing: Space.s16) {
             ZStack {
                 RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous).fill(tone.tint)
-                ReinsIcon(tone.icon, size: .row, ink: tone.ink)
+                PageIcon(tone.icon, size: .row, ink: tone.ink)
             }
             .frame(width: Metrics.statusTileSize, height: Metrics.statusTileSize)
             VStack(alignment: .leading, spacing: 0) {

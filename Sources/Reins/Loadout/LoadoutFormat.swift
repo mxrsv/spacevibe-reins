@@ -5,7 +5,7 @@ import ReinsCore
 struct LoadoutTag: Equatable {
     var text: String
     var tone: TagTone = .neutral
-    var icon: ReinsGlyph?
+    var icon: PageGlyph?
 }
 
 /// Wording and mapping of the Loadout screen. Pure.

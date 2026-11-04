@@ -67,17 +67,18 @@ struct ComponentGalleryContent: View {
                 }
             }
             section("Ruler: 0, 4, 39 and 100 percent, not known, low (20% left) and out (5% left)") { RulerSpecimens() }
-            section("Icons: Solar Bold Duotone at 14, 16, 20 and 22, then the drawn chevrons. Solar by 480 Design, CC BY 4.0") { IconSpecimens() }
+            section("Page icons: Tabler outline at 14, 16, 20 and 24, in the secondary tone and a warn ink. Tabler Icons, MIT") { PageIconSpecimens() }
+            section("Sidebar icons: Solar Bold Duotone at 14, 16, 20 and 22. Solar by 480 Design, CC BY 4.0") { SidebarIconSpecimens() }
             section("Cards, rows and the five usage states") { DemoLoadoutList() }
             section("Rows: the selected one hides the dividers on both sides of it") {
                 GroupedList {
                     CardHeader("Rows", count: 5)
                     Row { RowText("Plain row", subtitle: "Second line in the muted colour") }
-                        .lead { ReinsIcon(.skill, size: .row) }
+                        .lead { PageIcon(.skill, size: .row) }
                     Row(selected: true, revealActions: true, onActivate: {}) {
                         RowText("Selected row with actions", subtitle: "Actions stay visible while selected")
                     }
-                    .lead { ReinsIcon(.skill, size: .row) }
+                    .lead { PageIcon(.skill, size: .row) }
                     .actions {
                         RowActionButton(title: "Copy to Codex", icon: .copy) {}
                         RowActionButton(title: "Remove", icon: .trash, kind: .danger, iconOnly: true) {}
@@ -86,7 +87,7 @@ struct ComponentGalleryContent: View {
                         .lead { CLIDot(.codex) }
                         .cells { StateCell { Tag("not measurable", icon: .warning) }; NumberCell(text: "~$148.20") }
                     Row(onActivate: {}) { RowText("A row with nothing to change", subtitle: "Owned by a plugin") }
-                        .lead { ReinsIcon(.skill, size: .row) }
+                        .lead { PageIcon(.skill, size: .row) }
                         .cells { FixedCell { Tag("\u{00D7}3") }; NumberCell(text: "~$1.33") }
                         .actions { HStack(spacing: Space.s4) { EmptyActionSlot(); ReadOnlyMark(reason: "Read-only: owned by a plugin") } }
                     Row(tall: true) {
@@ -155,7 +156,7 @@ struct ComponentGalleryContent: View {
                         VStack(alignment: .leading, spacing: 0) {
                             PaletteSectionTitle(title: "Go to")
                             PaletteRow(entry: PaletteEntry(id: "g.loadout", title: "Loadout", icon: .loadout, trailing: "\u{2318}1") {}, isHighlighted: true) {}
-                            PaletteRow(entry: PaletteEntry(id: "g.rules", title: "Rules", icon: .rules, trailing: "\u{2318}2") {}, isHighlighted: false) {}
+                            PaletteRow(entry: PaletteEntry(id: "g.rules", title: "Rules", icon: .permissions, trailing: "\u{2318}2") {}, isHighlighted: false) {}
                             PaletteSectionTitle(title: "Skills")
                             PaletteRow(entry: PaletteEntry(id: "s.ponytail", title: "ponytail", subtitle: "Pick the laziest solution", icon: .skill) {}, isHighlighted: false) {}
                             PaletteEmptyRow(text: "No matches")
@@ -163,7 +164,7 @@ struct ComponentGalleryContent: View {
                         .paletteList()
                         Hairline()
                         PaletteFooter {
-                            PaletteHint(text: "navigate") { ReinsIcon(.navigate, size: .inline) }
+                            PaletteHint(text: "navigate") { PageIcon(.navigate, size: .inline) }
                             PaletteHint(text: "close") { Kbd("Esc") }
                         }
                     }
@@ -213,10 +214,10 @@ struct ComponentGalleryContent: View {
             Button("Primary") {}.buttonStyle(.reins(.primary))
             Button("Remove") {}.buttonStyle(.reins(.danger))
             Button {} label: {
-                HStack(spacing: Space.s4) { ReinsIcon(.add); Text("Add to Codex") }
+                HStack(spacing: Space.s4) { PageIcon(.add); Text("Add to Codex") }
             }
             .buttonStyle(.reins(.ghost))
-            Button {} label: { ReinsIcon(.trash) }.buttonStyle(.reins(.icon)).accessibilityLabel("Remove")
+            Button {} label: { PageIcon(.trash) }.buttonStyle(.reins(.icon)).accessibilityLabel("Remove")
             RowActionButton(title: "Remove from Claude Code", icon: .trash, kind: .danger, iconOnly: true, badge: .claude) {}
             RowActionButton(title: "Remove from Codex", icon: .trash, kind: .danger, iconOnly: true, badge: .codex) {}
             Button("Disabled") {}.buttonStyle(.reins(.normal)).disabled(true)
@@ -361,157 +362,5 @@ private struct Swatches: View {
             }
         }
         .accessibilityHidden(true)
-    }
-}
-
-/// Every generated glyph at the four sizes, in the secondary tone and in a tag's warn ink, then the chevrons.
-private struct IconSpecimens: View {
-    private let sizes: [IconSize] = [.inline, .control, .row, .sidebar]
-
-    var body: some View {
-        GroupedList {
-            ForEach(Array(ReinsGlyph.allCases.enumerated()), id: \.offset) { _, glyph in
-                HStack(spacing: Metrics.rowSpacing) {
-                    Text(glyph.solarName).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
-                    ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
-                        ReinsIcon(glyph, size: size).frame(width: Metrics.iconLarge)
-                    }
-                    ReinsIcon(glyph, size: .control, ink: Palette.warnInk)
-                    Spacer(minLength: 0)
-                }
-                .foregroundStyle(Palette.textSecondary)
-                .padding(.horizontal, Metrics.rowHorizontalPadding)
-            }
-            HStack(spacing: Metrics.rowSpacing) {
-                Text("chevron (drawn)").reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
-                ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
-                    Chevron(.right, size: size).frame(width: Metrics.iconLarge)
-                }
-                Chevron(.left, size: .row)
-                Chevron(.down, size: .row)
-                Chevron(.upDown, size: .control)
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(Palette.textSecondary)
-            .padding(.horizontal, Metrics.rowHorizontalPadding)
-        }
-    }
-}
-
-/// The ruler at the usage cell's width (its number column beside it) and at a wider track: the cell is a tenth of the
-/// track either way. Inside a card, where it always sits.
-private struct RulerSpecimens: View {
-    private let shares: [(String, Double?, LimitTone)] = [
-        ("0%", 0, .normal), ("4%", 0.04, .normal), ("39%", 0.39, .normal), ("100%", 1, .normal),
-        ("not known", nil, .normal), ("20% left", 0.2, .low), ("5% left", 0.05, .out),
-    ]
-
-    var body: some View {
-        GroupedList {
-            CardHeader("Ruler", count: shares.count, columns: {
-                Text("at the usage cell's track").frame(width: Metrics.usageCellWidth, alignment: .leading)
-                Text("at twice that").frame(width: Metrics.usageCellWidth * 2, alignment: .leading)
-            })
-            ForEach(shares, id: \.0) { label, share, tone in
-                Row { RowText(label) }
-                    .cells {
-                        HStack(spacing: Metrics.rowSpacing) {
-                            Ruler(share: share, fill: tone.barFill ?? Palette.claude)
-                            Text(label).reinsText(.number, tone: .secondary).frame(width: Metrics.usageNumberWidth, alignment: .trailing)
-                        }
-                        .frame(width: Metrics.usageCellWidth)
-                        Ruler(share: share, fill: tone.barFill ?? Palette.codex).frame(width: Metrics.usageCellWidth * 2)
-                    }
-            }
-        }
-    }
-}
-
-/// The Limits page's parts in every state, on the page well: window tiles (selected, low, out, passed, not in use, no
-/// reading), the figure in each tone and unknown, the detail ruler and facts in a card, and the sidebar's tiles.
-private struct LimitsSpecimens: View {
-    var body: some View {
-        HStack(alignment: .top, spacing: Rhythm.listDetail) {
-            VStack(spacing: Rhythm.tiles) {
-                LimitWindowTile(cli: .codex, title: "Weekly", subtitle: "Codex \u{00B7} resets in 1 d 3 h",
-                                meter: .share(0.04, fill: Palette.danger), value: "4%", valueTone: .danger, selected: true, onActivate: {})
-                LimitWindowTile(cli: .codex, title: "5-hour", subtitle: "Codex \u{00B7} reset passed", meter: .unknown,
-                                value: "unknown", onActivate: {})
-                LimitWindowTile(cli: .claude, title: "Weekly", subtitle: "Claude Code \u{00B7} resets in 2 d 22 h",
-                                meter: .share(0.18, fill: Palette.warn), value: "18%", valueTone: .warn, onActivate: {})
-                LimitWindowTile(cli: .claude, title: "Weekly \u{00B7} Fable", subtitle: "Claude Code \u{00B7} resets in 2 d 22 h",
-                                meter: .share(0.92, fill: Palette.claude), value: "92%", onActivate: {}) { Tag("not in use") }
-                LimitWindowTile(cli: .gemini, title: "Gemini CLI", subtitle: "Not measurable", meter: .none, value: "\u{2014}", onActivate: {})
-            }
-            .frame(width: Metrics.limitsListWidth)
-            VStack(alignment: .leading, spacing: Rhythm.cards) {
-                ContentCard {
-                    VStack(alignment: .leading, spacing: Space.s16) {
-                        LimitFigure(left: 92)
-                        LimitFigure(left: 18, tone: .low)
-                        LimitFigure(left: 4, tone: .out)
-                        LimitFigure(left: nil)
-                        Ruler(share: 0.04, fill: Palette.danger, height: Metrics.rulerDetailHeight)
-                        Ruler(share: nil, fill: Palette.codex, height: Metrics.rulerDetailHeight)
-                        HStack(alignment: .top, spacing: Rhythm.tiles) {
-                            FactTile("Resets in", value: "1 d 3 h")
-                            FactTile("Reset at", value: "17:34")
-                            FactTile("Reading", value: "2 days ago", tone: .warn)
-                        }
-                        .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                VStack(spacing: Space.s6) {
-                    LimitSidebarTile(cli: .claude, name: "Claude Code", value: "92% left")
-                    LimitSidebarTile(cli: .codex, name: "Codex", value: "18% left", tone: .low)
-                    LimitSidebarTile(cli: .codex, name: "Codex", value: "4% left", tone: .out)
-                    LimitSidebarTile(cli: .gemini, name: "Gemini CLI", value: "not measurable", isMuted: true)
-                }
-                .padding(Space.s8)
-                .frame(width: Metrics.sidebarWidth)
-                .background(Palette.well)
-            }
-        }
-    }
-}
-
-/// The Settings pieces in each state: the rail on the well, then the tiles, switches, mark and raised block in a card.
-private struct SettingsSpecimens: View {
-    @State private var section = SettingsSection.appearance
-    @State private var theme = ThemeSetting.dark
-    @State private var on = true
-    @State private var off = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.s16) {
-            HStack(spacing: Space.s4) {
-                ForEach(SettingsSection.allCases) { item in
-                    RailTab(title: item.title, icon: item.icon, isActive: item == section) { section = item }
-                }
-            }
-            GroupedList {
-                HStack(spacing: Rhythm.tiles) {
-                    ForEach(ThemeSetting.allCases, id: \.self) { item in
-                        ThemeTile(title: item.title, icon: item.icon, appearance: item.fixed?.colorScheme, isSelected: item == theme) { theme = item }
-                    }
-                }
-                .frame(width: Metrics.settingsColumnWidth)
-                .padding(.horizontal, Metrics.rowInset)
-                .padding(.top, Space.s8)
-                .groupedListPart(.plain)
-                HStack(spacing: Space.s16) {
-                    ReinsSwitch(label: "On", isOn: $on)
-                    ReinsSwitch(label: "Off", isOn: $off)
-                    ReinsSwitch(label: "Disabled", isOn: .constant(false)).disabled(true)
-                    ReinsMark()
-                    RaisedBlock { Text("A raised block inside a card").reinsText(.body, tone: .secondary) }
-                        .frame(width: Metrics.usageCellWidth * 2)
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, Metrics.rowHorizontalPadding)
-                .padding(.top, Space.s8)
-                .groupedListPart(.plain)
-            }
-        }
     }
 }

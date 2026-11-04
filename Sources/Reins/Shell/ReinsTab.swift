@@ -21,7 +21,7 @@ struct PaletteEntry: Identifiable {
     let id: String
     var title: String
     var subtitle: String?
-    var icon: ReinsGlyph?
+    var icon: PageGlyph?
     /// Right-aligned hint such as a shortcut.
     var trailing: String?
     /// Extra words the search matches besides the title.
@@ -37,7 +37,7 @@ struct PaletteEntry: Identifiable {
 /// the shell reads `badge`, `hints` and the palette entries while rendering, so Observation updates them.
 ///
 ///     @MainActor @Observable final class LoadoutTab: ReinsTab {
-///         let id = "loadout"; let title = "Loadout"; let icon = ReinsGlyph.loadout
+///         let id = "loadout"; let title = "Loadout"; let icon = ReinsGlyph.loadout; let pageIcon = PageGlyph.loadout
 ///         var badge: TabBadge? { TabBadge(value: items.count) }
 ///         var content: AnyView { AnyView(LoadoutScreen(model: model)) }
 ///     }
@@ -48,8 +48,10 @@ protocol ReinsTab: AnyObject {
     /// Stable, lowercase. Position in `TabRegistry` decides the `⌘1`, `⌘2`, `⌘3` shortcut.
     var id: String { get }
     var title: String { get }
-    /// An SF Symbol name; one weight across the app.
+    /// The sidebar's icon (Solar, `ReinsGlyph`): only the sidebar draws it.
     var icon: ReinsGlyph { get }
+    /// The same tab inside a page (Tabler, `PageGlyph`): its "Go to" row in the palette.
+    var pageIcon: PageGlyph { get }
     var badge: TabBadge? { get }
     /// Shown after the always-present `⌘K Search or run` and before `Esc Close`.
     var hints: [KeyHint] { get }

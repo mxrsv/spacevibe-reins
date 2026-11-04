@@ -103,8 +103,6 @@ enum Metrics {
     static let iconControl: CGFloat = 16
     static let iconInline: CGFloat = 14
     static let iconLarge: CGFloat = 24
-    /// The hand-drawn chevron's stroke in its 24 pt box (Solar Linear's width), scaled with the icon.
-    static let chevronStroke: CGFloat = 1.5
 
     static let emptyStateMessageWidth: CGFloat = 360
 

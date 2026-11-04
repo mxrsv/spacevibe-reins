@@ -44,9 +44,9 @@ enum TagTone {
 struct Tag: View {
     let text: String
     var tone: TagTone = .neutral
-    var icon: ReinsGlyph?
+    var icon: PageGlyph?
 
-    init(_ text: String, tone: TagTone = .neutral, icon: ReinsGlyph? = nil) {
+    init(_ text: String, tone: TagTone = .neutral, icon: PageGlyph? = nil) {
         self.text = text
         self.tone = tone
         self.icon = icon
@@ -55,7 +55,7 @@ struct Tag: View {
     var body: some View {
         HStack(spacing: Space.s4) {
             if let icon {
-                ReinsIcon(icon, ink: tone.ink)
+                PageIcon(icon, ink: tone.ink)
             } else if let dot = tone.dot {
                 Circle().fill(dot).frame(width: Metrics.tagDotSize, height: Metrics.tagDotSize).accessibilityHidden(true)
             }

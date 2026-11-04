@@ -8,6 +8,7 @@ final class ActivityTab: ReinsTab {
     let id = ActivityTab.tabID
     let title = "Activity"
     let icon = ReinsGlyph.activity
+    let pageIcon = PageGlyph.activity
     let model: ActivityModel
 
     init(env: AppEnvironment? = nil) { model = ActivityModel(env: env ?? .shared) }

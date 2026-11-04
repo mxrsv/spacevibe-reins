@@ -6,7 +6,7 @@ enum ToastTone { case info, danger }
 /// The one button a toast can carry. Undo is the common case; without an action the toast offers only dismiss.
 struct ToastAction {
     let title: String
-    let icon: ReinsGlyph
+    let icon: PageGlyph
     let run: @MainActor () -> Void
 
     static func undo(_ run: @escaping @MainActor () -> Void) -> ToastAction {

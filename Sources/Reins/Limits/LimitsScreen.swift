@@ -30,7 +30,7 @@ struct LimitsScreen: View {
         HStack(spacing: Rhythm.tools) {
             Button { Task { await model.readOnce() } } label: {
                 HStack(spacing: Space.s6) {
-                    ReinsIcon(.refresh)
+                    PageIcon(.refresh)
                     Text("Refresh")
                 }
             }
@@ -173,10 +173,10 @@ private struct StateNote: View {
 
     var body: some View {
         let note = LimitsWording.entryNote(limits)
-        let icon: ReinsGlyph = limits.state == .notMeasurable || limits.state == .unreadable ? .warning : .info
+        let icon: PageGlyph = limits.state == .notMeasurable || limits.state == .unreadable ? .warning : .info
         VStack(alignment: .leading, spacing: Space.s12) {
             HStack(alignment: .top, spacing: Space.s8) {
-                ReinsIcon(icon, ink: TextTone.secondary.color).padding(.top, Space.s2)
+                PageIcon(icon, ink: TextTone.secondary.color).padding(.top, Space.s2)
                 (Text("\(note.title). ").reinsText(.bodyStrong, tone: .primary) + Text(note.body).reinsText(.body, tone: .secondary))
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -190,7 +190,7 @@ private struct CopyUsageButton: View {
     var body: some View {
         Button { LimitsClipboard.copyUsageCommand() } label: {
             HStack(spacing: Space.s6) {
-                ReinsIcon(.copy)
+                PageIcon(.copy)
                 Text("Copy \(LimitsWording.copyHint)")
             }
         }

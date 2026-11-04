@@ -8,6 +8,7 @@ final class LoadoutTab: ReinsTab {
     let id = LoadoutTab.tabID
     let title = "Loadout"
     let icon = ReinsGlyph.loadout
+    let pageIcon = PageGlyph.loadout
     let model: LoadoutModel
 
     init(env: AppEnvironment? = nil) { model = LoadoutModel(env: env ?? .shared) }

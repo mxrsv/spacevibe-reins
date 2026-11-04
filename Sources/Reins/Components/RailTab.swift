@@ -4,7 +4,7 @@ import SwiftUI
 /// chosen one changes only its fill (`surface` on the well) and its tone; the others fill with `hover` under the pointer.
 struct RailTab: View {
     let title: String
-    let icon: ReinsGlyph
+    let icon: PageGlyph
     let isActive: Bool
     let select: () -> Void
 
@@ -14,7 +14,7 @@ struct RailTab: View {
         let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
         Button(action: select) {
             VStack(spacing: Space.s4) {
-                ReinsIcon(icon, size: .large)
+                PageIcon(icon, size: .large)
                 Text(title).reinsText(.label)
             }
             .foregroundStyle(isActive ? TextTone.primary.color : TextTone.secondary.color)

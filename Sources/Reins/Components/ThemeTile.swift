@@ -5,7 +5,7 @@ import SwiftUI
 /// picture is drawn from the real tokens with the appearance forced, so it changes when the palette does.
 struct ThemeTile: View {
     let title: String
-    let icon: ReinsGlyph
+    let icon: PageGlyph
     /// What the picture shows; nil is System: dark on the left, light on the right.
     let appearance: ColorScheme?
     let isSelected: Bool
@@ -19,7 +19,7 @@ struct ThemeTile: View {
             VStack(alignment: .leading, spacing: Space.s8) {
                 picture
                 HStack(spacing: Space.s8) {
-                    ReinsIcon(icon).foregroundStyle(TextTone.secondary.color)
+                    PageIcon(icon).foregroundStyle(TextTone.secondary.color)
                     Text(title).reinsText(isSelected ? .bodyStrong : .body, tone: isSelected ? .primary : .secondary)
                 }
                 .padding(.horizontal, Space.s4)

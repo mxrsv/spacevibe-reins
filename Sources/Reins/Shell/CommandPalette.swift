@@ -98,8 +98,8 @@ struct CommandPalette: View {
 
     private var footer: some View {
         PaletteFooter {
-            PaletteHint(text: "navigate") { ReinsIcon(.navigate, size: .inline) }
-            PaletteHint(text: "run") { ReinsIcon(.enter, size: .inline) }
+            PaletteHint(text: "navigate") { PageIcon(.navigate, size: .inline) }
+            PaletteHint(text: "run") { PageIcon(.enter, size: .inline) }
             PaletteHint(text: "close") { Kbd("Esc") }
         }
     }

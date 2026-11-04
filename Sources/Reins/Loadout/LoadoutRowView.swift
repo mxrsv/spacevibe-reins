@@ -18,7 +18,7 @@ struct LoadoutRowView: View {
                 }
             }
         }
-        .lead { ReinsIcon(row.kind.icon, size: .row) }
+        .lead { PageIcon(row.kind.icon, size: .row) }
         .cells {
             ForEach(InventoryCLI.allCases, id: \.self) { cli in
                 UsageCell(

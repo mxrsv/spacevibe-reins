@@ -42,7 +42,7 @@ struct NoteRegion: View {
 
     private func line(_ text: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
-            ReinsIcon(.info, size: .inline)
+            PageIcon(.info, size: .inline)
             Text(text).fixedSize(horizontal: false, vertical: true)
         }
         .reinsText(.caption, tone: .tertiary)

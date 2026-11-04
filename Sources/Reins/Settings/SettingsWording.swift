@@ -13,7 +13,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         }
     }
 
-    var icon: ReinsGlyph {
+    var icon: PageGlyph {
         switch self {
         case .appearance: .palette
         case .update: .update
@@ -22,7 +22,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 }
 
 extension ThemeSetting {
-    var icon: ReinsGlyph {
+    var icon: PageGlyph {
         switch self {
         case .system: .monitor
         case .light: .sun
@@ -42,7 +42,7 @@ enum SettingsWording {
     struct StatusTag: Equatable {
         let text: String
         let tone: TagTone
-        let icon: ReinsGlyph?
+        let icon: PageGlyph?
     }
 
     static func tag(_ status: UpdateController.Status) -> StatusTag? {
