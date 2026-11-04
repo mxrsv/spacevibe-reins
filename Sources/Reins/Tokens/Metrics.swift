@@ -84,6 +84,18 @@ enum Metrics {
 
     /// Every control: button, chip, segmented frame, scope picker, search field.
     static let controlHeight: CGFloat = 28
+    /// The agent card's buttons into its panels (v4 card button): the one exception to the 28 pt control height.
+    static let cardButtonHeight: CGFloat = 32
+    /// The raised block (v4): its hairline, its shadow's blur radius and drop, the top highlight, and how far it sinks
+    /// while pressed.
+    static let controlHairlineWidth: CGFloat = 0.5
+    static let controlShadowRadius: CGFloat = 1
+    static let controlShadowOffset: CGFloat = 1
+    static let controlHighlightWidth: CGFloat = 1
+    static let controlPressedOffset: CGFloat = 0.5
+    /// The spinner that stands in for a loading button's leading icon, and its ring.
+    static let spinnerSize: CGFloat = 14
+    static let spinnerStroke: CGFloat = 2
     static let chipHeight: CGFloat = 28
     /// A segment inside its 28 pt frame.
     static let segmentHeight: CGFloat = 24

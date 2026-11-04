@@ -48,7 +48,35 @@ enum Palette {
     static let trackOnSelection = Color(light: 0x141414, dark: 0xF2F2F2, lightAlpha: 0.14, darkAlpha: 0.14)
     static let accent = Color(light: 0x3250D8, dark: 0x82A5FF)
     static let accentSolid = Color(light: 0x3250D8, dark: 0x4164ED)
+    /// The primary button and every chosen control (v4): hover lifts the accent, pressed sinks it. The same in both.
+    static let accentHover = Color(light: 0x4A6CF0, dark: 0x4A6CF0)
+    static let accentPressed = Color(light: 0x2C47C4, dark: 0x2C47C4)
     static let onAccent = Color(light: 0xFFFFFF, dark: 0xFFFFFF)
+
+    // Raised controls (v4, button direction A "Khối có chiều sâu"): a block with a 0.5 pt hairline, a shadow 1 pt down with
+    // a 2 pt blur, and a 1 pt highlight along its top edge. Buttons, card buttons, filter chips and the scope picker.
+    static let controlFill = Color(light: 0xFFFFFF, dark: 0x3D3D3D)
+    static let controlFillHover = Color(light: 0xFAFAFA, dark: 0x454545)
+    static let controlFillPressed = Color(light: 0xEBEBEB, dark: 0x323232)
+    static let controlHairline = Color(light: 0x000000, dark: 0x000000, lightAlpha: 0.16, darkAlpha: 0.7)
+    static let controlShadow = Color(light: 0x000000, dark: 0x000000, lightAlpha: 0.12, darkAlpha: 0.45)
+    static let controlHighlight = Color(light: 0xFFFFFF, dark: 0xFFFFFF, lightAlpha: 0.9, darkAlpha: 0.09)
+    /// The primary button's and a chosen control's own top highlight, hairline and shadow (the mock's values: the accent
+    /// takes a fainter highlight than a neutral block, and a shadow tinted with it).
+    static let accentHighlight = Color(light: 0xFFFFFF, dark: 0xFFFFFF, lightAlpha: 0.22, darkAlpha: 0.22)
+    static let accentHairline = Color(light: 0x000000, dark: 0x000000, lightAlpha: 0.25, darkAlpha: 0.25)
+    static let accentShadow = Color(light: 0x1E32A0, dark: 0x1E32A0, lightAlpha: 0.35, darkAlpha: 0.35)
+    /// Under a chosen segment, which sits inside the sunken track rather than on the well.
+    static let chosenShadow = Color(light: 0x000000, dark: 0x000000, lightAlpha: 0.3, darkAlpha: 0.3)
+    /// The segmented control's sunken track: in dark a `#1F1F1F` fill below `surface`, laid over the control ground; in light
+    /// the ground shows through. `segmentShadow` is its inner shadow, 1 pt down with a 2 pt blur.
+    static let segmentTrack = Color(light: 0xFFFFFF, dark: 0x1F1F1F, lightAlpha: 0, darkAlpha: 1)
+    static let segmentShadow = Color(light: 0x000000, dark: 0x000000, lightAlpha: 0.08, darkAlpha: 0.35)
+    /// Text and icons on a solid state fill (a chosen verdict segment): white on the light success and danger fills,
+    /// `#141414` on warn and on every dark fill, where the fills are pale. Each measures at least 4.5:1 (PaletteContrastTests).
+    static let onSuccess = Color(light: 0xFFFFFF, dark: 0x141414)
+    static let onDanger = Color(light: 0xFFFFFF, dark: 0x141414)
+    static let onWarn = Color(light: 0x141414, dark: 0x141414)
 
     // Text
     static let text = Color(light: 0x141414, dark: 0xF2F2F2)
