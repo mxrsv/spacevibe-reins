@@ -4,9 +4,9 @@ Date: 2026-11-05
 Status: the owner confirmed the intent on 2026-11-04, through an interview and a grilling in chat. Mock C′ was accepted as "tạm ổn" on 2026-11-05, after the panel fixes. The page takes the v4 look of the [design-language spec](2026-11-03-reins-design-language.md), picked the same day.
 Parent spec: [Reins](2026-11-02-reins.md). This page replaces its Rules tab and moves hooks out of Loadout.
 Execution: [plan](../plans/2026-11-05-reins-agents.md), after [design language v4](../plans/2026-11-05-reins-design-language-v4.md).
-Mocks, outside git, with synthetic data:
-- `~/scratch/spacevibe-reins/agent-navigation/agents-panel.html`: C′, also option C′ of that folder's `index.html`.
-- `controls.html?icons=tabler&buttons=a` in the same folder: the v4 look applied to C′.
+Mocks, tracked in [`mocks/agents/`](../../mocks/agents/index.html) with synthetic data (serve the folder, for example `python3 -m http.server 4186 --directory mocks/agents`):
+- [`agents-panel.html`](../../mocks/agents/agents-panel.html): C′, also option C′ of that folder's `index.html`.
+- [`controls.html`](../../mocks/agents/controls.html)`?icons=tabler&buttons=a`: the v4 look applied to C′.
 
 ## Intent
 

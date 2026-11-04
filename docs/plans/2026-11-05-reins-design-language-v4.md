@@ -2,7 +2,7 @@
 
 Spec: [2026-11-03-reins-design-language.md](../specs/2026-11-03-reins-design-language.md), section "v4 changes" (acceptance criteria DL7, DL10, DL11, with DL4 and DL9 still holding).
 Related: the [Agents plan](2026-11-05-reins-agents.md) uses the card button and the verdict picker built here.
-Mock: `~/scratch/spacevibe-reins/agent-navigation/controls.html?icons=tabler&buttons=a`, outside git. It shows the Agents page with the v4 look, and a sheet of every button kind in every state in both appearances.
+Mock: [`mocks/agents/controls.html`](../../mocks/agents/controls.html)`?icons=tabler&buttons=a`, tracked with synthetic data. It shows the Agents page with the v4 look, and a sheet of every button kind in every state in both appearances.
 Checkout: `spacevibe-reins` on `main`, shared with other sessions. Commit with `git commit -- <paths>` only.
 Started 2026-11-05. Status: the spec was committed (`2b2615f`); no Swift written yet.
 
@@ -45,10 +45,10 @@ Sources/Reins/Gallery/                the button sheet: every kind in every stat
 
 - `scripts/test.sh`, which must report more than 0 passed, including `IconPolicyTests`, `StyleBoundaryTests` and the contrast test.
 - `scripts/build-app.sh`, which must print `minos 15.0`.
-- The gallery and screen shots from `scripts/dev-fixture.sh --shots <dir>` in light and dark, beside `controls.html?icons=tabler&buttons=a`.
+- The gallery and screen shots from `scripts/dev-fixture.sh --shots <dir>` in light and dark, beside `mocks/agents/controls.html?icons=tabler&buttons=a`.
 
 ## Handoff
 
 2026-11-05: the plan is written. Nothing else has started.
 
-/goal Build design language v4 per docs/specs/2026-11-03-reins-design-language.md ("v4 changes") and docs/plans/2026-11-05-reins-design-language-v4.md: tasks V2 to V7 in order, one commit each. Done means scripts/test.sh passes with IconPolicyTests and the contrast test (DL7, DL11), and the gallery sheet and screen shots in light and dark match ~/scratch/spacevibe-reins/agent-navigation/controls.html?icons=tabler&buttons=a (DL10). Leave V8, the owner's eye approval, to the owner. Never push or release, and never touch the real ~/.claude or ~/.codex.
+/goal Build design language v4 per docs/specs/2026-11-03-reins-design-language.md ("v4 changes") and docs/plans/2026-11-05-reins-design-language-v4.md: tasks V2 to V7 in order, one commit each. Done means scripts/test.sh passes with IconPolicyTests and the contrast test (DL7, DL11), and the gallery sheet and screen shots in light and dark match mocks/agents/controls.html?icons=tabler&buttons=a (DL10). Leave V8, the owner's eye approval, to the owner. Never push or release, and never touch the real ~/.claude or ~/.codex.

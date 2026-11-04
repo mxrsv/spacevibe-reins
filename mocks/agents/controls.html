@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reins — Icon trong page và bộ button</title>
+<style>
+@font-face{font-family:Inter;src:url('assets/InterVariable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+:root{font-family:Inter,sans-serif;color:#262a29;background:#eeefeb;font-synthesis:none;--accent:#31534a}
+*{box-sizing:border-box}body{margin:0;padding:22px 28px 28px}button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #508673;outline-offset:2px}::selection{background:#c8ddd4}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:16px}h1{font-size:21px;letter-spacing:-.025em;font-weight:600;margin:0}header p{font-size:12px;color:#59605c;margin:0}
+.pickers{display:flex;flex-wrap:wrap;gap:12px 28px;margin-bottom:12px}
+.group{display:flex;align-items:center;gap:10px}.glabel{font-size:12px;font-weight:600;color:#46564c}
+.opts{display:flex;gap:4px;padding:3px;border-radius:10px;background:#e2e5de}
+.opts button{border:0;background:none;padding:6px 12px;border-radius:7px;font-size:14px;font-weight:500;color:#46564c;white-space:nowrap}
+.opts button:hover{background:#f2f3ef}
+.opts button[aria-pressed=true]{background:#fff;color:#1f2a24;box-shadow:0 1px 2px #26382f26;font-weight:600}
+.opts b{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:6px;border-radius:4px;background:#d4dcd5;font-size:12px}
+.opts button[aria-pressed=true] b{background:var(--accent);color:#fff}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:12px;margin-bottom:12px;color:#46564c}
+.meta p{margin:0}.jump{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.jump button{border:0;background:#e2e5de;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:500}.jump button:hover{background:#fff}
+.frame{border-radius:12px;overflow:hidden;box-shadow:0 14px 32px #26382f20;background:#171819}
+iframe{display:block;border:0;width:100%}
+#app{height:max(640px,calc(100vh - 190px))}
+h2{font-size:16px;font-weight:600;margin:28px 0 12px;letter-spacing:-.01em}
+footer{font-size:12px;color:#626a64;margin-top:14px;line-height:1.5}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><h1>Icon trong page và bộ button</h1><p>Sidebar giữ Solar Bold Duotone · áp lên màn C′</p></header>
+<div class="pickers">
+  <div class="group"><span class="glabel">Icon trong page</span><div class="opts" data-key="icons" role="radiogroup" aria-label="Icon trong page">
+    <button data-v="solar-linear">Solar Linear</button><button data-v="lucide">Lucide</button><button data-v="ph">Phosphor Regular</button><button data-v="tabler">Tabler</button></div></div>
+  <div class="group"><span class="glabel">Button</span><div class="opts" data-key="buttons" role="radiogroup" aria-label="Kiểu button">
+    <button data-v="a"><b>A</b>Khối có chiều sâu</button><button data-v="b"><b>B</b>Viên pastel</button><button data-v="c"><b>C</b>Phẳng kiểu Raycast</button></div></div>
+  <div class="group"><span class="glabel">Theme</span><div class="opts" data-key="theme" role="radiogroup" aria-label="Theme">
+    <button data-v="dark">Dark</button><button data-v="light">Light</button></div></div>
+</div>
+<div class="meta"><p>Đổi icon và button ở trên; màn C′ bên dưới vẫn bấm, sửa và lưu được như cũ.</p>
+  <span class="jump">Mở nhanh: <button data-open="">Đóng panel</button><button data-open="claude/permissions">Permissions</button><button data-open="claude/hooks">Hooks</button><button data-open="claude/mcp">MCP</button><button data-open="codex/permissions">Codex</button><button data-open="claude/advanced">Advanced</button></span></div>
+<div class="frame"><iframe id="app" title="Màn C′ với icon và button đang chọn"></iframe></div>
+<h2>Bảng nút và icon</h2>
+<div class="frame"><iframe id="sheet" title="Mọi loại nút ở mọi trạng thái, và bốn bộ icon"></iframe></div>
+<footer>Dữ liệu minh hoạ. Hover, Pressed và Focus trong bảng là trạng thái giả lập để nhìn cùng lúc; trên màn C′ chúng chạy thật.</footer>
+<script>
+const params = new URLSearchParams(location.search);
+const pick = { icons: params.get('icons') || 'tabler', buttons: params.get('buttons') || 'a', theme: params.get('theme') || 'dark' };
+const appFrame = document.getElementById('app'), sheet = document.getElementById('sheet');
+let hash = '#open=claude/permissions';
+const query = () => new URLSearchParams(pick).toString();
+function update() {
+  for (const group of document.querySelectorAll('.opts')) for (const b of group.querySelectorAll('button')) {
+    const on = b.dataset.v === pick[group.dataset.key];
+    b.setAttribute('aria-pressed', on); b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', on);
+  }
+  try { const h = appFrame.contentWindow.location.hash; if (appFrame.src) hash = h; } catch { /* first load */ }
+  appFrame.src = `agents-panel.html?${query()}&t=${Date.now()}${hash}`;
+  sheet.src = `agents-panel.html?${query()}&specimen=1`;
+  history.replaceState(null, '', `?${query()}`);
+}
+document.querySelectorAll('.opts').forEach((group) => group.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  pick[group.dataset.key] = b.dataset.v; update();
+}));
+document.querySelector('.jump').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-open]'); if (!b) return;
+  hash = b.dataset.open ? `#open=${b.dataset.open}` : '';
+  appFrame.src = `agents-panel.html?${query()}&t=${Date.now()}${hash}`;
+});
+sheet.addEventListener('load', () => { sheet.style.height = `${sheet.contentDocument.documentElement.scrollHeight}px`; });
+update();
+</script>
+</body>
+</html>

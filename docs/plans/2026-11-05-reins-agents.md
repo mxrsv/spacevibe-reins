@@ -2,7 +2,7 @@
 
 Spec: [2026-11-05-reins-agents.md](../specs/2026-11-05-reins-agents.md), AG1 to AG10.
 Depends on [design language v4](2026-11-05-reins-design-language-v4.md) V5 (the components) before any UI task here. The core tasks A1 to A6 can start now.
-Mock: `~/scratch/spacevibe-reins/agent-navigation/agents-panel.html` (C′), with the v4 look at `controls.html?icons=tabler&buttons=a`. Both are outside git and use synthetic data.
+Mock: [`mocks/agents/agents-panel.html`](../../mocks/agents/agents-panel.html) (C′), with the v4 look at [`mocks/agents/controls.html`](../../mocks/agents/controls.html)`?icons=tabler&buttons=a`. Both are tracked with synthetic data, and A12 deletes the folder.
 Checkout: `spacevibe-reins` on `main`, shared with other sessions. Commit with `git commit -- <paths>` only.
 Started 2026-11-05. Status: plan written. Before A1, the owner approves the write approach below (W9) and picks the A0b mock; those are the only stops before the cut-over.
 
@@ -81,7 +81,7 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
 - [ ] A11. Real-CLI check, run with the owner like the parent plan's S0.5: a throwaway home needs the owner's sign-in, and real sessions spend their quota. `claude` and `codex` load a permission, a hook, an MCP server, a model and an instruction-file change written by Reins (AG9).
 - [ ] A12. Cut-over:
   - run `impeccable distill` and `clarify`, then get the owner's eye approval of the shots next to the mock (AG10);
-  - in the same change, remove the switch, the Rules tab and its code, and Loadout's hooks (AG1);
+  - in the same change, remove the switch, the Rules tab and its code, Loadout's hooks, and `mocks/agents/` once design language v4 V8 is approved (AG1);
   - update `AGENTS.md` (S-R3 wording, the screen list), `docs/DESIGN-LANGUAGE.md`, and the parent spec's status.
 
 ## Verification

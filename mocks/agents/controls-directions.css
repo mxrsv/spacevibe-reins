@@ -1,0 +1,100 @@
+/* Three button directions to compare. html[data-buttons=a|b|c] picks one.
+   On the specimen sheet .is-hover, .is-active and .is-focus fake a state; :hover, :active and :focus-visible do it live. */
+.btn .k{display:none}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.is-loading{cursor:progress}
+.is-focus{outline:2px solid var(--accent);outline-offset:2px}
+.facet .v .bad{color:var(--danger-ink)}
+/* Text on a solid success or danger fill: white in light, near-black in dark where the fills are pale */
+html[data-theme=light]{--on-ok:#FFFFFF;--on-bad:#FFFFFF}
+html[data-theme=dark]{--on-ok:#141414;--on-bad:#141414}
+
+/* ---------- A · Khối có chiều sâu: a raised block with a hairline and a soft shadow, pressed sinks ---------- */
+html[data-buttons=a]{--a-fill:#FFFFFF;--a-fill-hover:#FAFAFA;--a-fill-press:#EBEBEB;--a-depth:0 0 0 .5px rgba(0,0,0,.16),0 1px 2px rgba(0,0,0,.12);--a-hi:inset 0 1px 0 rgba(255,255,255,.9);--a-press:0 0 0 .5px rgba(0,0,0,.18),inset 0 1px 2px rgba(0,0,0,.12);--a-track:inset 0 1px 2px rgba(0,0,0,.08)}
+html[data-theme=dark][data-buttons=a]{--a-fill:#3D3D3D;--a-fill-hover:#454545;--a-fill-press:#323232;--a-depth:0 0 0 .5px rgba(0,0,0,.7),0 1px 2px rgba(0,0,0,.45);--a-hi:inset 0 1px 0 rgba(255,255,255,.09);--a-press:0 0 0 .5px rgba(0,0,0,.7),inset 0 1px 2px rgba(0,0,0,.45);--a-track:inset 0 1px 2px rgba(0,0,0,.35)}
+html[data-buttons=a] :where(.btn:not(.primary):not(.ghost):not(.icon),.facet:not(.ghost),.scope,.chip){background:var(--a-fill);box-shadow:var(--a-hi),var(--a-depth);transition:background .12s,box-shadow .12s,transform .08s}
+html[data-buttons=a] :where(.btn:not(.primary):not(.ghost):not(.icon):not(:disabled),.facet:not(.ghost),.scope:not(:disabled),.chip):is(:hover,.is-hover){background:var(--a-fill-hover);box-shadow:var(--a-hi),var(--a-depth)}
+html[data-buttons=a] :where(.btn:not(.primary):not(.ghost):not(.icon):not(:disabled),.facet:not(.ghost),.scope:not(:disabled),.chip):is(:active,.is-active){background:var(--a-fill-press);box-shadow:var(--a-press);transform:translateY(.5px)}
+html[data-buttons=a] .btn:disabled{box-shadow:var(--a-depth)}
+html[data-buttons=a] .btn.primary{box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 .5px rgba(0,0,0,.25),0 1px 2px rgba(30,50,160,.35)}
+html[data-buttons=a] .btn.primary:not(:disabled):is(:hover,.is-hover){background:#4A6CF0;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 .5px rgba(0,0,0,.25),0 1px 2px rgba(30,50,160,.35)}
+html[data-buttons=a] .btn.primary:not(:disabled):is(:active,.is-active){background:#2C47C4;box-shadow:inset 0 1px 2px rgba(0,0,0,.3);transform:translateY(.5px)}
+html[data-buttons=a] :is(.btn.ghost,.btn.icon,.facet.ghost):not(:disabled):is(:active,.is-active){background:var(--track)}
+html[data-buttons=a] :is(.facet[aria-expanded=true],.chip[aria-pressed=true]){background:var(--accent-solid);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 0 .5px rgba(0,0,0,.25)}
+html[data-buttons=a] :is(.facet[aria-expanded=true],.chip[aria-pressed=true]) :is(svg,.v,.c){color:rgba(255,255,255,.85)}
+html[data-buttons=a] .facet[aria-expanded=true] .v .bad{color:#fff}
+/* Segments: a sunken track; the chosen segment takes the accent like every chosen control in A, a verdict its own colour */
+html[data-buttons=a] .seg{box-shadow:var(--a-track)}
+html[data-theme=dark][data-buttons=a] .seg{background:#1F1F1F}
+html[data-buttons=a] .seg button[aria-pressed=true]{background:var(--accent-solid);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 1px 2px rgba(0,0,0,.3)}
+html[data-buttons=a] .seg button.warn-opt[aria-pressed=true]{background:var(--warn);color:#141414}
+html[data-buttons=a] .seg button[data-tone=ok][aria-pressed=true]{background:var(--success);color:var(--on-ok)}
+html[data-buttons=a] .seg button[data-tone=warn][aria-pressed=true]{background:var(--warn);color:#141414}
+html[data-buttons=a] .seg button[data-tone=bad][aria-pressed=true]{background:var(--danger);color:var(--on-bad)}
+html[data-buttons=a] .btn .spin{border-width:2px}
+
+/* ---------- B · Viên pastel: solid pastel pills with dark text, the chosen one inverts ---------- */
+html[data-buttons=b]{--b-ink:#141414;--b-neutral:#EBEBEB;--b-neutral-ink:#141414;--b-primary:#C9D6FF;--b-danger:#FFDADA;--b-danger-ink:#8F0B17;--b-rules:#E6DEFF;--b-permissions:#D2F1DF;--b-hooks:#FFE7B3;--b-mcp:#D5EAFF;--b-model:#FFDDEB;--b-sel:#141414;--b-sel-ink:#FFFFFF}
+html[data-theme=dark][data-buttons=b]{--b-neutral:#3E3E3E;--b-neutral-ink:#F2F2F2;--b-primary:#AEC2FF;--b-danger:#FFC4C4;--b-danger-ink:#5E0710;--b-rules:#CFC3FF;--b-permissions:#B6E7CB;--b-hooks:#F3D48D;--b-mcp:#B7D9FF;--b-model:#F8C1D8;--b-sel:#F2F2F2;--b-sel-ink:#141414}
+html[data-buttons=b] :is(.btn,.facet,.scope,.chip,.seg,.seg button){border-radius:999px}
+html[data-buttons=b] :where(.btn:not(.primary):not(.ghost):not(.icon):not(.danger),.scope,.chip,.facet.ghost){background:var(--b-neutral);color:var(--b-neutral-ink)}
+html[data-buttons=b] .btn.primary{background:var(--b-primary);color:var(--b-ink)}
+html[data-buttons=b] .btn.danger{background:var(--b-danger);color:var(--b-danger-ink)}
+html[data-buttons=b] .btn{font-weight:600}
+html[data-buttons=b] .facet:not(.ghost){color:var(--b-ink);font-weight:600}
+html[data-buttons=b] .facet:not(.ghost) :is(svg,.v){color:rgba(20,20,20,.72)}
+html[data-buttons=b] .facet:not(.ghost) .v .bad{color:#9A0A18}
+html[data-buttons=b] .facet.ghost svg{color:inherit}
+html[data-buttons=b] .facet[data-section=rules]{background:var(--b-rules)}
+html[data-buttons=b] .facet[data-section=permissions]{background:var(--b-permissions)}
+html[data-buttons=b] .facet[data-section=hooks]{background:var(--b-hooks)}
+html[data-buttons=b] .facet[data-section=mcp]{background:var(--b-mcp)}
+html[data-buttons=b] .facet[data-section=model]{background:var(--b-model)}
+html[data-buttons=b] :where(.btn:not(:disabled),.facet,.scope:not(:disabled),.chip):is(:hover,.is-hover){box-shadow:inset 0 0 0 100px rgba(0,0,0,.06)}
+html[data-buttons=b] :where(.btn:not(:disabled),.facet,.scope:not(:disabled),.chip):is(:active,.is-active){box-shadow:inset 0 0 0 100px rgba(0,0,0,.13)}
+html[data-buttons=b] :is(.btn.ghost,.btn.icon):not(:disabled):is(:hover,.is-hover){background:var(--b-neutral);box-shadow:none}
+html[data-buttons=b] .facet[aria-expanded=true]{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text)}
+html[data-buttons=b] .chip[aria-pressed=true]{background:var(--b-sel);color:var(--b-sel-ink)}
+html[data-buttons=b] .chip[aria-pressed=true] .c{color:inherit;opacity:.7}
+html[data-buttons=b] .seg{background:var(--b-neutral)}
+html[data-buttons=b] .seg button{color:var(--b-neutral-ink);opacity:.72}
+html[data-buttons=b] .seg button[aria-pressed=true]{background:var(--b-sel);color:var(--b-sel-ink);opacity:1}
+html[data-buttons=b] .seg button.warn-opt[aria-pressed=true]{background:var(--b-hooks);color:var(--b-ink)}
+html[data-buttons=b] .seg button[data-tone=ok][aria-pressed=true]{background:var(--b-permissions);color:var(--b-ink)}
+html[data-buttons=b] .seg button[data-tone=warn][aria-pressed=true]{background:var(--b-hooks);color:var(--b-ink)}
+html[data-buttons=b] .seg button[data-tone=bad][aria-pressed=true]{background:var(--b-danger);color:var(--b-danger-ink)}
+html[data-buttons=b] .btn:disabled{opacity:.45}
+
+/* ---------- C · Phẳng kiểu Raycast: no fill until hovered, shortcut caps inside the buttons ---------- */
+html[data-buttons=c] :is(.btn,.facet,.scope,.chip,.seg button){border-radius:6px}
+html[data-buttons=c] :where(.btn:not(.primary),.facet,.scope,.chip){background:none;box-shadow:none}
+html[data-buttons=c] :where(.btn:not(.primary):not(:disabled),.facet,.scope:not(:disabled),.chip):is(:hover,.is-hover){background:var(--hover);box-shadow:none}
+html[data-buttons=c] :where(.btn:not(.primary):not(:disabled),.facet,.scope:not(:disabled),.chip):is(:active,.is-active){background:var(--track);box-shadow:none}
+html[data-buttons=c] .btn:not(.primary):not(.icon):not(.danger){color:var(--text)}
+html[data-buttons=c] .facet{padding:0 10px 0 8px}
+html[data-buttons=c] :is(.facet[aria-expanded=true],.chip[aria-pressed=true]){background:var(--selection)}
+html[data-buttons=c] .btn.primary:not(:disabled):is(:active,.is-active){filter:brightness(.92)}
+html[data-buttons=c] .btn .k{display:inline-grid;margin:0 -6px 0 2px;background:var(--raised);color:var(--text-2)}
+html[data-buttons=c] .btn.primary .k{background:rgba(255,255,255,.2);color:#fff}
+html[data-buttons=c] .btn:has(.k){padding-right:10px}
+html[data-buttons=c] .seg{background:none;padding:0;gap:2px}
+html[data-buttons=c] .seg button[aria-pressed=true]{background:var(--selection)}
+html[data-buttons=c] .seg button[data-tone=ok][aria-pressed=true]{background:var(--success-tint);color:var(--success-ink)}
+html[data-buttons=c] .seg button[data-tone=warn][aria-pressed=true]{background:var(--warn-tint);color:var(--warn-ink)}
+html[data-buttons=c] .seg button[data-tone=bad][aria-pressed=true]{background:var(--danger-tint);color:var(--danger-ink)}
+html[data-buttons=c] .scope{padding-left:8px;min-width:0}
+
+/* ---------- Specimen sheet layout (?specimen=1) ---------- */
+body:has(#app.spec){overflow:auto}
+.spec{padding:24px}
+.spec-page{display:flex;flex-direction:column;gap:24px}
+.spec-table{border-collapse:collapse;width:calc(100% - 32px);margin:0 16px 8px}
+.spec-table th{text-align:left;padding:0 12px 8px;font-weight:500}
+.spec-table td{padding:12px;vertical-align:middle;border-top:1px solid var(--divider);white-space:nowrap}
+.spec-table td:first-child{padding-left:8px;width:120px}
+.na{color:var(--text-3)}
+.set-row{display:grid;grid-template-columns:220px minmax(0,1fr) auto;gap:24px;align-items:center;padding:16px 24px;border-top:1px solid var(--divider)}
+.set-row.current{background:var(--selection);border-radius:8px;margin:0 8px;padding:16px}
+.glyphs{display:flex;flex-wrap:wrap;gap:14px;color:var(--text)}
+.samples{display:flex;gap:8px;align-items:center}

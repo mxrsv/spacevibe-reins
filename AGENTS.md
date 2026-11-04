@@ -56,7 +56,7 @@ The Electron app was removed on 2026-11-04 (its code is in git history before th
 | `npm test` | `test.mjs` and `core/*.test.mjs`, against a temporary `HOME` |
 | `node scripts/make-golden.mjs [section]` | Rewrites `Tests/ReinsCoreTests/Fixtures` from the Node core (see above) |
 
-- `mocks/` holds earlier throwaway mocks kept for reference. Do not import from them. The exception is `mocks/tokens-board/`, tracked with synthetic data as the target for the [Tokens plan](docs/plans/2026-11-03-reins-tokens.md) and deleted when that plan's T8 passes.
+- `mocks/` holds earlier throwaway mocks kept for reference. Do not import from them. Two are tracked with synthetic data as targets. `mocks/tokens-board/` serves the [Tokens plan](docs/plans/2026-11-03-reins-tokens.md) and is deleted when that plan's T8 passes. `mocks/agents/` serves the [Agents](docs/plans/2026-11-05-reins-agents.md) and [design language v4](docs/plans/2026-11-05-reins-design-language-v4.md) plans and is deleted at Agents A12; its `assets/` link to the font and marks in `Resources/`.
 - **R6.** [`stopSession`](core/activity.mjs) is the only Node code that signals a process, and it sends SIGTERM only to a pid it found itself and matched to the session at that moment. With `REINS_TEST=1` it answers from the fixture.
 
 ## Known traps
