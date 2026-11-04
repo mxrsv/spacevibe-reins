@@ -23,7 +23,7 @@ struct ActivityFailureRow: View {
         }
         .lead {
             if isHook {
-                Image(systemName: "bolt").accessibilityLabel("Hook")
+                ReinsIcon(.hook, size: .row, label: "Hook")
             } else {
                 CLIDot(failure.cli, decorative: true)
             }

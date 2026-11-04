@@ -24,6 +24,7 @@ struct PaletteCard<Content: View>: View {
             .clipShape(shape)
             .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
             .shadow(color: Palette.overlayShadow, radius: Metrics.overlayShadowRadius, y: Metrics.overlayShadowOffset)
+            .controlGround(.card)
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Command palette")
             .accessibilityAddTraits(.isModal)
@@ -82,11 +83,7 @@ struct PaletteRow: View {
         let shape = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
         Button(action: action) {
             HStack(spacing: Space.s8) {
-                if let systemImage = entry.systemImage {
-                    Image(systemName: systemImage)
-                        .frame(width: Metrics.sidebarIconWidth)
-                        .accessibilityHidden(true)
-                }
+                if let icon = entry.icon { ReinsIcon(icon) }
                 Text(entry.title).lineLimit(1)
                 if let subtitle = entry.subtitle {
                     Text(subtitle).reinsText(.caption, tone: .tertiary).lineLimit(1)

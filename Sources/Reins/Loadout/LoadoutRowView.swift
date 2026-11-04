@@ -14,11 +14,11 @@ struct LoadoutRowView: View {
             // A hook's second line is its command; everything else has a description.
             RowText(row.name, subtitle: row.detail.isEmpty ? nil : row.detail, codeSubtitle: row.kind == .hook) {
                 ForEach(LoadoutFormat.tags(row), id: \.text) { tag in
-                    Tag(tag.text, tone: tag.tone, systemImage: tag.systemImage)
+                    Tag(tag.text, tone: tag.tone, icon: tag.icon)
                 }
             }
         }
-        .lead { Image(systemName: row.kind.systemImage).accessibilityHidden(true) }
+        .lead { ReinsIcon(row.kind.icon, size: .row) }
         .cells {
             ForEach(InventoryCLI.allCases, id: \.self) { cli in
                 UsageCell(
@@ -43,7 +43,7 @@ struct LoadoutRowView: View {
             } else {
                 ForEach(InventoryCLI.allCases, id: \.self) { cli in
                     if let member = members.first(where: { $0.cli == cli }) {
-                        RowActionButton(title: LoadoutFormat.removeAction(row: row, member: member), systemImage: "trash", kind: .danger, iconOnly: true, badge: cli) {
+                        RowActionButton(title: LoadoutFormat.removeAction(row: row, member: member), icon: .trash, kind: .danger, iconOnly: true, badge: cli) {
                             model.remove(row, member: member)
                         }
                     } else {

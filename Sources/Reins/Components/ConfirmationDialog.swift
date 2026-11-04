@@ -58,6 +58,7 @@ struct ConfirmationDialog<Details: View, Actions: View>: View {
         .background(shape.fill(Palette.surface))
         .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
         .shadow(color: Palette.overlayShadow, radius: Metrics.overlayShadowRadius, y: Metrics.overlayShadowOffset)
+        .controlGround(.card)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
         .accessibilityLabel(spokenLabel ?? title)

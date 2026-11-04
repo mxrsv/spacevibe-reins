@@ -72,11 +72,57 @@ enum LimitsWording {
         showInactive ? windows : windows.filter(\.active)
     }
 
+    /// "3 h 12 min" until the reset; nil once it has passed.
+    static func resetsIn(_ window: LimitWindow, now: Date) -> String? {
+        window.isCurrent(at: now) ? span(window.resetsAt.timeIntervalSince(now)) : nil
+    }
+
+    /// The reset's clock time: "21:12", "Fri 16:00", "Nov 10".
+    static func resetsAt(_ window: LimitWindow, now: Date, calendar: Calendar = .current) -> String {
+        clock(window.resetsAt, now: now, calendar: calendar)
+    }
+
     /// "Resets in 3 h 12 min · 21:12", or "Reset at 17:34 · no newer reading" once the reset has passed.
     static func resets(_ window: LimitWindow, now: Date, calendar: Calendar = .current) -> String {
         let when = clock(window.resetsAt, now: now, calendar: calendar)
         if window.isCurrent(at: now) { return "Resets in \(span(window.resetsAt.timeIntervalSince(now))) · \(when)" }
         return "Reset at \(when) · no newer reading"
+    }
+
+    // MARK: Page
+
+    /// One line of the Limits page's list: a window of a CLI, or the CLI itself when it lists no window.
+    struct Entry: Equatable, Identifiable {
+        let cli: LimitsCLI
+        let window: LimitWindow?
+
+        var id: String { "\(cli.rawValue):\(window?.id ?? "state")" }
+    }
+
+    /// The list, CLI by CLI in the engine's order: each window to list, or one entry for a CLI with none (no reading yet,
+    /// not installed, not measurable, unreadable, or no window that applies right now).
+    static func entries(_ results: [CLILimits], showInactive: Bool) -> [Entry] {
+        results.flatMap { limits -> [Entry] in
+            if case .measured(_, let windows) = limits.state {
+                let shown = visible(windows, showInactive: showInactive)
+                if !shown.isEmpty { return shown.map { Entry(cli: limits.cli, window: $0) } }
+            }
+            return [Entry(cli: limits.cli, window: nil)]
+        }
+    }
+
+    /// What the page selects first: the window with the least left across every CLI (ties go to the earlier CLI), else the
+    /// first entry.
+    static func firstSelection(_ results: [CLILimits], entries: [Entry], now: Date) -> String? {
+        let leads = results.compactMap { limits -> Entry? in
+            guard case .measured(_, let windows) = limits.state, let lead = tightest(windows, now: now) else { return nil }
+            return Entry(cli: limits.cli, window: lead)
+        }
+        let least = leads.min { a, b in
+            guard let x = a.window, let y = b.window else { return false }
+            return shareLeft(x) < shareLeft(y)
+        }
+        return least?.id ?? entries.first?.id
     }
 
     // MARK: Readings
@@ -117,7 +163,12 @@ enum LimitsWording {
         }
     }
 
-    /// The one line a CLI's usage reading comes from, shown behind the info button.
+    /// What the page says for a CLI that lists no window: its state note, or that no window applies right now.
+    static func entryNote(_ limits: CLILimits) -> (title: String, body: String) {
+        stateNote(limits) ?? ("No current window", "\(cliName(limits.cli)) records no limit that applies right now.")
+    }
+
+    /// Where a CLI's usage reading comes from, shown with the reading's age on the page.
     static func source(_ cli: LimitsCLI) -> (title: String, body: String)? {
         switch cli {
         case .claude:

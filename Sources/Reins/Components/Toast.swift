@@ -9,17 +9,22 @@ struct ToastView: View {
     var body: some View {
         HStack(spacing: Space.s12) {
             if toast.tone == .danger {
-                Image(systemName: "exclamationmark.triangle").accessibilityHidden(true)
+                ReinsIcon(.warning)
             }
             Text(toast.message).reinsText(.body)
             if let action = toast.action {
                 Button(action: run) {
-                    Label(action.title, systemImage: action.systemImage).reinsText(.bodyStrong)
+                    HStack(spacing: Space.s6) {
+                        ReinsIcon(action.icon)
+                        Text(action.title)
+                    }
+                    .reinsText(.bodyStrong)
                 }
                 .buttonStyle(.reins(.inverse))
             } else {
-                Button(action: dismiss) { Image(systemName: "xmark").accessibilityLabel("Dismiss") }
+                Button(action: dismiss) { ReinsIcon(.close) }
                     .buttonStyle(.reins(.inverse))
+                    .accessibilityLabel("Dismiss")
             }
         }
         .foregroundStyle(TextTone.inverse.color)

@@ -4,7 +4,6 @@ import SwiftUI
 /// so they work from any focus and show up for VoiceOver and Full Keyboard Access.
 struct ShellCommands: Commands {
     let shell: ShellModel
-    let limits: LimitsModel
 
     var body: some Commands {
         CommandGroup(after: .sidebar) {
@@ -17,7 +16,7 @@ struct ShellCommands: Commands {
             Divider()
             Button("Search or Run a Command") { shell.togglePalette() }
                 .keyboardShortcut("k", modifiers: .command)
-            Button("Show Limits") { limits.isDetailOpen.toggle() }
+            Button("Show Limits") { shell.openLimits() }
                 .keyboardShortcut("l", modifiers: .command)
             Button("Switch to \(shell.appearance.choice.toggled.rawValue.capitalized) Theme") { shell.appearance.toggle() }
         }

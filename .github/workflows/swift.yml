@@ -52,6 +52,9 @@ jobs:
           for screen in shell loadout rules activity; do
             REINS_SHOT_SCREEN=$screen scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/$screen"
           done
+          for variant in typical edge; do
+            REINS_FIXTURE_LIMITS=$variant REINS_SHOT_SCREEN=limits scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/limits-$variant"
+          done
           if [ -d Sources/Reins/TokenUsage ]; then
             REINS_SHOT_SCREEN=tokens scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/tokens"
           fi

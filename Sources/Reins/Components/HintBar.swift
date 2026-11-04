@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The strip at the bottom: `⌘K` and `Esc` are always there, the active tab adds its own hints between them.
+/// The strip at the bottom: `⌘K` and `Esc` are always there, the active tab adds its own hints between them. 32 pt on the
+/// well, with no line above it.
 struct HintBar: View {
     let hints: [KeyHint]
 
@@ -22,6 +23,5 @@ struct HintBar: View {
         .frame(height: Metrics.hintBarHeight)
         .frame(maxWidth: .infinity)
         .background(Palette.well)
-        .overlay(alignment: .top) { Hairline() }
     }
 }

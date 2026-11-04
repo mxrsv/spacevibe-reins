@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// A key cap: "⌘K", "Esc". 20 pt high, `label` type. Purely visual; the control it labels carries the accessibility label.
+/// A key cap: "⌘K", "Esc". 20 pt high, `label` type, filled with the control ground and no outline. Purely visual; the
+/// control it labels carries the accessibility label.
 struct Kbd: View {
     let keys: String
+    @Environment(\.controlGround) private var ground
 
     init(_ keys: String) { self.keys = keys }
 
@@ -11,9 +13,8 @@ struct Kbd: View {
         Text(keys)
             .reinsText(.label, tone: .secondary)
             .padding(.horizontal, Space.s6)
-            .frame(minWidth: Metrics.tagHeight, minHeight: Metrics.tagHeight)
-            .background(shape.fill(Palette.surface))
-            .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
+            .frame(minWidth: Metrics.kbdHeight, minHeight: Metrics.kbdHeight)
+            .background(shape.fill(ground.fill))
             .accessibilityHidden(true)
     }
 }

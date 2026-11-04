@@ -24,13 +24,13 @@ struct ActivitySessionRow: View {
         .lead { CLIDot(session.cli, decorative: true) }
         .cells {
             StateCell {
-                Tag(wording.tagText, tone: wording.tagTone, systemImage: wording.tagIcon)
+                Tag(wording.tagText, tone: wording.tagTone, icon: wording.tagIcon)
                     .help(wording.help)
                     .accessibilityHint(wording.help)
             }
             costCell
         }
-        .actions { RowActionButton(title: "Stop", systemImage: "stop", iconOnly: true, action: onStop) }
+        .actions { RowActionButton(title: "Stop", icon: .stop, iconOnly: true, action: onStop) }
         .accessibilityLabel("\(session.cli.label), \(session.title), \(wording.tagText)")
     }
 

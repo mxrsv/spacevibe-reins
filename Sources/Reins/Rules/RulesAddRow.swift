@@ -33,7 +33,8 @@ struct RulesAddRow: View {
                 }
             }
             .padding(.horizontal, Metrics.rowHorizontalPadding)
-            .padding(.vertical, Space.s12)
+            .padding(.vertical, Metrics.rowVerticalPadding)
+            .frame(minHeight: Metrics.rowMinHeight)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .onChange(of: model.addFocusToken) { _, _ in fieldFocused = true }

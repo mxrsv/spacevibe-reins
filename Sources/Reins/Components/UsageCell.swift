@@ -23,7 +23,7 @@ struct UsageCell: View {
             if let onAdd {
                 Button(action: onAdd) {
                     HStack(spacing: Space.s4) {
-                        Image(systemName: "plus").imageScale(.small).accessibilityHidden(true)
+                        ReinsIcon(.add)
                         Text("Add to \(cli.label)")
                     }
                 }
@@ -48,7 +48,7 @@ struct UsageCell: View {
             .accessibilityHint(reason ?? "")
         case .unmeasurable(let reason):
             HStack(spacing: Space.s6) {
-                Image(systemName: "exclamationmark.triangle").imageScale(.small)
+                ReinsIcon(.warning)
                 Text("not measurable")
             }
             .reinsText(.body, tone: .tertiary)
@@ -70,7 +70,8 @@ struct UsageCell: View {
     }
 }
 
-/// A 6 pt capsule track with a fill from the leading edge.
+/// A 6 pt capsule track with a fill from the leading edge: the usage bar of Loadout and Activity. Limits does not use it
+/// (see `Ruler`).
 struct UsageBar: View {
     let fraction: Double
     let fill: Color

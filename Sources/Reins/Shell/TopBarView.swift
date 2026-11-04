@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// The tab title and the palette entry point, 48 pt high. The bar is part of the draggable window background.
+/// The page title (the tab's, or Limits) and the palette entry point, 48 pt high. The bar is part of the draggable window
+/// background.
 struct TopBarView: View {
     @Environment(ShellModel.self) private var shell
 
     var body: some View {
         HStack(spacing: Space.s12) {
-            Text(shell.activeTab.title)
+            Text(shell.title)
                 .reinsText(.title, tone: .primary)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)

@@ -21,7 +21,7 @@ enum PaletteSearch {
             PaletteEntry(
                 id: "goto.\(tab.id)",
                 title: tab.title,
-                systemImage: tab.systemImage,
+                icon: tab.icon,
                 trailing: "\u{2318}\(index + 1)",
                 keywords: ["go to"]
             ) { shell.select(tab.id) }
@@ -31,7 +31,7 @@ enum PaletteSearch {
         let global = PaletteEntry(
             id: "shell.theme",
             title: "Switch to \(theme.rawValue) theme",
-            systemImage: theme == .light ? "sun.max" : "moon",
+            icon: theme == .light ? .sun : .moon,
             keywords: ["appearance", "dark", "light", "mode"]
         ) { shell.appearance.toggle() }
         let actions = shell.activeTab.paletteActions + [global]

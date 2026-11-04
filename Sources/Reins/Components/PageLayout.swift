@@ -79,4 +79,6 @@ enum Rhythm {
     static let chips = Space.s6
     /// A legend or note line under the card it explains.
     static let caption = Space.s8
+    /// Between tiles inside one card (the Limits page's facts).
+    static let tiles = Space.s12
 }

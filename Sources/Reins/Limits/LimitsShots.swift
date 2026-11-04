@@ -1,8 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// `REINS_SHOT_SCREEN=limits`: the sidebar block on a demo shell and the detail, read from the synthetic home, in both
-/// appearances. `REINS_FIXTURE_LIMITS=typical|edge` (scripts/fixture-home.mjs) chooses what the files say.
+/// `REINS_SHOT_SCREEN=limits`: the sidebar block on a demo shell, then the Limits page it opens, read from the synthetic
+/// home, in both appearances. `REINS_FIXTURE_LIMITS=typical|edge` (scripts/fixture-home.mjs) chooses what the files say.
 @MainActor
 enum LimitsShots {
     static func run(into directory: URL) throws {
@@ -10,23 +10,27 @@ enum LimitsShots {
         Task { await env.limits.readOnce() }
         try ShotHarness.wait("the Limits read") { env.limits.readAt != nil }
         try ShotHarness.check(env.limits.results.count == 3, "Limits read Claude Code, Codex and Gemini CLI")
+        let entries = LimitsWording.entries(env.limits.results, showInactive: false)
+        // Both fixture variants put the least left in the Codex weekly window (39% typical, 4% edge).
+        try ShotHarness.check(env.limits.selection(in: entries, now: Date()) == "codex:secondary", "the page selects the window with the least left")
         for choice in [AppearanceChoice.dark, .light] {
             let shell = ShellModel(tabs: DemoTabs.make(), appearance: AppearanceStore(forced: choice))
             let toasts = ToastCenter(announce: false)
-            try ShotRenderer.write(
-                ShellView().reinsRoot(shell: shell, toasts: toasts, env: env).frame(width: ShotRenderer.size.width, height: ShotRenderer.size.height),
-                name: "limits-sidebar", choice: choice, to: directory
-            )
-            try ShotRenderer.write(
-                LimitsDetail().reinsRoot(shell: shell, toasts: toasts, env: env).environment(\.colorScheme, choice.colorScheme),
-                name: "limits-detail", choice: choice, to: directory, fullHeight: true
-            )
+            try ShotRenderer.write(page(shell, toasts, env), name: "limits-sidebar", choice: choice, to: directory)
+            shell.openLimits()
+            try ShotHarness.check(shell.isLimitsOpen && shell.title == LimitsPage.title, "the sidebar block's action opens the page")
+            try ShotRenderer.write(page(shell, toasts, env), name: "limits-page", choice: choice, to: directory)
             env.limits.showInactive = true
-            try ShotRenderer.write(
-                LimitsDetail().reinsRoot(shell: shell, toasts: toasts, env: env),
-                name: "limits-detail-inactive", choice: choice, to: directory, fullHeight: true
-            )
+            try ShotRenderer.write(page(shell, toasts, env), name: "limits-page-inactive", choice: choice, to: directory)
             env.limits.showInactive = false
+            shell.select("rules")
+            try ShotHarness.check(!shell.isLimitsOpen, "choosing a tab closes the page")
         }
+    }
+
+    private static func page(_ shell: ShellModel, _ toasts: ToastCenter, _ env: AppEnvironment) -> some View {
+        ShellView()
+            .reinsRoot(shell: shell, toasts: toasts, env: env)
+            .frame(width: ShotRenderer.size.width, height: ShotRenderer.size.height)
     }
 }

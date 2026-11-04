@@ -57,4 +57,21 @@ struct ShellModelTests {
         #expect(shell.activeID == "rules")
         #expect(!shell.isPaletteOpen)
     }
+
+    @Test("the Limits page takes the content area, the title and the hints until a tab is chosen, and keeps the active tab")
+    func limitsPage() {
+        let shell = ShellModel.forTests()
+        shell.select("rules")
+        shell.openPalette()
+        shell.openLimits()
+        #expect(shell.isLimitsOpen)
+        #expect(!shell.isPaletteOpen)
+        #expect(shell.title == LimitsPage.title)
+        #expect(shell.hints == LimitsPage.hints)
+        #expect(shell.activeID == "rules")
+        shell.select("activity")
+        #expect(!shell.isLimitsOpen)
+        #expect(shell.title == "Activity")
+        #expect(shell.hints == shell.activeTab.hints)
+    }
 }

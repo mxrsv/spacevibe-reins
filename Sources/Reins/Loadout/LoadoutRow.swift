@@ -28,11 +28,11 @@ enum LoadoutKind: CaseIterable {
         }
     }
 
-    var systemImage: String {
+    var icon: ReinsGlyph {
         switch self {
-        case .skill: "sparkles"
-        case .agent: "person.crop.square"
-        case .hook: "bolt"
+        case .skill: .skill
+        case .agent: .agent
+        case .hook: .hook
         }
     }
 }

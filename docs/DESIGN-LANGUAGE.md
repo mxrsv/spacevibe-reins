@@ -36,29 +36,56 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
 
 - **Spacing** is [`Space`](../Sources/Reins/Tokens/Metrics.swift): 2, 4, 6, 8, 12, 16, 24, 32, with 2 and 6 only inside a
   component. Between blocks use `Rhythm`: cards 24, regions 32, two cards in one Activity lane 16.
-- **Heights**: 20 tag and key cap, 24 segment, 28 every control, 32 sidebar item, section row and hint bar, 36 palette row,
-  48 every row, card header and the top bar. **Radii**: 4 tag, 6 segment, 8 control, 12 card; filter chips are capsules.
-- **Colour** values live in [`Palette`](../Sources/Reins/Tokens/Palette.swift). Cards (`surface`) sit on the `well`, one
-  step darker in light, so each card reads as a block. CLI colours mark identity only; state uses the success, warn and
-  danger tones. Elevation is a border, except overlays (palette, confirmations, toast).
+- **Heights**: 20 key cap, 24 tag and segment, 28 every control, 32 section row and hint bar, 36 palette row, 48 every row,
+  sidebar item and the top bar, 56 card header. **Radii**: 4 key cap, 6 tag and segment, 8 control, row block and sidebar
+  item, 12 card; filter chips are capsules.
+- **Colour** values live in [`Palette`](../Sources/Reins/Tokens/Palette.swift). The sidebar and the content area share the
+  `well`, split by one 1 pt `divider` (the text colour at 8%); the top bar and hint bar have no line. Cards are `surface`
+  blocks on the well with no border, so the fill alone sets them off. CLI colours mark identity only; state uses the
+  success, warn and danger tones. Only overlays (palette, confirmations, toast) keep a border and a shadow.
+- **Controls have no outline.** Button, search field, scope picker, segmented control, filter chip and key cap fill with
+  the [`ControlGround`](../Sources/Reins/Components/ControlGround.swift): `surface` on the well, `surfaceRaised` inside a
+  card (a card, a dialog and the search field set it), and `selection` for the chosen segment or chip.
+
+## Icons
+
+- **Solar Bold Duotone is the only icon set** (Solar by 480 Design, CC BY 4.0, https://creativecommons.org/licenses/by/4.0/).
+  The credit is in the About panel ([`Credits`](../Sources/Reins/App/Credits.swift)) and here.
+  [`IconPolicyTests`](../Tests/ReinsTests/IconPolicyTests.swift) fails on an SF Symbol or any other image outside
+  `Gallery/`; the CLI brand marks in [`CLIMark`](../Sources/Reins/Components/CLIMark.swift) are the one image.
+- **Generated Swift, not files.** [`generate-icons.mjs`](../scripts/generate-icons.mjs) turns the `@iconify-json/solar`
+  package (downloaded into a scratch folder, never committed) into
+  [`ReinsIconData.swift`](../Sources/Reins/Components/ReinsIconData.swift): two layers per glyph as path code. A glyph
+  that is missing gets a line in the script's table, then a rerun; the file is never edited by hand. Its table names the
+  Solar icon behind each glyph.
+- **One colour per icon.** [`ReinsIcon`](../Sources/Reins/Components/ReinsIcon.swift) draws both layers in the current
+  foreground style, the lighter at 50%. Only a state tag and a banner tint an icon with their tone's ink.
+- **Sizes** (`IconSize`): 22 sidebar, 20 row lead and banner, 16 buttons, tags and fields, 14 beside 12 pt text, 24 an
+  empty state. Never below 14.
+- **The chevron is drawn**, not taken from Solar Bold Duotone, whose chevron breaks up at small sizes: `Chevron` strokes
+  Solar Linear's geometry (right, down, and the up-and-down pair of a menu).
 
 ## Components
 
 | Need | Component |
 | --- | --- |
-| A group of rows | [`GroupedList`](../Sources/Reins/Components/GroupedList.swift) (a card) with a [`CardHeader`](../Sources/Reins/Components/CardHeader.swift) as its first line; `SectionRow` for a sub-group; `.pinnedCardTop()` with `GroupedList(edges: .belowPinnedHeader)` for a header that stays put while rows scroll |
-| One line | [`Row`](../Sources/Reins/Components/Row.swift) (48, `tall` for three lines or more) with [`RowText`](../Sources/Reins/Components/RowText.swift), `EmptyRow`, `ShowMoreRow` |
-| Limits | [`LimitCard`](../Sources/Reins/Components/LimitCard.swift) (a CLI's block: [`CLIMark`](../Sources/Reins/Components/CLIMark.swift), name, plan tag) holding [`LimitTile`](../Sources/Reins/Components/LimitTile.swift) (one window; the tightest leads, tinted, in `figure`) and [`LimitNoteTile`](../Sources/Reins/Components/LimitNoteTile.swift) (no reading); [`LimitSidebarTile`](../Sources/Reins/Components/LimitSidebarTile.swift) in the sidebar block. Borderless: fill and space separate them |
+| A group of rows | [`GroupedList`](../Sources/Reins/Components/GroupedList.swift) (a card: 8 pt under the last row, a `RowDivider` between two rows that hides beside a filled row) with a [`CardHeader`](../Sources/Reins/Components/CardHeader.swift) (56, no line under it) as its first line; `SectionRow` for a sub-group; `.pinnedCardTop()` with `GroupedList(edges: .belowPinnedHeader)` for a header that stays put while rows scroll |
+| One line | [`Row`](../Sources/Reins/Components/Row.swift) (48, `tall` for three lines or more; a block inset 8 from the card's edges that hover and selection fill at radius 8) with [`RowText`](../Sources/Reins/Components/RowText.swift), `EmptyRow`, `ShowMoreRow` |
+| Progress | `UsageBar` in [`UsageCell`](../Sources/Reins/Components/UsageCell.swift): one continuous 6 pt capsule on `track` for every usage count (Loadout, Activity). [`Ruler`](../Sources/Reins/Components/Ruler.swift) is for Limits only: ten square-ended cells, 8 high, each a tenth of the real track with a 3 pt gap, the last filled cell cut at the share, empty cells `surfaceRaised`, a dashed outline when the share is not known |
+| Limits | The page is a list card and a detail card side by side. [`LimitShareCell`](../Sources/Reins/Components/LimitShareCell.swift) (a window's `Ruler` and share, as wide as a usage cell), [`LimitFigure`](../Sources/Reins/Components/LimitFigure.swift) (the share in `display`, toned by `LimitTone`), [`FactTile`](../Sources/Reins/Components/FactTile.swift) (a raised block inside the detail card, the one nesting); [`LimitSidebarTile`](../Sources/Reins/Components/LimitSidebarTile.swift) with [`CLIMark`](../Sources/Reins/Components/CLIMark.swift) in the sidebar block |
 | Cells | `UsageCell`, `NumberCell`, `StateCell`, `FixedCell`, `EmptyActionSlot`, `ReadOnlyMark`, `ColumnSpacer` ([Cells](../Sources/Reins/Components/Cells.swift)) |
-| Labels | `Tag` (state tones; success carries a dot), `CLITag`, `CLIDot`, `Count`, `Kbd` |
+| Labels | `Tag` (24, radius 6, `surfaceRaised`, neutral text; the tone is a 6 pt dot, or tints the icon when it has one; warn and danger keep their ink), `CLITag`, `CLIDot`, `Count`, `Kbd` |
+| Icons | `ReinsIcon` (a `ReinsGlyph` at an `IconSize`), `Chevron` |
 | Controls | `ReinsButtonStyle` kinds (normal, primary, danger, ghost, icon, plainIcon, inverse), `RowActionButton` (with a CLI badge), `SegmentedControl`, `FilterChip` (and its dismissible form), `ScopePicker`, `SearchField`, `TextInputField` |
 | Messages | `Banner`, `EmptyState`, `NoteRegion`, `InsetBox`, `WarningNote`, `UsageLegend`, `ToastView`, `ConfirmationDialog` |
-| Page and shell | `PageLayout` (or `.pageTools()`, `.pageContent()`, `.pageBackground()`), `HintBar`, `SidebarItem` with `.sidebarSurface()`, `PaletteCard` and its parts, `Scrim` |
+| Page and shell | `PageLayout` (or `.pageTools()`, `.pageContent()`, `.pageBackground()`), `HintBar`, `SidebarItem` (48, `title` role in every state, the active one changes only its fill to `surface`) with `.sidebarSurface()`, `PaletteCard` and its parts, `Scrim` |
 
 ## Traps
 
 - `Font.custom("Inter", …)` silently falls back to the system font: the family is `Inter Variable`. Build fonts only
   through `ReinsType`, which creates them by PostScript name.
 - `@Entry` needs SwiftUI's macro plugin, which the Command Line Tools lack; container and environment keys are written out.
-- Fixed widths that hold text were measured in Inter at these sizes (usage number 52, cost 72, state 120, Rules' Claude
+- Solar draws a few icons with overlapping half-opacity shapes (the Loadout `layers` glyph): the browser darkens the overlap,
+  one light layer does not. Check a new glyph in the gallery's icon section before using it.
+- Fixed widths that hold text were measured in Inter at these sizes (usage number 52, cost 72, state 128 since the v3 tag icon, Rules' Claude
   Code column 280). Recheck them when a role's size or weight changes.

@@ -2,7 +2,7 @@ import ReinsCore
 import SwiftUI
 
 enum ReinsButtonKind {
-    /// Surface fill, border. The default.
+    /// Filled, no outline: `surface` on the well, `surfaceRaised` inside a card. The default.
     case normal
     /// Solid accent. One per surface at most.
     case primary
@@ -43,6 +43,7 @@ struct ReinsButtonStyle: ButtonStyle {
         @Environment(\.isEnabled) private var isEnabled
         @Environment(\.isFocused) private var isFocused
         @Environment(\.actionsConcealed) private var concealed
+        @Environment(\.controlGround) private var ground
         @State private var hovering = false
 
         var body: some View {
@@ -54,7 +55,6 @@ struct ReinsButtonStyle: ButtonStyle {
                 .padding(.horizontal, horizontalPadding)
                 .frame(width: kind == .icon || kind == .plainIcon ? Metrics.controlHeight : nil, height: Metrics.controlHeight)
                 .background(shape.fill(fill))
-                .overlay { outline(shape) }
                 .overlay(shape.fill(Palette.hover).opacity(hovering && isEnabled && kind != .primary ? 1 : 0).allowsHitTesting(false))
                 .brightness(hovering && isEnabled && kind == .primary ? 0.08 : 0)
                 .contentShape(shape)
@@ -79,7 +79,7 @@ struct ReinsButtonStyle: ButtonStyle {
 
         private var fill: Color {
             switch kind {
-            case .normal, .danger, .icon: Palette.surfaceRaised
+            case .normal, .danger, .icon: ground.fill
             case .primary: Palette.accentSolid
             case .ghost, .plainIcon: .clear
             case .inverse: Palette.background.opacity(0.14)
@@ -96,16 +96,6 @@ struct ReinsButtonStyle: ButtonStyle {
             case .inverse: Palette.background
             }
         }
-
-        @ViewBuilder
-        private func outline(_ shape: RoundedRectangle) -> some View {
-            switch kind {
-            case .normal, .danger, .icon:
-                shape.strokeBorder(Palette.border, lineWidth: 1)
-            case .primary, .inverse, .ghost, .plainIcon:
-                EmptyView()
-            }
-        }
     }
 }
 
@@ -114,10 +104,10 @@ extension ButtonStyle where Self == ReinsButtonStyle {
 }
 
 /// A small button for a row's trailing actions: revealed on hover, focus or selection (see `Row`).
-/// `systemImage` alone makes a square icon button; the title is then its accessibility label and tooltip.
+/// `iconOnly` with an `icon` makes a square icon button; the title is then its accessibility label and tooltip.
 struct RowActionButton: View {
     let title: String
-    var systemImage: String?
+    var icon: ReinsGlyph?
     var kind: ReinsButtonKind = .normal
     var iconOnly = false
     /// A CLI's dot in the icon button's corner: which CLI this action touches ("Remove from Codex").
@@ -126,21 +116,24 @@ struct RowActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            if iconOnly, let systemImage {
-                Image(systemName: systemImage)
+            if iconOnly, let icon {
+                ReinsIcon(icon)
                     .foregroundStyle(kind == .danger ? Palette.dangerInk : Palette.text)
-                    .accessibilityLabel(title)
                     .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
                     .overlay(alignment: .topTrailing) {
                         if let badge { CLIDot(badge, decorative: true, size: Space.s6).padding(Space.s4) }
                     }
-            } else if let systemImage {
-                Label(title, systemImage: systemImage)
+            } else if let icon {
+                HStack(spacing: Space.s6) {
+                    ReinsIcon(icon)
+                    Text(title)
+                }
             } else {
                 Text(title)
             }
         }
         .buttonStyle(.reins(iconOnly ? .icon : kind))
         .help(title)
+        .accessibilityLabel(title)
     }
 }

@@ -7,7 +7,7 @@ final class ActivityTab: ReinsTab {
 
     let id = ActivityTab.tabID
     let title = "Activity"
-    let systemImage = "waveform.path.ecg"
+    let icon = ReinsGlyph.activity
     let model: ActivityModel
 
     init(env: AppEnvironment? = nil) { model = ActivityModel(env: env ?? .shared) }
@@ -21,7 +21,7 @@ final class ActivityTab: ReinsTab {
     }
 
     var paletteActions: [PaletteEntry] {
-        [PaletteEntry(id: "activity.refresh", title: "Refresh activity", systemImage: "arrow.clockwise", keywords: ["reload", "sessions", "failures"]) { [model] in
+        [PaletteEntry(id: "activity.refresh", title: "Refresh activity", icon: .refresh, keywords: ["reload", "sessions", "failures"]) { [model] in
             model.refreshNow()
         }]
     }

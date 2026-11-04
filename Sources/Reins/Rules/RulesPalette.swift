@@ -4,10 +4,10 @@ extension RulesModel {
     var paletteActions: [PaletteEntry] {
         guard snapshot != nil else { return [] }
         return [
-            PaletteEntry(id: "rules.add", title: "Add a Claude Code rule", systemImage: "plus", keywords: ["permission", "allow", "deny", "ask", "new"]) { [weak self] in
+            PaletteEntry(id: "rules.add", title: "Add a Claude Code rule", icon: .add, keywords: ["permission", "allow", "deny", "ask", "new"]) { [weak self] in
                 self?.focusAddRule()
             },
-            PaletteEntry(id: "rules.refresh", title: "Refresh rules", systemImage: "arrow.clockwise", keywords: ["reload", "permissions"]) { [weak self] in
+            PaletteEntry(id: "rules.refresh", title: "Refresh rules", icon: .refresh, keywords: ["reload", "permissions"]) { [weak self] in
                 self?.refresh()
             },
         ]
@@ -24,7 +24,7 @@ extension RulesModel {
     }
 
     private func jumpEntry(id: String, title: String, subtitle: String, choice: RulesSelection) -> PaletteEntry {
-        PaletteEntry(id: id, title: title, subtitle: subtitle, systemImage: "arrow.right", keywords: ["permissions", "scope"]) { [weak self] in
+        PaletteEntry(id: id, title: title, subtitle: subtitle, icon: .arrowRight, keywords: ["permissions", "scope"]) { [weak self] in
             self?.jump(to: choice)
         }
     }

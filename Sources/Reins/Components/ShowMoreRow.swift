@@ -15,7 +15,7 @@ struct ShowMoreRow: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.leading, Metrics.separatorInset)
+            .padding(.leading, Metrics.rowTextInset)
             .padding(.trailing, Metrics.rowHorizontalPadding)
             .frame(maxWidth: .infinity, minHeight: Metrics.rowMinHeight, alignment: .leading)
             .contentShape(Rectangle())

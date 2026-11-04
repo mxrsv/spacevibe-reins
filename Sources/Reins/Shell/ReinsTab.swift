@@ -21,7 +21,7 @@ struct PaletteEntry: Identifiable {
     let id: String
     var title: String
     var subtitle: String?
-    var systemImage: String?
+    var icon: ReinsGlyph?
     /// Right-aligned hint such as a shortcut.
     var trailing: String?
     /// Extra words the search matches besides the title.
@@ -29,7 +29,7 @@ struct PaletteEntry: Identifiable {
     var perform: @MainActor () -> Void
 }
 
-/// What a screen supplies to the shell. The shell lists tabs in `TabRegistry`, shows `title`, `systemImage` and
+/// What a screen supplies to the shell. The shell lists tabs in `TabRegistry`, shows `title`, `icon` and
 /// `badge` in the sidebar, `hints` in the bottom bar, the palette entries in `⌘K`, and keeps `content` alive
 /// while another tab is showing (its scroll position and filters survive a switch).
 ///
@@ -37,7 +37,7 @@ struct PaletteEntry: Identifiable {
 /// the shell reads `badge`, `hints` and the palette entries while rendering, so Observation updates them.
 ///
 ///     @MainActor @Observable final class LoadoutTab: ReinsTab {
-///         let id = "loadout"; let title = "Loadout"; let systemImage = "square.stack.3d.up"
+///         let id = "loadout"; let title = "Loadout"; let icon = ReinsGlyph.loadout
 ///         var badge: TabBadge? { TabBadge(value: items.count) }
 ///         var content: AnyView { AnyView(LoadoutScreen(model: model)) }
 ///     }
@@ -49,7 +49,7 @@ protocol ReinsTab: AnyObject {
     var id: String { get }
     var title: String { get }
     /// An SF Symbol name; one weight across the app.
-    var systemImage: String { get }
+    var icon: ReinsGlyph { get }
     var badge: TabBadge? { get }
     /// Shown after the always-present `⌘K Search or run` and before `Esc Close`.
     var hints: [KeyHint] { get }

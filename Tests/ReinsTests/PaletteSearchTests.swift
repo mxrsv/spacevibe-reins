@@ -7,7 +7,7 @@ import Testing
 private final class ItemsTab: ReinsTab {
     let id = "stub"
     let title = "Stub"
-    let systemImage = "circle"
+    let icon = ReinsGlyph.info
     let paletteItems: [PaletteEntry]
     init(items: [PaletteEntry]) { paletteItems = items }
     var content: AnyView { AnyView(EmptyView()) }

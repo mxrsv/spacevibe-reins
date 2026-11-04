@@ -14,63 +14,20 @@ struct ComponentGalleryContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             section("Colour tokens") { Swatches() }
-            section("Text roles: Inter at 12, 14 and 16, plus figure") { TypeRoles() }
-            section("Buttons") {
-                HStack(spacing: Rhythm.tools) {
-                    Button("Normal") {}.buttonStyle(.reins(.normal))
-                    Button("Primary") {}.buttonStyle(.reins(.primary))
-                    Button("Remove") {}.buttonStyle(.reins(.danger))
-                    Button {} label: {
-                        HStack(spacing: Space.s4) { Image(systemName: "plus").imageScale(.small); Text("Add to Codex") }
-                    }
-                    .buttonStyle(.reins(.ghost))
-                    Button {} label: { Image(systemName: "trash").accessibilityLabel("Remove") }.buttonStyle(.reins(.icon))
-                    RowActionButton(title: "Remove from Claude Code", systemImage: "trash", kind: .danger, iconOnly: true, badge: .claude) {}
-                    RowActionButton(title: "Remove from Codex", systemImage: "trash", kind: .danger, iconOnly: true, badge: .codex) {}
-                    Button("Disabled") {}.buttonStyle(.reins(.normal)).disabled(true)
-                    Spacer(minLength: 0)
-                }
-                .environment(\.actionsConcealed, false)
-            }
-            section("Tags, counts, CLI tag and dot, key caps") {
-                HStack(spacing: Rhythm.tools) {
-                    Tag("plugin: neon", systemImage: "lock")
-                    Tag("added recently")
-                    Tag("running", tone: .success)
-                    Tag("waiting for you", tone: .warn)
-                    Tag("17 errors", tone: .warn)
-                    Tag("mixed", tone: .warn, systemImage: "info.circle")
-                    Tag("script not found", tone: .danger, systemImage: "questionmark.folder")
-                    Tag("Deny", tone: .danger)
-                    CLITag(.claude)
-                    CLITag(.codex)
-                    HStack(spacing: Space.s6) { CLIDot(.claude); CLIDot(.codex) }
-                    Kbd("\u{2318}K")
-                    Kbd("Esc")
-                    HStack(spacing: Space.s6) { Text("Skills").reinsText(.captionStrong, tone: .secondary); Count(10) }
-                    HStack(spacing: Space.s6) { Text("Activity").reinsText(.body); Count(2, alert: true) }
-                    Spacer(minLength: 0)
+            section("Text roles: Inter at 12, 14 and 16, plus figure and display") { TypeRoles() }
+            section("Buttons on the well, then inside a card (no outline: surface, then surfaceRaised)") {
+                VStack(alignment: .leading, spacing: Space.s12) {
+                    buttons
+                    GroupedList { buttons.padding(.horizontal, Metrics.rowHorizontalPadding) }
                 }
             }
-            section("Segmented control, filter chips, scope picker, search field: all 28 pt") {
-                HStack(spacing: Rhythm.tools) {
-                    SegmentedControl(label: "Rule", options: [
-                        SegmentOption("Allow", value: "allow"),
-                        SegmentOption("Ask", value: "ask"),
-                        SegmentOption("Deny", value: "deny"),
-                    ], selection: $segment)
-                    SegmentedControl(label: "Settings file", options: [
-                        SegmentOption("Shared", value: "shared"),
-                        SegmentOption("Local", value: "local", count: 3),
-                    ], selection: $file)
-                    ScopePicker(options: [ScopeOption(id: nil, label: "Global")], current: ScopeOption(id: nil, label: "Global"), minWidth: Metrics.scopePickerMinWidth) { _ in }
-                    HStack(spacing: Rhythm.chips) {
-                        FilterChip("All", count: 6, isOn: chip == "all") { chip = "all" }
-                        FilterChip("Never ran", count: 1, isOn: chip == "never") { chip = "never" }
-                        FilterChip(dismissible: "spacevibe-bench") {}
-                    }
-                    SearchField(placeholder: "Search or run a command", shortcut: "\u{2318}K", spokenShortcut: "Command K") {}
-                    Spacer(minLength: 0)
+            section("Tags inside a card: neutral, with an icon, and a dot per tone; counts, CLI tag and dot, key caps") {
+                GroupedList { tags.padding(.horizontal, Metrics.rowHorizontalPadding) }
+            }
+            section("Segmented control, filter chips, scope picker, search field: all 28 pt, on the well, then inside a card") {
+                VStack(alignment: .leading, spacing: Space.s12) {
+                    controls
+                    GroupedList { controls.padding(.horizontal, Metrics.rowHorizontalPadding) }
                 }
             }
             section("Text input: normal and invalid") {
@@ -81,25 +38,27 @@ struct ComponentGalleryContent: View {
                     Spacer(minLength: 0)
                 }
             }
+            section("Ruler: 0, 4, 39 and 100 percent, not known, low (20% left) and out (5% left)") { RulerSpecimens() }
+            section("Icons: Solar Bold Duotone at 14, 16, 20 and 22, then the drawn chevrons. Solar by 480 Design, CC BY 4.0") { IconSpecimens() }
             section("Cards, rows and the five usage states") { DemoLoadoutList() }
-            section("Rows") {
+            section("Rows: the selected one hides the dividers on both sides of it") {
                 GroupedList {
                     CardHeader("Rows", count: 5)
                     Row { RowText("Plain row", subtitle: "Second line in the muted colour") }
-                        .lead { Image(systemName: "sparkles") }
+                        .lead { ReinsIcon(.skill, size: .row) }
                     Row(selected: true, revealActions: true, onActivate: {}) {
                         RowText("Selected row with actions", subtitle: "Actions stay visible while selected")
                     }
-                    .lead { Image(systemName: "sparkles") }
+                    .lead { ReinsIcon(.skill, size: .row) }
                     .actions {
-                        RowActionButton(title: "Copy to Codex", systemImage: "doc.on.doc") {}
-                        RowActionButton(title: "Remove", systemImage: "trash", kind: .danger, iconOnly: true) {}
+                        RowActionButton(title: "Copy to Codex", icon: .copy) {}
+                        RowActionButton(title: "Remove", icon: .trash, kind: .danger, iconOnly: true) {}
                     }
                     Row(onActivate: {}) { RowText("Session with a state", subtitle: "spacevibe-bench \u{00B7} just now") }
                         .lead { CLIDot(.codex) }
-                        .cells { StateCell { Tag("not measurable", systemImage: "exclamationmark.triangle") }; NumberCell(text: "~$148.20") }
+                        .cells { StateCell { Tag("not measurable", icon: .warning) }; NumberCell(text: "~$148.20") }
                     Row(onActivate: {}) { RowText("A row with nothing to change", subtitle: "Owned by a plugin") }
-                        .lead { Image(systemName: "sparkles") }
+                        .lead { ReinsIcon(.skill, size: .row) }
                         .cells { FixedCell { Tag("\u{00D7}3") }; NumberCell(text: "~$1.33") }
                         .actions { HStack(spacing: Space.s4) { EmptyActionSlot(); ReadOnlyMark(reason: "Read-only: owned by a plugin") } }
                     Row(tall: true) {
@@ -155,10 +114,10 @@ struct ComponentGalleryContent: View {
             }
             section("Sidebar items and the command palette") {
                 HStack(alignment: .top, spacing: Space.s24) {
-                    VStack(spacing: Space.s2) {
-                        SidebarItem(title: "Loadout", systemImage: "square.stack.3d.up", count: 22, isActive: true) {}
-                        SidebarItem(title: "Rules", systemImage: "checkmark.shield", count: 11, isActive: false) {}
-                        SidebarItem(title: "Activity", systemImage: "waveform.path.ecg", count: 2, alert: true, isActive: false) {}
+                    VStack(spacing: Metrics.sidebarItemSpacing) {
+                        SidebarItem(title: "Loadout", icon: .loadout, count: 22, isActive: true) {}
+                        SidebarItem(title: "Rules", icon: .rules, count: 11, isActive: false) {}
+                        SidebarItem(title: "Activity", icon: .activity, count: 2, alert: true, isActive: false) {}
                     }
                     .sidebarSurface()
                     .frame(height: Metrics.galleryOverlayHeight)
@@ -167,23 +126,23 @@ struct ComponentGalleryContent: View {
                         Hairline()
                         VStack(alignment: .leading, spacing: 0) {
                             PaletteSectionTitle(title: "Go to")
-                            PaletteRow(entry: PaletteEntry(id: "g.loadout", title: "Loadout", systemImage: "square.stack.3d.up", trailing: "\u{2318}1") {}, isHighlighted: true) {}
-                            PaletteRow(entry: PaletteEntry(id: "g.rules", title: "Rules", systemImage: "checkmark.shield", trailing: "\u{2318}2") {}, isHighlighted: false) {}
+                            PaletteRow(entry: PaletteEntry(id: "g.loadout", title: "Loadout", icon: .loadout, trailing: "\u{2318}1") {}, isHighlighted: true) {}
+                            PaletteRow(entry: PaletteEntry(id: "g.rules", title: "Rules", icon: .rules, trailing: "\u{2318}2") {}, isHighlighted: false) {}
                             PaletteSectionTitle(title: "Skills")
-                            PaletteRow(entry: PaletteEntry(id: "s.ponytail", title: "ponytail", subtitle: "Pick the laziest solution", systemImage: "sparkles") {}, isHighlighted: false) {}
+                            PaletteRow(entry: PaletteEntry(id: "s.ponytail", title: "ponytail", subtitle: "Pick the laziest solution", icon: .skill) {}, isHighlighted: false) {}
                             PaletteEmptyRow(text: "No matches")
                         }
                         .paletteList()
                         Hairline()
                         PaletteFooter {
-                            PaletteHint(text: "navigate") { Image(systemName: "arrow.up.arrow.down") }
+                            PaletteHint(text: "navigate") { ReinsIcon(.navigate, size: .inline) }
                             PaletteHint(text: "close") { Kbd("Esc") }
                         }
                     }
                     Spacer(minLength: 0)
                 }
             }
-            section("Limits: CLI card, window tiles (lead, normal, warn 20%, danger 5%, unknown), note tile, sidebar tiles") {
+            section("Limits: share cells (normal, low 20%, out 5%, not known), the figure in each tone, fact tiles, sidebar tiles") {
                 LimitsSpecimens()
             }
             section("Banner") {
@@ -195,7 +154,7 @@ struct ComponentGalleryContent: View {
             }
             section("Empty state") {
                 GroupedList {
-                    EmptyState("No skills yet", message: "Skills you add to Claude Code or Codex show up here with how often they ran.", systemImage: "square.stack.3d.up") {
+                    EmptyState("No skills yet", message: "Skills you add to Claude Code or Codex show up here with how often they ran.", icon: .loadout) {
                         Button("Rescan") {}.buttonStyle(.reins(.normal))
                     }
                 }
@@ -217,6 +176,68 @@ struct ComponentGalleryContent: View {
         .background(Palette.well)
     }
 
+    private var buttons: some View {
+        HStack(spacing: Rhythm.tools) {
+            Button("Normal") {}.buttonStyle(.reins(.normal))
+            Button("Primary") {}.buttonStyle(.reins(.primary))
+            Button("Remove") {}.buttonStyle(.reins(.danger))
+            Button {} label: {
+                HStack(spacing: Space.s4) { ReinsIcon(.add); Text("Add to Codex") }
+            }
+            .buttonStyle(.reins(.ghost))
+            Button {} label: { ReinsIcon(.trash) }.buttonStyle(.reins(.icon)).accessibilityLabel("Remove")
+            RowActionButton(title: "Remove from Claude Code", icon: .trash, kind: .danger, iconOnly: true, badge: .claude) {}
+            RowActionButton(title: "Remove from Codex", icon: .trash, kind: .danger, iconOnly: true, badge: .codex) {}
+            Button("Disabled") {}.buttonStyle(.reins(.normal)).disabled(true)
+            Spacer(minLength: 0)
+        }
+        .environment(\.actionsConcealed, false)
+    }
+
+    private var tags: some View {
+        HStack(spacing: Rhythm.tools) {
+            Tag("plugin: neon", icon: .lock)
+            Tag("added recently")
+            Tag("running", tone: .success)
+            Tag("waiting for you", tone: .warn)
+            Tag("17 errors", tone: .warn)
+            Tag("mixed", tone: .warn, icon: .info)
+            Tag("script not found", tone: .danger, icon: .scriptMissing)
+            Tag("Deny", tone: .danger)
+            CLITag(.claude)
+            CLITag(.codex)
+            HStack(spacing: Space.s6) { CLIDot(.claude); CLIDot(.codex) }
+            Kbd("\u{2318}K")
+            Kbd("Esc")
+            HStack(spacing: Space.s6) { Text("Skills").reinsText(.captionStrong, tone: .secondary); Count(10) }
+            HStack(spacing: Space.s6) { Text("Activity").reinsText(.body); Count(2, alert: true) }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var controls: some View {
+        HStack(spacing: Rhythm.tools) {
+            SegmentedControl(label: "Rule", options: [
+                SegmentOption("Allow", value: "allow"),
+                SegmentOption("Ask", value: "ask"),
+                SegmentOption("Deny", value: "deny"),
+            ], selection: $segment)
+            SegmentedControl(label: "Settings file", options: [
+                SegmentOption("Shared", value: "shared"),
+                SegmentOption("Local", value: "local", count: 3),
+            ], selection: $file)
+            ScopePicker(options: [ScopeOption(id: nil, label: "Global")], current: ScopeOption(id: nil, label: "Global"), minWidth: Metrics.scopePickerMinWidth) { _ in }
+            HStack(spacing: Rhythm.chips) {
+                FilterChip("All", count: 6, isOn: chip == "all") { chip = "all" }
+                FilterChip("Never ran", count: 1, isOn: chip == "never") { chip = "never" }
+                FilterChip(dismissible: "spacevibe-bench") {}
+            }
+            SearchField(placeholder: "Search or run a command", shortcut: "\u{2318}K", spokenShortcut: "Command K") {}
+            Kbd("Esc")
+            Spacer(minLength: 0)
+        }
+    }
+
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             GroupLabel(title)
@@ -230,7 +251,7 @@ private struct TypeRoles: View {
     private let roles: [(String, ReinsType)] = [
         ("caption", .caption), ("captionStrong", .captionStrong), ("label", .label), ("count", .count),
         ("body", .body), ("bodyStrong", .bodyStrong), ("rowTitle", .rowTitle), ("number", .number),
-        ("code", .code), ("codeTitle", .codeTitle), ("title", .title), ("figure", .figure),
+        ("code", .code), ("codeTitle", .codeTitle), ("title", .title), ("figure", .figure), ("display", .display),
     ]
 
     var body: some View {
@@ -239,7 +260,7 @@ private struct TypeRoles: View {
                 HStack(spacing: Metrics.rowSpacing) {
                     Text(name).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth, alignment: .leading)
                     Text("\(Int(role.size)) / \(Int(role.lineBox))").reinsText(.count, tone: .tertiary).frame(width: Metrics.costWidth, alignment: .leading)
-                    Text(role.code ? "Bash(rm -rf:*) 0O lI1" : "ponytail \u{00B7} Add to Codex \u{00B7} 1,204")
+                    Text(role.code ? "Bash(rm -rf:*) 0O lI1" : role.size > ReinsType.figure.size ? "92%" : "ponytail \u{00B7} Add to Codex \u{00B7} 1,204")
                         .reinsText(role, tone: .primary)
                         .lineLimit(1)
                     Spacer(minLength: 0)
@@ -282,8 +303,8 @@ struct ComponentGalleryWindow: View {
 
 private struct Swatches: View {
     private let tokens: [(String, Color)] = [
-        ("background", Palette.background), ("well", Palette.well), ("sidebar", Palette.sidebar), ("surface", Palette.surface),
-        ("surfaceRaised", Palette.surfaceRaised), ("border", Palette.border), ("track", Palette.track),
+        ("background", Palette.background), ("well", Palette.well), ("surface", Palette.surface),
+        ("surfaceRaised", Palette.surfaceRaised), ("border", Palette.border), ("divider", Palette.divider),
         ("selection", Palette.selection), ("hover", Palette.hover), ("accent", Palette.accent),
         ("accentSolid", Palette.accentSolid), ("text", Palette.text), ("textSecondary", Palette.textSecondary),
         ("textTertiary", Palette.textTertiary), ("claude", Palette.claude), ("codex", Palette.codex),
@@ -312,58 +333,123 @@ private struct Swatches: View {
     }
 }
 
-/// The Limits blocks in every state, on the page well: the lead tile in each tone, a plain tile, one whose reset has passed,
-/// a note tile, and the sidebar's tiles.
+/// Every generated glyph at the four sizes, in the secondary tone and in a tag's warn ink, then the chevrons.
+private struct IconSpecimens: View {
+    private let sizes: [IconSize] = [.inline, .control, .row, .sidebar]
+
+    var body: some View {
+        GroupedList {
+            ForEach(Array(ReinsGlyph.allCases.enumerated()), id: \.offset) { _, glyph in
+                HStack(spacing: Metrics.rowSpacing) {
+                    Text(glyph.solarName).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
+                    ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
+                        ReinsIcon(glyph, size: size).frame(width: Metrics.iconLarge)
+                    }
+                    ReinsIcon(glyph, size: .control, ink: Palette.warnInk)
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(Palette.textSecondary)
+                .padding(.horizontal, Metrics.rowHorizontalPadding)
+            }
+            HStack(spacing: Metrics.rowSpacing) {
+                Text("chevron (drawn)").reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
+                ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
+                    Chevron(.right, size: size).frame(width: Metrics.iconLarge)
+                }
+                Chevron(.down, size: .row)
+                Chevron(.upDown, size: .control)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(Palette.textSecondary)
+            .padding(.horizontal, Metrics.rowHorizontalPadding)
+        }
+    }
+}
+
+/// The ruler at the usage cell's width (its number column beside it) and at a wider track: the cell is a tenth of the
+/// track either way. Inside a card, where it always sits.
+private struct RulerSpecimens: View {
+    private let shares: [(String, Double?, LimitTone)] = [
+        ("0%", 0, .normal), ("4%", 0.04, .normal), ("39%", 0.39, .normal), ("100%", 1, .normal),
+        ("not known", nil, .normal), ("20% left", 0.2, .low), ("5% left", 0.05, .out),
+    ]
+
+    var body: some View {
+        GroupedList {
+            CardHeader("Ruler", count: shares.count, columns: {
+                Text("at the usage cell's track").frame(width: Metrics.usageCellWidth, alignment: .leading)
+                Text("at twice that").frame(width: Metrics.usageCellWidth * 2, alignment: .leading)
+            })
+            ForEach(shares, id: \.0) { label, share, tone in
+                Row { RowText(label) }
+                    .cells {
+                        HStack(spacing: Metrics.rowSpacing) {
+                            Ruler(share: share, fill: tone.barFill ?? Palette.claude)
+                            Text(label).reinsText(.number, tone: .secondary).frame(width: Metrics.usageNumberWidth, alignment: .trailing)
+                        }
+                        .frame(width: Metrics.usageCellWidth)
+                        Ruler(share: share, fill: tone.barFill ?? Palette.codex).frame(width: Metrics.usageCellWidth * 2)
+                    }
+            }
+        }
+    }
+}
+
+/// The Limits page's parts in every state, on the page well: share cells in a list card, the figure in each tone, the
+/// fact tiles inside a card, and the sidebar's tiles.
 private struct LimitsSpecimens: View {
     var body: some View {
-        HStack(alignment: .top, spacing: Space.s16) {
-            VStack(spacing: Space.s16) {
-                LimitCard(.claude, title: "Claude Code", plan: nil) {
-                    Text("read 4 min ago").reinsText(.caption, tone: .secondary)
-                } trailing: {
-                    Image(systemName: "info.circle")
-                } content: {
-                    LimitTile(cli: .claude, title: "Weekly", detail: "Resets in 2 d 22 h \u{00B7} Fri 16:00", reading: .share(left: 92, tone: .normal), isLead: true)
-                    LimitTile(cli: .claude, title: "Weekly \u{00B7} Fable", detail: "Resets in 2 d 22 h \u{00B7} Fri 16:00", tags: [LimitTileTag(text: "not in use")], reading: .share(left: 100, tone: .normal))
-                }
-                LimitCard(.codex, title: "Codex", plan: "Plus") {
-                    Tag("read 5 h ago", tone: .warn, systemImage: "clock")
-                } trailing: {
-                    Image(systemName: "info.circle")
-                } content: {
-                    LimitTile(cli: .codex, title: "Weekly", detail: "Resets in 1 d 3 h \u{00B7} Wed 21:00", reading: .share(left: 18, tone: .low), isLead: true)
-                    LimitTile(cli: .codex, title: "5-hour", detail: "Reset at 17:34 \u{00B7} no newer reading", tags: [LimitTileTag(text: "reset passed", tone: .warn, systemImage: "clock")], reading: .unknown)
-                }
+        HStack(alignment: .top, spacing: Rhythm.cards) {
+            GroupedList {
+                CardHeader("Windows", count: 4)
+                SectionRow("Codex")
+                Row(selected: true, onActivate: {}) { RowText("Weekly", subtitle: "Resets in 1 d 3 h \u{00B7} Wed 21:00") }
+                    .cells { LimitShareCell(share: 0.04, text: "4%", fill: Palette.danger, tone: .danger) }
+                Row(onActivate: {}) { RowText("5-hour", subtitle: "Reset at 17:34 \u{00B7} no newer reading") }
+                    .cells { LimitShareCell(share: nil, text: "\u{2014}", fill: Palette.codex) }
+                SectionRow("Claude Code")
+                Row(onActivate: {}) { RowText("Weekly", subtitle: "Resets in 2 d 22 h \u{00B7} Fri 16:00") }
+                    .cells { LimitShareCell(share: 0.18, text: "18%", fill: Palette.warn, tone: .warn) }
+                Row(onActivate: {}) { RowText("Weekly \u{00B7} Fable", subtitle: "Resets in 2 d 22 h \u{00B7} Fri 16:00") { Tag("not in use") } }
+                    .cells { LimitShareCell(share: 0.92, text: "92%", fill: Palette.claude) }
+                SectionRow("Gemini CLI")
+                Row(onActivate: {}) { RowText("Not measurable") }
+                    .cells { LimitShareCell(share: nil, text: "\u{2014}", fill: Palette.textSecondary) }
             }
-            VStack(spacing: Space.s16) {
-                LimitCard(.codex, title: "Codex", plan: "Pro") {
-                    EmptyView()
-                } trailing: {
-                    EmptyView()
-                } content: {
-                    LimitTile(cli: .codex, title: "Weekly", detail: "Resets in 1 d 3 h \u{00B7} Wed 21:00", reading: .share(left: 4, tone: .out), isLead: true)
-                    LimitTile(cli: .codex, title: "5-hour", detail: "Resets in 3 h 12 min \u{00B7} 21:12", reading: .share(left: 77, tone: .normal))
-                }
-                LimitCard(.gemini, title: "Gemini CLI") {
-                    EmptyView()
-                } trailing: {
-                    EmptyView()
-                } content: {
-                    LimitNoteTile(title: "Not measurable", text: "Gemini CLI keeps no usage limit on disk, and Reins does not go online for it.", isWarn: true)
-                    LimitNoteTile(title: "No reading yet", text: "Claude Code has not fetched usage on this Mac.", action: ("Copy /usage", "doc.on.doc", {}))
+            VStack(alignment: .leading, spacing: Rhythm.cards) {
+                GroupedList {
+                    CardHeader("Weekly", detail: "Codex \u{00B7} Plus")
+                    VStack(alignment: .leading, spacing: Space.s16) {
+                        HStack(spacing: Rhythm.cards) {
+                            LimitFigure(left: 92)
+                            LimitFigure(left: 18, tone: .low)
+                            LimitFigure(left: 4, tone: .out)
+                            LimitFigure(left: nil)
+                        }
+                        Ruler(share: 0.04, fill: Palette.danger)
+                        HStack(alignment: .top, spacing: Rhythm.tiles) {
+                            FactTile("Resets in", value: "1 d 3 h")
+                            FactTile("Reset at", value: "17:34", note: "no newer reading")
+                            FactTile("Reading", value: "read 2 days ago", tone: .warn, note: "From Claude Code's own cache") {
+                                Button {} label: { HStack(spacing: Space.s6) { ReinsIcon(.copy); Text("Copy /usage") } }.buttonStyle(.reins(.normal))
+                            }
+                        }
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.horizontal, Metrics.rowHorizontalPadding)
+                    .padding(.bottom, Space.s8)
+                    .groupedListPart(.plain)
                 }
                 VStack(spacing: Space.s6) {
-                    LimitSidebarTile(cli: .claude, name: "Claude Code", value: "92% left", fraction: 0.92)
-                    LimitSidebarTile(cli: .codex, name: "Codex", value: "18% left", tone: .low, fraction: 0.18)
-                    LimitSidebarTile(cli: .codex, name: "Codex", value: "4% left", tone: .out, fraction: 0.04)
+                    LimitSidebarTile(cli: .claude, name: "Claude Code", value: "92% left")
+                    LimitSidebarTile(cli: .codex, name: "Codex", value: "18% left", tone: .low)
+                    LimitSidebarTile(cli: .codex, name: "Codex", value: "4% left", tone: .out)
                     LimitSidebarTile(cli: .gemini, name: "Gemini CLI", value: "not measurable", isMuted: true)
                 }
                 .padding(Space.s8)
                 .frame(width: Metrics.sidebarWidth)
-                .background(Palette.sidebar)
+                .background(Palette.well)
             }
         }
-        .padding(Metrics.pagePadding)
-        .background(Palette.well)
     }
 }

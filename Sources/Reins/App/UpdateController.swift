@@ -83,7 +83,7 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
     }
 
     static func viewAction(_ run: @escaping @MainActor () -> Void) -> ToastAction {
-        ToastAction(title: "View", systemImage: "arrow.down.circle", run: run)
+        ToastAction(title: "View", icon: .download, run: run)
     }
 
     // MARK: SPUStandardUserDriverDelegate

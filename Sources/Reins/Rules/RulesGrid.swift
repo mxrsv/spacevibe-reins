@@ -41,7 +41,7 @@ private struct RulesGridRow: View {
             RowText(cell.label)
         }
         .lead {
-            Image(systemName: isOpen ? "chevron.down" : "chevron.right").imageScale(.small).accessibilityHidden(true)
+            Chevron(isOpen ? .down : .right, size: .row)
         }
         .cells {
             RulesClaudeCell(model: model, cell: cell, isEditable: snapshot.isEditable(cell), problemsInFile: !snapshot.problems.isEmpty)
@@ -73,7 +73,7 @@ private struct RulesClaudeCell: View {
             .help(problemsInFile ? RulesWording.invalidFileHelp : "")
             switch cell.state {
             case .mixed:
-                Tag("mixed", tone: .warn, systemImage: "info.circle")
+                Tag("mixed", tone: .warn, icon: .info)
                     .help(RulesWording.mixedHelp)
                     .accessibilityHint(RulesWording.mixedHelp)
             case .none:

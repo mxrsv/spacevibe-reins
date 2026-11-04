@@ -7,11 +7,11 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(spacing: Space.s2) {
+            VStack(spacing: Metrics.sidebarItemSpacing) {
                 ForEach(shell.tabs, id: \.id) { tab in
                     SidebarItem(
-                        title: tab.title, systemImage: tab.systemImage, count: tab.badge?.value, alert: tab.badge?.alert ?? false,
-                        spokenCount: tab.badge?.spoken, isActive: tab.id == shell.activeID
+                        title: tab.title, icon: tab.icon, count: tab.badge?.value, alert: tab.badge?.alert ?? false,
+                        spokenCount: tab.badge?.spoken, isActive: tab.id == shell.activeID && !shell.isLimitsOpen
                     ) { shell.select(tab.id) }
                 }
             }
@@ -30,7 +30,7 @@ struct SidebarView: View {
                 Spacer(minLength: 0)
                 ThemeToggle()
             }
-            .padding(.horizontal, Space.s4)
+            .padding(.horizontal, Metrics.sidebarItemPadding)
         }
         .sidebarSurface()
     }

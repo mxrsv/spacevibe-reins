@@ -43,7 +43,7 @@ enum ActivityRows {
 struct SessionWording {
     let tagText: String
     let tagTone: TagTone
-    let tagIcon: String?
+    let tagIcon: ReinsGlyph?
     /// The engine's reason, shown as help for every state so "why" is always one hover away.
     let help: String
     let subtitle: String
@@ -52,7 +52,7 @@ struct SessionWording {
         switch session.state {
         case .running: (tagText, tagTone, tagIcon) = ("running", .success, nil)
         case .waiting: (tagText, tagTone, tagIcon) = ("waiting for you", .warn, nil)
-        case .unmeasurable: (tagText, tagTone, tagIcon) = ("not measurable", .neutral, "exclamationmark.triangle")
+        case .unmeasurable: (tagText, tagTone, tagIcon) = ("not measurable", .neutral, .warning)
         case .idle, .ended: (tagText, tagTone, tagIcon) = ("idle", .neutral, nil)
         }
         help = session.stateReason

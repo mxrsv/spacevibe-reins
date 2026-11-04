@@ -106,9 +106,10 @@ lines record it. Consequences for the tasks below:
   it. `Resources/Brand/*.svg` (copied from `spacevibe-board` and `spacevibe-bench`; Gemini flattened to one path with spaced arc
   flags because CoreSVG rejects gradients and packed flags) are copied into the bundle by `build-app.sh`.
 - Shots: `REINS_FIXTURE_LIMITS=typical|edge REINS_SHOT_SCREEN=limits scripts/dev-fixture.sh --shots <dir>` writes the sidebar,
-  the detail and the detail with inactive windows, light and dark. The fixture section is opt-in so the golden home is unchanged.
+  the page and the page with inactive windows, light and dark (since V6 of the v3 plan; before it, the popover detail). The
+  fixture section is opt-in so the golden home is unchanged.
 - Verification 2026-11-03: `scripts/test.sh` → `Test run with 368 tests in 40 suites passed`; the six shots per variant were
   looked at.
-- Remaining: V6 and V7 of the v3 plan (the Limits page, shots, owner eye approval).
+- Remaining: V7 of the v3 plan (shots, owner eye approval); the page itself is V6, done 2026-11-04 on `claude/reins-design-v3`.
 
 `/goal` Build Reins Limits per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-03-reins-limits.md tasks L3 to L5 in placement B (recorded under L2), so that AC10 holds in scripts/test.sh and the surface matches ~/scratch/spacevibe-reins/limits/ in light and dark shots; stop and report if the shell owner has not agreed to the sidebar and component edits, and never send a request, read a credential, start a CLI, push or release.

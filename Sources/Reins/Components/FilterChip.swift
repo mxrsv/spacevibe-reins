@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// A pill that filters a list, 28 pt high like every control. Several chips side by side act as one single-choice filter;
-/// the caller owns the state. `count` is how many rows the filter would show.
+/// A pill that filters a list, 28 pt high like every control, with no outline: the control ground's fill, or the `selection`
+/// tint while on. Several chips side by side act as one single-choice filter; the caller owns the state. `count` is how many
+/// rows the filter would show.
 ///
 /// The dismissible form is an applied scope ("spacevibe-bench ×"): always on, and only the × acts. The × is its own
 /// button with a spoken label, so a keyboard user reaches it directly.
@@ -11,6 +12,7 @@ struct FilterChip: View {
     let isOn: Bool
     let action: () -> Void
     var onDismiss: (() -> Void)?
+    @Environment(\.controlGround) private var ground
 
     init(_ title: String, count: Int? = nil, isOn: Bool, action: @escaping () -> Void) {
         self.title = title
@@ -32,7 +34,7 @@ struct FilterChip: View {
             pill(trailing: Space.s8) {
                 Text(title)
                 Button(action: onDismiss) {
-                    Image(systemName: "xmark").imageScale(.small).foregroundStyle(TextTone.secondary.color)
+                    ReinsIcon(.close).foregroundStyle(TextTone.secondary.color)
                 }
                 .buttonStyle(.plain)
                 .reinsFocusable(cornerRadius: Metrics.segmentRadius)
@@ -62,8 +64,7 @@ struct FilterChip: View {
             .padding(.leading, Space.s12)
             .padding(.trailing, trailing)
             .frame(height: Metrics.chipHeight)
-            .background(Capsule().fill(isOn ? Palette.selection : .clear))
-            .overlay(Capsule().strokeBorder(isOn ? .clear : Palette.border, lineWidth: 1))
+            .background(Capsule().fill(isOn ? Palette.selection : ground.fill))
             .contentShape(Capsule())
     }
 }

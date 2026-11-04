@@ -2,26 +2,26 @@ import ReinsCore
 import SwiftUI
 
 /// The Limits block above the sidebar footer, on every tab: one tile per CLI with the share left of its tightest window.
-/// Clicking it (or `⌘L`) opens the detail beside the sidebar. Reads run while the window is active (launch, each time it
-/// becomes active, then every minute).
+/// Clicking it (or `⌘L`) opens the Limits page in the content area. Reads run while the window is active (launch, each time
+/// it becomes active, then every minute).
 struct LimitsSidebarBlock: View {
     @Environment(LimitsModel.self) private var model
+    @Environment(ShellModel.self) private var shell
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        @Bindable var model = model
         TimelineView(.everyMinute) { context in
-            Button { model.isDetailOpen.toggle() } label: {
+            Button { shell.openLimits() } label: {
                 VStack(alignment: .leading, spacing: Space.s6) {
                     HStack(spacing: Space.s6) {
-                        Image(systemName: "gauge.with.dots.needle.33percent").imageScale(.small).accessibilityHidden(true)
+                        ReinsIcon(.limits)
                         Text("Limits")
                         if hasStaleReading(now: context.date) { StaleMark() }
                         Spacer(minLength: 0)
-                        Image(systemName: "chevron.right").imageScale(.small).accessibilityHidden(true)
+                        Chevron(.right)
                     }
                     .reinsText(.bodyStrong, tone: .primary)
-                    .padding(.horizontal, Space.s4)
+                    .padding(.horizontal, Metrics.sidebarItemPadding)
                     ForEach(LimitsCLI.allCases, id: \.self) { cli in
                         tile(cli, now: context.date)
                     }
@@ -32,7 +32,7 @@ struct LimitsSidebarBlock: View {
             .reinsFocusable(cornerRadius: Metrics.controlRadius)
             .accessibilityLabel("Limits")
             .accessibilityHint("Shows every usage limit window")
-            .popover(isPresented: $model.isDetailOpen, arrowEdge: .trailing) { LimitsDetail() }
+            .accessibilityAddTraits(shell.isLimitsOpen ? .isSelected : [])
         }
         .task(id: scenePhase == .active) {
             guard scenePhase == .active else { return }
@@ -53,7 +53,7 @@ struct LimitsSidebarBlock: View {
         if let limits = model.limits(for: cli) {
             switch LimitsWording.summary(limits, now: now) {
             case .share(let left, let tone, _):
-                LimitSidebarTile(cli: cli, name: name, value: "\(left)% left", tone: tone.tile, fraction: Double(left) / 100)
+                LimitSidebarTile(cli: cli, name: name, value: "\(left)% left", tone: tone.tile)
             case .unknown:
                 LimitSidebarTile(cli: cli, name: name, value: "unknown", isMuted: true)
             case .state(let text):

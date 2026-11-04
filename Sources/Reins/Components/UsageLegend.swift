@@ -9,7 +9,7 @@ struct UsageLegend: View {
             item(swatch: Capsule().fill(Palette.textSecondary).frame(width: Metrics.legendSwatchWidth, height: Metrics.barHeight), "counted from logs")
             item(swatch: Text("0").reinsText(.countStrong, tone: .danger), "never ran")
             item(swatch: Capsule().strokeBorder(Palette.textTertiary, style: StrokeStyle(lineWidth: 1, dash: [3, 2])).frame(width: Metrics.legendSwatchWidth, height: Metrics.barHeight), "not counted yet")
-            item(swatch: Image(systemName: "exclamationmark.triangle").imageScale(.small), "not measurable")
+            item(swatch: ReinsIcon(.warning, size: .inline), "not measurable")
             Spacer(minLength: 0)
             if let note { Text(note).lineLimit(1).truncationMode(.tail).accessibilityAddTraits(.updatesFrequently) }
         }
