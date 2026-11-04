@@ -4,7 +4,7 @@ Spec: [2026-11-05-reins-agents.md](../specs/2026-11-05-reins-agents.md), AG1 to 
 Depends on [design language v4](2026-11-05-reins-design-language-v4.md) V5 (the components) before any UI task here. The core tasks A1 to A6 can start now.
 Mock: [`mocks/agents/agents-panel.html`](../../mocks/agents/agents-panel.html) (C′), with the v4 look at [`mocks/agents/controls.html`](../../mocks/agents/controls.html)`?icons=tabler&buttons=a`. Both are tracked with synthetic data, and A12 deletes the folder.
 Checkout: `spacevibe-reins` on `main`, shared with other sessions. Commit with `git commit -- <paths>` only.
-Started 2026-11-05. Status: plan written. Before A1, the owner approves the write approach below (W9) and picks the A0b mock; those are the only stops before the cut-over.
+Started 2026-11-05. Status: the owner approved the write approach below on 2026-11-05 (W9, "ok"), adding that every failure shows a toast. The owner also picked the name-based secret rule the same day. A1 waits only for the A0b mock pick, which with the cut-over is the only owner stop.
 
 ## Approach
 
@@ -49,7 +49,7 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
 
 - [x] A0. Spec and plan.
 - [ ] A0b. Before any code, read Codex's `default_permissions` schema from its source or docs (parent spec, "To verify"). Then add the profile editor and the both-models state to mock C′, and the owner picks them together with the W9 approval (AG6).
-- [ ] A1. `SecretMask` for JSON and TOML: detection by key path and name, mask, unmask-merge, the moved-placeholder refusal. Also confirm the mode of the data folder and the trash (AG3).
+- [ ] A1. `SecretMask` for JSON and TOML: detection (all of an MCP server's env and headers, elsewhere by key name), mask, unmask-merge, and the moved-placeholder refusal. Also confirm the mode of the data folder and the trash (AG3).
 - [ ] A2. `TOMLEdit` with golden tests for comments, dotted keys, inline tables, multi-line arrays and quoted table names (AG5).
 - [ ] A3. `ClaudeSettingsEdit` at all three scopes:
   - `defaultMode`, `additionalDirectories` and `model`;
@@ -93,6 +93,6 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
 
 ## Handoff
 
-2026-11-05: the plan is written. Waiting for the owner to approve the write approach above, and for A0b, before A1.
+2026-11-05: the plan is written, and the owner approved the write approach and the secret rule. Next: A0b, then A1. Every failed save maps to an error toast in A8 and A9 (AG7).
 
 /goal Build the Reins Agents page per docs/specs/2026-11-05-reins-agents.md and docs/plans/2026-11-05-reins-agents.md: tasks A1 to A10 in order, one commit each, the UI behind REINS_AGENTS=1 after design language v4 V5. Done means scripts/test.sh passes with the AG2 to AG8 tests against TempHome, and the agents shots render in light and dark. Leave A11 (the real-CLI check with the owner) and A12 (eye approval and cut-over) to the owner. Never push or release, and never touch the real ~/.claude or ~/.codex.

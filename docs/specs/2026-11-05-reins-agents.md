@@ -61,6 +61,7 @@ Mocks, tracked in [`mocks/agents/`](../../mocks/agents/index.html) with syntheti
   - Review opens the `ConfirmationDialog`. It lists each change (Add, Remove, Change, Replace, Edit, with verdict tags), the scope, the file or files, and "Reins keeps a copy you can restore".
   - Bypass, `danger-full-access` and `never` each add a warn note that says the consequence.
   - Saving writes the files, closes the dialog and shows a toast with Undo.
+  - A save that fails shows an error toast that names the reason, and the panel keeps the draft so nothing typed is lost (owner, 2026-11-05). The reasons include a refused `~/.claude.json`, a file that changed shape, a guard, a write error and a missing permission.
   - `Esc`, Close, or switching the panel or scope while a draft exists turns the footer into "Discard N changes?" with Keep editing and Discard. No second dialog opens.
 - **Rules (both CLIs).**
   - The file opens in a Markdown editor with Edit and Preview.
@@ -135,8 +136,9 @@ Mocks, tracked in [`mocks/agents/`](../../mocks/agents/index.html) with syntheti
   - If that fails, Reins refuses with "Claude Code just changed ~/.claude.json. Nothing was saved; try again."
 - **Secrets** (AGENTS.md S-R3 stays).
   - **Never shown or logged:**
-    - every value under an `env` or `headers` table: Claude's `env`, MCP `env` and `headers`, Codex `mcp_servers.*.env`, `http_headers`, `env_http_headers` and `shell_environment_policy.set`;
-    - every string value whose key contains `token`, `secret`, `password`, `api_key`, `apikey` or `authorization`.
+    - every value of an MCP server's environment and headers: MCP `env` and `headers` in Claude Code, and in Codex `mcp_servers.*.env`, `http_headers` and `env_http_headers`;
+    - elsewhere, any string value whose key name contains `key`, `token`, `secret`, `password` or `auth`, in any case. This covers Claude's `env` and Codex `shell_environment_policy.set`.
+  - Any other value shows as it is. For example, `DISABLE_TELEMETRY` in Claude's `env` reads `1`. The owner picked this rule on 2026-11-05, accepting that a secret stored under a name with none of those words would show.
   - **Shown as `••••`.** Replace writes a new value without the old one ever reaching the UI.
   - **In Advanced:** a masked value saved unchanged keeps its original bytes, and a masked value moved to another key is refused.
   - **Restorable copies** keep the secrets, with mode 0600.
@@ -178,8 +180,8 @@ From the 2026-11-04 interview unless dated otherwise.
   - a save writes exactly the edit, and its byte diff stays inside the edited region;
   - Undo restores the original bytes;
   - a second edit in the same save lands in the same journal entry.
-- **AG3.** A fixture has values under `env`, `headers` and token-like keys:
-  - no such value appears in any panel, shot, log line or error;
+- **AG3.** A fixture has MCP `env` and `headers` values, token-like keys in Claude's `env` and Codex's config, and a plain `DISABLE_TELEMETRY`:
+  - no masked value appears in any panel, shot, log line or error, while `DISABLE_TELEMETRY` shows its value;
   - Replace writes the new value;
   - an Advanced save that leaves the masked values alone leaves those bytes identical.
 - **AG4.** A test changes `~/.claude.json` between Reins reading it and writing it. The edit is applied to the new content or refused with the message, and no other key changes.
@@ -187,7 +189,7 @@ From the 2026-11-04 interview unless dated otherwise.
   - untouched lines stay byte-identical;
   - the result reads back with `TOMLReader`.
 - **AG6.** A Reins write never leaves Codex with both permission models set. Each risky value shows its warn note in the confirmation.
-- **AG7.** The draft guard behaves as described for `Esc`, Close, switching the panel and switching the scope.
+- **AG7.** The draft guard behaves as described for `Esc`, Close, switching the panel and switching the scope. Each failure reason named under Draft and save shows its error toast and keeps the draft.
 - **AG8.** Only one panel opens at a time; it pushes the content, its width stays within 420 to 720 pt and is remembered, and the cards never go below 440 pt.
 - **AG9.** On a throwaway home, a real `claude` and a real `codex` load a permission, a hook, an MCP server, a model and an instruction-file change written by Reins. This extends the parent spec's AC2.
 - **AG10.** Shots of the page and of every panel, in both appearances, match mock C′ in the v4 look by the owner's eye, after the last task. Departures are named in the plan.
