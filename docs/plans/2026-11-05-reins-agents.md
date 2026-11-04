@@ -48,7 +48,7 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
 ## Tasks
 
 - [x] A0. Spec and plan.
-- [ ] A0b. Before any code, read Codex's `default_permissions` schema from its source or docs (parent spec, "To verify"). Then add the profile editor and the both-models state to mock C′, and the owner picks them together with the W9 approval (AG6).
+- [ ] A0b. Before any code, read Codex's `default_permissions` schema and add the profile editor and the both-models state to mock C′; the owner then picks them (AG6). The schema was read and the mock built on 2026-11-05, at `mocks/agents/agents-panel.html#open=codex/permissions&codex=profiles` and `&codex=both`. It is waiting for the owner's pick.
 - [ ] A1. `SecretMask` for JSON and TOML: detection (all of an MCP server's env and headers, elsewhere by key name), mask, unmask-merge, and the moved-placeholder refusal. Also confirm the mode of the data folder and the trash (AG3).
 - [ ] A2. `TOMLEdit` with golden tests for comments, dotted keys, inline tables, multi-line arrays and quoted table names (AG5).
 - [ ] A3. `ClaudeSettingsEdit` at all three scopes:
@@ -93,6 +93,6 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
 
 ## Handoff
 
-2026-11-05: the plan is written, and the owner approved the write approach and the secret rule. Next: A0b, then A1. Every failed save maps to an error toast in A8 and A9 (AG7).
+2026-11-05: the plan is written, and the owner approved the write approach and the secret rule. The A0b mock is built and waits for the owner's pick; A1 starts after it. Every failed save maps to an error toast in A8 and A9 (AG7).
 
 /goal Build the Reins Agents page per docs/specs/2026-11-05-reins-agents.md and docs/plans/2026-11-05-reins-agents.md: tasks A1 to A10 in order, one commit each, the UI behind REINS_AGENTS=1 after design language v4 V5. Done means scripts/test.sh passes with the AG2 to AG8 tests against TempHome, and the agents shots render in light and dark. Leave A11 (the real-CLI check with the owner) and A12 (eye approval and cut-over) to the owner. Never push or release, and never touch the real ~/.claude or ~/.codex.

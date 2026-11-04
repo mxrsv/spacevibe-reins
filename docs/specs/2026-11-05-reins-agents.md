@@ -83,7 +83,16 @@ Mocks, tracked in [`mocks/agents/`](../../mocks/agents/index.html) with syntheti
     - `sandbox_mode`: Read only, Workspace or Full access.
     - With Workspace only: the `network_access` switch and the `writable_roots` list.
   - **Command rules:** each `prefix_rule` shows its pattern, with a decision tag menu (Allow, Prompt, Forbidden), an add row and remove.
-  - **`default_permissions` profiles:** when Codex uses profiles, the panel edits the active profile's filesystem and network entries instead of `sandbox_mode`. When both models are set, the panel says so and offers to keep one. This part is not in mock C′ and gets a mock pick before it is built.
+  - **`default_permissions` profiles:** when Codex uses profiles, the panel edits the active profile instead of `sandbox_mode`. The schema is the one at https://learn.chatgpt.com/docs/permissions.md, read 2026-11-05.
+    - **Profile picker:** lists your named profiles and the built-ins `:read-only`, `:workspace` and `:danger-full-access`, the last one warn. A built-in is described but cannot be edited.
+    - **A named profile** shows:
+      - Based on (`extends`);
+      - Files: each `filesystem` entry with Read, Write or Deny, where `:workspace_roots` reads "Workspace roots" and `:tmpdir` reads "Temp folder", plus an add row;
+      - Network: `network.enabled`, Enforce domain rules (`features.network_proxy`), and `network.domains` with Allow or Deny.
+    - Turning off domain enforcement while the network is on adds a warn note: the network becomes open to every domain.
+    - `workspace_roots`, `unix_sockets`, `glob_scan_max_depth` and the proxy settings are edited in Advanced.
+    - **When both models are set,** a card offers two choices. "Keep sandbox_mode", which is what Codex uses now, removes `default_permissions`. "Keep the profile" removes `sandbox_mode` and `[sandbox_workspace_write]`.
+    - Mock: `agents-panel.html#open=codex/permissions&codex=profiles`, and `&codex=both`.
   - At a project: Trust (Not set, Trusted, Untrusted) and a note that everything else comes from Global.
 - **Hooks.**
   - Each row shows the event and matcher, the command, and its runs.

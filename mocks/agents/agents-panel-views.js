@@ -22,8 +22,8 @@ function panel() {
     <div class="p-body${section === 'advanced' || (section === 'rules' && state.rulesMode === 'edit') ? ' wide' : ''}" id="pbody">${body}</div>${footer()}`;
 }
 
-function seg(name, options, value, extra = '') {
-  return `<div class="seg ${extra}" role="radiogroup">${options.map((o) => `<button role="radio" data-act="seg" data-name="${name}" data-v="${o.v ?? ''}" aria-pressed="${o.v === value}" aria-checked="${o.v === value}" class="${o.warn ? 'warn-opt' : ''}"${o.tone ? ` data-tone="${o.tone}"` : ''}>${o.warn && o.v === value ? icon('warning', 'i14') : ''}${o.l}</button>`).join('')}</div>`;
+function seg(name, options, value, extra = '', attrs = '') {
+  return `<div class="seg ${extra}" role="radiogroup">${options.map((o) => `<button role="radio" data-act="seg" data-name="${name}" ${attrs} data-v="${o.v ?? ''}" aria-pressed="${o.v === value}" aria-checked="${o.v === value}" class="${o.warn ? 'warn-opt' : ''}"${o.tone ? ` data-tone="${o.tone}"` : ''}>${o.warn && o.v === value ? icon('warning', 'i14') : ''}${o.l}</button>`).join('')}</div>`;
 }
 const tagHTML = (map, v, { button = false, data = '' } = {}) => button
   ? `<button class="tag ${map[v].tone}" ${data} aria-haspopup="menu"><i></i>${map[v].l}${icon('chevronDown')}</button>`
@@ -56,7 +56,7 @@ const BODIES = {
       }).join('') || `<div class="note caption">No rules in ${esc(filePath('claude', 'permissions', scope))} yet.</div>`;
       const modeLabel = mode ? mode.l : `Same as Global (${MODES.find((m) => m.v === readSaved('claude', 'permissions', 'global').mode).l})`;
       return `<div class="card"><div class="card-head" style="min-height:48px"><span class="grow"><span class="title">Default mode</span><span class="code t3">defaultMode</span></span></div>
-          <div style="padding:0 16px 8px"><button class="scope${mode?.warn ? ' warn' : ''}" style="width:100%;background:var(--raised)" data-act="mode-menu" aria-haspopup="menu">${mode?.warn ? icon('warning', 'i14') : ''}${esc(modeLabel)}${icon('updown', 'i14')}</button><p class="caption ${mode?.warn ? 'warn' : 't3'}" style="margin:8px 0 0">${esc(desc)}</p></div></div>
+          <div style="padding:0 16px 8px"><button class="scope${mode?.warn ? ' warn' : ''}" style="width:100%" data-act="mode-menu" aria-haspopup="menu">${mode?.warn ? icon('warning', 'i14') : ''}${esc(modeLabel)}${icon('updown', 'i14')}</button><p class="caption ${mode?.warn ? 'warn' : 't3'}" style="margin:8px 0 0">${esc(desc)}</p></div></div>
         <div class="card">${cardHead('Rules', { count: d.rules.length, detail: 'permissions' })}
           <div class="add-row two">${field('rule', 'Bash(npm run build:*)', { err: !!state.form['rule:err'] })}${seg('new-verdict', [{ v: 'allow', l: 'Allow', tone: 'ok' }, { v: 'ask', l: 'Ask', tone: 'warn' }, { v: 'deny', l: 'Deny', tone: 'bad' }], state.form.newVerdict ?? 'allow')}${addBtn('add-rule', 'rule')}</div>${errLine('rule')}${groups}</div>
         <div class="card">${cardHead('Extra folders', { count: d.dirs.length, detail: 'additionalDirectories' })}
@@ -70,15 +70,17 @@ const BODIES = {
     }
     const st = codexStatus(d);
     const rows = d.rules.map((r) => `<div class="row"><span class="grow"><span class="code-title trunc">${esc(r.p)}</span><span class="caption t3">prefix_rule</span></span>${tagHTML(DECISION, r.d, { button: true, data: `data-act="decision-menu" data-p="${esc(r.p)}"` })}<span class="acts"><button class="btn icon" data-act="rm-cmd" data-p="${esc(r.p)}" aria-label="Remove ${esc(r.p)}">${icon('trash')}</button></span></div>`).join('');
-    return `<div class="lead-block"><span class="lead-tile${st.warn ? ' warn' : ''}">${icon(st.warn ? 'warning' : 'check', 'i20')}</span><span style="display:flex;flex-direction:column;min-width:0"><span class="row-title">${esc(st.sentence)}</span><span class="code t3">${esc(st.code)}</span></span></div>
-      <div class="card">${cardHead('How Codex runs', { detail: 'config.toml' })}
-        <div class="row stack static"><span class="grow"><span class="row-title">Asks before acting</span><span class="code t3">approval_policy</span></span>${seg('approval', APPROVAL, d.approval, 'full')}${d.approval === 'never' ? `<span class="caption warn">${WARN.never}</span>` : ''}</div>
-        <div class="row stack static"><span class="grow"><span class="row-title">Sandbox</span><span class="code t3">sandbox_mode</span></span>${seg('sandbox', SANDBOX, d.sandbox, 'full')}${d.sandbox === 'danger-full-access' ? `<span class="caption warn">${WARN.full}</span>` : ''}</div>
+    const approvalRow = `<div class="row stack static"><span class="grow"><span class="row-title">Asks before acting</span><span class="code t3">approval_policy</span></span>${seg('approval', APPROVAL, d.approval, 'full')}${d.approval === 'never' ? `<span class="caption warn">${WARN.never}</span>` : ''}</div>`;
+    const legacyCard = `<div class="card">${cardHead('How Codex runs', { detail: 'config.toml' })}
+${approvalRow}        <div class="row stack static"><span class="grow"><span class="row-title">Sandbox</span><span class="code t3">sandbox_mode</span></span>${seg('sandbox', SANDBOX, d.sandbox, 'full')}${d.sandbox === 'danger-full-access' ? `<span class="caption warn">${WARN.full}</span>` : ''}</div>
         ${d.sandbox === 'workspace-write' ? `<div class="row static"><span class="grow"><span class="row-title">Network</span><span class="code t3">sandbox_workspace_write.network_access</span></span><button class="switch" role="switch" aria-checked="${d.network}" aria-label="Network" data-act="network"></button></div>
         <div class="row stack static"><span class="grow"><span class="row-title">Can also write to</span><span class="code t3">sandbox_workspace_write.writable_roots</span></span>
           ${d.roots.length ? `<div class="chips">${d.roots.map((p) => `<span class="chip"><span class="code">${esc(p)}</span><button class="btn icon" style="width:20px;height:20px;margin-right:-6px" data-act="rm-root" data-p="${esc(p)}" aria-label="Remove ${esc(p)}">${icon('close', 'i14')}</button></span>`).join('')}</div>` : ''}
           <div style="display:flex;gap:8px">${field('root', '~/path/to/folder')}${addBtn('add-root', 'root')}</div></div>` : ''}
-      </div>
+      </div>`;
+    const middle = d.model === 'profiles' ? codexProfilesBody(d, approvalRow) : d.model === 'both' ? codexBothCard(d) + legacyCard : legacyCard;
+    return `<div class="lead-block"><span class="lead-tile${st.warn ? ' warn' : ''}">${icon(st.warn ? 'warning' : 'check', 'i20')}</span><span style="display:flex;flex-direction:column;min-width:0"><span class="row-title">${esc(st.sentence)}</span><span class="code t3">${esc(st.code)}</span></span></div>
+      ${middle}
       <div class="card">${cardHead('Command rules', { count: d.rules.length, detail: '~/.codex/rules/default.rules' })}
         <div class="add-row two">${field('cmd', 'npm publish', { err: !!state.form['cmd:err'] })}${seg('new-decision', [{ v: 'allow', l: 'Allow', tone: 'ok' }, { v: 'prompt', l: 'Prompt', tone: 'warn' }, { v: 'forbidden', l: 'Forbidden', tone: 'bad' }], state.form.newDecision ?? 'prompt')}${addBtn('add-cmd', 'cmd')}</div>${errLine('cmd')}
         ${rows || `<div class="note caption">No command rules yet.</div>`}</div>`;
@@ -88,7 +90,7 @@ const BODIES = {
     const d = state.draft;
     const dead = d.filter((h) => h.dead).length;
     const acc = `${dead ? `<button class="btn danger" data-act="rm-dead">${icon('trash')}Remove ${dead} dead</button>` : ''}<button class="btn" data-act="toggle-add" data-what="hook" aria-expanded="${state.adding === 'hook'}">${icon('add')}Add hook</button>`;
-    const form = state.adding === 'hook' ? `<div class="row stack static" style="margin-bottom:4px"><div style="display:flex;gap:8px"><button class="scope" style="background:var(--raised)" data-act="event-menu" aria-haspopup="menu">${esc(state.form.event ?? EVENTS[agent][0])}${icon('updown', 'i14')}</button>${field('matcher', 'Matcher, e.g. Bash')}</div><div style="display:flex;gap:8px">${field('command', 'Command to run, e.g. ~/.claude/hooks/check.sh')}${addBtn('add-hook', 'command')}</div></div>` : '';
+    const form = state.adding === 'hook' ? `<div class="row stack static" style="margin-bottom:4px"><div style="display:flex;gap:8px"><button class="scope" data-act="event-menu" aria-haspopup="menu">${esc(state.form.event ?? EVENTS[agent][0])}${icon('updown', 'i14')}</button>${field('matcher', 'Matcher, e.g. Bash')}</div><div style="display:flex;gap:8px">${field('command', 'Command to run, e.g. ~/.claude/hooks/check.sh')}${addBtn('add-hook', 'command')}</div></div>` : '';
     const rows = d.map((h) => {
       const right = h.dead ? `<span class="tag bad">${icon('warning', 'i14')}script missing</span>`
         : h.runs == null ? `<span class="tag">${icon('warning', 'i14')}not measurable</span>`
@@ -263,10 +265,11 @@ function changes() {
   } else if (section === 'permissions') {
     if (a.trust !== b.trust) out.push({ op: 'Change', text: `trust_level → ${b.trust ?? 'not set'}` });
     if (a.approval !== b.approval) out.push({ op: 'Change', text: `approval_policy → "${b.approval}"`, warn: b.approval === 'never' ? WARN.never : null });
-    if (a.sandbox !== b.sandbox) out.push({ op: 'Change', text: `sandbox_mode → "${b.sandbox}"`, warn: b.sandbox === 'danger-full-access' ? WARN.full : null });
-    if (a.network !== b.network) out.push({ op: 'Change', text: `network_access → ${b.network}` });
+    if (a.sandbox !== b.sandbox && a.model === b.model) out.push({ op: 'Change', text: `sandbox_mode → "${b.sandbox}"`, warn: b.sandbox === 'danger-full-access' ? WARN.full : null });
+    if (a.network !== b.network && a.model === b.model) out.push({ op: 'Change', text: `network_access → ${b.network}` });
     if (a.roots) listDiff(a.roots.map((p) => ({ p })), b.roots.map((p) => ({ p })), (r) => r.p, null, (r) => ({ text: r.p }));
     if (a.rules) listDiff(a.rules, b.rules, (r) => r.p, (r) => r.d, (r) => ({ tag: DECISION[r.d], text: r.p }));
+    profileChanges(a, b, out, listDiff);
   } else if (section === 'hooks') {
     listDiff(a, b, (h) => h.id, null, (h) => ({ text: `${h.event}${h.matcher ? ` · ${h.matcher}` : ''}: ${h.cmd}` }));
   } else if (section === 'mcp') {

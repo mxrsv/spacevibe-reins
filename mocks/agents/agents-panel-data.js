@@ -113,7 +113,7 @@ const saved = {
   'claude/permissions/project:spacevibe-reins': { mode: null, rules: [{ p: 'Bash(scripts/test.sh)', v: 'allow' }, { p: 'Bash(swift build:*)', v: 'allow' }, { p: 'Read(Tests/Fixtures/secrets/**)', v: 'deny' }], dirs: [] },
   'claude/permissions/local:spacevibe-reins': { mode: null, rules: [{ p: 'Bash(open -a Preview:*)', v: 'allow' }], dirs: [] },
   'codex/permissions/global': {
-    approval: 'on-request', sandbox: 'workspace-write', network: false, roots: [],
+    model: 'legacy', approval: 'on-request', sandbox: 'workspace-write', network: false, roots: [],
     rules: [['git push', 'prompt'], ['gh pr merge', 'prompt'], ['rm -rf', 'forbidden'], ['npm test', 'allow']].map(([p, d]) => ({ p, d })),
   },
   'codex/permissions/project:spacevibe-reins': { trust: 'trusted' },

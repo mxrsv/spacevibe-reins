@@ -44,7 +44,12 @@ const fileName = (path) => path.split('/').pop();
 function facetValue(agent, section) {
   const v = readSaved(agent, section, 'global');
   if (section === 'rules') return { text: agent === 'claude' ? 'CLAUDE.md' : 'AGENTS.md', code: true };
-  if (section === 'permissions') return agent === 'claude' ? { text: v.rules.length } : { text: SANDBOX.find((o) => o.v === v.sandbox).l, warn: v.sandbox === 'danger-full-access' };
+  if (section === 'permissions') {
+    if (agent === 'claude') return { text: v.rules.length };
+    if (v.model === 'both') return { text: '2 models', warn: true };
+    if (v.model === 'profiles') return { text: v.active, code: true };
+    return { text: SANDBOX.find((o) => o.v === v.sandbox).l, warn: v.sandbox === 'danger-full-access' };
+  }
   if (section === 'hooks') { const dead = v.filter((h) => h.dead).length; return { text: v.length, dead }; }
   if (section === 'mcp') return { text: v.length };
   if (section === 'model') return { text: v.model ?? 'default', code: true };
@@ -61,6 +66,12 @@ function summary(agent) {
   return { text: s.sentence, warn: s.warn };
 }
 function codexStatus(v) {
+  const ask = { untrusted: 'asks before commands it does not trust', 'on-request': 'asks when it needs more', never: 'never asks' }[v.approval];
+  if (v.model === 'both') return { sentence: `Uses sandbox_mode and ignores the profile ${v.active}, because both are set`, warn: true, code: `sandbox_mode = "${v.sandbox}" · default_permissions = "${v.active}"` };
+  if (v.model === 'profiles') {
+    const p = profileSummary(v);
+    return { sentence: `${p.text}; ${ask}`, warn: p.warn || v.approval === 'never', code: `default_permissions = "${v.active}" · approval_policy = "${v.approval}"` };
+  }
   const s = { 'read-only': 'Reads only', 'workspace-write': 'Writes only inside the workspace', 'danger-full-access': 'Can write anywhere' }[v.sandbox];
   const a = { untrusted: 'asks before commands it does not trust', 'on-request': 'asks when it needs more', never: 'never asks' }[v.approval];
   return { sentence: `${s} and ${a}`, warn: v.sandbox === 'danger-full-access' || v.approval === 'never', code: `sandbox_mode = "${v.sandbox}" · approval_policy = "${v.approval}"` };
@@ -120,7 +131,7 @@ function renderOverlay() {
   let html = '';
   if (state.confirm) {
     const c = state.confirm;
-    const lines = c.lines.map((l) => `<div class="ln"><span class="label t3" style="width:56px">${l.op}</span>${l.from?.tag ? `<span class="tag ${l.from.tag.tone}"><i></i>${l.from.tag.l}</span>${icon('arrowRight', 'i14')}` : ''}${l.tag ? `<span class="tag ${l.tag.tone}"><i></i>${l.tag.l}</span>` : ''}<span class="code-body trunc" title="${esc(l.text)}">${esc(l.text)}</span></div>`).join('');
+    const lines = c.lines.map((l) => `<div class="ln"><span class="label t3" style="width:56px">${l.op}</span>${l.from?.tag ? `<span class="tag ${l.from.tag.tone}"><i></i>${l.from.tag.l}</span>${icon('arrowRight', 'i14')}` : ''}${l.tag ? `<span class="tag ${l.tag.tone}"><i></i>${l.tag.l}</span>` : ''}<span class="code-body" style="overflow-wrap:anywhere">${esc(l.text)}</span></div>`).join('');
     const warns = c.lines.filter((l) => l.warn).map((l) => `<div class="warn-note">${icon('warning', 'i20')}<span class="body">${esc(l.warn)}</span></div>`).join('');
     html += `<div class="scrim" data-act="cancel-confirm"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dtitle" data-stop>
       <div><h2 class="title" id="dtitle">${esc(c.title)}</h2><p class="body t2" style="margin:4px 0 0">${esc(c.message)}</p></div>
@@ -193,7 +204,7 @@ function review() {
   const { agent, section } = state.open;
   const scope = currentScope(agent, section);
   const path = state.open.file?.path ?? filePath(agent, section, scope);
-  const paths = section === 'permissions' && agent === 'codex' && ch.some((c) => c.tag) ? `${path} and ~/.codex/rules/default.rules` : path;
+  const paths = section === 'permissions' && agent === 'codex' && ch.some((c) => Object.values(DECISION).includes(c.tag)) ? `${path} and ~/.codex/rules/default.rules` : path;
   state.confirm = {
     title: `Save ${plural(ch.length, 'change')}?`,
     message: `Writes to ${state.open.file ? 'an imported file' : scopeLabel(agent, section, scope)}: ${paths}. Reins keeps a copy you can restore.`,
@@ -285,7 +296,7 @@ const ACTIONS = {
     openMenu(b, items, (it) => guard(() => { state.scope[agent] = it.value; openPanel(agent, section); }));
   },
   'go-scope': (b) => guard(() => { state.scope[state.open.agent] = b.dataset.scope; openPanel(state.open.agent, state.open.section); }),
-  seg: (b) => SEG[b.dataset.name]?.(b.dataset.v === '' ? null : b.dataset.v),
+  seg: (b) => SEG[b.dataset.name]?.(b.dataset.v === '' ? null : b.dataset.v, b),
   'verdict-menu': (b) => {
     const p = b.dataset.p, cur = state.draft.rules.find((r) => r.p === p).v;
     openMenu(b, [...Object.entries(VERDICT).map(([v, o]) => ({ label: o.l, value: v, tone: o.tone, checked: v === cur })), { sep: true }, { label: 'Remove', value: 'remove', danger: true }],
@@ -357,6 +368,9 @@ const ACTIONS = {
   'back-file': () => { const { agent, section } = state.open; guard(() => openPanel(agent, section)); },
 };
 
+Object.assign(ACTIONS, PROFILE_ACTIONS);
+Object.assign(SEG, PROFILE_SEG);
+
 document.addEventListener('click', (e) => {
   if (menuEl && !menuEl.contains(e.target)) closeMenu();
   const b = e.target.closest('[data-act]');
@@ -387,7 +401,7 @@ function refreshHints() { const h = document.querySelector('.hintbar'); if (h) h
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.dataset?.in) {
-    const add = { rule: 'add-rule', cmd: 'add-cmd', dir: 'add-dir', root: 'add-root', command: 'add-hook', mcpTarget: 'add-mcp' }[e.target.dataset.in];
+    const add = { rule: 'add-rule', cmd: 'add-cmd', dir: 'add-dir', root: 'add-root', command: 'add-hook', mcpTarget: 'add-mcp', fs: 'add-fs', domain: 'add-domain' }[e.target.dataset.in];
     if (add && e.target.value.trim()) { e.preventDefault(); ACTIONS[add](); }
     if (e.target.dataset.in.startsWith('secret:')) { e.preventDefault(); const [, mcp, k] = e.target.dataset.in.split(':'); ACTIONS['set-secret']({ dataset: { mcp, k } }); }
   }
