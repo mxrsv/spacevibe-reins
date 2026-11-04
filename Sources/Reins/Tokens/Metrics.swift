@@ -68,6 +68,8 @@ enum Metrics {
     static let legendSwatchWidth: CGFloat = 22
 
     /// The usage and limit ruler: ten cells, each a tenth of the real track width with this gap at its trailing end.
+    /// The usage bar of Loadout and Activity: one continuous capsule, 6 pt. Only Limits uses the ten-cell ruler below.
+    static let barHeight: CGFloat = 6
     static let rulerCellCount = 10
     static let rulerHeight: CGFloat = 8
     static let rulerCellGap: CGFloat = 3

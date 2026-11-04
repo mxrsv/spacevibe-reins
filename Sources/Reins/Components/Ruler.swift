@@ -28,8 +28,9 @@ enum RulerLayout: Equatable {
     }
 }
 
-/// The usage and limit bar: ten cells, 8 pt high, 3 pt apart, as wide as the space it is given. Filled cells take `fill`
-/// and the last filled one is cut at the share; empty cells are `surfaceRaised`. An unknown share (`nil`) draws a dashed
+/// The Limits progress display, used nowhere else (Loadout and Activity keep the continuous `UsageBar`): ten square-ended
+/// cells, 8 pt high, 3 pt apart, as wide as the space it is given. Filled cells take `fill` and the last filled one is cut
+/// at the share; empty cells are `surfaceRaised`. An unknown share (`nil`) draws a dashed
 /// outline instead ("not counted yet", a window past its reset). Decorative: the number beside it carries the meaning.
 struct Ruler: View {
     /// 0 to 1, or nil when not known.
@@ -40,16 +41,15 @@ struct Ruler: View {
         GeometryReader { proxy in
             switch RulerLayout.make(share: share, width: proxy.size.width) {
             case .outline:
-                Capsule()
+                Rectangle()
                     .strokeBorder(Palette.textTertiary, style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
                     .frame(width: proxy.size.width, height: Metrics.rulerHeight)
             case .cells(let cells):
                 ZStack(alignment: .topLeading) {
                     ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
-                        Capsule()
+                        Rectangle()
                             .fill(Palette.surfaceRaised)
                             .overlay(alignment: .leading) { Rectangle().fill(fill).frame(width: cell.filled) }
-                            .clipShape(Capsule())
                             .frame(width: cell.width, height: Metrics.rulerHeight)
                             .offset(x: cell.x)
                     }

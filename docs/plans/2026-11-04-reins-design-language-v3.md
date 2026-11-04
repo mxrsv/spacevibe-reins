@@ -49,7 +49,7 @@ Facts this plan rests on, read 2026-11-04:
 - `GroupedList` and `CardHeader`: no border, 8 bottom padding, header 56; divider between two rows (8% text, inset 40, 8 trailing) hidden at a hovered or selected row and the one after it; the row fill is an 8-radius block inset 8.
 - `SidebarItem` and `sidebarSurface()`: 48 high, `title` role in every state, icon 22 neutral, 8 between items, 16 side padding, active = fill `surface` only, ground `well` with a 1px vertical line (8% text) on the trailing edge; count `body` tertiary.
 - `Tag` and `CLITag`: 24 high, radius 6, `surfaceRaised`, neutral text, 6 pt dot in the tone colour (none with an icon or without a tone), ink text for warn and danger.
-- `UsageCell` and `LimitBar`: one `Ruler` component (ten cells from the real track width, last cell clipped, empty cells `surfaceRaised`, dashed outline for unknown); Limits tones at 20% and 5%.
+- `Ruler` (Limits only): ten square-ended cells from the real track width, last cell clipped, empty cells `surfaceRaised`, dashed outline for unknown; Limits tones at 20% and 5%. `UsageCell` keeps the continuous `UsageBar` (owner, 2026-11-04: the ruler is not for other categories, and its cells are slices, not capsules).
 - Controls (`ReinsButtonStyle`, `SegmentedControl`, `FilterChip`, `ScopePicker`, `SearchField`, `Kbd`): no outline, fills per spec.
 - Gallery: every component in every state, both appearances.
 - Verification: `RulerTests` (DL8), gallery shots read against mock v3's component sheet.

@@ -35,6 +35,8 @@ enum Palette {
     static let well = Color(light: 0xF2F2F2, dark: 0x161616)
     static let surface = Color(light: 0xFFFFFF, dark: 0x2A2A2A)
     static let surfaceRaised = Color(light: 0xF2F2F2, dark: 0x343434)
+    /// The empty part of a usage bar (Loadout, Activity). The Limits ruler draws its empty cells in `surfaceRaised`.
+    static let track = Color(light: 0xE2E2E2, dark: 0x383838)
     static let border = Color(light: 0xDADADA, dark: 0x3A3A3A, darkAlpha: 0.7)
     /// The text colour at 8%: between two rows of a card, and between the sidebar and the content area.
     static let divider = Color(light: 0x141414, dark: 0xF2F2F2, lightAlpha: 0.08, darkAlpha: 0.08)
