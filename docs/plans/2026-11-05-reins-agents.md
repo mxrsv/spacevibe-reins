@@ -103,4 +103,65 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
 
 2026-11-05: the plan is written, and the owner approved the write approach and the secret rule. The owner picked the A0b mock. Next: design language v4 V2 to V5, then A1. Every failed save maps to an error toast in A8 and A9 (AG7).
 
+2026-11-04 (cloud session, unattended; checkout `claude/reins-agents`, branched from `claude/reins-design-v4`): A1 to A10
+are written and committed, one commit each, and **none is verified**: the design language v4 runs lost their macOS runner
+twice in the Test step (see that plan's Handoff), so per the brief no Agents commit was pushed for its own run and no box is
+ticked. The branch is pushed once, with `[skip ci]` on its last commit.
+
+- **Commits:** A1 `58a2553` SecretMask and TOMLLayout, A2 `5a229dc` TOMLEdit, A3 `6a0e05d` AgentSave and ClaudeSettingsEdit,
+  A4 `f5b92c4` MCP, A5 `9374c8c` Codex config, rules and hooks, A6 `9368abf` InstructionFile, A7 `a6380dc` components, A8
+  `18d78ca` the page and the Claude Code panels, A9 `74fc6ff` the Codex permissions panel, A10 `f6f451f` the style
+  boundary and the fixture notes, then this note.
+- **Not run anywhere:** `scripts/test.sh`, `scripts/build-app.sh`, the `agents` shots. The sandbox has no Swift (and
+  `download.swift.org` is refused), so every Swift line is unchecked by a compiler. Expect compile fixes first.
+- **Checked here:** the fixture variants write (`REINS_FIXTURE_AGENTS=legacy|profiles|both node scripts/fixture-home.mjs`),
+  and `node scripts/make-golden.mjs` gives no diff (the variants run only when the variable is set).
+- **A1 data folder:** the trash folders are created 0700 and the copies 0600 (`Trash.slot`, `FileEdit.apply`); a test pins
+  it (`SecretMaskTests.trashMode`).
+- **Codex profile layout, Hypothesis — unverified:** the schema page could not be read from here, so the TOML layout follows
+  mock C′: `[permissions.<name>]` `extends`, `[permissions.<name>.filesystem]` path = access,
+  `[permissions.<name>.network]` `enabled`, `[permissions.<name>.network.domains]` host = access, and `[features]`
+  `network_proxy`. Check it against https://learn.chatgpt.com/docs/permissions.md in A11.
+- **Next:** on the owner's Mac, `scripts/test.sh` and `scripts/build-app.sh`, fix what they report, then the "Test
+  tomorrow" list; tick A1 to A10 with a green run id, the test line and `minos 15.0`; then A11 and A12.
+
+Departures from mock C′ and the spec:
+
+- The panel's width is remembered for the run (per Advanced and the other panels), not across launches.
+- The hint bar keeps the shell's own `⌘K Search or run` and `Esc Close` around the page's hints.
+- "Models seen in the logs" counts the first model each of the 400 newest logs names (`ModelUsage`).
+- The Hooks card counts every hook of the CLI, all scopes, not Global only.
+- A rule's verdict menu ("Move to …", Remove) is a SwiftUI menu on the tag; headless shots draw the tag alone, as with every menu.
+- Changing a rule's verdict is one draft item (`moveRule`), read "Change" in the review.
+- Loading in the review's Save: the spinner sits over the label.
+- Open in editor and Show in Finder go through `NSWorkspace` (the file's default app, and Finder).
+- A blank Claude settings file opens in Advanced as `{}`.
+
+### Test tomorrow
+
+Each block prepares a synthetic home and opens the release bundle on it. `--prepare` prints `export HOME='<home>'` and the
+other exports and keeps the home; put that path in place of `<home>`. Build first: `scripts/build-app.sh`.
+
+| Fixture | Prepare |
+| --- | --- |
+| Codex legacy (`sandbox_mode`), MCP `env` and `headers`, token-like keys, a plain `DISABLE_TELEMETRY`, two dead hooks | `REINS_FIXTURE_AGENTS=legacy scripts/dev-fixture.sh --prepare` |
+| Codex profiles (`default_permissions = "project-edit"`) | `REINS_FIXTURE_AGENTS=profiles scripts/dev-fixture.sh --prepare` |
+| Codex with both models | `REINS_FIXTURE_AGENTS=both scripts/dev-fixture.sh --prepare` |
+
+Then, for each: `open -n build/Reins.app --env HOME=<home> --env CLAUDE_CONFIG_DIR=<home>/.claude --env CODEX_HOME=<home>/.codex --env REINS_HOME=<home>/.reins --env REINS_TEST=1 --env REINS_AGENTS=1`
+
+What to click:
+
+1. `⌘2` opens Agents. Each card shows its sentence; Codex reads warn in `both`.
+2. Each card button of both agents opens its panel; the same button closes it; another one swaps it. Drag the panel's left edge.
+3. Claude Code Permissions: type `Bash(make deploy)`, pick Deny, Add; the footer reads "1 unsaved change". Review and save (`⌘S`): the dialog lists the change, the scope and `~/.claude/settings.json`. Save: a toast with Undo. Undo: the rule is gone.
+4. Pick Bypass as the default mode: the review carries the warn note.
+5. Esc with a draft: the footer asks "Discard 1 change?" with Keep editing and Discard. Switching the scope or the panel asks the same.
+6. Error toast: open Claude Code Advanced, change `sonnet` to `opus`, then add a blank line to `<home>/.claude/settings.json` by hand, then Review and save: an error toast names the reason, and the draft stays.
+7. Masked and visible: Advanced shows `"DISABLE_TELEMETRY": "1"`, and `EXAMPLE_TOKEN` and `ANTHROPIC_API_KEY` as `••••`. MCP: open `github`; `GITHUB_TOKEN` reads `••••`; Replace takes a new value without showing the old one.
+8. Hooks: the two dead hooks carry "script missing"; Remove 2 dead adds both to the draft. Copy to Codex asks first and warns.
+9. Rules: Preview renders the headings, list and inline code; the `@rules/style.md` row opens that file with a crumb back.
+10. Codex, `profiles`: Permissions shows `project-edit`; change a file rule, add a domain, turn off Enforce domain rules (warn note).
+11. Codex, `both`: Permissions shows "Keep one permission model"; pick one, Review and save; the card's value stops reading "2 models".
+
 /goal Build the Reins Agents page per docs/specs/2026-11-05-reins-agents.md and docs/plans/2026-11-05-reins-agents.md: tasks A1 to A10 in order, one commit each, the UI behind REINS_AGENTS=1 after design language v4 V5. Done means scripts/test.sh passes with the AG2 to AG8 tests against TempHome, and the agents shots render in light and dark. Leave A11 (the real-CLI check with the owner) and A12 (eye approval and cut-over) to the owner. Never push or release, and never touch the real ~/.claude or ~/.codex.
