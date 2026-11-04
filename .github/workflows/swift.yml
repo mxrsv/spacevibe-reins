@@ -58,6 +58,12 @@ jobs:
           if [ -d Sources/Reins/TokenUsage ]; then
             REINS_SHOT_SCREEN=tokens scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/tokens"
           fi
+          # Agents plan A10: one fixture home per Codex permission model, behind the development switch.
+          if [ -d Sources/Reins/Agents ]; then
+            for variant in legacy profiles both; do
+              REINS_AGENTS=1 REINS_FIXTURE_AGENTS=$variant REINS_SHOT_SCREEN=agents scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/agents-$variant"
+            done
+          fi
 
       - uses: actions/upload-artifact@v4
         if: always()

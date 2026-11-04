@@ -85,7 +85,7 @@ Sources/Reins/App/LaunchMode, Shell/TabRegistry   the development switch REINS_A
   - MCP `env` and `headers`, plus a plain `DISABLE_TELEMETRY`;
   - a dead hook.
 
-  Then write a "Test tomorrow" list in Handoff: one launch command per fixture, verified, and what to click.
+  The variants are picked by `REINS_FIXTURE_AGENTS=legacy|profiles|both`, which the `swift` workflow already loops over once `Sources/Reins/Agents` exists. Then write a "Test tomorrow" list in Handoff: one launch command per fixture, verified, and what to click.
 - [ ] A11. Real-CLI check, run with the owner like the parent plan's S0.5: a throwaway home needs the owner's sign-in, and real sessions spend their quota. `claude` and `codex` load a permission, a hook, an MCP server, a model and an instruction-file change written by Reins (AG9).
 - [ ] A12. Cut-over:
   - run `impeccable distill` and `clarify`, then get the owner's eye approval of the shots next to the mock (AG10);
