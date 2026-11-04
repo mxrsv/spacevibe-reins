@@ -28,11 +28,12 @@ enum RulerLayout: Equatable {
     }
 }
 
-/// The Limits progress display, used nowhere else (Loadout and Activity keep the continuous `UsageBar`): ten square-ended
-/// cells, 3 pt apart, as wide as the space it is given; 8 pt high in the window list, `rulerDetailHeight` under the figure.
+/// The Limits progress display, used nowhere else (Loadout and Activity keep the continuous `UsageBar`): ten square cells,
+/// 3 pt apart, as wide as the space it is given; 8 pt high in the window list, `rulerDetailHeight` under the figure. Only the
+/// two outer ends round (the first cell's leading corners, the last cell's trailing ones), by a quarter of the height.
 /// Filled cells take `fill` and the last filled one is cut at the share; empty cells are `surfaceRaised`, or
-/// `trackOnSelection` on a selected tile. An unknown share (`nil`) draws a dashed outline instead ("not counted yet", a
-/// window past its reset). Decorative: the number beside it carries the meaning.
+/// `trackOnSelection` on a selected tile. An unknown share (`nil`) draws a dashed outline with the same ends instead ("not
+/// counted yet", a window past its reset). Decorative: the number beside it carries the meaning.
 struct Ruler: View {
     /// 0 to 1, or nil when not known.
     let share: Double?
@@ -41,20 +42,23 @@ struct Ruler: View {
     var emptyFill: Color = Palette.surfaceRaised
 
     var body: some View {
+        let radius = height * Metrics.rulerEndRadiusFraction
         GeometryReader { proxy in
             switch RulerLayout.make(share: share, width: proxy.size.width) {
             case .outline:
-                Rectangle()
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(Palette.textTertiary, style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
                     .frame(width: proxy.size.width, height: height)
             case .cells(let cells):
                 ZStack(alignment: .topLeading) {
-                    ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
-                        Rectangle()
-                            .fill(emptyFill)
-                            .overlay(alignment: .leading) { Rectangle().fill(fill).frame(width: cell.filled) }
-                            .frame(width: cell.width, height: height)
-                            .offset(x: cell.x)
+                    ForEach(Array(cells.enumerated()), id: \.offset) { index, cell in
+                        ZStack(alignment: .leading) {
+                            Rectangle().fill(emptyFill)
+                            Rectangle().fill(fill).frame(width: cell.filled)
+                        }
+                        .frame(width: cell.width, height: height)
+                        .clipShape(Self.cellShape(first: index == 0, last: index == cells.count - 1, radius: radius))
+                        .offset(x: cell.x)
                     }
                 }
                 .frame(width: proxy.size.width, height: height, alignment: .topLeading)
@@ -62,5 +66,13 @@ struct Ruler: View {
         }
         .frame(height: height)
         .accessibilityHidden(true)
+    }
+
+    /// Square, except the ruler's two outer ends.
+    private static func cellShape(first: Bool, last: Bool, radius: CGFloat) -> UnevenRoundedRectangle {
+        let lead = first ? radius : 0
+        let trail = last ? radius : 0
+        return UnevenRoundedRectangle(topLeadingRadius: lead, bottomLeadingRadius: lead, bottomTrailingRadius: trail,
+                                      topTrailingRadius: trail, style: .continuous)
     }
 }

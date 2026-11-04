@@ -75,6 +75,8 @@ enum Metrics {
     /// The ruler under the Limits page's figure.
     static let rulerDetailHeight: CGFloat = 32
     static let rulerCellGap: CGFloat = 3
+    /// The ruler's two outer ends round by this share of its height: 2 in the list, 8 under the figure (the fact tiles' radius).
+    static let rulerEndRadiusFraction: CGFloat = 0.25
 
     /// Every control: button, chip, segmented frame, scope picker, search field.
     static let controlHeight: CGFloat = 28
