@@ -6,6 +6,7 @@ import SwiftUI
 ///
 /// The 2026-11-05 palette keeps distinct hues in one restrained tonal family, informed by Paradev.
 /// Dark identity/state fills start at OKLCH L 0.67 / C 0.12; light fills at L 0.54 / C 0.11.
+/// Codex is pinned to Paradev's #1596D6 in both appearances by the owner's 2026-11-05 choice.
 /// Light warning is slightly brighter so dark text can also sit on its solid fill. Ink is a separate
 /// same-hue ramp (light L 0.38 / C 0.08, dark L 0.80 / C 0.07), not the bar colour reused for text.
 /// Values are converted to 8-bit sRGB; tints keep the fill's RGB at 15% alpha.
@@ -51,7 +52,7 @@ enum Palette {
     // The two CLIs: fill and text-safe ink
     static let claude = Color(light: 0xA25834, dark: 0xD17C54)
     static let claudeInk = Color(light: 0x65331B, dark: 0xE5B099)
-    static let codex = Color(light: 0x2D74AA, dark: 0x4E9CDA)
+    static let codex = Color(light: 0x1596D6, dark: 0x1596D6)
     static let codexInk = Color(light: 0x15466A, dark: 0x98C3E8)
 
     // State only
@@ -64,7 +65,7 @@ enum Palette {
 
     // Tints behind marks and banners: the corresponding fill at 15%; text uses the Ink twin.
     static let claudeTint = Color(light: 0xA25834, dark: 0xD17C54, lightAlpha: 0.15, darkAlpha: 0.15)
-    static let codexTint = Color(light: 0x2D74AA, dark: 0x4E9CDA, lightAlpha: 0.15, darkAlpha: 0.15)
+    static let codexTint = Color(light: 0x1596D6, dark: 0x1596D6, lightAlpha: 0.15, darkAlpha: 0.15)
     static let successTint = Color(light: 0x2D8152, dark: 0x50AB74, lightAlpha: 0.15, darkAlpha: 0.15)
     static let warnTint = Color(light: 0x9F7A26, dark: 0xB78F2F, lightAlpha: 0.15, darkAlpha: 0.15)
     static let dangerTint = Color(light: 0xA5524D, dark: 0xD5766F, lightAlpha: 0.15, darkAlpha: 0.15)

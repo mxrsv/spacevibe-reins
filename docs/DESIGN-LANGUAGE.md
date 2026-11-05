@@ -52,6 +52,8 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
   `Ink` variants are darker in light mode and lighter in dark mode, and tints use their fill at 15%. Selection and focus
   use the same muted blue family. The [Limits state mapping](../Sources/Reins/Components/LimitFigure.swift) still
   overrides identity with warning/danger; a shared tone does not mean a single hue or a changed quota threshold.
+  Codex's fill is pinned to Paradev's `#1596D6` in both appearances in the [palette](../Sources/Reins/Tokens/Palette.swift);
+  its tint uses the same RGB, while `codexInk` remains a readable text variant.
 - **Controls have no outline.** Button, search field, scope picker, segmented control, filter chip and key cap fill with
   the [`ControlGround`](../Sources/Reins/Components/ControlGround.swift): `surface` on the well, `surfaceRaised` inside a
   card (a card, a dialog and the search field set it), and `selection` for the chosen segment or chip.

@@ -131,6 +131,8 @@ Picked by the owner on 2026-11-05 from `controls.html`: Tabler for page icons an
 
 The owner approved several distinct colours with one cohesive, restrained tone, using Paradev as the reference.
 This is neither a monochrome palette nor a requirement to copy Paradev's exact Claude/Codex hex pair.
+The owner's subsequent choice on 2026-11-05 pins the Codex fill to Paradev's `#1596D6` in both appearances,
+with the matching 15% tint and separate readable Ink; the other hues remain as coordinated above.
 
 - Keep the neutral surfaces and existing layout. Coordinate identity, semantic and interaction colours together:
   clay, blue, green, ochre and brick red with comparable perceptual lightness/chroma, without neon or isolated pastel fills.
@@ -138,7 +140,8 @@ This is neither a monochrome palette nor a requirement to copy Paradev's exact C
   same-hue `Ink` variant for each appearance. The lighter dark-mode Ink is for readable text/marks, not the bar fill.
 - Keep warning/danger semantics and the remaining-quota thresholds (20% / 5%), unknown dashes and true empty zero.
 - Keep selected-tile tracks quiet enough to distinguish the coloured fill. Verify Ink on ordinary, selected and nested
-  tinted surfaces at >=4.5:1 and normal provider fills against their tracks at >=3:1 in both appearances.
+  tinted surfaces at >=4.5:1. The explicitly chosen Codex fill has lower than 3:1 contrast on light tracks; its decorative
+  bars must retain adjacent numeric labels. Meaningful controls and focus indicators still require >=3:1.
 - Future Tokens charts take the same identity tokens. Low-opacity area shading is supplementary to a full-colour line;
   this palette adjustment does not add the unimplemented native Tokens screen or recolour its separate historical mock.
 - Review the native light/dark fixtures, including selected and warning/danger states, as one batch before visual acceptance.
