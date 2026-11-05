@@ -24,6 +24,11 @@ export const CLI_LABEL: Record<CLI, string> = {
   codex: "Codex",
 };
 
+export interface NavLink {
+  readonly href: string;
+  readonly label: string;
+}
+
 export const NAV = [
   { href: "#loadout", label: "Loadout" },
   { href: "#rules", label: "Rules" },
@@ -40,7 +45,7 @@ export const HERO = {
   headingLines: ["Take the reins", "of your agents."] as const,
   lede:
     "A local Mac app for Claude Code and Codex CLI. See every skill, subagent and hook each one carries, how often it actually ran and what it may do — then add or remove one in seconds.",
-  cta: { note: "macOS 15 or later", label: "Download for macOS", href: DOWNLOAD_URL },
+  cta: { note: "macOS 15 or later · Apple silicon", label: "Download for macOS", href: DOWNLOAD_URL },
 } as const;
 
 /* ---------------------------------------------------------------- usage states */
@@ -248,9 +253,9 @@ export const PRIVATE = {
 export const DOWNLOAD = {
   id: "download",
   heading: "Download Reins for macOS",
-  body: "macOS 15 or later. Reins checks for updates once a day; installing one takes a click.",
+  body: "Free. macOS 15 or later on Apple silicon. Reins checks for updates once a day; installing one takes a click.",
   cta: { href: DOWNLOAD_URL, label: "Download for macOS" },
-  secondary: { href: GITHUB_URL, label: "Source on GitHub" },
+  secondary: { href: GITHUB_URL, label: "GitHub" },
 } as const;
 
 export const FOOTER = {

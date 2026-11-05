@@ -16,9 +16,10 @@
   --color-s2: #111318;
   --color-s3: #15181d;
 
-  --color-accent: #3953d2;
-  --color-accent-hover: #4a63dd;
-  --color-accent-text: #6478de;
+  /* The app's own blue (`Palette.accentSolid` and `Palette.accent`, dark), so the CTA and the app agree. */
+  --color-accent: #4164ed;
+  --color-accent-hover: #5274f1;
+  --color-accent-text: #82a5ff;
 
   --color-ink-0: #f4f5f7;
   --color-ink-1: #a4a8b0;
@@ -35,12 +36,18 @@
   --color-danger: #f07070;
   --color-ok: #62c290;
 
+  /* macOS window buttons, drawn over captures that leave them out. */
+  --color-light-close: #ff5f57;
+  --color-light-min: #febc2e;
+  --color-light-zoom: #28c840;
+
   --radius-ctl: 8px;
   --radius-card: 12px;
   --radius-panel: 14px;
 
   --shadow-glass: 0 20px 44px rgb(3 4 6 / 58%);
   --shadow-panel: 0 24px 60px rgb(3 4 6 / 45%);
+  --shadow-lift: 0 -32px 64px rgb(3 4 6 / 50%);
 
   --ease-out-expo: cubic-bezier(0.22, 0.8, 0.26, 1);
 
