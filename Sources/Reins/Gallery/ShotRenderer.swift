@@ -10,6 +10,8 @@ import SwiftUI
 ///   or the real config folders.
 /// - `settings`: Settings on the demo shell in every update state and at the Large font size, and the demo tabs at Large
 ///   (`SettingsShots`). Synthetic data only, like `shell`.
+/// - `agents`: the Agents page behind `REINS_AGENTS=1`, every panel of both agents, drafts, the review, a save with Undo and
+///   a failed save (`AgentsShots`), for the Codex model `REINS_FIXTURE_AGENTS` picks.
 /// - `loadout`, `rules`, `activity`, `limits`: the real screen read from the synthetic HOME, with checks on the writes
 ///   (`LoadoutShots`, `RulesShots`, `ActivityShots`, which share `ShotHarness`). These need `REINS_TEST=1` and a synthetic
 ///   home, as `scripts/dev-fixture.sh --shots` sets up.
@@ -31,7 +33,8 @@ enum ShotRenderer {
             case "activity": try requireSyntheticHome(environment); try ActivityShots.run(into: directory)
             case "limits": try requireSyntheticHome(environment); try LimitsShots.run(into: directory)
             case "settings": try SettingsShots.run(into: directory)
-            default: throw ShotHarness.Failure("unknown REINS_SHOT_SCREEN \"\(screen)\" (shell, loadout, rules, activity, limits or settings)")
+            case "agents": try requireSyntheticHome(environment); try AgentsShots.run(into: directory)
+            default: throw ShotHarness.Failure("unknown REINS_SHOT_SCREEN \"\(screen)\" (shell, loadout, rules, activity, limits, settings or agents)")
             }
         } catch {
             FileHandle.standardError.write(Data("shot mode failed: \(error.localizedDescription)\n".utf8))

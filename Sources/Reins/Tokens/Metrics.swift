@@ -144,6 +144,21 @@ enum Metrics {
     static let reinsMarkSize: CGFloat = 56
     static let reinsMarkRadiusFraction: CGFloat = 57.5 / 256
 
+    /// The Agents page's inspector (spec, Interface: Panel): dragged between 420 and 720, 480 when first opened and 720 for
+    /// Advanced; the agent cards beside it never narrower than 440; the grip over its leading edge; a 1 pt divider.
+    static let inspectorMinWidth: CGFloat = 420
+    static let inspectorMaxWidth: CGFloat = 720
+    static let inspectorDefaultWidth: CGFloat = 480
+    static let agentCardsMinWidth: CGFloat = 440
+    static let inspectorGripWidth: CGFloat = 8
+    static let dividerWidth: CGFloat = 1
+    /// The Advanced editor: one line of the `code` role in its 20 pt box, the line-number gutter, and the editors' least
+    /// height; the both-models choice card's ring.
+    static let codeLineHeight: CGFloat = 20
+    static let gutterWidth: CGFloat = 40
+    static let editorMinHeight: CGFloat = 240
+    static let choiceRingWidth: CGFloat = 1.5
+
     /// Confirmation cards (Stop, a rule write).
     static let dialogWidth: CGFloat = 420
     static let wideDialogWidth: CGFloat = 460

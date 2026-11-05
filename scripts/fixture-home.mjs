@@ -14,11 +14,12 @@
 // under the real home, so it is refused too (core roots() refuses it for REINS_TEST=1 for the same reason).
 //
 // Extending it (feature agents): add a function `(ctx) => void` to SECTIONS at the bottom. `ctx` has
-// { dir, claude, codex, work, now, put(path, text), day(n) }. Keep it synthetic and keep the existing names.
+// { dir, claude, codex, work, now, put(path, text), day(n), projects }. Keep it synthetic and keep the existing names.
 import { existsSync, mkdirSync, readdirSync, realpathSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { userInfo } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { agentsSection } from './fixture-agents.mjs';
 
 const DAY = 86_400_000;
 const CLAUDE_SESSIONS = 142; // the largest per-item count in the mock: every skill count fits inside this many logs
@@ -80,7 +81,7 @@ export function writeFixtureHome(dir, { now = Date.now() } = {}) {
   const work = join(root, 'work');
   const put = (path, text) => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, text); };
   const stamp = (daysAgo, hour = 10) => new Date(now - daysAgo * DAY - (10 - hour) * 3_600_000).toISOString();
-  const ctx = { dir: root, claude, codex, work, now, put, day: stamp };
+  const ctx = { dir: root, claude, codex, work, now, put, day: stamp, projects: PROJECTS };
   for (const section of SECTIONS) section(ctx);
   backdate(root, now);
   mkdirSync(join(root, '.reins'), { recursive: true });
@@ -373,7 +374,7 @@ function limitsSection(ctx) {
 }
 
 // Order matters: config first (logs name its hook commands), logs after. Feature agents append here.
-const SECTIONS = [configSection, claudeLogsSection, codexLogsSection, loadoutProjectSection, rulesSection, activitySection, limitsSection];
+const SECTIONS = [configSection, claudeLogsSection, codexLogsSection, loadoutProjectSection, rulesSection, activitySection, limitsSection, agentsSection];
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dir = process.argv[2];

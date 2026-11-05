@@ -181,7 +181,7 @@ extension Inventory {
     // MARK: Plugins
 
     /// Enabled Claude plugins whose install folder still exists. Read-only: Reins never changes a plugin.
-    private static func plugins(_ r: Roots, settings: JSONValue?) -> [(name: String, path: String)] {
+    static func plugins(_ r: Roots, settings: JSONValue?) -> [(name: String, path: String)] {
         let file = r.claude.root.appendingPathComponent("plugins").appendingPathComponent("installed_plugins.json")
         guard case .value(let installed) = InventoryFileIO.readJSON(file), let entries = installed["plugins"]?.objectValue else { return [] }
         var out: [(String, String)] = []
@@ -195,7 +195,7 @@ extension Inventory {
         return out
     }
 
-    private static func settingsValue(_ file: URL) -> JSONValue? {
+    static func settingsValue(_ file: URL) -> JSONValue? {
         if case .value(let value) = InventoryFileIO.readJSON(file) { return value }
         return nil
     }

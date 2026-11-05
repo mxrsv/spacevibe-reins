@@ -7,10 +7,17 @@
 #
 # Environment: REINS_FIXTURE_ACTIVITY=empty (no live session) or =loading (the first process question waits 20 s, so the
 # screen sits on "Reading logs...") is passed to scripts/fixture-home.mjs. REINS_BUILD_PATH overrides the scratch path.
-# REINS_SHOT_SCREEN=shell|loadout|rules|activity|limits|settings picks the --shots run (default shell: the demo shell states
-# and the gallery); loadout, rules and activity read this synthetic home and assert their writes, Undo included; limits reads
-# the files REINS_FIXTURE_LIMITS=typical|edge adds and shoots the sidebar block and the page; settings shoots Settings and the
-# demo tabs at the Large font size. Nothing else selects a screen.
+# REINS_SHOT_SCREEN=shell|loadout|rules|activity|limits|settings|agents picks the --shots run (default shell: the demo shell
+# states and the gallery); loadout, rules and activity read this synthetic home and assert their writes, Undo included; limits
+# reads the files REINS_FIXTURE_LIMITS=typical|edge adds and shoots the sidebar block and the page; settings shoots Settings and
+# the demo tabs at the Large font size; agents (with REINS_AGENTS=1) shoots the Agents page on the home that
+# REINS_FIXTURE_AGENTS=legacy|profiles|both writes: Codex in that permission model, MCP servers with env and headers, token-like
+# keys, a plain DISABLE_TELEMETRY, instruction files with an @import. Nothing else selects a screen.
+#
+# To try the Agents page by hand (REINS_AGENTS=1 counts in a release bundle only with REINS_TEST=1, which --prepare exports):
+#   REINS_FIXTURE_AGENTS=profiles scripts/dev-fixture.sh --prepare     # prints the exports and keeps the home
+#   open -n build/Reins.app --env HOME=<home> --env CLAUDE_CONFIG_DIR=<home>/.claude --env CODEX_HOME=<home>/.codex \
+#     --env REINS_HOME=<home>/.reins --env REINS_TEST=1 --env REINS_AGENTS=1
 #
 # What the fake process list says (written by fixture-home.mjs to <home>/.reins/activity-proc.json, used because
 # REINS_TEST=1 and REINS_PROC_FIXTURE name it; the pids are made up and only the fake answers for them):

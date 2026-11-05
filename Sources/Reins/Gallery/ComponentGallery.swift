@@ -203,6 +203,9 @@ struct ComponentGalleryContent: View {
             section("Settings: rail tabs, theme tiles (System, Light, Dark), the switch on, off and disabled, the Reins mark, a raised block") {
                 SettingsSpecimens()
             }
+            section("Agents: the inspector with a draft and asking to discard, the Markdown preview, the code editor, the panels' controls") {
+                AgentsSpecimens()
+            }
         }
         .padding(.horizontal, Metrics.pagePadding)
         .padding(.bottom, Metrics.pageBottomPadding)
