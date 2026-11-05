@@ -1,16 +1,15 @@
 /**
- * The app screens the page shows. The five real ones are captures of the SwiftUI app on
- * the synthetic fixture home (`scripts/dev-fixture.sh --shots`, dark, 2x, resized to 2200 px);
- * the two `preview*` ones are renders of the tracked mocks in `mocks/` for pages that are
- * still in development, and the page labels them as design previews.
+ * The app screens the page shows. The real ones are crops of dark captures of the SwiftUI app on
+ * the synthetic fixture home (`scripts/dev-fixture.sh --shots`, 2x): the Loadout window for the hero,
+ * one signature region per category (the part of the screen that is only that category), and the
+ * sidebar tab each category lives behind. The two `preview*` ones are renders of the tracked mocks
+ * in `mocks/` for pages that are still in development; the page labels them as design previews.
  */
 export interface Shot {
   readonly src: string;
   readonly width: number;
   readonly height: number;
   readonly alt: string;
-  /** The screen is short and the window's lower half is empty: show the top of it, cut flat. */
-  readonly crop?: "wide";
 }
 
 export const SHOTS = {
@@ -20,25 +19,34 @@ export const SHOTS = {
     height: 1375,
     alt: "Reins Loadout: skills listed with a bar and run count for Claude Code and for Codex, items that never ran at zero, and Add to Codex where a skill is missing.",
   },
-  limits: {
-    src: "/landing/app/limits.webp",
-    width: 2200,
-    height: 1375,
-    alt: "Reins Limits: the share left in each Claude Code and Codex usage window, one window opened with its reset time and the age of the reading, and Gemini CLI marked not measurable.",
-    crop: "wide",
+  loadoutRows: {
+    src: "/landing/app/loadout-rows.webp",
+    width: 2000,
+    height: 957,
+    alt: "Loadout skills: an orange bar and count for Claude Code and a teal bar for Codex on each row, red zeros for skills that never ran, a dashed bar for one still being counted, and Add to Codex where a skill is missing.",
   },
-  activity: {
-    src: "/landing/app/activity.webp",
-    width: 2200,
-    height: 1375,
-    alt: "Reins Activity: one lane per CLI with running sessions and their estimated cost, failed commands grouped with a count, and a list of what cannot be measured.",
+  limitsDetail: {
+    src: "/landing/app/limits-detail.webp",
+    width: 2000,
+    height: 584,
+    alt: "Limits: a list of usage windows with the share left, Gemini CLI marked not measurable, and the selected Codex weekly window as 39% left of this window on a ten-segment ruler with its reset time and the age of the reading.",
   },
-  rules: {
-    src: "/landing/app/rules.webp",
-    width: 2200,
-    height: 1375,
-    alt: "Reins Rules for Claude Code: Allow, Ask or Deny for each capability, with the concrete rules listed underneath and a bar describing how Codex runs.",
+  activityLanes: {
+    src: "/landing/app/activity-lanes.webp",
+    width: 2000,
+    height: 1025,
+    alt: "Activity: one lane per CLI with running, waiting and idle sessions and their estimated cost, Codex sessions tagged not measurable, and failed commands grouped with a count under each lane.",
   },
+  rulesVerdicts: {
+    src: "/landing/app/rules-verdicts.webp",
+    width: 2000,
+    height: 615,
+    alt: "Rules for Claude Code: Read files, Edit files, Run commands, Network, Push and deploy and Secrets each set to Allow, Ask or Deny, or tagged mixed, with the number of rules behind each.",
+  },
+  tabLoadout: { src: "/landing/app/tab-loadout.webp", width: 432, height: 97, alt: "The Loadout tab in the app's sidebar" },
+  tabLimits: { src: "/landing/app/tab-limits.webp", width: 432, height: 97, alt: "The Limits tab in the app's sidebar" },
+  tabActivity: { src: "/landing/app/tab-activity.webp", width: 432, height: 97, alt: "The Activity tab in the app's sidebar" },
+  tabRules: { src: "/landing/app/tab-rules.webp", width: 432, height: 97, alt: "The Rules tab in the app's sidebar" },
   previewAgents: {
     src: "/landing/app/preview-agents.webp",
     width: 1563,

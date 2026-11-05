@@ -34,7 +34,7 @@ export function Manual() {
               <p className="text-body text-ink-1">{band.answer}</p>
             </header>
 
-            <AppWindow shot={band.shot} lights caption={band.caption} />
+            <AppWindow shot={band.shot} tab={band.tab} caption={band.caption} />
 
             <div className="grid gap-6 md:grid-cols-2">
               <div className="grid content-start gap-3">

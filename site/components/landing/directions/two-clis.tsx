@@ -22,7 +22,7 @@ export function TwoClis() {
             </header>
 
             <div className="mx-auto grid w-full max-w-[1120px] gap-5" data-reveal>
-              <AppWindow shot={band.shot} lights caption={band.caption} />
+              <AppWindow shot={band.shot} tab={band.tab} caption={band.caption} />
               <div className="grid gap-3 md:grid-cols-2">
                 {CLIS.map((cli) => (
                   <div key={cli} className="grid content-start gap-2 rounded-card bg-s2 p-5">

@@ -21,7 +21,10 @@ export interface Band {
   readonly label: string;
   readonly question: string;
   readonly answer: string;
+  /** The region of the screen that is only this category, not the whole window. */
   readonly shot: ShotKey;
+  /** The sidebar tab this category lives behind in the app. */
+  readonly tab: ShotKey;
   readonly caption: string;
 }
 
@@ -34,7 +37,8 @@ export const BANDS: readonly Band[] = [
     question: "What is installed, and how often did it run?",
     answer:
       "One inventory across both CLIs, joined to usage counted from your local session logs: never ran, ran often, present in one CLI and missing in the other, and which hook commands fire on each event. Adding or removing one is a single step, with Undo.",
-    shot: "loadout",
+    shot: "loadoutRows",
+    tab: "tabLoadout",
     caption: `Loadout · ${DEMO}`,
   },
   {
@@ -43,7 +47,8 @@ export const BANDS: readonly Band[] = [
     question: "How much of my Claude and Codex limit is left?",
     answer:
       "Read from Claude Code's status-line snapshots and Codex's session logs, with no login and no API call. A CLI that keeps no usage file reads as not measurable; Reins never guesses.",
-    shot: "limits",
+    shot: "limitsDetail",
+    tab: "tabLimits",
     caption: `Limits · ${DEMO}`,
   },
   {
@@ -52,7 +57,8 @@ export const BANDS: readonly Band[] = [
     question: "What is running, what failed, and what did it cost?",
     answer:
       "One lane per CLI: running sessions with their current tool and estimated cost, and failed commands grouped with a count. Stop a session from here. Where a CLI cannot be read, Reins says so instead of guessing.",
-    shot: "activity",
+    shot: "activityLanes",
+    tab: "tabActivity",
     caption: `Activity · ${DEMO}`,
   },
   {
@@ -61,7 +67,8 @@ export const BANDS: readonly Band[] = [
     question: "What is each CLI allowed to do?",
     answer:
       "One page per CLI, in its own terms. Claude Code's rules are Allow, Ask or Deny per capability, expandable to the rule behind them; Codex's sandbox and approvals are shown read only. Every write keeps a restorable copy.",
-    shot: "rules",
+    shot: "rulesVerdicts",
+    tab: "tabRules",
     caption: `Rules · ${DEMO}`,
   },
 ];
