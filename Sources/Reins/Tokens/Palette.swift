@@ -4,12 +4,11 @@ import SwiftUI
 /// Design tokens for both appearances. Every value is a dynamic color: it follows the window's
 /// appearance, which the shell overrides from `AppearanceStore`, so a view never branches on dark or light.
 ///
-/// Where the values come from: the approved "Matrix" mock (`mock-shell/reins.css`) and the superseded
-/// Electron renderer's `src/index.css` are written in oklch. Each value below is that oklch colour
-/// converted to sRGB with the standard OKLab -> linear sRGB matrices plus the sRGB transfer curve, clamped
-/// to the gamut, then rounded to 8 bits. Where the Electron CSS refined a mock value for contrast, the
-/// refined one is used (dark `textTertiary` 0.73 instead of 0.68, dark `danger` 0.76 instead of 0.72).
-/// Alpha colours keep their alpha, so they composite over whichever surface they sit on.
+/// The 2026-11-05 palette keeps distinct hues in one restrained tonal family, informed by Paradev.
+/// Dark identity/state fills start at OKLCH L 0.67 / C 0.12; light fills at L 0.54 / C 0.11.
+/// Light warning is slightly brighter so dark text can also sit on its solid fill. Ink is a separate
+/// same-hue ramp (light L 0.38 / C 0.08, dark L 0.80 / C 0.07), not the bar colour reused for text.
+/// Values are converted to 8-bit sRGB; tints keep the fill's RGB at 15% alpha.
 ///
 /// Rules the names encode:
 /// - `claude` and `codex` are the two CLI colours. They are fills (bars, dots). Text in those colours
@@ -18,15 +17,9 @@ import SwiftUI
 /// - A card is a `surface` block on the `well`, with no border; rows inside it are separated by `divider`. Only overlays
 ///   (palette, confirmation, toast) keep a `border` and a shadow.
 ///
-/// The surfaces, borders, hover, dividers and text greys are neutral (R = G = B) since 2026-11-04: the earlier navy tint
-/// (`0x121721` and friends) read as a blue cast on every screen. The accent, selection and the CLI and state colours are unchanged.
-///
-/// Contrast measured for the neutral surfaces (WCAG, text on `well`, `surface` and `surfaceRaised`): `text` 11.1 to 18.4,
-/// `textSecondary` 5.9 to 9.3, `textTertiary` 4.9 to 7.2 (dark) and 5.8 to 6.5 (light). The values below this line were
-/// measured on the earlier navy surfaces and not repeated: tertiary on a selected row, tag text on `surfaceRaised` 5.1 to 7.7, every `...Ink`
-/// on its 15 percent tint 5.1 to 6.3, white on `accentSolid` 4.9 (dark) and 6.4 (light), the focus ring
-/// 6.1 to 7.5 on every surface. `border` is decoration (1.3 to 1.4 against its surface), not a control
-/// boundary on its own.
+/// Surfaces, borders, hover, dividers and text greys stay neutral (R = G = B). Selection uses a quiet
+/// blue tint; its empty ruler cells use less alpha so they do not wash out the filled cells.
+/// Contrast must be checked on composited surfaces, including nested sidebar tints and selected tiles.
 enum Palette {
     // Surfaces
     static let background = Color(light: 0xF8F8F8, dark: 0x161616)
@@ -43,11 +36,11 @@ enum Palette {
 
     // Interaction
     static let hover = Color(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.05, darkAlpha: 0.07)
-    static let selection = Color(light: 0x4164ED, dark: 0x496CEF, lightAlpha: 0.14, darkAlpha: 0.28)
-    /// The text colour at 14%: a ruler's empty cells on a selected tile, where `surfaceRaised` would read as grey patches.
-    static let trackOnSelection = Color(light: 0x141414, dark: 0xF2F2F2, lightAlpha: 0.14, darkAlpha: 0.14)
-    static let accent = Color(light: 0x3250D8, dark: 0x82A5FF)
-    static let accentSolid = Color(light: 0x3250D8, dark: 0x4164ED)
+    static let selection = Color(light: 0x476EAE, dark: 0x6995DF, lightAlpha: 0.12, darkAlpha: 0.12)
+    /// The text colour at 6%: keeps the empty cells distinct without reducing filled-cell contrast on selection.
+    static let trackOnSelection = Color(light: 0x141414, dark: 0xF2F2F2, lightAlpha: 0.06, darkAlpha: 0.06)
+    static let accent = Color(light: 0x476EAE, dark: 0xA4BFEB)
+    static let accentSolid = Color(light: 0x39588A, dark: 0x39588A)
     static let onAccent = Color(light: 0xFFFFFF, dark: 0xFFFFFF)
 
     // Text
@@ -56,25 +49,25 @@ enum Palette {
     static let textTertiary = Color(light: 0x5E5E5E, dark: 0xA3A3A3)
 
     // The two CLIs: fill and text-safe ink
-    static let claude = Color(light: 0xCD632D, dark: 0xF69A65)
-    static let claudeInk = Color(light: 0x933D08, dark: 0xF69A65)
-    static let codex = Color(light: 0x008388, dark: 0x4FCDCD)
-    static let codexInk = Color(light: 0x006469, dark: 0x4FCDCD)
+    static let claude = Color(light: 0xA25834, dark: 0xD17C54)
+    static let claudeInk = Color(light: 0x65331B, dark: 0xE5B099)
+    static let codex = Color(light: 0x2D74AA, dark: 0x4E9CDA)
+    static let codexInk = Color(light: 0x15466A, dark: 0x98C3E8)
 
     // State only
-    static let success = Color(light: 0x007840, dark: 0x63D18F)
-    static let successInk = Color(light: 0x005F2E, dark: 0x63D18F)
-    static let warn = Color(light: 0xCB9317, dark: 0xE7B643)
-    static let warnInk = Color(light: 0x7B5200, dark: 0xE7B643)
-    static let danger = Color(light: 0xD01C29, dark: 0xFF7F7F)
-    static let dangerInk = Color(light: 0xBB061E, dark: 0xFF7F7F)
+    static let success = Color(light: 0x2D8152, dark: 0x50AB74)
+    static let successInk = Color(light: 0x154F2F, dark: 0x9ACCAA)
+    static let warn = Color(light: 0x9F7A26, dark: 0xB78F2F)
+    static let warnInk = Color(light: 0x563E00, dark: 0xD3BB8A)
+    static let danger = Color(light: 0xA5524D, dark: 0xD5766F)
+    static let dangerInk = Color(light: 0x662F2C, dark: 0xE8ADA7)
 
-    // Tints behind tags and banners (a state colour at low alpha; text on top uses the Ink twin)
-    static let claudeTint = Color(light: 0xCD632D, dark: 0xF69A65, lightAlpha: 0.15, darkAlpha: 0.15)
-    static let codexTint = Color(light: 0x008388, dark: 0x4FCDCD, lightAlpha: 0.15, darkAlpha: 0.15)
-    static let successTint = Color(light: 0x007840, dark: 0x63D18F, lightAlpha: 0.15, darkAlpha: 0.15)
-    static let warnTint = Color(light: 0xD6A62E, dark: 0xE7B643, lightAlpha: 0.20, darkAlpha: 0.15)
-    static let dangerTint = Color(light: 0xD01C29, dark: 0xFF7F7F, lightAlpha: 0.10, darkAlpha: 0.15)
+    // Tints behind marks and banners: the corresponding fill at 15%; text uses the Ink twin.
+    static let claudeTint = Color(light: 0xA25834, dark: 0xD17C54, lightAlpha: 0.15, darkAlpha: 0.15)
+    static let codexTint = Color(light: 0x2D74AA, dark: 0x4E9CDA, lightAlpha: 0.15, darkAlpha: 0.15)
+    static let successTint = Color(light: 0x2D8152, dark: 0x50AB74, lightAlpha: 0.15, darkAlpha: 0.15)
+    static let warnTint = Color(light: 0x9F7A26, dark: 0xB78F2F, lightAlpha: 0.15, darkAlpha: 0.15)
+    static let dangerTint = Color(light: 0xA5524D, dark: 0xD5766F, lightAlpha: 0.15, darkAlpha: 0.15)
 
     // The Reins mark (`Resources/AppIcon.svg`): the same in both appearances, like the app icon.
     static let markGround = Color(light: 0x050608, dark: 0x050608)

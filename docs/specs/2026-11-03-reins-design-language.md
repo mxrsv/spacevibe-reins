@@ -42,7 +42,7 @@ Accepted by the owner on 2026-11-03 ("ok chốt"): all of mock v2 including the 
 - **Rhythm:** card to card 24, region to region 32, two cards in one Activity lane 16. Top bar 48 high, toolbar 8 below it, first card 24 below the toolbar (or below the top bar when a screen has no toolbar). Page side padding 24, bottom 32.
 - **Heights:** 24 (tag, segment inside its frame), 20 (key cap), 28 (every control: button, chip, segmented frame, scope picker, search field), 32 (section row, hint bar), 36 (palette row), 48 (every row, top bar, sidebar item), 56 (card header). A row with three or more lines grows from 48 with 12 pt vertical padding.
 - **Radii:** 4 (tag, key cap), 6 (segment), 8 (control, field, sidebar item), 12 (card, banner, toast, palette); filter chips are capsules. An inner radius equals the outer radius minus the padding between them.
-- **Colour values in `Palette.swift`:** every surface, border, hover, divider and text grey is neutral (R = G = B); the navy tint of the first palette read as a blue cast on every screen (owner, 2026-11-04). Dark: `background` and `well` `#161616`, `surface` `#2A2A2A` (a card sits about 20 levels above the well), `surfaceRaised` `#343434`, `border` `#3A3A3A` at 70%, `hover` white at 7%, `text` `#F2F2F2`, `textSecondary` `#B3B3B3`, `textTertiary` `#A3A3A3`. Light: `background` `#F8F8F8`, `well` and `surfaceRaised` `#F2F2F2`, `surface` white, `border` `#DADADA`, `hover` black at 5%, `text` `#141414`, `textSecondary` `#474747`, `textTertiary` `#5E5E5E`. The accent, the selection tint and the CLI and state colours are unchanged. `well` is the content area behind cards and the sidebar's ground, so cards read as blocks against it.
+- **Colour values in `Palette.swift`:** every surface, border, hover, divider and text grey is neutral (R = G = B); the navy tint of the first palette read as a blue cast on every screen (owner, 2026-11-04). Dark: `background` and `well` `#161616`, `surface` `#2A2A2A` (a card sits about 20 levels above the well), `surfaceRaised` `#343434`, `border` `#3A3A3A` at 70%, `hover` white at 7%, `text` `#F2F2F2`, `textSecondary` `#B3B3B3`, `textTertiary` `#A3A3A3`. Light: `background` `#F8F8F8`, `well` and `surfaceRaised` `#F2F2F2`, `surface` white, `border` `#DADADA`, `hover` black at 5%, `text` `#141414`, `textSecondary` `#474747`, `textTertiary` `#5E5E5E`. The 2026-11-05 shared-colour-tone refinement below updates the accent, selection tint and CLI/state colours together. `well` is the content area behind cards and the sidebar's ground, so cards read as blocks against it.
 - Fixed widths that hold numbers: usage number 52 (fits "12,345"), cost 72 (fits "~$148.20" in Inter; 64 was measured with SF), Activity state column 120, Loadout actions 60 (two 28 pt slots and 4 pt between).
 
 ### Components
@@ -104,7 +104,7 @@ Picked by the owner on 2026-11-05 from `controls.html`: Tabler for page icons an
     | `controlShadow` | black 12% | black 45% |
     | `controlHighlight` | white 90% | white 9% |
   - **Pressed:** the block moves down 0.5 pt and its shadow turns inner.
-  - **Primary:** `accentSolid` with the same top highlight, a black 25% hairline and an accent-tinted shadow. Hover is `#4A6CF0`, pressed is `#2C47C4`.
+  - **Primary:** `accentSolid` with the same top highlight, a black 25% hairline and an accent-tinted shadow. The planned v4 hover (`#466A9D`) and pressed (`#2D4773`) fills follow the muted blue palette refinement below.
   - **Ghost and icon buttons:** no fill until hover; pressed fills `track`.
   - **Disabled:** keeps the hairline and shadow, drops the highlight; text in the tertiary tone.
   - **Loading:** a spinner replaces the leading icon, and the label and the width stay.
@@ -125,7 +125,23 @@ Picked by the owner on 2026-11-05 from `controls.html`: Tabler for page icons an
   - `segmentTrack` (sunken);
   - `onSuccess` and `onDanger`;
   - `cardButtonHeight` 32.
-- **Unchanged.** Fields, tags, cards, rows, the sidebar item, radii, spacing, type and colours outside the list above.
+- **Unchanged.** Fields, tags, cards, rows, the sidebar item, radii, spacing and type. Shared colours follow the palette refinement below.
+
+### Shared colour tone (decided 2026-11-05)
+
+The owner approved several distinct colours with one cohesive, restrained tone, using Paradev as the reference.
+This is neither a monochrome palette nor a requirement to copy Paradev's exact Claude/Codex hex pair.
+
+- Keep the neutral surfaces and existing layout. Coordinate identity, semantic and interaction colours together:
+  clay, blue, green, ochre and brick red with comparable perceptual lightness/chroma, without neon or isolated pastel fills.
+- Reuse `Palette` and the existing CLI mappings. Derive each 15% tint from its fill; give coloured text a separate,
+  same-hue `Ink` variant for each appearance. The lighter dark-mode Ink is for readable text/marks, not the bar fill.
+- Keep warning/danger semantics and the remaining-quota thresholds (20% / 5%), unknown dashes and true empty zero.
+- Keep selected-tile tracks quiet enough to distinguish the coloured fill. Verify Ink on ordinary, selected and nested
+  tinted surfaces at >=4.5:1 and normal provider fills against their tracks at >=3:1 in both appearances.
+- Future Tokens charts take the same identity tokens. Low-opacity area shading is supplementary to a full-colour line;
+  this palette adjustment does not add the unimplemented native Tokens screen or recolour its separate historical mock.
+- Review the native light/dark fixtures, including selected and warning/danger states, as one batch before visual acceptance.
 
 ### Component base
 
