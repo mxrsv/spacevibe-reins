@@ -12,14 +12,6 @@ extension LimitsCLI {
         }
     }
 
-    var ink: Color {
-        switch self {
-        case .claude: Palette.claudeInk
-        case .codex: Palette.codexInk
-        case .gemini: Palette.textSecondary
-        }
-    }
-
     var tint: Color {
         switch self {
         case .claude: Palette.claudeTint
@@ -34,10 +26,9 @@ extension LimitsCLI {
     init(_ cli: InventoryCLI) { self = cli == .claude ? .claude : .codex }
 }
 
-/// A CLI's brand mark in a tinted rounded square: 40 pt (`large`), 28 pt (`medium`) on the Limits page's tiles and detail
-/// title, 24 pt (`small`) in a sidebar tile and the Rules summary bar. `glyph` is the bare 14 pt glyph in the CLI's ink, with
-/// no square, for a segment label. Claude Code and Codex are drawn as a template in the CLI's ink on its tint; Gemini CLI
-/// keeps its own colours. Decorative: the name is always written beside it.
+/// A bare CLI brand mark, independent of data/semantic colours: Claude and Gemini retain the asset's colour;
+/// Codex uses its monochrome mark, white in dark mode and black in light mode. No background or border.
+/// The transparent layout slot keeps existing row alignment and glyph sizes. Decorative: the name is beside it.
 struct CLIMark: View {
     enum Size { case large, medium, small, glyph }
 
@@ -62,13 +53,9 @@ struct CLIMark: View {
             case .medium: Metrics.cliMarkMediumSize
             case .small, .glyph: Metrics.cliMarkSmallSize
             }
-            let shape = RoundedRectangle(cornerRadius: size == .large ? Metrics.groupRadius : Metrics.controlRadius, style: .continuous)
-            ZStack {
-                shape.fill(cli.tint)
-                glyph(side: side * Metrics.cliMarkGlyphFraction)
-            }
-            .frame(width: side, height: side)
-            .accessibilityHidden(true)
+            glyph(side: side * Metrics.cliMarkGlyphFraction)
+                .frame(width: side, height: side)
+                .accessibilityHidden(true)
         }
     }
 
@@ -77,9 +64,9 @@ struct CLIMark: View {
         if let image = BrandMark.image(cli) {
             Image(nsImage: image)
                 .resizable()
-                .renderingMode(cli == .gemini ? .original : .template)
+                .renderingMode(cli == .codex ? .template : .original)
                 .scaledToFit()
-                .foregroundStyle(cli.ink)
+                .foregroundStyle(Palette.brandMonochrome)
                 .frame(width: side, height: side)
         } else {
             Circle().fill(cli.fill).frame(width: Space.s8, height: Space.s8)

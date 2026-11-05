@@ -64,6 +64,9 @@ with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-da
   The credit is in the About panel ([`Credits`](../Sources/Reins/App/Credits.swift)) and here.
   [`IconPolicyTests`](../Tests/ReinsTests/IconPolicyTests.swift) fails on an SF Symbol or any other image outside
   `Gallery/`; the CLI brand marks in [`CLIMark`](../Sources/Reins/Components/CLIMark.swift) are the one image.
+- **Agent logos keep their brand colours.** [`CLIMark`](../Sources/Reins/Components/CLIMark.swift) draws the Claude and
+  Gemini assets in their original colours and the Codex mark in black/white for the appearance. It adds no box, tint or
+  border around a logo; the colour of a usage bar or a sidebar state tile never recolours the logo.
 - **Generated Swift, not files.** [`generate-icons.mjs`](../scripts/generate-icons.mjs) turns the `@iconify-json/solar`
   package (downloaded into a scratch folder, never committed) into
   [`ReinsIconData.swift`](../Sources/Reins/Components/ReinsIconData.swift): two layers per glyph as path code. A glyph

@@ -133,11 +133,14 @@ The owner approved several distinct colours with one cohesive, restrained tone, 
 This is neither a monochrome palette nor a requirement to copy Paradev's exact Claude/Codex hex pair.
 The owner's subsequent choice on 2026-11-05 pins the Codex fill to Paradev's `#1596D6` in both appearances,
 with the matching 15% tint and separate readable Ink; the other hues remain as coordinated above.
+Agent logos are a separate brand layer (owner, 2026-11-05): preserve Claude/Gemini asset colours and Codex's
+black/white monochrome identity, add no surrounding logo box, and never tint a logo with the data or state palette.
+Keep the existing layout slots and visible glyph sizes so this removal does not shift the rows.
 
 - Keep the neutral surfaces and existing layout. Coordinate identity, semantic and interaction colours together:
   clay, blue, green, ochre and brick red with comparable perceptual lightness/chroma, without neon or isolated pastel fills.
 - Reuse `Palette` and the existing CLI mappings. Derive each 15% tint from its fill; give coloured text a separate,
-  same-hue `Ink` variant for each appearance. The lighter dark-mode Ink is for readable text/marks, not the bar fill.
+  same-hue `Ink` variant for each appearance. The lighter dark-mode Ink is for readable text/status icons, not the bar fill.
 - Keep warning/danger semantics and the remaining-quota thresholds (20% / 5%), unknown dashes and true empty zero.
 - Keep selected-tile tracks quiet enough to distinguish the coloured fill. Verify Ink on ordinary, selected and nested
   tinted surfaces at >=4.5:1. The explicitly chosen Codex fill has lower than 3:1 contrast on light tracks; its decorative

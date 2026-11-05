@@ -20,7 +20,7 @@ import SwiftUI
 ///
 /// Surfaces, borders, hover, dividers and text greys stay neutral (R = G = B). Selection uses a quiet
 /// blue tint; its empty ruler cells use less alpha so they do not wash out the filled cells.
-/// Contrast must be checked on composited surfaces, including nested sidebar tints and selected tiles.
+/// Contrast must be checked on composited surfaces, including sidebar tints and selected tiles.
 enum Palette {
     // Surfaces
     static let background = Color(light: 0xF8F8F8, dark: 0x161616)
@@ -63,7 +63,7 @@ enum Palette {
     static let danger = Color(light: 0xA5524D, dark: 0xD5766F)
     static let dangerInk = Color(light: 0x662F2C, dark: 0xE8ADA7)
 
-    // Tints behind marks and banners: the corresponding fill at 15%; text uses the Ink twin.
+    // Tints behind sidebar tiles and banners: the corresponding fill at 15%; text uses the Ink twin.
     static let claudeTint = Color(light: 0xA25834, dark: 0xD17C54, lightAlpha: 0.15, darkAlpha: 0.15)
     static let codexTint = Color(light: 0x1596D6, dark: 0x1596D6, lightAlpha: 0.15, darkAlpha: 0.15)
     static let successTint = Color(light: 0x2D8152, dark: 0x50AB74, lightAlpha: 0.15, darkAlpha: 0.15)
@@ -73,6 +73,8 @@ enum Palette {
     // The Reins mark (`Resources/AppIcon.svg`): the same in both appearances, like the app icon.
     static let markGround = Color(light: 0x050608, dark: 0x050608)
     static let markInk = Color(light: 0xF4F5F7, dark: 0xF4F5F7)
+    /// Monochrome brand artwork, independent of chart and status hues.
+    static let brandMonochrome = Color(light: 0x000000, dark: 0xFFFFFF)
 
     // Overlays (palette scrim, toast)
     static let overlay = Color(light: 0x111111, dark: 0x000000, lightAlpha: 0.35, darkAlpha: 0.5)
