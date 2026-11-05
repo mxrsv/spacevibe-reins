@@ -2,6 +2,7 @@
 
 Date: 2026-11-05
 Status: draft. Decision ledger only, from the owner's grilling on 2026-11-05; the owner confirmed it the same day ("ok") and asked for the mock directions to be built directly in the `site/` dev server. Requirements, acceptance criteria and the traceability table (W20) are added once the owner has picked a direction.
+Handoff 2026-11-05: the owner accepted the layout of the mock round ("layout tạm ổn") and named the app's own screens as the remaining problem ("app stage chưa tốt"): the four categories look alike. The design language v4 that restyles them is not built (its plan says "no Swift written yet") and the palette is still changing (`ec27b4a`, 15:51, after the captures at about 15:15), so the captures in `site/public/landing/app/` are placeholders. After v4 lands, re-shoot with `REINS_SHOT_SCREEN=<loadout|limits|activity|rules> scripts/dev-fixture.sh --shots <dir>` (limits with `REINS_FIXTURE_LIMITS=typical`) and redo the crops by eye from the 2880x1800 captures; the layout code does not change.
 Parent: [Reins](2026-11-02-reins.md). Earlier record of the first build: [site landing plan](../plans/2026-11-03-reins-site-landing.md).
 
 ## Scope
