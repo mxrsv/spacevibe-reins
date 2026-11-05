@@ -137,6 +137,23 @@ Departures from mock C′ and the spec:
 - Open in editor and Show in Finder go through `NSWorkspace` (the file's default app, and Finder).
 - A blank Claude settings file opens in Advanced as `{}`.
 
+### Checked on the owner's Mac, 2026-11-05
+
+Checkout: worktree `~/scratch/spacevibe-reins/wt-agents` on `claude/reins-agents`. It holds v4 and Agents, plus the fix commit below. Swift 6.3.2.
+
+- **Compile:** one error, fixed. `CodexConfig.parse` was internal but is called from `CodexPermissionsPanel`; it is now public.
+- **`scripts/test.sh`:** `Test run with 457 tests in 52 suites passed after 7.902 seconds`, after these fixes:
+  - `CodexConfigEditTests` dropped its `TempHome` (`let (_, …)`), so the folder was deleted before the read; 14 issues.
+  - `InstructionFile.resolve` used `standardizedFileURL`, which strips `/private` from `/private/var/…`; it now uses `standardized`.
+  - `AgentsComponentTests` compared a `CGFloat` with an untyped `Int` sum inside `#expect`.
+- **Not caused by this branch:** 58 golden and fixture failures that came from a stale shared `/private/tmp/reins-fixture-home` (the trap in the Settings plan). Deleting it fixed them.
+- **`scripts/build-app.sh`:** `minos 15.0`, signed `build/Reins.app`.
+- **Shots** (`REINS_FIXTURE_AGENTS=legacy|profiles|both REINS_AGENTS=1 REINS_SHOT_SCREEN=agents`): 42, 14 and 14 PNGs, plus 18 for the shell and gallery, in `~/scratch/spacevibe-reins/shots/agents-check/`. The run printed "ok: Undo restored settings.json byte for byte" and "ok: a failed save keeps the draft".
+  - The shared `/tmp/reins-build-dev-fixture` had a broken Sparkle artifact ("XCFramework Info.plist not found"). Deleting the folder fixed it.
+- **Launch:** `open -n build/Reins.app` on a `profiles` home with `REINS_TEST=1 REINS_AGENTS=1` gives `bundleID="dev.spacevibe.reins"` in front, with the synthetic `HOME` in `ps eww`. The app was quit right after; the Agents tab was not looked at in that window.
+- **Open, Hypothesis — unverified:** in several shots (Claude Code Permissions, Codex profiles and both, the review, the error), the whole window is shifted up, as if the panel's content were taller than the window. Check in the live window whether the panel scrolls inside itself, or whether this is the shot renderer.
+- **Departure seen:** Claude Code's rule groups read Deny, Ask first, Allow; the mock reads Allow, Ask, Deny.
+
 ### Test tomorrow
 
 Each block prepares a synthetic home and opens the release bundle on it. `--prepare` prints `export HOME='<home>'` and the

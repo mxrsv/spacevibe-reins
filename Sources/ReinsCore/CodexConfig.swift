@@ -61,7 +61,7 @@ public struct CodexConfig: Equatable, Sendable {
         return parse(text, file: file, exists: exists)
     }
 
-    static func parse(_ text: String, file: URL, exists: Bool) -> CodexConfig {
+    public static func parse(_ text: String, file: URL, exists: Bool) -> CodexConfig {
         let document = TOMLReader.read(text)
         func value(_ path: [String]) -> TOMLValue? { TOMLEdit.lookup(document, path) }
         var trust: [String: String] = [:]

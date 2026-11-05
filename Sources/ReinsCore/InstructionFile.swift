@@ -55,9 +55,9 @@ public struct InstructionFile: Equatable, Sendable {
 
     static func resolve(_ path: String, relativeTo file: URL, home: String) -> URL {
         if path == "~" { return URL(fileURLWithPath: home) }
-        if path.hasPrefix("~/") { return URL(fileURLWithPath: home).appendingPathComponent(String(path.dropFirst(2))).standardizedFileURL }
-        if path.hasPrefix("/") { return URL(fileURLWithPath: path).standardizedFileURL }
-        return file.deletingLastPathComponent().appendingPathComponent(path).standardizedFileURL
+        if path.hasPrefix("~/") { return URL(fileURLWithPath: home).appendingPathComponent(String(path.dropFirst(2))).standardized }
+        if path.hasPrefix("/") { return URL(fileURLWithPath: path).standardized }
+        return file.deletingLastPathComponent().appendingPathComponent(path).standardized
     }
 
     /// The save of new text for a file (created when missing). Line endings and everything else are the editor's.

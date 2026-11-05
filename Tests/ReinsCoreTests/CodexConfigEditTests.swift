@@ -58,7 +58,8 @@ struct CodexConfigEditTests {
 
     @Test("the legacy model reads approval, sandbox, network, roots, trust, model and MCP names")
     func readLegacy() throws {
-        let (_, _, url) = try file(Self.legacy)
+        let (home, _, url) = try file(Self.legacy)
+        defer { withExtendedLifetime(home) {} } // TempHome deletes its folder on deinit; `_` would drop it at once
         let config = CodexConfig.read(url)
         #expect(config.permissionModel == .legacy)
         #expect(config.approvalPolicy == "on-request" && config.sandboxMode == "workspace-write")
@@ -70,7 +71,8 @@ struct CodexConfigEditTests {
 
     @Test("profiles read with their files, network and domains")
     func readProfiles() throws {
-        let (_, _, url) = try file(Self.profiles)
+        let (home, _, url) = try file(Self.profiles)
+        defer { withExtendedLifetime(home) {} } // TempHome deletes its folder on deinit; `_` would drop it at once
         let config = CodexConfig.read(url)
         #expect(config.permissionModel == .profiles)
         let profile = try #require(config.profile("project-edit"))
@@ -82,7 +84,8 @@ struct CodexConfigEditTests {
 
     @Test("a save changes only its lines, in one entry, and Undo restores the bytes")
     func saveAndUndo() throws {
-        let (_, roots, url) = try file(Self.legacy)
+        let (home, roots, url) = try file(Self.legacy)
+        defer { withExtendedLifetime(home) {} } // TempHome deletes its folder on deinit; `_` would drop it at once
         let entry = try #require(try AgentSave.save(roots, label: "How Codex runs", changes: [CodexConfigEdit.fileChange(url, [
             .approvalPolicy("never"), .networkAccess(true), .trust(project: "/w/app", level: "untrusted"), .reasoningEffort("high"),
         ])]))
@@ -99,7 +102,8 @@ struct CodexConfigEditTests {
 
     @Test("MCP servers are added as tables, removed with them, and a secret is replaced without reading it")
     func mcp() throws {
-        let (_, roots, url) = try file(Self.legacy)
+        let (home, roots, url) = try file(Self.legacy)
+        defer { withExtendedLifetime(home) {} } // TempHome deletes its folder on deinit; `_` would drop it at once
         try AgentSave.save(roots, label: "MCP", changes: [CodexConfigEdit.fileChange(url, [
             .addServer(name: "search", kind: .url, target: "https://search.example.test/mcp"),
             .replaceSecret(server: "docs", table: "env", name: "DOCS_TOKEN", value: "new-token"),
@@ -115,7 +119,8 @@ struct CodexConfigEditTests {
 
     @Test("a write never leaves both permission models set, and each keep choice removes the other model")
     func bothModels() throws {
-        let (_, roots, url) = try file(Self.both)
+        let (home, roots, url) = try file(Self.both)
+        defer { withExtendedLifetime(home) {} } // TempHome deletes its folder on deinit; `_` would drop it at once
         #expect(CodexConfig.read(url).permissionModel == .both)
         #expect(throws: ReinsError.self) {
             try AgentSave.save(roots, label: "Model", changes: [CodexConfigEdit.fileChange(url, [.model("o4-mini")])])
@@ -150,7 +155,8 @@ struct CodexConfigEditTests {
     func advanced() throws {
         #expect(throws: ReinsError.self) { try CodexConfigEdit.check("model = \"a\"\nthis is not toml\n") }
         try CodexConfigEdit.check(Self.legacy)
-        let (_, roots, url) = try file(Self.legacy)
+        let (home, roots, url) = try file(Self.legacy)
+        defer { withExtendedLifetime(home) {} } // TempHome deletes its folder on deinit; `_` would drop it at once
         let masked = SecretMask.maskTOML(Self.legacy)
         let edited = masked.text.replacingOccurrences(of: "gpt-5-codex", with: "o4-mini")
         try AgentSave.save(roots, label: "Advanced", changes: [AgentSave.advancedChange(url, masked: masked, edited: edited, check: CodexConfigEdit.check)])

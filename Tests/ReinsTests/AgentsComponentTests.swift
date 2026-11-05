@@ -12,7 +12,7 @@ struct AgentsComponentTests {
         #expect(InspectorWidth.dragged(from: 480, by: -100) == 580)
         #expect(InspectorWidth.dragged(from: 480, by: 400) == 420)
         #expect(InspectorWidth.minimumContent(panel: nil) == 440)
-        #expect(InspectorWidth.minimumContent(panel: 720) == 440 + 720 + 1)
+        #expect(InspectorWidth.minimumContent(panel: 720) == CGFloat(440 + 720 + 1)) // a typed sum: the macro compares an Int sum as a different type
         #expect(Metrics.inspectorDefaultWidth == 480)
     }
 
