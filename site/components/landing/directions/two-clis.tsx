@@ -26,7 +26,7 @@ export function TwoClis() {
               <div className="grid gap-3 md:grid-cols-2">
                 {CLIS.map((cli) => (
                   <div key={cli} className="grid content-start gap-2 rounded-card bg-s2 p-5">
-                    <h3 className="inline-flex items-center gap-2 text-sec font-medium text-ink-0">
+                    <h3 translate="no" className="inline-flex items-center gap-2 text-sec font-medium text-ink-0">
                       <CliDot cli={cli} />
                       {CLI_LABEL[cli]}
                     </h3>

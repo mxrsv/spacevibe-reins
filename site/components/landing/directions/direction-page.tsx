@@ -15,7 +15,7 @@ export function DirectionPage({ current, children }: { readonly current: Directi
   return (
     <div id={LANDING_ROOT_ID} className="min-h-dvh bg-bg">
       <SiteHeader nav={DIRECTION_NAV} />
-      <main>
+      <main id="main">
         <HeroRise />
         {children}
         <Upcoming />
@@ -34,10 +34,10 @@ function DirectionSwitcher({ current }: { readonly current: DirectionKey }) {
   return (
     <nav
       aria-label="Landing directions"
-      className="fixed right-4 bottom-4 z-30 flex items-center gap-1 rounded-full border border-edge-strong bg-glass p-1 shadow-glass backdrop-blur-[14px]"
+      className="fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex items-center gap-1 rounded-full border border-edge-strong bg-glass p-1 shadow-glass backdrop-blur-[14px]"
     >
       {DIRECTIONS.map((direction) => (
-        <a
+        <Link
           key={direction.key}
           href={direction.href}
           aria-current={direction.key === current ? "page" : undefined}
@@ -46,7 +46,7 @@ function DirectionSwitcher({ current }: { readonly current: DirectionKey }) {
           }`}
         >
           {direction.label}
-        </a>
+        </Link>
       ))}
       <Link href="/" className="rounded-full px-3 py-1.5 text-tiny font-medium text-ink-2 no-underline transition-colors duration-150 hover:text-ink-0">
         Current page

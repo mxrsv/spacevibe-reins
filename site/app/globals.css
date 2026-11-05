@@ -84,14 +84,21 @@
   }
 
   ::selection {
-    background: rgb(57 83 210 / 48%);
+    background: rgb(65 100 237 / 48%);
     color: #fff;
   }
 
   :focus-visible {
-    outline: 2px solid rgb(57 83 210 / 75%);
+    outline: 2px solid rgb(65 100 237 / 75%);
     outline-offset: 2px;
     border-radius: var(--radius-ctl);
+  }
+
+  /* No 300 ms tap delay or double-tap zoom on links and buttons; the tap flash is the hairline tone, not the browser's grey. */
+  a,
+  button {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgb(255 255 255 / 8%);
   }
 
   /* The sticky header is 60px; anchors land below it. */

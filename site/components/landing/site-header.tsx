@@ -12,7 +12,9 @@ export function SiteHeader({ nav = NAV }: { readonly nav?: readonly NavLink[] })
       <div className="shell grid h-[60px] grid-cols-[auto_auto] items-center justify-between gap-8 md:grid-cols-[auto_1fr_auto]">
         <a href="#top" className="inline-flex items-center gap-2.5 text-sec font-medium tracking-[-0.01em] text-ink-0 no-underline" aria-label={SITE.brand}>
           <ReinsMark className="size-[22px] shrink-0" />
-          <span aria-hidden="true">{SITE.brand}</span>
+          <span aria-hidden="true" translate="no">
+            {SITE.brand}
+          </span>
         </a>
 
         <nav className="hidden md:flex justify-center gap-8" aria-label="Sections">

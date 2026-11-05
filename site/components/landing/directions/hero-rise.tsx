@@ -17,16 +17,9 @@ export function HeroRise() {
 
       <div className="shell grid gap-12 max-md:gap-8">
         <div className="flex max-w-[860px] flex-col items-start">
-          <h1
-            className="grid text-h1 font-semibold text-ink-0"
-            aria-label={HERO_NEXT.headingLines.join(" ")}
-            data-rise
-            style={{ "--rise": "80ms" } as CSSProperties}
-          >
+          <h1 className="grid text-h1 font-semibold text-ink-0" data-rise style={{ "--rise": "80ms" } as CSSProperties}>
             {HERO_NEXT.headingLines.map((line) => (
-              <span key={line} aria-hidden="true">
-                {line}
-              </span>
+              <span key={line}>{line}</span>
             ))}
           </h1>
 

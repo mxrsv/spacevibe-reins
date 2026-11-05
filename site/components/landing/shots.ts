@@ -2,7 +2,7 @@
  * The app screens the page shows. The real ones are crops of dark captures of the SwiftUI app on
  * the synthetic fixture home (`scripts/dev-fixture.sh --shots`, 2x): the Loadout window for the hero,
  * one signature region per category (the part of the screen that is only that category), and the
- * sidebar tab each category lives behind. The two `preview*` ones are renders of the tracked mocks
+ * sidebar tab each category lives behind (decorative: the caption beside it already names the category). The two `preview*` ones are renders of the tracked mocks
  * in `mocks/` for pages that are still in development; the page labels them as design previews.
  */
 export interface Shot {
@@ -43,10 +43,10 @@ export const SHOTS = {
     height: 615,
     alt: "Rules for Claude Code: Read files, Edit files, Run commands, Network, Push and deploy and Secrets each set to Allow, Ask or Deny, or tagged mixed, with the number of rules behind each.",
   },
-  tabLoadout: { src: "/landing/app/tab-loadout.webp", width: 432, height: 97, alt: "The Loadout tab in the app's sidebar" },
-  tabLimits: { src: "/landing/app/tab-limits.webp", width: 432, height: 97, alt: "The Limits tab in the app's sidebar" },
-  tabActivity: { src: "/landing/app/tab-activity.webp", width: 432, height: 97, alt: "The Activity tab in the app's sidebar" },
-  tabRules: { src: "/landing/app/tab-rules.webp", width: 432, height: 97, alt: "The Rules tab in the app's sidebar" },
+  tabLoadout: { src: "/landing/app/tab-loadout.webp", width: 432, height: 97, alt: "" },
+  tabLimits: { src: "/landing/app/tab-limits.webp", width: 432, height: 97, alt: "" },
+  tabActivity: { src: "/landing/app/tab-activity.webp", width: 432, height: 97, alt: "" },
+  tabRules: { src: "/landing/app/tab-rules.webp", width: 432, height: 97, alt: "" },
   previewAgents: {
     src: "/landing/app/preview-agents.webp",
     width: 1563,

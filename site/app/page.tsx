@@ -19,7 +19,7 @@ export default function LandingPage() {
   return (
     <div id={LANDING_ROOT_ID} className="min-h-dvh bg-bg">
       <SiteHeader />
-      <main>
+      <main id="main">
         <Hero />
         <FeatureSection id={LOADOUT.id} heading={LOADOUT.heading} body={LOADOUT.body}>
           <LoadoutVisual />

@@ -7,7 +7,7 @@ export function SiteFooter({ nav = FOOTER.nav }: { readonly nav?: readonly NavLi
   return (
     <footer className="border-t border-edge py-8">
       <div className="shell flex flex-wrap items-center gap-x-8 gap-y-3">
-        <span className="inline-flex items-center gap-2 text-sec font-medium text-ink-1">
+        <span translate="no" className="inline-flex items-center gap-2 text-sec font-medium text-ink-1">
           <ReinsMark className="size-4" />
           {FOOTER.brand}
         </span>

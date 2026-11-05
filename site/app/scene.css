@@ -21,7 +21,7 @@
   --scene-rim-bright: var(--color-accent-hover);
   --scene-rim-accent: var(--color-accent);
   --scene-rim-haze: #7f8cc8;
-  --scene-core-shadow: rgb(57 83 210 / 55%);
+  --scene-core-shadow: rgb(65 100 237 / 55%);
 
   /* Luminance ramp for the `arc-fade` mask: the glow dies at both ends of the arc
      and peaks mid-axis. Mask data, not paint. */
@@ -40,7 +40,7 @@
 
   --scene-orbit-ring: rgb(255 255 255 / 9%);
   --scene-orbit-body: rgb(214 224 255 / 72%);
-  --scene-orbit-wash: radial-gradient(closest-side, rgb(57 83 210 / 16%), transparent 100%);
+  --scene-orbit-wash: radial-gradient(closest-side, rgb(65 100 237 / 16%), transparent 100%);
 
   --scene-atmosphere: radial-gradient(
     120% 92% at 52% 48%,

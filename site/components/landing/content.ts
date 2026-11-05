@@ -45,7 +45,7 @@ export const HERO = {
   headingLines: ["Take the reins", "of your agents."] as const,
   lede:
     "A local Mac app for Claude Code and Codex CLI. See every skill, subagent and hook each one carries, how often it actually ran and what it may do — then add or remove one in seconds.",
-  cta: { note: "macOS 15 or later · Apple silicon", label: "Download for macOS", href: DOWNLOAD_URL },
+  cta: { note: "macOS\u00A015 or later · Apple\u00A0silicon", label: "Download for macOS", href: DOWNLOAD_URL },
 } as const;
 
 /* ---------------------------------------------------------------- usage states */
@@ -253,7 +253,7 @@ export const PRIVATE = {
 export const DOWNLOAD = {
   id: "download",
   heading: "Download Reins for macOS",
-  body: "Free. macOS 15 or later on Apple silicon. Reins checks for updates once a day; installing one takes a click.",
+  body: "Free. macOS\u00A015 or later on Apple\u00A0silicon. Reins checks for updates once a day; installing one takes a click.",
   cta: { href: DOWNLOAD_URL, label: "Download for macOS" },
   secondary: { href: GITHUB_URL, label: "GitHub" },
 } as const;

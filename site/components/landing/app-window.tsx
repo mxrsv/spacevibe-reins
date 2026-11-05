@@ -59,7 +59,7 @@ export function AppWindow({ shot, lights = false, preview = false, tab, caption,
       {caption || tabShot ? (
         <figcaption className="flex items-center gap-3 text-tiny text-ink-2">
           {tabShot ? (
-            <Image src={tabShot.src} alt={tabShot.alt} width={tabShot.width} height={tabShot.height} className="h-7 w-auto shrink-0" />
+            <Image src={tabShot.src} alt="" width={tabShot.width} height={tabShot.height} className="h-7 w-auto shrink-0" />
           ) : null}
           {caption}
         </figcaption>

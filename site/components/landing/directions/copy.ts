@@ -10,8 +10,8 @@ import type { ShotKey } from "../shots";
 
 export const HERO_NEXT = {
   headingLines: ["Which of your skills", "actually run?"] as const,
-  lede: "Reins is a local Mac app for Claude Code and Codex CLI. It counts, from your own session logs, how often every skill, subagent and hook ran, and says plainly when a CLI logs nothing to count.",
-  cta: { note: "macOS 15 or later · Apple silicon", label: "Download for macOS", href: DOWNLOAD_URL },
+  lede: "Reins is a local Mac app for Claude\u00A0Code and Codex\u00A0CLI. It counts, from your own session logs, how often every skill, subagent and hook ran, and says plainly when a CLI logs nothing to count.",
+  cta: { note: "macOS\u00A015 or later · Apple\u00A0silicon", label: "Download for macOS", href: DOWNLOAD_URL },
 } as const;
 
 export type BandId = "loadout" | "limits" | "activity" | "rules";
@@ -46,7 +46,7 @@ export const BANDS: readonly Band[] = [
     label: "Limits",
     question: "How much of my Claude and Codex limit is left?",
     answer:
-      "Read from Claude Code's status-line snapshots and Codex's session logs, with no login and no API call. A CLI that keeps no usage file reads as not measurable; Reins never guesses.",
+      "Read from Claude\u00A0Code’s status-line snapshots and Codex’s session logs, with no login and no API call. A CLI that keeps no usage file reads as not measurable; Reins never guesses.",
     shot: "limitsDetail",
     tab: "tabLimits",
     caption: `Limits · ${DEMO}`,
@@ -66,7 +66,7 @@ export const BANDS: readonly Band[] = [
     label: "Rules",
     question: "What is each CLI allowed to do?",
     answer:
-      "One page per CLI, in its own terms. Claude Code's rules are Allow, Ask or Deny per capability, expandable to the rule behind them; Codex's sandbox and approvals are shown read only. Every write keeps a restorable copy.",
+      "One page per CLI, in its own terms. Claude\u00A0Code’s rules are Allow, Ask or Deny per capability, expandable to the rule behind them; Codex’s sandbox and approvals are shown read only. Every write keeps a restorable copy.",
     shot: "rulesVerdicts",
     tab: "tabRules",
     caption: `Rules · ${DEMO}`,
@@ -80,16 +80,16 @@ export const DIFFS: Record<BandId, { readonly claude: string; readonly codex: st
     codex: "Counts skills and subagents. Codex does not log hook runs, so a hook reads not measurable, never 0.",
   },
   limits: {
-    claude: "Reads the share left in each window from Claude Code's status-line snapshot.",
+    claude: "Reads the share left in each window from Claude\u00A0Code’s status-line snapshot.",
     codex: "Reads it from the last Codex turn, and shows how old that reading is.",
   },
   activity: {
-    claude: "Claude Code does not record permission prompts, so a long tool run and a wait for approval look the same.",
+    claude: "Claude\u00A0Code does not record permission prompts, so a long tool run and a wait for approval look the same.",
     codex: "Codex logs nothing while a tool runs and writes no log until the first prompt is sent.",
   },
   rules: {
     claude: "Allow, Ask or Deny for each capability, editable, with the concrete rules behind each one.",
-    codex: "Sandbox and approval settings in Codex's own words, shown read only.",
+    codex: "Sandbox and approval settings in Codex’s own words, shown read only.",
   },
 };
 
@@ -117,11 +117,11 @@ export const MANUAL: Record<BandId, { readonly does: readonly string[]; readonly
   },
   rules: {
     does: [
-      "Shows what Claude Code may do as Allow, Ask or Deny for each capability.",
+      "Shows what Claude\u00A0Code may do as Allow, Ask or Deny for each capability.",
       "Opens the concrete rules behind a capability, for every project or for one.",
       "Writes a change to the settings file and keeps a restorable copy.",
     ],
-    cannot: "Edit Codex. Its page is read only, in Codex's own words.",
+    cannot: "Edit Codex. Its page is read only, in Codex’s own words.",
   },
 };
 
@@ -155,7 +155,7 @@ export const DIRECTION_NAV = [
 
 export const DIRECTIONS = [
   { key: "deck", label: "Deck", href: "/directions/deck", line: "Each screen is a full-width window that the next one slides over." },
-  { key: "two-clis", label: "Two CLIs", href: "/directions/two-clis", line: "Each screen carries what differs between Claude Code and Codex." },
+  { key: "two-clis", label: "Two CLIs", href: "/directions/two-clis", line: "Each screen carries what differs between Claude\u00A0Code and Codex." },
   { key: "manual", label: "Manual", href: "/directions/manual", line: "A reference page: question, figure, what it does, what it cannot see." },
 ] as const;
 
