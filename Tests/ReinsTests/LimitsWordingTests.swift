@@ -157,5 +157,8 @@ struct LimitsWordingTests {
         #expect(LimitsWording.stateNote(CLILimits(cli: .gemini, state: .notInstalled))?.body == "No Gemini CLI folder on this Mac.")
         #expect(LimitsWording.stateNote(measured(.codex, at: 0, []))  == nil)
         #expect(LimitsWording.source(.gemini) == nil)
+        let captured = CLILimits(cli: .claude, state: .notRecorded, source: .claudeStatusline)
+        #expect(LimitsWording.source(captured)?.title == "From Claude Code's status line")
+        #expect(LimitsWording.source(.claude)?.body.contains("fallback") == true)
     }
 }

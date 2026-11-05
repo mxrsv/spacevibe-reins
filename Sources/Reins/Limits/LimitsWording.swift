@@ -174,11 +174,18 @@ enum LimitsWording {
     }
 
     /// Where a CLI's usage reading comes from, shown with the reading's age on the page.
+    static func source(_ limits: CLILimits) -> (title: String, body: String)? {
+        if limits.source == .claudeStatusline {
+            return ("From Claude Code's status line", "Last quota received from a Claude Code session. Reins makes no network request.")
+        }
+        return source(limits.cli)
+    }
+
     static func source(_ cli: LimitsCLI) -> (title: String, body: String)? {
         switch cli {
         case .claude:
             ("From Claude Code's own cache",
-             "Claude Code saves this when it fetches usage, for example in \(copyHint). Reins reads the file and asks nobody.")
+             "Saved cache fallback; it can lag behind current usage. Refresh only rereads the file. A successful \(copyHint) fetch may update it.")
         case .codex:
             ("From the last Codex turn", "Codex logs its limits after every turn. The reading moves when you use Codex.")
         case .gemini: nil

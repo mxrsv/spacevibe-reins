@@ -200,7 +200,7 @@ struct LimitsTests {
         let sources = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("Sources/ReinsCore")
-        for name in ["Limits.swift", "LimitsClaudeCache.swift", "LimitsCodexLogs.swift"] {
+        for name in ["Limits.swift", "LimitsClaudeCache.swift", "LimitsClaudeStatusline.swift", "LimitsCodexLogs.swift"] {
             let text = try String(contentsOf: sources.appendingPathComponent(name), encoding: .utf8)
             for banned in ["URLSession", "URLRequest", "Process(", "posix_spawn", "ProcessAdapter"] {
                 #expect(!text.contains(banned), "\(name) mentions \(banned)")

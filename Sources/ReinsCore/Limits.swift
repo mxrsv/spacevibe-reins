@@ -34,6 +34,7 @@ public struct LimitWindow: Equatable, Sendable {
 
 /// What one CLI's files say about its usage limits.
 public struct CLILimits: Equatable, Sendable {
+    public enum Source: Equatable, Sendable { case claudeCache, claudeStatusline }
     public enum State: Equatable, Sendable {
         /// Windows from the newest record, taken at `at`.
         case measured(at: Date, windows: [LimitWindow])
@@ -50,19 +51,21 @@ public struct CLILimits: Equatable, Sendable {
     public let state: State
     /// The plan the record names (Codex `plan_type`), nil when it names none.
     public let plan: String?
+    public let source: Source?
 
-    public init(cli: LimitsCLI, state: State, plan: String? = nil) {
+    public init(cli: LimitsCLI, state: State, plan: String? = nil, source: Source? = nil) {
         self.cli = cli
         self.state = state
         self.plan = plan
+        self.source = source
     }
 }
 
 /// Usage limits read from local files only: no request, no credential, no CLI started (spec, Limits; S-R4, S-R5).
 public enum Limits {
     /// Claude Code, Codex and Gemini CLI, in that order. Blocking file reads; call it off the main thread.
-    public static func read(_ roots: Roots) -> [CLILimits] {
-        [LimitsClaudeCache.read(roots), LimitsCodexLogs.read(roots), gemini(roots)]
+    public static func read(_ roots: Roots, now: Date = Date()) -> [CLILimits] {
+        [LimitsClaudeStatusline.read(roots, now: now), LimitsCodexLogs.read(roots), gemini(roots)]
     }
 
     static func gemini(_ roots: Roots) -> CLILimits {

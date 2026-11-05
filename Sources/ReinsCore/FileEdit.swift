@@ -183,7 +183,7 @@ public enum FileEdit {
     }
 
     /// Defense in depth for tests: under REINS_TEST=1 a path under the real home is never written, whatever the roots say.
-    private static func refuseRealHomeUnderTest(_ path: String) throws {
+    static func refuseRealHomeUnderTest(_ path: String) throws {
         guard ProcessInfo.processInfo.environment["REINS_TEST"] == "1" else { return }
         let home = Roots.resolvedPath(Roots.realHomeDirectory())
         let resolved = Roots.resolvedPath(path)

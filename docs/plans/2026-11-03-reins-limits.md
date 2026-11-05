@@ -27,8 +27,9 @@ Facts this plan rests on, read 2026-11-03 on the owner's Mac:
   Claude Code does not refresh it per session.
 - Gemini CLI 0.63 keeps no quota under `~/.gemini`; its numbers come only from Google's internal `retrieveUserQuota` call.
 - No Kimi CLI on this Mac: only Superset's wrapper `~/.superset/bin/kimi` and `~/.kimi-code/config.toml` with hooks.
-- `spacevibe-board` wraps Claude Code's `statusLine` on this Mac to capture quota (checked 2026-11-03: the command names it). Reins must not install a
-  second wrapper or read Board's capture folder (workspace rule: no shared data between repos).
+- Historical observation, 2026-11-03: Board owned the status-line wrapper. On 2026-11-05 Deck owns it instead. The owner
+  approved a Reins collector that delegates to the existing command and writes independent snapshots. This supersedes
+  the earlier no-wrapper decision; reading another application's capture folder remains excluded from the product.
 
 ## Decisions made in this plan (reversible)
 
@@ -111,5 +112,54 @@ lines record it. Consequences for the tasks below:
 - Verification 2026-11-03: `scripts/test.sh` → `Test run with 368 tests in 40 suites passed`; the six shots per variant were
   looked at.
 - Remaining: V7 of the v3 plan (shots, owner eye approval); the page itself is V6, done 2026-11-04 on `claude/reins-design-v3`.
+
+
+## Claude quota freshness correction — 2026-11-05
+
+Scope: the owner approved replacing cache-only Claude readings with an independent status-line collector after the
+live cache reported 62% used (38% left) while status-line observations reported 76% used (24% left), for the same reset.
+Requirements: [Limits sources in the spec](../specs/2026-11-02-reins.md#limits).
+
+- [x] Add native `ReinsStatusline` executable and bounded quota-only snapshots in `REINS_HOME/claude-limits`.
+- [x] Preserve the original command and exact stdin/stdout/stderr/exit status; explicit installation uses `FileEdit` and
+  journal Undo. Capture failures cannot prevent the original command from running.
+- [x] Read the newest source, bind snapshots to the configured account hash, and prevent idle sessions lowering recent
+  usage within the same reset window. Keep the existing cache fallback and make its source/age explicit.
+- [x] Bundle and sign the helper with the app. Installation stays explicit; launch never edits Claude settings.
+- [x] Focused regression tests, collector end-to-end tests, full Swift suite, independent change review and signed build.
+- [x] Install on this machine within the owner's authorization, verify live capture, relaunch the fixed dev app.
+
+Implementation: [reader/collector](../../Sources/ReinsCore/LimitsClaudeStatusline.swift),
+[setup](../../Sources/ReinsCore/StatuslineSetup.swift), [helper entry](../../Sources/ReinsStatusline/main.swift),
+[regressions](../../Tests/ReinsCoreTests/LimitsStatuslineTests.swift), [end-to-end check](../../scripts/test-statusline.sh).
+
+Commands:
+
+- `scripts/test.sh --filter 'Limits|Roots'`
+- `bash scripts/test-statusline.sh` (synthetic homes, including shell quotes, oversized input and early pipe closure)
+- `scripts/build-app.sh`
+- `build/Reins.app/Contents/MacOS/ReinsStatusline --install` installs the native collector under `REINS_HOME/bin` and
+  wraps the current user-level Claude status line. It prints the exact `--undo <journal-id>` command. Undo refuses to
+  overwrite settings edited since installation; the inactive executable can remain after Undo.
+
+Verification on 2026-11-05:
+
+- `scripts/test.sh`: **412 tests in 44 suites passed**. Regression covers the reported old-cache discrepancy, independent
+  optional windows, fractional percentages, newer-cache precedence, account changes, malformed inputs and managed-dir links.
+- `bash scripts/test-statusline.sh`: **PASS** for exact streams/exit, input cap, early pipe close, process-group cancellation,
+  repeat install, Undo and conflict refusal. Every write in these checks stayed in a synthetic home.
+- Three independent review lanes (correctness, tests, security) found and then rechecked fixes for partial-window loss,
+  orphaned delegates and managed-directory escape. Gitleaks and Semgrep found no remaining issue in the final rechecked files.
+- Signed build: `minos 15.0`, `codesign --verify --deep --strict` passed. Built from a disposable archive of the running
+  `claude/reins-agents` revision `f1b3882` with only this fix applied, to retain that dev track without editing its checkout.
+  Two pre-existing non-Sendable conversion warnings in `AgentsDraft.swift:157` remain outside this repair.
+- Native synthetic shot harness passed in light/dark; inspected the Claude detail showing 24% left and the status-line
+  source. Artifacts are outside git in `~/scratch/spacevibe-reins/limits-live/shots/`; these are not live-user screenshots.
+- Explicit installation preserved the original status-line command exactly and every other settings value. Real Claude
+  sessions populated independent Reins snapshots; a read-only engine probe selected `.claudeStatusline`, replacing the
+  old cache. The fixed signed app was relaunched against the real roots.
+
+Checkout: main. No push or release. The development bundle is `~/scratch/spacevibe-reins/limits-live/Reins.app`.
+Existing L5 owner eye acceptance remains separate from this correctness repair.
 
 `/goal` Build Reins Limits per docs/specs/2026-11-02-reins.md: complete docs/plans/2026-11-03-reins-limits.md tasks L3 to L5 in placement B (recorded under L2), so that AC10 holds in scripts/test.sh and the surface matches ~/scratch/spacevibe-reins/limits/ in light and dark shots; stop and report if the shell owner has not agreed to the sidebar and component edits, and never send a request, read a credential, start a CLI, push or release.

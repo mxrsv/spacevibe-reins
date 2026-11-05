@@ -53,6 +53,7 @@ echo "==> assembling ${APP_BUNDLE}"
 rm -rf "${APP_BUNDLE}"
 mkdir -p "${APP_BUNDLE}/Contents/MacOS" "${APP_BUNDLE}/Contents/Resources" "${APP_BUNDLE}/Contents/Frameworks"
 cp "${BINARY}" "${APP_BUNDLE}/Contents/MacOS/${EXECUTABLE_NAME}"
+cp "${BINARY_DIR}/ReinsStatusline" "${APP_BUNDLE}/Contents/MacOS/ReinsStatusline"
 cp Resources/Info.plist "${APP_BUNDLE}/Contents/Info.plist"
 if [[ -n "${UPDATE_FEED_URL}" ]]; then
   plutil -insert SUFeedURL -string "${UPDATE_FEED_URL}" "${APP_BUNDLE}/Contents/Info.plist"
@@ -100,6 +101,7 @@ for component in \
   "${SPARKLE_FRAMEWORK}"; do
   codesign --force --preserve-metadata=identifier,entitlements "${SIGN_ARGS[@]}" "${component}"
 done
+codesign --force "${SIGN_ARGS[@]}" "${APP_BUNDLE}/Contents/MacOS/ReinsStatusline"
 codesign --force "${SIGN_ARGS[@]}" "${APP_BUNDLE}"
 codesign --verify --deep --strict --verbose=2 "${APP_BUNDLE}"
 

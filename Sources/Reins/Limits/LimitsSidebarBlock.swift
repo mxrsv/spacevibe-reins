@@ -58,8 +58,8 @@ struct LimitsSidebarBlock: View {
         let name = LimitsWording.cliName(cli)
         if let limits = model.limits(for: cli) {
             switch LimitsWording.summary(limits, now: now) {
-            case .share(let left, let tone, _):
-                LimitSidebarTile(cli: cli, name: name, value: "\(left)% left", tone: tone.tile)
+            case .share(let left, let tone, let stale):
+                LimitSidebarTile(cli: cli, name: name, value: "\(left)% left\(stale ? " · old" : "")", tone: tone.tile)
             case .unknown:
                 LimitSidebarTile(cli: cli, name: name, value: "unknown", isMuted: true)
             case .state(let text):

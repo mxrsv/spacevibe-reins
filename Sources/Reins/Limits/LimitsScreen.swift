@@ -158,10 +158,10 @@ private struct WindowFacts: View {
     /// Where the reading comes from, and for Claude Code (whose cache only moves when it fetches usage) how to refresh it.
     @ViewBuilder
     private var source: some View {
-        if let source = LimitsWording.source(limits.cli) {
+        if let source = LimitsWording.source(limits) {
             HStack(spacing: Space.s12) {
                 Text(source.title).reinsText(.caption, tone: .secondary).help(source.body)
-                if limits.cli == .claude { CopyUsageButton() }
+                if limits.cli == .claude && limits.source != .claudeStatusline { CopyUsageButton() }
             }
         }
     }

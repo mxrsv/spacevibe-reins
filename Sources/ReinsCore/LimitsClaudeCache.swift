@@ -25,7 +25,7 @@ enum LimitsClaudeCache {
         guard let cache = document.root.limitsMember("cachedUsageUtilization") else {
             return CLILimits(cli: .claude, state: .notRecorded)
         }
-        return CLILimits(cli: .claude, state: state(of: cache))
+        return CLILimits(cli: .claude, state: state(of: cache), source: .claudeCache)
     }
 
     static func state(of cache: JSONValue) -> CLILimits.State {
