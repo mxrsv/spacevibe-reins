@@ -49,10 +49,12 @@ Owner: "UI trong app chưa rõ ràng, chưa có nhận diện riêng, chưa có 
 | D36 | Group by kinds: None (default), Status, CLI presence, Owner, Rank tier; plus Kind for the All tab. | "ok approve" |
 | D37 | Filter UI as in Linear: a `Filter` button opens a two-level menu (field, then value); each pick becomes a removable chip in a row under the tabs that exists only while a filter is active. | "ok approve" |
 | D38 | Jobs in priority order, a higher one wins a conflict: 1 clean up, 2 balance the two CLIs, 3 control (hooks, permissions), 4 watch (usage, sessions). | "q1-q5 approve" (Q1) |
-| D39 | Vocabulary: `CLI` = Claude Code and Codex; `Agents` = subagents only; a CLI is never called an agent; one word per thing (Skill, Subagent, Hook, Rule, Window). | "q1-q5 approve" (Q2, option a) |
+| D39 | UNDER REVIEW after D43 (the page is now called Agents). Vocabulary: `CLI` = Claude Code and Codex; `Agents` = subagents only; a CLI is never called an agent; one word per thing (Skill, Subagent, Hook, Rule, Window). | "q1-q5 approve" (Q2, option a) |
 | D40 | One colour, one meaning: green, amber and red are exclusive to state; category colours (Skills, Agents, Hooks) must leave those hue families (Agents and Hooks change; exact hues picked by eye in the mock); CLI identity and the accent also stay out of them. | "q1-q5 approve" (Q3, option A) |
 | D41 | Detection and action sit together: a flagged row offers its fix within one hover or click; writes have Undo; `Stop` is the named exception with a confirmation. | "q1-q5 approve" (Q4) |
 | D42 | Principles live in two places: shared UX1-UX4 in `~/.claude/rules/quality/ux.md` and Reins specifics in a "UX principles" section of `PRODUCT.md`; briefs to agents reference them, and acceptance criteria check them. | "q1-q5 approve" (Q5, option d) |
+| D43 | The Loadout page is renamed `Agents` and also holds Rules, to keep the app compact. The sidebar pages become Agents, Activity, Limits (Settings stays separate). Collides with D39 ("Agents = subagents only; a CLI is never called an agent"): the vocabulary must be settled again. | "tôi nghĩ Loadout nên đổi thành Agents trong này sẽ bao gồm cả Rule luôn cho gọn" |
+| D44 | Each category is to get its own layout, distinctive and easier to market, instead of one list-plus-pane skeleton cloned from Loadout; the Opus research is to say what "category" and "layout" cover. Loadout's approved layout C stays the baseline until the research is read. | "tôi đang muốn mỗi category có một layout khác nhau, chúng sẽ đặc sắc và dễ marketing hơn" |
 
 ## Facts found (not decisions)
 
