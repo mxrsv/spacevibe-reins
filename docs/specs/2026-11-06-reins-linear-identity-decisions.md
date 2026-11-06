@@ -27,6 +27,9 @@ Owner: "UI trong app chưa rõ ràng, chưa có nhận diện riêng, chưa có 
 | D14 | App icon and the landing page (`site/`) follow later, not in this track, after the app is approved; the landing waits for the app's language already (see `2026-11-05-reins-landing.md`). | "ok" (round 4, recommendation accepted) |
 | D15 | Plan v4 is replaced by a new Linear-based spec; only parts still right are kept (contrast test, sunken segmented track). | "aprove" (round 3, Q6, option B) |
 | D16 | Process: at least 3 mock directions in a browser on the same sample screen (Loadout), light and dark; owner picks by eye; only then tokens and components in Swift. | "aprove" (round 3, Q7) |
+| D17 | Layout of mock direction C (compact list left, permanent detail pane right) is the chosen layout. | "option C layout khá tốt" |
+| D18 | The list's progress cell (Claude/Codex counts and bars at the right of each row) is redesigned; the current stacked count-over-bar cell is rejected. | "phần progress đang có vấn đề UI được tốt, cần có hướng tốt hơn cho phần UI vùng tôi khoanh đỏ" |
+| D19 | Icons must not be taken straight from Linear; Reins uses its own verdict icon set and a different icon family. This refines D5 and D9 (recolourable and thin-stroke stay; Linear's own status glyphs go). | "icon không được lấy y nguyên của linear, nên đổi icon loại khác" |
 
 ## Facts found (not decisions)
 
