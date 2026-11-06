@@ -30,6 +30,7 @@ Owner: "UI trong app chưa rõ ràng, chưa có nhận diện riêng, chưa có 
 | D17 | Layout of mock direction C (compact list left, permanent detail pane right) is the chosen layout. | "option C layout khá tốt" |
 | D18 | The list's progress cell (Claude/Codex counts and bars at the right of each row) is redesigned; the current stacked count-over-bar cell is rejected. | "phần progress đang có vấn đề UI được tốt, cần có hướng tốt hơn cho phần UI vùng tôi khoanh đỏ" |
 | D19 | Icons must not be taken straight from Linear; Reins uses its own verdict icon set and a different icon family. This refines D5 and D9 (recolourable and thin-stroke stay; Linear's own status glyphs go). | "icon không được lấy y nguyên của linear, nên đổi icon loại khác" |
+| D20 | Icon colour is used only to tell categories apart (Skills, Agents, Hooks); sidebar icons are white (the foreground colour; ink in light mode); list items use one identical grey icon each. This narrows D5 and D8: the per-item verdict icon leaves the list and the verdict shows in the detail pane. | "chỉ dùng màu icon khác nhau cho các danh mục như agent, skill thôi, còn sidebar icon dùng màu white đi, còn các item thì dùng màu hơi xám và icon giống nhau đi" |
 
 ## Facts found (not decisions)
 
