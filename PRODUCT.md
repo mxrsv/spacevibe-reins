@@ -24,6 +24,13 @@ Generic AI dashboards, neon on black, gradients, card grids of icon + title + te
 - Cost is an estimate and says so; a model with no price reads as not measured, never as 0.
 - Nothing is executed: a hook is shown and written, never run by the app.
 
+## UX principles
+Rules under the look; global ones are `~/.claude/rules/quality/ux.md` (UX1-UX4). Reins applies them like this:
+- **Jobs, in priority order; a higher one wins a conflict.** 1. Clean up: find what is never used and remove it. 2. Balance the two CLIs: add what one lacks. 3. Control: which hook fires on which event, which permission is open. 4. Watch: usage left, sessions running.
+- **Vocabulary, one word one meaning.** `CLI` is Claude Code or Codex (Gemini CLI where it is shown). `Agents` are subagents only; a CLI is never called an agent. `Skill`, `Subagent`, `Hook`, `Rule` and `Window` (a usage limit window) name one thing each; never a generic "item" in a label.
+- **Colour, one meaning.** Green, amber and red are reserved for state (fine, needs attention, danger). Category colours (Skills, Agents, Hooks), CLI identity (Claude clay, Codex mono) and the accent (blue) use other hue families and never reuse a state colour.
+- **Flow: detection and action sit together.** A problem shown in a row (never ran, dead) offers its fix in the same row within one hover or click (the warning popover with `Remove`). Every write has Undo; `Stop` in Activity is the one write without undo and names the pid and the consequence in a confirmation.
+
 ## Accessibility and constraints
 Keyboard navigation, visible focus, WCAG AA, reduced motion. Works offline, no account, no telemetry. Writes go only to the configuration and instruction files of Claude Code and Codex (settings and permissions, hooks, MCP servers, model, skills, subagents, `CLAUDE.md` and `AGENTS.md`), plus the app's own data folder; each write to agent configuration keeps a restorable copy. Plugin-owned items and managed settings are read-only. Secret values are never displayed or logged; one can be replaced without being shown.
 

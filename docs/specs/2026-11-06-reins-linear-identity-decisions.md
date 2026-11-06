@@ -48,6 +48,11 @@ Owner: "UI trong app chưa rõ ràng, chưa có nhận diện riêng, chưa có 
 | D35 | Filter kinds: Status (Never ran, Dead, Not measured, Heavily used), CLI (in Claude, in Codex, in both, in one only), Owner (mine, plugin), Rank (D34), Last ran (today, this week, over 30 days ago). Scope and Added are left for later. | "tôi muốn có nhiều kiểu filter hay group hơn" + "ok approve" |
 | D36 | Group by kinds: None (default), Status, CLI presence, Owner, Rank tier; plus Kind for the All tab. | "ok approve" |
 | D37 | Filter UI as in Linear: a `Filter` button opens a two-level menu (field, then value); each pick becomes a removable chip in a row under the tabs that exists only while a filter is active. | "ok approve" |
+| D38 | Jobs in priority order, a higher one wins a conflict: 1 clean up, 2 balance the two CLIs, 3 control (hooks, permissions), 4 watch (usage, sessions). | "q1-q5 approve" (Q1) |
+| D39 | Vocabulary: `CLI` = Claude Code and Codex; `Agents` = subagents only; a CLI is never called an agent; one word per thing (Skill, Subagent, Hook, Rule, Window). | "q1-q5 approve" (Q2, option a) |
+| D40 | One colour, one meaning: green, amber and red are exclusive to state; category colours (Skills, Agents, Hooks) must leave those hue families (Agents and Hooks change; exact hues picked by eye in the mock); CLI identity and the accent also stay out of them. | "q1-q5 approve" (Q3, option A) |
+| D41 | Detection and action sit together: a flagged row offers its fix within one hover or click; writes have Undo; `Stop` is the named exception with a confirmation. | "q1-q5 approve" (Q4) |
+| D42 | Principles live in two places: shared UX1-UX4 in `~/.claude/rules/quality/ux.md` and Reins specifics in a "UX principles" section of `PRODUCT.md`; briefs to agents reference them, and acceptance criteria check them. | "q1-q5 approve" (Q5, option d) |
 
 ## Facts found (not decisions)
 
