@@ -16,7 +16,7 @@ Stack: SwiftPM, swift-tools 6.0, Swift 5 language mode, macOS 15+, Command Line 
 | `scripts/test-update.sh`      | End-to-end update test through a feed on 127.0.0.1: a wrong signature is refused, the right one installs. Needs the Developer ID identity and no running Reins |
 | `scripts/generate-update-feed.sh <dir> <https-prefix>` | Signed `appcast.xml` next to notarized, stapled DMGs. Publishes nothing |
 | `scripts/release.sh --prepare \| --notarize` | One committed revision as a signed DMG; `--notarize` adds notarization, stapling, `appcast.xml` and `SHA256SUMS` in `build/distribution/`. Publishes nothing (B9) |
-| `node scripts/generate-icons.mjs <icons.json>` | Rewrites `Sources/Reins/Components/ReinsIconData.swift` from `@iconify-json/solar` (`npm pack` it into a scratch folder; never commit it). Rerun gives no diff |
+| `node scripts/generate-icons.mjs <icons.json>` | Rewrites `Sources/Reins/Components/ReinsIconData.swift` (sidebar) from `@iconify-json/solar`, or `PageIconData.swift` (pages) from `@iconify-json/tabler` (`npm pack` it into a scratch folder; never commit it). Rerun gives no diff |
 | `node scripts/make-golden.mjs [section]` | Rewrites `Tests/ReinsCoreTests/Fixtures` (synthetic HOME, manifest, `golden/*.json`, `zst/`) from the Node core. Rerun gives no diff |
 
 Layout: `Sources/CZstd` (vendored decompress-only zstd, see its README), `Sources/ReinsCore` (the engine; Foundation only, no UI import), `Sources/Reins` (the app), `Tests/ReinsCoreTests` (swift-testing; `Support/` has `TempHome` and `FixtureHome`), `Tests/ReinsTests` (app logic that needs no window).

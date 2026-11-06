@@ -12,6 +12,7 @@ final class DemoLoadoutTab: ReinsTab {
     let id = "loadout"
     let title = "Loadout"
     let icon = ReinsGlyph.loadout
+    let pageIcon = PageGlyph.loadout
     var badge: TabBadge? { TabBadge(value: 22) }
     var hints: [KeyHint] { [KeyHint(keys: "Tab", label: "Row actions")] }
     var paletteItems: [PaletteEntry] {
@@ -30,6 +31,7 @@ final class DemoRulesTab: ReinsTab {
     let id = "rules"
     let title = "Rules"
     let icon = ReinsGlyph.rules
+    let pageIcon = PageGlyph.permissions
     var badge: TabBadge? { TabBadge(value: 11) }
     var hints: [KeyHint] { [KeyHint(keys: "Space", label: "Set Allow, Ask or Deny")] }
     var content: AnyView { AnyView(DemoRulesScreen()) }
@@ -40,6 +42,7 @@ final class DemoActivityTab: ReinsTab {
     let id = "activity"
     let title = "Activity"
     let icon = ReinsGlyph.activity
+    let pageIcon = PageGlyph.activity
     var badge: TabBadge? { TabBadge(value: 2, alert: true, spoken: "2 sessions running") }
     var hints: [KeyHint] { [KeyHint(keys: "Tab", label: "Why a state is what it is")] }
     var content: AnyView { AnyView(DemoActivityScreen()) }

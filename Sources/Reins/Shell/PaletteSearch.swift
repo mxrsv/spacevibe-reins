@@ -21,7 +21,7 @@ enum PaletteSearch {
             PaletteEntry(
                 id: "goto.\(tab.id)",
                 title: tab.title,
-                icon: tab.icon,
+                icon: tab.pageIcon,
                 trailing: "\u{2318}\(index + 1)",
                 keywords: ["go to"]
             ) { shell.select(tab.id) }

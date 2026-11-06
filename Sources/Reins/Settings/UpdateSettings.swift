@@ -24,7 +24,7 @@ struct UpdateSettings: View {
                 if case .unavailable(let reason) = updates.status {
                     RaisedBlock {
                         HStack(alignment: .top, spacing: Space.s8) {
-                            ReinsIcon(.info).foregroundStyle(TextTone.secondary.color)
+                            PageIcon(.info).foregroundStyle(TextTone.secondary.color)
                             Text(reason).reinsText(.body, tone: .secondary).fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -34,7 +34,7 @@ struct UpdateSettings: View {
 
             GroupedList {
                 Row { RowText(SettingsWording.automaticChecks, subtitle: SettingsWording.automaticChecksDetail) }
-                    .lead { ReinsIcon(.refresh, size: .row) }
+                    .lead { PageIcon(.refresh, size: .row) }
                     .cells {
                         ReinsSwitch(label: SettingsWording.automaticChecks, isOn: $updates.automaticChecks)
                             .disabled(!updates.isRunning)

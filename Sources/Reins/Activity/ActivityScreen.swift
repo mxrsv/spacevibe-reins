@@ -71,7 +71,7 @@ private struct LoadingMark: View {
 
     var body: some View {
         if isShotRendering {
-            ReinsIcon(.refresh).foregroundStyle(TextTone.tertiary.color)
+            PageIcon(.refresh).foregroundStyle(TextTone.tertiary.color)
         } else {
             ProgressView().controlSize(.small)
         }

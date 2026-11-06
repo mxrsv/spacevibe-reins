@@ -8,6 +8,7 @@ private final class ItemsTab: ReinsTab {
     let id = "stub"
     let title = "Stub"
     let icon = ReinsGlyph.info
+    let pageIcon = PageGlyph.info
     let paletteItems: [PaletteEntry]
     init(items: [PaletteEntry]) { paletteItems = items }
     var content: AnyView { AnyView(EmptyView()) }

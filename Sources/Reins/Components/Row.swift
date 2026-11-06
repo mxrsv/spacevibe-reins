@@ -8,7 +8,7 @@ import SwiftUI
 /// fill that block with radius 8, and the card hides the dividers on both sides of it.
 ///
 ///     Row { RowText("ponytail", subtitle: "Pick the laziest solution") }
-///         .lead { ReinsIcon(.skill, size: .row) }
+///         .lead { PageIcon(.skill, size: .row) }
 ///         .cells { UsageCell(cli: .claude, model: .counted(runs: 142), max: 142) }
 ///         .actions { RowActionButton(title: "Remove", icon: .trash, iconOnly: true) { ... } }
 ///

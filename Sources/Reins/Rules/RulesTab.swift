@@ -9,6 +9,7 @@ final class RulesTab: ReinsTab {
     let id = RulesTab.tabID
     let title = "Rules"
     let icon = ReinsGlyph.rules
+    let pageIcon = PageGlyph.permissions
     let model: RulesModel
 
     init(env: AppEnvironment? = nil) { model = RulesModel(env: env ?? .shared) }

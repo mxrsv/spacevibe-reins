@@ -1,6 +1,28 @@
 import ReinsCore
 import SwiftUI
 
+/// The fill a chosen segment takes instead of the accent (spec v4, Segmented control): a verdict picker's tone (Allow,
+/// Ask, Deny; Allow, Prompt, Forbidden), or `warn` for a risky option (Never, Full access).
+enum SegmentTone {
+    case success, warn, danger
+
+    var fill: Color {
+        switch self {
+        case .success: Palette.success
+        case .warn: Palette.warn
+        case .danger: Palette.danger
+        }
+    }
+
+    var text: Color {
+        switch self {
+        case .success: Palette.onSuccess
+        case .warn: Palette.onWarn
+        case .danger: Palette.onDanger
+        }
+    }
+}
+
 struct SegmentOption<Value: Hashable>: Identifiable {
     let value: Value
     let title: String
@@ -9,29 +31,35 @@ struct SegmentOption<Value: Hashable>: Identifiable {
     var cli: InventoryCLI?
     /// Picks this segment from anywhere in the window while the control is enabled (a hidden tab is disabled).
     var shortcut: KeyboardShortcut?
+    /// The fill while chosen, instead of the accent.
+    var tone: SegmentTone?
 
     var id: Value { value }
 
-    init(_ title: String, value: Value, count: Int? = nil, cli: InventoryCLI? = nil, shortcut: KeyboardShortcut? = nil) {
+    init(_ title: String, value: Value, count: Int? = nil, cli: InventoryCLI? = nil, shortcut: KeyboardShortcut? = nil,
+         tone: SegmentTone? = nil) {
         self.title = title
         self.value = value
         self.count = count
         self.cli = cli
         self.shortcut = shortcut
+        self.tone = tone
     }
 }
 
 /// A one-of-N switch (Allow / Ask / Deny, Shared / Local). Always has a selection. Left and Right arrows move it while a
-/// segment has focus. A 28 pt frame with 24 pt segments inside it, no outline: the frame takes the control ground's fill and
-/// the selected segment the `selection` tint. The selected segment is semibold, and every segment reserves its semibold
-/// width so the control never changes width.
+/// segment has focus. A 28 pt sunken track (spec v4: the control ground with an inner shadow, `segmentTrack` over it in
+/// dark) with 24 pt segments inside it. The chosen segment is a raised block in the accent with white text, or in its
+/// option's tone (`SegmentTone`), semibold; every segment reserves its semibold width so the control never changes width.
 struct SegmentedControl<Value: Hashable>: View {
     let label: String
     let options: [SegmentOption<Value>]
     @Binding var selection: Value
 
     @FocusState private var focused: Value?
+    @State private var hovered: Value?
     @Environment(\.controlGround) private var ground
+    @Environment(\.forcedControlState) private var forced
 
     var body: some View {
         let frame = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
@@ -42,16 +70,26 @@ struct SegmentedControl<Value: Hashable>: View {
         }
         .padding(Space.s2)
         .frame(height: Metrics.controlHeight)
-        .background(frame.fill(ground.fill))
+        .background {
+            ZStack {
+                frame.fill(ground.fill)
+                frame.fill(Palette.segmentTrack)
+                InnerShadow(shape: frame, color: Palette.segmentShadow)
+            }
+        }
         .onKeyPress(.leftArrow) { move(-1) }
         .onKeyPress(.rightArrow) { move(1) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(label)
     }
 
+    /// The gallery's forced state lands on the first segment that is not chosen, as in the mock's sheet.
+    private var forcedValue: Value? { options.first { $0.value != selection }?.value }
+
     private func segment(_ option: SegmentOption<Value>) -> some View {
         let isOn = option.value == selection
-        let shape = RoundedRectangle(cornerRadius: Metrics.segmentRadius, style: .continuous)
+        let isHovered = !isOn && (hovered == option.value || (forced == .hover && forcedValue == option.value))
+        let isFocused = focused == option.value || (forced == .focus && forcedValue == option.value)
         return Button {
             selection = option.value
         } label: {
@@ -61,19 +99,30 @@ struct SegmentedControl<Value: Hashable>: View {
                 Text(option.title)
                     .reinsText(.bodyStrong)
                     .hidden()
-                    .overlay { Text(option.title).reinsText(isOn ? .bodyStrong : .body, tone: isOn ? .primary : .secondary) }
+                    .overlay {
+                        Text(option.title)
+                            .reinsText(isOn ? .bodyStrong : .body)
+                            .foregroundStyle(isOn ? (option.tone?.text ?? Palette.onAccent) : (isHovered ? Palette.text : Palette.textSecondary))
+                    }
                 if let count = option.count { Count(count) }
             }
             .padding(.horizontal, Space.s8)
             .frame(height: Metrics.segmentHeight)
-            .background(shape.fill(isOn ? Palette.selection : .clear))
-            .contentShape(shape)
+            .background {
+                if isOn {
+                    ControlBlock(look: .segment(option.tone?.fill ?? Palette.accentSolid), cornerRadius: Metrics.segmentRadius)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: Metrics.segmentRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .keyboardShortcut(option.shortcut)
         .focused($focused, equals: option.value)
         .focusEffectDisabled()
-        .focusRing(focused == option.value, cornerRadius: Metrics.segmentRadius)
+        .focusRing(isFocused, cornerRadius: Metrics.segmentRadius)
+        .onHover { inside in
+            if inside { hovered = option.value } else if hovered == option.value { hovered = nil }
+        }
         .accessibilityAddTraits(isOn ? .isSelected : [])
         .accessibilityLabel(option.count.map { "\(option.title), \($0)" } ?? option.title)
     }
@@ -115,7 +164,13 @@ struct SegmentReadout: View {
         }
         .padding(Space.s2)
         .frame(height: Metrics.controlHeight)
-        .background(frame.fill(ground.fill))
+        .background {
+            ZStack {
+                frame.fill(ground.fill)
+                frame.fill(Palette.segmentTrack)
+                InnerShadow(shape: frame, color: Palette.segmentShadow)
+            }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityValue(selected ?? "none")

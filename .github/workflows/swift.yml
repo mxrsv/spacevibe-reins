@@ -49,7 +49,7 @@ jobs:
       # Synthetic home only (scripts/dev-fixture.sh): nothing real exists on this machine.
       - name: Screenshots
         run: |
-          for screen in shell loadout rules activity; do
+          for screen in shell loadout rules activity settings; do
             REINS_SHOT_SCREEN=$screen scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/$screen"
           done
           for variant in typical edge; do

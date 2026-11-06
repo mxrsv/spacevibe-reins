@@ -9,20 +9,20 @@ struct ToastView: View {
     var body: some View {
         HStack(spacing: Space.s12) {
             if toast.tone == .danger {
-                ReinsIcon(.warning)
+                PageIcon(.warning)
             }
             Text(toast.message).reinsText(.body)
             if let action = toast.action {
                 Button(action: run) {
                     HStack(spacing: Space.s6) {
-                        ReinsIcon(action.icon)
+                        PageIcon(action.icon)
                         Text(action.title)
                     }
                     .reinsText(.bodyStrong)
                 }
                 .buttonStyle(.reins(.inverse))
             } else {
-                Button(action: dismiss) { ReinsIcon(.close) }
+                Button(action: dismiss) { PageIcon(.close) }
                     .buttonStyle(.reins(.inverse))
                     .accessibilityLabel("Dismiss")
             }

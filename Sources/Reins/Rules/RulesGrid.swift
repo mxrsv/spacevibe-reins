@@ -59,7 +59,7 @@ private struct RulesClaudeCell: View {
         HStack(spacing: Space.s8) {
             SegmentedControl(
                 label: "\(cell.label) for Claude Code",
-                options: RulesWording.verdicts.map { SegmentOption(RulesWording.title($0), value: Optional($0)) },
+                options: RulesWording.verdicts.map { SegmentOption(RulesWording.title($0), value: Optional($0), tone: RulesWording.segmentTone($0)) },
                 selection: Binding(get: { verdict }, set: { if let picked = $0 { model.requestSet(cell.capability, to: picked) } })
             )
             .disabled(!isEditable)

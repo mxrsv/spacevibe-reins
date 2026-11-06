@@ -23,7 +23,7 @@ struct ActivityFailureRow: View {
         }
         .lead {
             if isHook {
-                ReinsIcon(.hook, size: .row, label: "Hook")
+                PageIcon(.hook, size: .row, label: "Hook")
             } else {
                 CLIDot(failure.cli, decorative: true)
             }

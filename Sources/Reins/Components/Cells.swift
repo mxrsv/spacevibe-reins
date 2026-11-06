@@ -45,7 +45,7 @@ struct ReadOnlyMark: View {
     let reason: String
 
     var body: some View {
-        ReinsIcon(.lock, label: reason)
+        PageIcon(.lock, label: reason)
             .foregroundStyle(TextTone.tertiary.color)
             .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
             .help(reason)

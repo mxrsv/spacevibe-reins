@@ -16,7 +16,7 @@ struct CLISummaryBar: View {
             CLIMark(cli, size: .small)
             Text(cli.label).reinsText(.bodyStrong, tone: .primary)
             HStack(spacing: Space.s6) {
-                if warn { ReinsIcon(.warning, size: .inline, ink: TextTone.warn.color) }
+                if warn { PageIcon(.warning, size: .inline, ink: TextTone.warn.color) }
                 Text(message).reinsText(.body, tone: warn ? .warn : .secondary).lineLimit(1).truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

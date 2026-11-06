@@ -5,8 +5,8 @@ import SwiftUI
 /// focus is taken and no Screen Recording permission is needed. Then the process exits.
 ///
 /// `REINS_SHOT_SCREEN` picks the run, and nothing else does:
-/// - `shell` (the default): the demo shell states and the gallery, `<name>-<dark|light>.png`, 1440x900 points at 2x for the
-///   shell states and the gallery at its full height. Synthetic demo data only; it never touches the saved appearance choice
+/// - `shell` (the default): the demo shell states, the gallery and the v4 button sheet (`gallery-buttons`),
+///   `<name>-<dark|light>.png`, 1440x900 points at 2x for the shell states and the gallery and sheet at their full height. Synthetic demo data only; it never touches the saved appearance choice
 ///   or the real config folders.
 /// - `settings`: Settings on the demo shell in every update state and at the Large font size, and the demo tabs at Large
 ///   (`SettingsShots`). Synthetic data only, like `shell`.
@@ -57,6 +57,7 @@ enum ShotRenderer {
             try write(shell(choice) { _, toasts in toasts.show("Removed ponytail", undo: {}) }, name: "shell-toast", choice: choice, to: directory)
             try write(shell(choice) { _, toasts in toasts.show("Reins 0.2.0 is available", action: UpdateController.viewAction {}) }, name: "shell-toast-update", choice: choice, to: directory)
             try write(gallery(choice), name: "gallery", choice: choice, to: directory, fullHeight: true)
+            try write(buttonSheet(choice), name: "gallery-buttons", choice: choice, to: directory, fullHeight: true)
         }
     }
 
@@ -82,6 +83,16 @@ enum ShotRenderer {
         .frame(width: size.width, alignment: .topLeading)
         .background(Palette.background)
         .reinsRoot(shell: shell, toasts: ToastCenter(announce: false))
+    }
+
+    /// The v4 button sheet alone, on the well, to set beside `mocks/agents/controls.html?icons=tabler&buttons=a` (DL10).
+    private static func buttonSheet(_ choice: AppearanceChoice) -> some View {
+        let shell = ShellModel(tabs: DemoTabs.make(), appearance: AppearanceStore(forced: choice))
+        return ButtonSheet()
+            .padding(Metrics.pagePadding)
+            .frame(width: size.width, alignment: .topLeading)
+            .background(Palette.well)
+            .reinsRoot(shell: shell, toasts: ToastCenter(announce: false))
     }
 
     static func write<V: View>(_ view: V, name: String, choice: AppearanceChoice, to directory: URL, fullHeight: Bool = false) throws {
