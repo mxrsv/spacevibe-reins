@@ -1,6 +1,6 @@
 # Reins design language v5
 
-Status: draft for the owner's review, 2026-11-06. Decisions: [the Linear identity ledger](2026-11-06-reins-linear-identity-decisions.md) (D1-D37, all settled; cited below as `D<n>`). Product truth: [PRODUCT.md](../../PRODUCT.md). Current rulebook: [DESIGN-LANGUAGE.md](../DESIGN-LANGUAGE.md). Boundary rules: [AGENTS.md](../../AGENTS.md).
+Status: draft for the owner's review, 2026-11-06. Decisions: [the Linear identity ledger](2026-11-06-reins-linear-identity-decisions.md) (D1-D42, all settled; cited below as `D<n>`). Product truth: [PRODUCT.md](../../PRODUCT.md). Current rulebook: [DESIGN-LANGUAGE.md](../DESIGN-LANGUAGE.md). Boundary rules: [AGENTS.md](../../AGENTS.md).
 
 Reference mock (outside git, F4): `~/scratch/spacevibe-reins/linear-directions/c3/index.html`, the Loadout page the owner approved by eye on 2026-11-06. Values below were read from its CSS; where the mock and a ledger line disagree, the ledger wins (see "Mock gaps").
 
@@ -29,7 +29,7 @@ Reins looks plain and has no identity of its own (D1 problem statement). v5 rest
 | --- | --- | --- |
 | V5-R9 | Icons are single-colour and recolourable (`currentColor`), drawn thin-stroke. Linear's own glyphs are not copied. | D5, D19 |
 | V5-R10 | Category icons (tabs, row icons, group headers, detail-pane head) use MingCute Line: Skills `flash-line`, Agents `robot-line`, Hooks `fish-symbol-line`, All `layers-line`. | D32 |
-| V5-R11 | Category colour: Skills violet, Agents teal, Hooks amber, All neutral foreground (values in the token table). The colour tells categories apart and nothing else. Entity-kind colour for rules and CLIs is not used in this spec. | D8, D20, D29 |
+| V5-R11 | Category colour: Skills violet, All neutral foreground; Agents and Hooks take hues outside green, amber, red, the accent family and the CLI identity colours (V5-R46). Their values are pending the eye pick (token table); the earlier teal and amber collided with state colours. The colour tells categories apart and nothing else. Entity-kind colour for rules and CLIs is not used in this spec. | D8, D20, D29, D40 |
 | V5-R12 | Sidebar icons use the foreground colour (white in dark, ink in light), 80% opacity at rest, 100% on hover and when current. The sidebar icon set is unchanged (Solar), so Solar stays for the sidebar only. | D20, D32 |
 | V5-R13 | Every list item shows the same grey icon (`fg3`) for its category: no per-item or per-verdict icon in the list. | D20 |
 | V5-R14 | Reins draws its own verdict icon set (hexagon badges: heavily used, used, never ran, dead, not measured). It appears only in the detail pane's verdict panel and in the Status filter submenu rows, never in a list row. The warning slot uses a warning glyph (triangle for Never ran and Dead, clock for Not measured). | D9, D19, D20, D24 |
@@ -77,6 +77,18 @@ Reins looks plain and has no identity of its own (D1 problem statement). v5 rest
 | V5-R41 | Visible focus on every control: 2 pt accent ring (inset on rows, tabs and logos; 2 pt offset on buttons). | D11 |
 | V5-R42 | Reduced motion removes the 120 ms transitions, the popover rise and the logo-badge pop. Nothing animates beyond fades and a short transform otherwise. | D12 |
 | V5-R43 | Colour never carries state alone: verdicts have an icon and a sentence; a logo's lit state has a badge as well as opacity; every logo toggle, warning slot and tab has an accessible name and value (for example "Codex: not in Codex, press to add"). | D21, D31 |
+
+### UX principles
+
+Rules under the look (`~/.claude/rules/quality/ux.md` UX1-UX4 and the "UX principles" section of [PRODUCT.md](../../PRODUCT.md)). They are checked by V5-A15 to V5-A17.
+
+| ID | Requirement | Ledger |
+| --- | --- | --- |
+| V5-R44 | Jobs, in priority order: 1 clean up, 2 balance the two CLIs, 3 control (hooks, permissions), 4 watch (usage, sessions). When two collide, the higher job wins. Every UI decision in this track names the job it serves; Loadout serves jobs 1 and 2. | D38 |
+| V5-R45 | Vocabulary, one word per thing. `CLI` is Claude Code or Codex (Gemini CLI where shown); `Agents` are subagents only; `Skill`, `Subagent`, `Hook`, `Rule`, `Window` name one thing each. Banned in visible strings, accessible names, docs and code identifiers of the built pages: a CLI called "agent" (for example "agent CLI", "which agent"), a subagent called "CLI", and a generic "item" in a label. A glossary lives in PRODUCT.md. | D39 |
+| V5-R46 | Colour, one meaning. Green, amber and red are exclusive to state (`ok`, `warn`, `bad`). Category hues (Skills, Agents, Hooks), the CLI identity colours (Claude clay, Codex mono) and the accent stay outside the state hue families, and no two categories share a hue. Agents and Hooks change from the earlier teal and amber; their hues are picked by eye between two candidates in the mock (`?cat=1\|2`) and recorded in the token table. | D40 |
+| V5-R47 | Detection and action together. A flagged row (never ran, dead) offers its fix in the same row within one hover or click (the warning popover with `Remove`, V5-R27). Every write has Undo (V5-R38). `Stop` in Activity is the named exception: no Undo, and a confirmation that names the pid and the consequence. | D41 |
+| V5-R48 | The principles live in two places: shared UX1-UX4 in `~/.claude/rules/quality/ux.md` and Reins specifics in PRODUCT.md. Briefs to agents reference both, and acceptance criteria check them (V5-A15 to V5-A17). | D42 |
 
 ## Token table
 
@@ -136,11 +148,14 @@ Verdict to colour: heavily used `ok`, used `accent`, never ran `warn`, dead `bad
 
 ### Category colours
 
+The previous Agents teal (`#3FB8A5`) and Hooks amber (`#E8A64B`) collided with state colours (`ok`, `warn`) and are withdrawn (D40). Their replacements are TO BE PICKED BY EYE between two candidates in the mock (`?cat=1|2`) at the final approval; no value is recorded until then.
+
 | Token | Dark | Light | Notes |
 | --- | --- | --- | --- |
 | `catSkill` | `#A78BFA` | `#7C5CE0` | Skills |
-| `catAgent` | `#3FB8A5` | `#1E9D8A` | Agents |
-| `catHook` | `#E8A64B` | `#C98410` | Hooks |
+| `catAgent` | TO BE PICKED BY EYE | TO BE PICKED BY EYE | Agents; outside the reserved state hues |
+| `catHook` | TO BE PICKED BY EYE | TO BE PICKED BY EYE | Hooks; outside the reserved state hues |
+| Reserved state hues | `ok`, `warn`, `bad` families | same | Exclusive to state. No category, identity or accent hue falls inside them (V5-R46, V5-A16) |
 | `catAll` | `fg` | `fg` | All (neutral) |
 | `entRule`, `entCli` | `#E8709F`, `#7DA2E8` | `#D2487F`, `#4C74C9` | defined in the mock, unused here (V5-R11) |
 | Tab chip, inactive | `fg` 7%; hover 12% | same | text and icon `fg2`; hover `fg` |
@@ -242,7 +257,12 @@ Not touched: `RailTab`, `ThemeTile`, `ReinsSwitch`, `ReinsMark` (Settings), `Rul
 | V5-A11 | Sweep (W21). Each token, radius and height that changes ends with "changed N of M" from a repo-wide search, each skipped site named with its reason. Settings, Rules, Activity and Limits screenshots in both appearances show no breakage (contrast, truncation, overlap); redesigns of them are not asserted. |
 | V5-A12 | `scripts/test.sh` reports more than 0 tests passed, `scripts/build-app.sh` prints `minos 15.0`, and `docs/DESIGN-LANGUAGE.md` is rewritten for the shipped language (D1 living docs), with its link anchors passing `docs-anchors.sh`. |
 | V5-A13 | Runtime check (W22): shots and the walkthrough run in the owner's dev command and checkout with older instances stopped, on the synthetic fixture home, never the real `~/.claude`. |
-| V5-A14 | Owner eye approval happens in ONE final task, after V5-A1 to V5-A13 pass: the Loadout shots, dark and light, beside the mock, plus the gallery. It also records the accent shade pick (V5-R3) and the group-band treatment (V5-R30). No eye gate between tasks. |
+| V5-A14 | Owner eye approval happens in ONE final task, after V5-A1 to V5-A13 and V5-A15 to V5-A17 pass: the Loadout shots, dark and light, beside the mock, plus the gallery. It also records the accent shade pick (V5-R3), the group-band treatment (V5-R30) and the Agents and Hooks hue pick (V5-R46). No eye gate between tasks. |
+| V5-A15 | UX audit, vocabulary. A grep over every visible string, accessible name and doc of the built pages finds no CLI called "agent", no subagent called "CLI" and no generic "item" label (V5-R45). Output pasted in the plan. |
+| V5-A16 | UX audit, colour. A script or test over `Palette` proves every category and identity hue (and the accent family) stays outside the `ok`, `warn`, `bad` hue ranges, in both appearances, and that the three categories differ (V5-R46). It fails on a collision. |
+| V5-A17 | UX audit, flow. A walk of each built page proves every flagged state has its action within one hover or click, every write has Undo, and `Stop` shows its named confirmation (V5-R47). Recorded per page in the plan. |
+
+The UX audit (V5-A15 to V5-A17) is part of the final eye-approval task (V5-A14), not a separate approval stop.
 
 ## Traceability (W20)
 
@@ -263,9 +283,9 @@ Every decision in the ledger has a row. D18, D22 and D26 are superseded or partl
 | D11 | Linear's interaction primitives | V5-R18, V5-R36, V5-R37, V5-R41 | V5-A7 |
 | D12 | gradient ban stays; tonal layers | V5-R5, V5-R42 | V5-A1, V5-A8 |
 | D13 | dark primary, light equal | V5-R6, V5-R40 | V5-A1, V5-A2 |
-| D14 | app icon and landing later | Out of scope; V5-R33 only reads it | V5-A11 |
+| D14 | "ok" (app icon and landing page follow later) | Out of scope: they wait for the approved app and need their own spec; V5-R33 only reads the decision | V5-A11 (no change to `site/` or the icon) |
 | D15 | plan v4 replaced | V5-R7 (contrast test V5-A2, sunken track on `SegmentedControl`) | V5-A2, V5-A12 |
-| D16 | 3 mock directions, owner picks, then Swift | V5-R8 | V5-A1, V5-A14 |
+| D16 | "aprove" (3 mock directions in a browser, owner picks by eye, then Swift) | V5-R8; the mock c3 is the approved direction | V5-A1 (the built page compared with the approved mock), V5-A14 |
 | D17 | "option C layout khá tốt" | V5-R18 | V5-A1 |
 | D18 | superseded by D23 (no counts in rows) | V5-R22, V5-R33 | V5-A1 |
 | D19 | "icon không được lấy y nguyên của linear" | V5-R9, V5-R14 | V5-A4 |
@@ -287,6 +307,11 @@ Every decision in the ledger has a row. D18, D22 and D26 are superseded or partl
 | D35 | filter kinds | V5-R29 | V5-A5 |
 | D36 | group by kinds | V5-R30 | V5-A5 |
 | D37 | Linear-style two-level filter UI | V5-R28, V5-R39 | V5-A1, V5-A7 |
+| D38 | "q1-q5 approve" (jobs in priority order) | V5-R44 | V5-A17 |
+| D39 | "q1-q5 approve" (vocabulary, one word per thing) | V5-R45 | V5-A15 |
+| D40 | "q1-q5 approve" (one colour, one meaning) | V5-R11, V5-R46 | V5-A16, V5-A14 |
+| D41 | "q1-q5 approve" (detection and action together) | V5-R27, V5-R38, V5-R47 | V5-A17 |
+| D42 | "q1-q5 approve" (principles live in two places) | V5-R48 | V5-A15, V5-A16, V5-A17 |
 
 ## Out of scope
 
@@ -307,6 +332,7 @@ Each line was checked against the ledger and narrows no decision.
 - The mock's status bar still shows `A add to Codex`; D31 supersedes it (V5-R35).
 - The mock has no MingCute path data, no stroke weights for the new icons, and no value for the Not measured warning glyph beyond the clock; the build picks MingCute `time-line` unless the owner objects.
 - The mock's dev panel (header treatment, accent, theme) and traffic lights are not product UI.
+- The mock's Agents teal and Hooks amber collide with state colours (D40); the built values come from the `?cat=1|2` eye pick, not from the mock's current CSS.
 - The mock has no loading, error or empty-library states. The build uses `EmptyState` with the new tokens; these are reviewed in the final eye pass.
 
 ## Open questions
@@ -321,8 +347,10 @@ Each line was checked against the ledger and narrows no decision.
 
 Rules, Activity and Limits reuse this language (tokens, components, icon policy, interaction primitives) and keep their approved layouts. Their own requirements come in later specs.
 
-- **Rules:** one page per CLI behind a `Claude Code | Codex` switch; the Codex page is read only. It reuses `SegmentedControl` (sunken track), `Panel`, `ListRow` and the state tones.
-- **Activity:** keeps its lanes and state column; adopts the new rows, tags and tones.
-- **Limits:** keeps the list plus detail with a segmented ruler ([`Ruler`](../../Sources/Reins/Components/Ruler.swift)); adopts the new surfaces and the detail-pane pattern.
+- **Rules:** pending the owner's decision. The Agents spec replaces the Rules tab; recommended: build Agents instead of Rules. If Rules stays, it is one page per CLI behind a `Claude Code | Codex` switch (Codex read only) on `SegmentedControl` (sunken track), `Panel`, `ListRow` and the state tones.
+- **Activity:** keeps its lanes and state column; adopts the new rows, tags and tones. Mock: `~/scratch/spacevibe-reins/linear-directions/activity/index.html`, built on the shared kit. `Stop` is the V5-R47 exception.
+- **Limits:** keeps the list plus detail with a segmented ruler ([`Ruler`](../../Sources/Reins/Components/Ruler.swift)); adopts the new surfaces and the detail-pane pattern. Mock: `~/scratch/spacevibe-reins/linear-directions/limits/index.html`, built on the shared kit.
+
+Both mocks use the shared kit in `~/scratch/spacevibe-reins/linear-directions/system/` (outside git, F4). The UX principles (V5-R44 to V5-R48) apply to every page.
 
 Execution lives in a plan written after this spec is accepted (W2); the old [v4 plan](../plans/2026-11-05-reins-design-language-v4.md) and the "v4 changes" section of the [2026-11-03 spec](2026-11-03-reins-design-language.md) are then marked superseded by this one (D15).
