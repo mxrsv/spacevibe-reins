@@ -2,6 +2,16 @@
 
 # Reins
 
+## Read before work
+
+Always: [PRODUCT.md](PRODUCT.md) (purpose, jobs in priority order, colour meanings; wins any UI or copy conflict) and [GLOSSARY.md](GLOSSARY.md) (one word, one meaning; use these terms in comments, labels and docs). Read the rest only when the task touches it:
+
+- UI of any page: [design language](docs/DESIGN-LANGUAGE.md), then the spec and plan of that page.
+- A decision or its wording: the [identity decisions](docs/specs/2026-11-06-reins-linear-identity-decisions.md). Cite the D-id; never narrow one (W20).
+- A `ReinsCore` subsystem: its page under `docs/internals/` once it exists ([plan](docs/plans/2026-11-07-reins-internals-docs.md)); until then the spec and "Known traps" below.
+
+A change to a documented responsibility, interface, state transition, path or failure behavior updates the owning page in the same PR. A refactor that keeps the contract needs no prose change. Each fact lives in one page; link to it, do not copy it.
+
 ## Swift app (current direction)
 
 The product is being rebuilt as a native SwiftUI app: [spec](docs/specs/2026-11-02-reins.md), [plan](docs/plans/2026-11-02-reins-swiftui.md). The Electron app is gone (removed 2026-11-04); the Node `core/` stays as the parity oracle until plan task S8.3 (see "Node core" below).
