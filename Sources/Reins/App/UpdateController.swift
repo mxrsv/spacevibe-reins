@@ -41,7 +41,7 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
     var build: String?
 
     @ObservationIgnored private let toasts: ToastCenter
-    @ObservationIgnored private let logger = Logger(subsystem: "dev.spacevibe.reins", category: "updates")
+    @ObservationIgnored private let logger = Logger(subsystem: "dev.spacevibe.app", category: "updates")
     @ObservationIgnored private var controller: SPUStandardUpdaterController?
     @ObservationIgnored private var reminder: UUID?
     @ObservationIgnored private var showingInFocus = false

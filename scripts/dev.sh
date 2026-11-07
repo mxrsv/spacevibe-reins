@@ -28,5 +28,5 @@ for attempt in 1 2 3; do
   sleep 1
 done
 
-echo "==> the app is not running after 3 attempts; check Console for dev.spacevibe.reins" >&2
+echo "==> the app is not running after 3 attempts; check Console for dev.spacevibe.app" >&2
 exit 1

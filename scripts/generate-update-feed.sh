@@ -15,6 +15,9 @@ fi
 ARCHIVES_DIR="$(cd "$1" && pwd)"
 DOWNLOAD_PREFIX="$2"
 TOOLS_DIR="${REPO_ROOT}/.build/artifacts/sparkle/Sparkle/bin"
+# The Sparkle Keychain account that holds the private half of SUPublicEDKey. It is still the account of the deprecated
+# v0.1.0 bundle until the owner creates the new key (AGENTS.md B8, SV13): then set this to "dev.spacevibe.app" and paste
+# the printed public key into Resources/Info.plist. The same constant is SPARKLE_ACCOUNT in scripts/test-update.sh.
 SIGNING_ACCOUNT="dev.spacevibe.reins"
 
 fail() { echo "$*" >&2; exit 1; }

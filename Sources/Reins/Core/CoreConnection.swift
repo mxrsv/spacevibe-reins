@@ -19,7 +19,7 @@ final class CoreConnection: @unchecked Sendable {
         "rules.snapshot", "rules.preview", "rules.check", "limits.read",
     ]
     private static let maxBackoff = 5.0
-    private static let logger = Logger(subsystem: "dev.spacevibe.reins", category: "core")
+    private static let logger = Logger(subsystem: "dev.spacevibe.app", category: "core")
 
     private struct ClientInfo: Encodable {
         let name: String

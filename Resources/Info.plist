@@ -12,11 +12,13 @@
 	<!-- Load-bearing. Together with the signing team identifier this is what TCC keys folder
 	     consent (Documents, Desktop) on, so changing it costs the user a re-authorisation. -->
 	<key>CFBundleIdentifier</key>
-	<string>dev.spacevibe.reins</string>
+	<string>dev.spacevibe.app</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Reins</string>
+	<string>SpaceVibe</string>
+	<key>CFBundleDisplayName</key>
+	<string>SpaceVibe</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<!-- Both change on every release (AGENTS.md B9): the short version is what people see, the build number is what
@@ -34,16 +36,16 @@
 	<!-- Shown in the macOS consent prompt the first time a project under one of these folders is read.
 	     The app is not sandboxed; a denied folder reads as "not readable", never as empty. -->
 	<key>NSDesktopFolderUsageDescription</key>
-	<string>Reins reads the .claude and .codex folders of projects kept here to list their skills, hooks and permissions.</string>
+	<string>SpaceVibe reads the .claude and .codex folders of projects kept here to list their skills, hooks and permissions.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
-	<string>Reins reads the .claude and .codex folders of projects kept here to list their skills, hooks and permissions.</string>
+	<string>SpaceVibe reads the .claude and .codex folders of projects kept here to list their skills, hooks and permissions.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
-	<string>Reins reads the .claude and .codex folders of projects kept here to list their skills, hooks and permissions.</string>
+	<string>SpaceVibe reads the .claude and .codex folders of projects kept here to list their skills, hooks and permissions.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 SpaceVibe</string>
 	<!-- Updates. scripts/build-app.sh adds SUFeedURL when SPACEVIBE_UPDATE_FEED_URL is set, so a build without it makes
-	     no request. Checks run without asking; installing always takes a click. The private half of this key is in
-	     the owner's login Keychain under the Sparkle account dev.spacevibe.reins: never regenerate it (AGENTS.md B8). -->
+	     no request. Checks run without asking; installing always takes a click.
+	     PENDING (owner): create the key pair for the new account (generate_keys with the account option set to dev.spacevibe.app; the exact command is in AGENTS.md B8), then paste the printed key here and back it up with the -x option (SV13). Until then this is the key of the deprecated v0.1.0 account dev.spacevibe.reins and must not ship. -->
 	<key>SUPublicEDKey</key>
 	<string>hm8HrxfmddgAerzdQuttPxx7gexaV3oBycH9YIG1tSY=</string>
 	<key>SUEnableAutomaticChecks</key>

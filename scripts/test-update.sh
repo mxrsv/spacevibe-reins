@@ -6,7 +6,7 @@
 # the signature check is the same either way. The window and relaunch are checked by hand: see the plan, task S7.3.
 #
 # Runs against a temporary HOME. Needs the Developer ID identity, the key in the Keychain, and no other Reins running,
-# because the app's Sparkle settings live in the shared `dev.spacevibe.reins` defaults domain; only the SU* keys this
+# because the app's Sparkle settings live in the shared `dev.spacevibe.app` defaults domain; only the SU* keys this
 # run sets are touched, and they are removed at the end.
 set -euo pipefail
 
@@ -14,7 +14,11 @@ cd "$(dirname "$0")/.."
 
 PORT="${SPACEVIBE_UPDATE_TEST_PORT:-8765}"
 FEED="http://127.0.0.1:${PORT}"
-DOMAIN="dev.spacevibe.reins"
+DOMAIN="dev.spacevibe.app"
+# The Sparkle Keychain account, not the defaults domain. It is still the account of the deprecated v0.1.0 bundle until the
+# owner creates the new key (AGENTS.md B8, SV13): then set it to "dev.spacevibe.app", like SIGNING_ACCOUNT in
+# scripts/generate-update-feed.sh.
+SPARKLE_ACCOUNT="dev.spacevibe.reins"
 TOOLS=".build/artifacts/sparkle/Sparkle/bin"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -56,7 +60,7 @@ make_bundle() {
 mkdir -p "${WORK}/feed" "${WORK}/home/.claude" "${WORK}/home/.codex" "${WORK}/home/.spacevibe"
 make_bundle "${WORK}/new" 2 0.2.0
 ditto -c -k --keepParent "${WORK}/new/Reins.app" "${WORK}/feed/Reins-0.2.0.zip"
-"${TOOLS}/generate_appcast" --account "${DOMAIN}" --download-url-prefix "${FEED}/" --maximum-deltas 0 "${WORK}/feed" >/dev/null
+"${TOOLS}/generate_appcast" --account "${SPARKLE_ACCOUNT}" --download-url-prefix "${FEED}/" --maximum-deltas 0 "${WORK}/feed" >/dev/null
 cp "${WORK}/feed/appcast.xml" "${WORK}/appcast-right.xml"
 # A signature of the right size that the Reins key did not make.
 sed -E "s|sparkle:edSignature=\"[^\"]*\"|sparkle:edSignature=\"$(openssl rand -base64 64 | tr -d '\n')\"|" \

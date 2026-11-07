@@ -40,8 +40,8 @@ enum ThemeSetting: String, CaseIterable {
 @MainActor
 @Observable
 final class AppearanceStore {
-    static let defaultsKey = "reins.appearance"
-    static let fontSizeKey = "reins.fontSize"
+    static let defaultsKey = "spacevibe.appearance"
+    static let fontSizeKey = "spacevibe.fontSize"
 
     private let defaults: UserDefaults
     private let live: Bool

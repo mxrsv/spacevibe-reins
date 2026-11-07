@@ -17,7 +17,7 @@ final class CoreSession: @unchecked Sendable {
         let progress: (@Sendable (CoreUsageProgress) -> Void)?
     }
 
-    private static let logger = Logger(subsystem: "dev.spacevibe.reins", category: "core")
+    private static let logger = Logger(subsystem: "dev.spacevibe.app", category: "core")
     private static let readSize = 64 * 1024
 
     let process: Process
