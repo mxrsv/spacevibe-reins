@@ -16,8 +16,8 @@ struct StyleBoundaryTests {
     ]
 
     /// Folders under `Sources/Reins` that are not screens: tokens and components own the look, `Gallery/` lays out specimens,
-    /// `App/` is the entry point.
-    static let exemptFolders = ["Tokens", "Components", "Gallery", "App"]
+    /// `App/` is the entry point, `Core/` is the engine seam (DTOs and the `CoreService` adapters, no views).
+    static let exemptFolders = ["Tokens", "Components", "Gallery", "App", "Core"]
 
     /// New v5 screen folders (V5-A3): none of them may ever sit in `allowed`.
     static let v5Folders = ["Agents", "Skills", "Subagents", "Hooks"]

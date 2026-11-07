@@ -26,16 +26,20 @@ final class AppEnvironment {
     let startupProblem: String?
     let proc: any ProcessAdapter
     let toasts: ToastCenter
+    /// The engine behind a screen that has moved off `ReinsCore` (plan S.1). In-process until a screen cuts over to the Go core.
+    let core: any CoreService
     /// The Limits readings, shared by the sidebar block on every tab and its detail.
     @ObservationIgnored lazy var limits = LimitsModel(env: self)
     /// The updater and what Settings > Update shows. `ReinsApp` starts it in a normal launch; elsewhere it never runs.
     @ObservationIgnored lazy var updates = UpdateController(toasts: toasts)
 
-    init(roots: Roots?, startupProblem: String? = nil, proc: any ProcessAdapter, toasts: ToastCenter? = nil) {
+    init(roots: Roots?, startupProblem: String? = nil, proc: any ProcessAdapter, toasts: ToastCenter? = nil, core: (any CoreService)? = nil) {
         self.roots = roots
-        self.startupProblem = roots == nil ? (startupProblem ?? "The config folders could not be resolved.") : startupProblem
+        let problem = roots == nil ? (startupProblem ?? "The config folders could not be resolved.") : startupProblem
+        self.startupProblem = problem
         self.proc = proc
         self.toasts = toasts ?? ToastCenter()
+        self.core = core ?? InProcessCore(roots: roots, startupProblem: problem, proc: proc)
     }
 
     static func live(environment: [String: String] = ProcessInfo.processInfo.environment, toasts: ToastCenter? = nil) -> AppEnvironment {
@@ -102,8 +106,8 @@ final class AppEnvironment {
         }
     }
 
-    /// A `ReinsError` message is safe to show; any other error gets a fixed sentence, never its description (S-R3).
+    /// A `ReinsError` or `CoreError` message is safe to show; any other error gets a fixed sentence, never its description (S-R3).
     static func message(_ error: Error) -> String {
-        (error as? ReinsError)?.message ?? "The change could not be made."
+        (error as? ReinsError)?.message ?? (error as? CoreError)?.message ?? CoreError.unexpectedMessage
     }
 }

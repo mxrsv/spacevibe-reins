@@ -1,0 +1,241 @@
+import Foundation
+import Testing
+import ReinsCore
+@testable import Reins
+
+/// The adapter over ReinsCore, run on a private copy of the synthetic fixture home (S-R1: never the real one).
+@Suite("InProcessCore")
+struct InProcessCoreTests {
+    /// A copy of `core/testdata/fixtures/home` under a temporary folder, with `$HOME` replaced by that folder.
+    private struct Fixture {
+        let home: URL
+        let core: InProcessCore
+
+        init() throws {
+            let source = CoreTestData.directory.appendingPathComponent("fixtures", isDirectory: true)
+            let manifest = try #require(try CoreTestData.json("fixtures/manifest.json") as? [String: Any])
+            let token = try #require(manifest["token"] as? String)
+            let mtimes = try #require(manifest["mtimes"] as? [String: Double])
+            home = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+                .appendingPathComponent("reins-core-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
+            let fm = FileManager.default
+            for (relative, mtime) in mtimes {
+                let text = try String(contentsOf: source.appendingPathComponent("home/\(relative)"), encoding: .utf8)
+                let target = home.appendingPathComponent(relative)
+                try fm.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try Data(text.replacingOccurrences(of: token, with: home.path).utf8).write(to: target)
+                try fm.setAttributes([.modificationDate: Date(timeIntervalSince1970: mtime / 1000)], ofItemAtPath: target.path)
+            }
+            let env = [
+                "HOME": home.path, "CLAUDE_CONFIG_DIR": home.appendingPathComponent(".claude").path,
+                "CODEX_HOME": home.appendingPathComponent(".codex").path, "SPACEVIBE_HOME": home.appendingPathComponent(".spacevibe").path,
+                "SPACEVIBE_TEST": "1",
+            ]
+            core = InProcessCore(roots: try Roots.resolve(env: env), proc: FixtureProcessAdapter.empty)
+        }
+
+        func remove() { try? FileManager.default.removeItem(at: home) }
+    }
+
+    @Test("inventoryRead lists the fixture's skills, agents and hooks, without cells")
+    func inventory() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let snapshot = try await fixture.core.inventoryRead()
+        #expect(snapshot.items.count > 20)
+        #expect(snapshot.hooks.count == 9)
+        #expect(snapshot.items.allSatisfy { $0.cells == nil })
+        #expect(snapshot.hooks.allSatisfy { $0.cells == nil && $0.usage == nil })
+        #expect(snapshot.roots["claude"] == fixture.home.appendingPathComponent(".claude").path)
+        #expect(snapshot.events["claude"]?.contains("PreToolUse") == true)
+    }
+
+    @Test("limitsRead answers claude, codex and gemini in that order")
+    func limits() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let result = try await fixture.core.limitsRead()
+        #expect(result.limits.map(\.cli) == [.claude, .codex, .gemini])
+        #expect(result.limits.allSatisfy { $0.state != .measured ? $0.windows.isEmpty && $0.at == nil : !$0.windows.isEmpty })
+    }
+
+    @Test("loadoutRows is scanning until a scan finishes, then ready with cells, counts and row flags")
+    func loadoutRows() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let before = try await fixture.core.loadoutRows()
+        #expect(before.usage == .scanning)
+        #expect(before.items.allSatisfy { $0.cells != nil })
+
+        let progress = ProgressLog()
+        let scan = try await fixture.core.usageScan(progress: { progress.add($0) })
+        #expect(scan.files > 100)
+        #expect(progress.last?.done == scan.files)
+
+        let after = try await fixture.core.loadoutRows()
+        #expect(after.usage == .ready)
+        #expect(!after.items.isEmpty)
+        #expect(after.countsByScope["global"]?.all ?? 0 > 0)
+        #expect(after.rowFlags.count == Set(after.items.map(\.key) + after.hooks.map(\.key)).count)
+        #expect(after.hooks.contains { $0.usage != nil })
+    }
+
+    @Test("a second scan while one runs is refused with 409")
+    func overlappingScan() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let core = fixture.core
+        let first = Task { try await core.usageScan(progress: nil) }
+        let second = Task { try await core.usageScan(progress: nil) }
+        let outcomes = [await first.result, await second.result]
+        let failures = outcomes.compactMap { outcome -> CoreError? in
+            if case .failure(let error) = outcome { return error as? CoreError }
+            return nil
+        }
+        // Whichever started second is refused; if the first was already done, both succeed.
+        #expect(failures.allSatisfy { $0.status == 409 })
+        #expect(outcomes.contains { if case .success = $0 { true } else { false } })
+    }
+
+    @Test("activityRead reads the fixture and activitySubscribe starts with a snapshot, then ends when cancelled")
+    func activity() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let report = try await fixture.core.activityRead()
+        #expect(report.stats.logs > 0)
+        var iterator = fixture.core.activitySubscribe().makeAsyncIterator()
+        let first = try await iterator.next()
+        #expect(first != nil)
+    }
+
+    @Test("a rule is added with an Undo entry, a duplicate is refused with 409, and Undo puts the file back")
+    func rulesWriteAndUndo() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let core = fixture.core
+        #expect(try await core.rulesCheck(rule: "Bash(echo core-test)") == CoreRuleCheck(valid: true, message: nil))
+        #expect(try await core.rulesCheck(rule: "(nope)").valid == false)
+
+        let added = try await core.rulesAdd(scope: .global, dir: nil, verdict: .ask, rule: "Bash(echo core-test)")
+        #expect(added.entry.label.hasPrefix("Added ask rule Bash(echo core-test)"))
+        var snapshot = try await core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false)
+        #expect(snapshot.rules.contains { $0.rule == "Bash(echo core-test)" && $0.verdict == .ask })
+        #expect(snapshot.fileLabel == "~/.claude/settings.json")
+
+        do {
+            _ = try await core.rulesAdd(scope: .global, dir: nil, verdict: .allow, rule: "Bash(echo core-test)")
+            Issue.record("the duplicate was accepted")
+        } catch let error as CoreError {
+            #expect(error.status == 409)
+            #expect(!error.message.contains(fixture.home.path))
+        }
+
+        let moved = try await core.rulesChangeVerdict(scope: .global, dir: nil, rule: "Bash(echo core-test)", from: .ask, to: .deny)
+        #expect(moved.entry.count == 1)
+        let removed = try await core.rulesRemove(scope: .global, dir: nil, verdict: .deny, rule: "Bash(echo core-test)")
+        #expect(removed.entry.label.hasPrefix("Removed deny rule"))
+
+        let history = try await core.journalHistory()
+        #expect(history.entries.map(\.id) == [removed.entry.id, moved.entry.id, added.entry.id])
+        let undone = try await core.journalUndo(id: removed.entry.id)
+        #expect(undone.label == removed.entry.label)
+        snapshot = try await core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false)
+        #expect(snapshot.rules.contains { $0.rule == "Bash(echo core-test)" && $0.verdict == .deny })
+        #expect(try await core.journalHistory().entries.first?.undone == true)
+    }
+
+    @Test("a capability preview and write go through, and a repeat write answers a null entry instead of failing")
+    func capability() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let core = fixture.core
+        let preview = try await core.rulesPreview(scope: .global, dir: nil, capability: .read, verdict: .deny)
+        #expect(preview.scopeLabel == "~/.claude/settings.json")
+        #expect(preview.resulting == .deny)
+        let first = try await core.rulesSetCapability(scope: .global, dir: nil, capability: .read, verdict: .deny)
+        #expect(first.entry != nil)
+        let again = try await core.rulesSetCapability(scope: .global, dir: nil, capability: .read, verdict: .deny)
+        #expect(again.entry == nil)
+    }
+
+    @Test("a project that discovery did not find falls back to the global snapshot, and a write to it is a 404")
+    func unknownProject() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let gone = fixture.home.appendingPathComponent("not-a-project").path
+        let snapshot = try await fixture.core.rulesSnapshot(scope: .project, dir: gone, refreshProjects: true)
+        #expect(snapshot.scope == .global)
+        #expect(snapshot.dir == nil)
+        do {
+            _ = try await fixture.core.rulesAdd(scope: .project, dir: gone, verdict: .ask, rule: "Bash")
+            Issue.record("the write was accepted")
+        } catch let error as CoreError {
+            #expect(error.status == 404)
+        }
+        do {
+            _ = try await fixture.core.rulesAdd(scope: .project, dir: nil, verdict: .ask, rule: "Bash")
+            Issue.record("the write was accepted")
+        } catch let error as CoreError {
+            #expect(error.status == 400)
+        }
+    }
+
+    @Test("with no config folders every method fails with the startup sentence, status 500")
+    func startupProblem() async {
+        let core = InProcessCore(roots: nil, startupProblem: "SPACEVIBE_TEST must be 1 or 0, got \"banana\"", proc: FixtureProcessAdapter.empty)
+        let expected = CoreError("SPACEVIBE_TEST must be 1 or 0, got \"banana\"", status: 500)
+        await expectFailure(expected) { _ = try await core.inventoryRead() }
+        await expectFailure(expected) { _ = try await core.limitsRead() }
+        await expectFailure(expected) { _ = try await core.usageScan(progress: nil) }
+        await expectFailure(expected) { _ = try await core.rulesCheck(rule: "Bash") }
+        await expectFailure(expected) { _ = try await core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false) }
+        await expectFailure(expected) { _ = try await core.loadoutRemoveItem(id: "x") }
+        var iterator = core.activitySubscribe().makeAsyncIterator()
+        await expectFailure(expected) { _ = try await iterator.next() }
+    }
+
+    @Test("a call cancelled before it starts throws CancellationError and does nothing")
+    func cancelled() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let core = fixture.core
+        let task = Task {
+            while !Task.isCancelled { await Task.yield() }
+            return try await core.rulesAdd(scope: .global, dir: nil, verdict: .ask, rule: "Bash")
+        }
+        task.cancel()
+        await #expect(throws: CancellationError.self) { _ = try await task.value }
+        #expect(try await core.journalHistory().entries.isEmpty)
+    }
+
+    @MainActor
+    @Test("AppEnvironment carries an in-process core by default, and shows a CoreError's message")
+    func environment() async throws {
+        let env = AppEnvironment(roots: nil, startupProblem: "No folders.", proc: FixtureProcessAdapter.empty)
+        #expect(try await env.core.initialize().identity.envPrefix == ReinsCore.envPrefix)
+        await expectFailure(CoreError("No folders.", status: 500)) { _ = try await env.core.inventoryRead() }
+        #expect(AppEnvironment.message(CoreError("Gone.", status: 404)) == "Gone.")
+        #expect(AppEnvironment.message(ReinsError("Refused.", status: 403)) == "Refused.")
+        #expect(AppEnvironment.message(CancellationError()) == CoreError.unexpectedMessage)
+    }
+
+    private func expectFailure(_ expected: CoreError, _ work: () async throws -> Void) async {
+        do {
+            try await work()
+            Issue.record("expected \(expected)")
+        } catch let error as CoreError {
+            #expect(error == expected)
+        } catch {
+            Issue.record("expected a CoreError, got \(error)")
+        }
+    }
+}
+
+/// The progress callbacks of a scan arrive off the main actor; this keeps the last one.
+private final class ProgressLog: @unchecked Sendable {
+    private let lock = NSLock()
+    private var latest: CoreUsageProgress?
+
+    var last: CoreUsageProgress? { lock.withLock { latest } }
+    func add(_ progress: CoreUsageProgress) { lock.withLock { latest = progress } }
+}
