@@ -1,0 +1,266 @@
+# Core protocol
+
+The contract between the Go core (`spacevibe`) and the SwiftUI shell: how they talk over stdio, which methods exist, the exact JSON each one carries, and the rules that keep stdout, errors and goldens safe. The Swift `CoreClient` decodes these shapes into Codable types, so a change here is a change to both sides. Architecture: [overview.md](overview.md). Decisions: [ledger](../specs/2026-11-07-core-port-and-spacevibe-identity-decisions.md) SV3, SV4, SV12. Execution: [plan](../plans/2026-11-07-go-core-and-spacevibe-identity.md) PR.1 to PR.3.
+
+**Status.** This page is the contract the code is built to. `core/internal/rpc` does not exist yet (PR.2), so nothing below is observable behavior until that task lands; `TestDocMethodTable` then fails when the table and the registered methods differ. Each shape is tagged by origin:
+
+- no tag: copied from an existing Swift `Codable` type, field for field.
+- `(new)`: Swift has no encoding for it (the type is not `Codable`, or the function is new), so the shape is defined here from the Swift fields. Change it only together with its Go test and its Swift DTO.
+
+## Framing and lifecycle
+
+- **NDJSON, JSON-RPC 2.0.** One object per line, UTF-8, no raw newline inside a message. Request lines are capped at 1 MiB and response lines at 64 MiB. Batches (a JSON array) are refused with -32600. Ids are integers or strings, echoed verbatim. Responses may arrive in any order: requests run concurrently, writes serialize on the write lock.
+- **Spawn.** The shell starts `Contents/Helpers/spacevibe` with the argv array `["rpc"]` (no shell) and inherits the environment. The binary lives in `Helpers`, not `MacOS`, because `SpaceVibe` and `spacevibe` collide on a case-insensitive volume.
+- **Handshake.** The first request must be `initialize`. Any other request before it gets -32002; notifications before it are dropped. A second `initialize` gets -32600. `protocolVersion` is the integer `1`; any other value gets -32001 with `data: {protocolVersion: 1}`. The shell takes the core's name, version, env prefix and data folder from the result and hard-codes only the helper's path (SV12).
+- **Startup problem** `(new)`. If the environment is refused (`internal/config`, or the real-home guard under `SPACEVIBE_TEST=1`), `initialize` still succeeds, so the shell learns the identity, and every other method fails with -32000, status 500 and the startup sentence. This mirrors `AppEnvironment.startupProblem`: a screen shows the sentence instead of reading anything.
+- **Shutdown.** On stdin EOF the core stops reading, cancels reads, lets in-flight writes finish for at most 5 s, then exits 0. A write that outlives the drain is abandoned at exit. Every write ends in one atomic rename, so a file is old or new, never half; the rare leftover is a `.spacevibe-*.tmp` file.
+- **Size overflow** `(new)`. A request line over the cap is discarded through its newline and answered with -32600 and id `null`; the stream stays usable. A result that would pass 64 MiB is replaced by -32000, status 413, "The result is too large."
+
+## Errors
+
+| Code | Meaning | `data` |
+| --- | --- | --- |
+| -32700 | Line is not valid UTF-8 JSON. The stream continues. | none |
+| -32600 | Not a valid request: batch, oversized line, repeated `initialize`. | none |
+| -32601 | Unknown method. | none |
+| -32602 | Params have a wrong type or an unknown member. The message names the member, never its value. | none |
+| -32603 | A panic inside a handler. Fixed message; the reason goes to stderr only. | none |
+| -32000 | The engine refused or failed. The message is a `coreerr` sentence. | `{status, message}` |
+| -32001 | `initialize` protocol version mismatch. | `{protocolVersion}` |
+| -32002 | Request before `initialize`. | none |
+| -32800 | Request cancelled by `$/cancelRequest` `(new)`. The plan names no code; PR.2's `cancel_request` case must assert this one. | none |
+
+**`status` follows HTTP** ([`coreerr`](../../core/internal/coreerr/coreerr.go)): 400 bad input, 403 refused, 404 gone, 409 conflicts with the current state, 413 too large, 500 the write failed. `message` equals the JSON-RPC `message` and is safe to show: it may name a path or a rule, never file content (S-R3). A parse failure of a settings file becomes a fixed sentence; Go's `encoding/json` and TOML errors quote input and must never be forwarded.
+
+**Settings-file paths are scrubbed by the core** `(new)`. Rules messages and `problems` name the absolute settings file (`RulesStore` 409s do). Today `RulesScopes.scrub` in the Swift app swaps that path for the scope's label. After cut-over the core does it for every `rules.*` message and problem, using `scopeLabel`, because otherwise nothing is left to do it and paths reach the UI. Journal labels for rules writes still contain the project folder (`global` or `project <dir>`) and are shown in the Undo toast; that is existing behavior.
+
+## Notifications and cancellation
+
+Notifications have no `id` and get no response.
+
+| Direction | Name | Params |
+| --- | --- | --- |
+| core to shell | usage/progress | `{id, done, total}`: `id` is the `usage.scan` request id. Sent after every 20 files and once at the end. |
+| core to shell | activity/report | The full `ActivityReport`, see below. |
+| shell to core | $/cancelRequest | `{id}`. An unknown or finished id is ignored. |
+
+A cancelled read answers -32800. A write is cancellable only before it takes the write lock; once it has started, the cancel is ignored and the response is the real result, so a cancel never leaves a half-applied change. Cancelling `usage.scan` leaves `usage-cache.json` as it was.
+
+## Activity subscription
+
+- **Full snapshot first.** The `activity.subscribe` response is a complete `ActivityReport`. After it the core polls every 3 s while subscribed, and pushes `activity/report` only when the encoded report differs from the last one sent to this connection.
+- **Resync, not deltas.** Every notification replaces the shell's whole report. There are no sequence numbers and no partial updates. After a core restart the subscription is gone; the shell re-subscribes and gets a fresh snapshot.
+- **"Changed" includes the clock** `(new)`. `ageMs` and `lastWriteAgoMs` are computed from now, so a live session changes the report on every poll and pushes every 3 s; with no live session and no log change the core stays silent. H10 in the plan times this on a real home.
+- **One subscription per connection.** A second `activity.subscribe` returns a fresh snapshot and resets the baseline. `activity.unsubscribe` is idempotent and stops the polling; the core reads nothing while unsubscribed. `activity.read` and the poll share one engine, so folded offsets are not repeated.
+
+## Output discipline and security boundaries
+
+- **stdout carries the protocol and nothing else.** One writer goroutine owns it. At start the core duplicates fd 1 for the protocol and points `os.Stdout` at stderr, so a stray `fmt.Println` lands in the log, not in the stream. The contract case `stray_print_on_stderr` holds this.
+- **stderr is the log.** Fixed reasons only, no file content, no request params. The shell forwards it to `os.Logger` at debug level.
+- **No listener, no network.** The core opens no socket and `go list -deps ./cmd/spacevibe` shows no `net`, `net/http` or `crypto/tls` (S-R5).
+- **No recorded command runs.** The only processes are the fixed `ps`, `lsof` and SIGTERM of Activity, with the pid looked up again from the live system. `activity.stop` takes `{cli, id}` and never a pid (S-R4). `spacevibe statusline capture` is a command-line subcommand with no RPC route; the case `rpc_cannot_capture` holds that.
+- **Environment is read in one place**, [`internal/config`](../../core/internal/config/config.go), fail-closed (`SPACEVIBE_TEST` is `1` or `0`, `SPACEVIBE_HOME` is absolute). Under `SPACEVIBE_TEST=1` a root under the real home, taken from the password database and not `$HOME`, is refused (S-R1). The fixture process adapter exists only under that flag.
+- **Params are strict** `(new)`. A misspelled `verdict` must not fall back to a default and write something else, so unknown members are -32602.
+- **A project folder must be one project discovery found.** The core keeps the discovered list per process: `inventory.read` and `rules.snapshot` with `refreshProjects: true` refresh it, every other `rules.*` call reuses it, and discovery runs once if it is empty. An unknown folder is 404, so no caller can make the core create `<any folder>/.claude/settings.json`.
+
+## One-shot `--json`
+
+`spacevibe inventory|usage|activity|limits|rules --json` prints the same result object as the matching read method, with the same encoder, so a contract test compares bytes. Reads only: a second write path would add a second writer for no debugging gain. Exit codes: 0 success, 1 core error (message on stderr), 2 usage. There are no write commands.
+
+## Methods
+
+Params and results use the types defined under "Wire types". "Journal entry" is the label pattern and the op kinds recorded; `JournalEntryRef` is what a write returns. Errors list the `data.status` values a caller must handle, besides the generic codes above. Reads touch nothing except where "side effects" says so.
+
+| Method | Params | Result | Errors (status) | Side effects | Journal entry |
+| --- | --- | --- | --- | --- | --- |
+| `initialize` | `{protocolVersion, client:{name, version}}` | `{protocolVersion, core:{name, version}, identity:{envPrefix, dataDir}, methods:string[]}` | -32001, -32600 | Starts the session | none |
+| `inventory.read` | `{}` | `InventorySnapshot`, no `cells`, hook `usage` null | none: unreadable files become `problems` | Refreshes the discovered-project list | none |
+| `usage.scan` | `{}` | `UsageResult`; sends `usage/progress`; stores the result as the process's usage state | 409 a scan is already running; -32800 | Reads logs; writes `<data>/usage-cache.json` | none |
+| `loadout.rows` | `{}` | `LoadoutRows` | none | Reads inventory; attaches the stored usage state | none |
+| `activity.read` | `{}` | `ActivityReport` | none: the engine reports what it could not read inside the report | none | none |
+| `activity.subscribe` | `{}` | `ActivityReport`; later `activity/report` | none | Starts a 3 s poll | none |
+| `activity.unsubscribe` | `{}` | `{}` | none | Stops the poll | none |
+| `activity.stop` | `{cli, id}` | `{exited:boolean}` | 404 not running; 403 other user; 500 | SIGTERM to the pid found now; waits up to 3 s | none: not undoable, the shell confirms first |
+| `loadout.copyToOther` | `{id}` | `{entry:JournalEntryRef}` | 400, 403, 404, 409, 413, 500 | Creates the skill folder, agent file or Claude hook in the other CLI | label `Copied skill\|agent <name> to <CLI>` or `Added <event> hook to Claude Code`; ops `created`, `hook-added` |
+| `loadout.removeItem` | `{id}` | `{entry:JournalEntryRef}` | 403 plugin or project item; 404; 409; 500 | Moves the item to the data-folder trash; a link keeps its target text | label `Removed skill\|agent <name> from <CLI>` or `Removed <event> hook from <CLI>`; ops `moved`, `link-removed`, `hook-removed` |
+| `loadout.removeDeadHooks` | `{cli}` | `{entry:JournalEntryRef}` | 409 none dead; 500 | One write to the CLI's hook file | label `Removed N dead hooks from <CLI>`; ops `hook-removed` |
+| `journal.undo` | `{id}` | `{label:string}` | 404 gone; 409 already undone or target changed; 400 not undoable; 500 | Reverses all ops last first, all or nothing; marks the entry undone | none: the entry is marked `undone` |
+| `journal.history` | `{}` | `{entries:JournalEntryRef[]}`, newest first, at most 200 | none: an unreadable journal reads as empty | none | none |
+| `rules.snapshot` | `{scope, dir, refreshProjects?}` | `RulesSnapshot` | 400 relative dir; 404 unknown project | May refresh the project list | none |
+| `rules.preview` | `{scope, dir, capability, verdict}` | `CapabilityPreview` | 400, 404, 409 | none: writes nothing | none |
+| `rules.setCapability` | `{scope, dir, capability, verdict}` | `{entry:JournalEntryRef\|null}`; null = the file already holds that | 400, 404, 409, 500 | Edits the scope's `settings.json` in place | label `Set <capability> to <Verdict> (<scope>)`; op `file-edited` |
+| `rules.add` | `{scope, dir, verdict, rule}` | `{entry:JournalEntryRef}` | 400 invalid rule; 404; 409 duplicate, not valid JSON, or a linked file | Same | label `Added <verdict> rule <rule> (<scope>)`; op `file-edited` |
+| `rules.remove` | `{scope, dir, verdict, rule}` | `{entry:JournalEntryRef}` | 404; 409 the rule already changed | Same | label `Removed <verdict> rule <rule> (<scope>)`; op `file-edited` |
+| `rules.changeVerdict` | `{scope, dir, rule, from, to}` | `{entry:JournalEntryRef}` | 400 same verdict; 404; 409 | Same | label `Changed <rule> from <a> to <b> (<scope>)`; op `file-edited` |
+| `rules.check` | `{rule}` | `{valid:boolean, message:string\|null}` | none | none | none |
+| `limits.read` | `{}` | `{limits:LimitsEntry[]}` in order claude, codex, gemini | none | Reads local files only: no request, no credential, no CLI started | none |
+
+Behavior the table cannot say:
+
+- **`usage.scan` owns the usage state.** The core keeps the last `UsageResult` of the process. `loadout.rows` attaches it, or reports `usage: "scanning"` and `pending` cells when no scan has finished in this process. The shell does not send totals back. A core restart forgets the state; `usage-cache.json` makes the next scan fast.
+- **`loadout.rows` replaces three Swift calls** `(new)`: `Inventory.read`, `attachUsage` and `filterCounts` (per scope and per row key). Grouping rows by `key`, sorting and labels stay in Swift.
+- **`rules.setCapability` returning null is not an error.** The core reports it; the app turns it into the 409 sentence "Nothing to change: the file already holds that." (`RulesModel.write` keeps that today). `rules.add`, `remove` and `changeVerdict` never return null: the engine throws that 409 itself.
+- **`rules.check`** is the live check of `RulesScopes.shapeError`, built on `Rules.checkedRule`: empty text, over 1000 UTF-16 units, a newline, or no `Tool` or `Tool(pattern)` shape. `message` is the same sentence the write would refuse with. The write path checks again; this method is advice.
+- **Journal ops are not exposed.** `JournalEntryRef` carries `count` only: ops hold absolute paths and trash names, and no Swift caller reads them (`AppEnvironment` uses the id and the label). The journal file format is unchanged and shared with the Swift engine while both exist: `<data>/journal.json`, newest first, 200 entries, and a journal that exists but is not a JSON array makes every write 409.
+- **`addSkill` and `addAgent` are not methods.** The app has no caller.
+- **The pid is never a parameter.** `activity.stop` finds the live process from the id, so a reused pid cannot be signalled. A Codex id before its first prompt is `pid:<n>:<start-ms>`, bound to the process start; an id ending `:unknown` cannot authorize a stop.
+
+## Wire types
+
+Keys are camelCase exactly as written. A nullable member is always present with `null`; the exceptions are marked "omitted". Timestamps are ISO 8601 UTC with milliseconds (`2026-11-07T10:00:00.000Z`), the same text as a journal `at`; Limits is the one exception, below. Counts and ids are integers.
+
+```ts
+type Cli = "claude" | "codex"
+type Scope = "global" | "project" | "local"      // rules scope; dir is null for "global", absolute otherwise
+type Verdict = "allow" | "ask" | "deny"
+type Capability = "read" | "edit" | "run" | "network" | "push" | "secrets"
+type CapabilityState = "allow" | "ask" | "deny" | "mixed" | "none"
+
+type JournalEntryRef = { id: string, at: string, label: string, undone: boolean, count: number }
+// (new) built from JournalEntry / HistoryItem; ops are left out.
+```
+
+Inventory and usage (from `InventoryTypes.swift` and `UsageScanTypes.swift`):
+
+```ts
+type Cell =
+  | { state: "counted", runs: number, last: string | null, errors?: number }   // errors omitted unless a hook
+  | { state: "pending", reason: string }
+  | { state: "unmeasurable", reason: string }
+  | { state: "missing" }
+type Cells = { claude: Cell, codex: Cell }
+
+type InventoryItem = {                            // a skill or a subagent
+  id: string, cli: Cli, kind: "skill" | "agent", name: string, entry: string, description: string,
+  owner: string,                                  // "user", "link", or a plugin name
+  path: string, file: string, removable: boolean, scope: "global" | "project", project: string | null,
+  inOther: boolean, key: string,                  // key = "<kind>:<project or empty>:<bare name>"
+  override?: string | null,                       // omitted unless a Claude global skill has skillOverrides; null = present but empty
+  cells?: Cells                                   // omitted until usage is attached
+}
+type HookUsage = { runs: number, avgMs: number | null, totalMs: number, errors: number, last: string | null }
+type InventoryHook = {
+  id: string, cli: Cli, kind: "hook", event: string, matcher: string | null, command: string, timeout: number | null,
+  async: boolean, owner: string, removable: boolean, dead: boolean, paths: string[], hash: string, file: string,
+  scope: "global" | "project", project: string | null,
+  key: string,                                    // "hook:<project or empty>:<hash>"
+  cells?: Cells, usage: HookUsage | null          // usage is always present; null when unknown or not logged
+}
+type InventorySnapshot = {
+  items: InventoryItem[], hooks: InventoryHook[], problems: string[],
+  events: { claude: string[], codex: string[] }, roots: { claude: string, codex: string }
+}
+
+type NameUsage = { sessions: number, days: string[], last: string | null }       // days: YYYY-MM-DD, sorted
+type HookTotals = { runs: number, ms: number, timed: number, errors: number, last: string | null }
+type CliTotals = { skill: { [name: string]: NameUsage }, agent: { [name: string]: NameUsage }, hook: { [hash: string]: HookTotals } }
+type LogWindow = { files: number, oldest: string | null, newest: number | null }  // newest: ms since 1970
+type UsageResult = {
+  totals: { claude: CliTotals, codex: CliTotals }, sessions: { claude: number, codex: number },
+  windows: { claude: LogWindow, codex: LogWindow }, files: number
+}
+
+type FilterCounts = { all: number, only: { claude: number, codex: number }, neverRan: number, dead: number }
+type LoadoutRows = {                              // (new) assembled from LoadoutData.build and LoadoutRows.build
+  usage: "scanning" | "ready",
+  items: InventoryItem[], hooks: InventoryHook[],  // cells attached, hook usage attached
+  problems: string[], events: { claude: string[], codex: string[] }, roots: { claude: string, codex: string },
+  countsByScope: { [scope: string]: FilterCounts },   // key "global", or an absolute project folder
+  rowFlags: { [rowKey: string]: { one: boolean, neverRan: boolean, dead: boolean } }
+}
+// rowFlags[key].one = (only.claude + only.codex > 0) of filterCounts over that row's members; neverRan and dead are counts > 0.
+```
+
+Activity (from `ActivityReport.jsonObject`, the same names as the frozen `activity.json`):
+
+```ts
+type ActivityReport = {
+  sessions: {
+    cli: Cli, id: string, title: string, project: string | null, pid: number,
+    state: "running" | "waiting" | "idle" | "ended" | "unmeasurable", stateReason: string,
+    reasonCode: "codex-no-rollout" | "codex-tool-silent" | "claude-prompt-vs-busy" | "claude-unknown-status" | "codex-hook-runs" | null,
+    currentTool: { name: string, target: string } | null,
+    ageMs: number | null, lastWriteAgoMs: number | null,
+    cost: { usd: number, estimated: true } | null, costNote: string | null
+  }[],
+  failures: {
+    kind: "command" | "hook", cli: Cli, key: string, title: string, count: number, exit: number | null, reason: string,
+    projects: string[], sessions: number, first: string | null, last: string | null, laterPass: string | null,
+    hook: { hash: string, event: string } | null
+  }[],
+  files: { path: string, label: string, edits: number, sessions: number, last: string | null, clis: Cli[], projects: string[] }[],
+  unmeasurable: { cli: Cli, code: string, text: string }[],     // code: same values as reasonCode
+  stats: { logs: number, truncated: number }
+}
+```
+
+Rules (the golden's `ruleObject` and preview shapes from `RulesGoldenTests.swift`; the snapshot and Codex shapes are `(new)`):
+
+```ts
+type Rule = {                                     // golden ruleObject
+  id: string,                                     // "<scope>:<verdict>:<rule>"
+  scope: Scope, dir: string | null, file: string, verdict: Verdict, rule: string,
+  tool: string | null, specifier: string | null
+}
+type CapabilityCell = { capability: Capability, label: string, state: CapabilityState, editable: boolean, rules: Rule[] }
+type VerdictRule = { verdict: Verdict, rule: string }
+type CapabilityPreview = {                        // golden preview outcome
+  capability: Capability, verdict: Verdict, scopeLabel: string, current: CapabilityState, resulting: CapabilityState,
+  replaces: VerdictRule[], writes: VerdictRule[]
+}
+type CodexPermissions = {                         // (new) from CodexPermissions; flag lists keep file order, which the UI shows
+  present: boolean, model: "legacy" | "profiles" | "both", unrestricted: boolean, warnings: string[],
+  approvalPolicy: { mode: string } | { granular: { key: string, value: boolean }[] } | null,
+  sandboxMode: string | null,
+  sandboxWorkspaceWrite: { networkAccess: boolean | null, writableRoots: string[] } | null,
+  defaultPermissions: string | null, approvalsReviewer: string | null,
+  profiles: { name: string, filesystemEntries: number, networkEntries: number, networkFlags: { key: string, value: boolean | string | number }[] }[],
+  projects: { path: string, trustLevel: string | null }[],
+  rules: { files: number, allow: number, prompt: number, forbidden: number, other: number }
+}
+type RulesSnapshot = {                            // (new) from RulesSnapshot / RulesReader.read, minus UI-only fields
+  projectDirs: string[],                          // discovered; display names stay a Swift helper
+  globalRuleCount: number,
+  scope: Scope, dir: string | null,               // the selection actually read; "global" when the asked project is gone
+  fileLabel: string, exists: boolean, problems: string[],      // scrubbed
+  rules: Rule[], grid: CapabilityCell[], codex: CodexPermissions
+}
+```
+
+Limits `(new)`. `Limits`, `CLILimits` and `LimitWindow` are not `Codable`, so the shape follows the projection the Swift-recorded [`limits.json`](../../core/testdata/fixtures/golden/limits.json) golden uses (plan G0.1), which the Go test compares against. The two timestamps are seconds since 1970 as numbers (fractions allowed), the one place this protocol does not use ISO text; do not convert them. If G2.5 changes the golden projection it edits this page in the same change.
+
+```ts
+type LimitsEntry = {
+  cli: "claude" | "codex" | "gemini",
+  state: "measured" | "notRecorded" | "unreadable" | "notMeasurable" | "notInstalled",
+  plan: string | null, source: "claudeCache" | "claudeStatusline" | null,
+  at: number | null,                              // when the record was taken; set only when measured
+  windows: {
+    id: string, minutes: number | null, scope: string | null, usedPercent: number,
+    resetsAt: number, active: boolean,
+    current: boolean                              // resetsAt is after the core's now
+  }[]                                             // [] unless measured
+}
+```
+
+A window with `current: false` has passed its reset: its `usedPercent` no longer describes the window and reads as unknown, never as 0. The core returns it as recorded. `usedPercent` can pass 100. No field carries file content (S-R3).
+
+## Canonical golden writer
+
+Golden tests do not compare wire output. They build a named projection of a Go result and a golden, run both through one writer, and compare bytes. The writer is [`goldentest.Canonical`](../../core/internal/goldentest/canonical.go):
+
+- object keys sorted in UTF-16 code-unit order, as `Array.prototype.sort` does, not Go's byte order;
+- numbers printed as JavaScript prints them ([`number.go`](../../core/internal/goldentest/number.go)): shortest round-trip digits, no exponent from 1e-6 up to 1e21; a `json.Number` is parsed and reprinted, so `1.0` becomes `1`;
+- 2-space indent, `": "` after a key, `[]` and `{}` for empty containers, one trailing newline;
+- no HTML escaping, and U+2028 and U+2029 written raw, as `JSON.stringify` does; invalid UTF-8 written as U+FFFD;
+- structs are refused: build a `map[string]any` tree.
+
+Rules around it:
+
+- **Never use it for the wire.** The wire is compact, one line. The RPC and `--json` share one encoder; only tests canonicalize.
+- **Never use `encoding/json` output as expected text.** It sorts differently, escapes `<>&` and U+2028, and prints floats its own way.
+- **`$HOME` token.** `HomeToken` replaces the fixture root with `$HOME` in keys and values, on both sides, before comparing.
+- **Assert the case count.** `AssertCaseCount` fails a golden test that ran zero cases, so an unloaded golden cannot pass.
+- **Goldens are frozen.** `SHA256SUMS` covers `golden/*.json`, `manifest.json` and `zst/*`, and `VerifyChecksums` also fails on a file added to a covered folder. A wrong golden is fixed together with its test in one commit (SV5), and its line in `SHA256SUMS` changes in that commit.
+- **Leak guard.** `FindLeaks` scans every file under `core/testdata`, and the decompressed `.zst`, for the real home path, user name and temp root (S-R2). It reports file names, never the matched content.
+- **On failure, print a unified diff of the canonical text**; on success, log the canonical SHA-256.
