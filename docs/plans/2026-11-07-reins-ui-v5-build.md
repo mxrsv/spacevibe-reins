@@ -3,7 +3,7 @@
 Spec: [design language v5](../specs/2026-11-06-reins-design-language-v5.md): requirements V5-R1 to V5-R76, acceptance V5-A1 to V5-A24, the traceability table for ledger D1 to D68, the open questions and the data gaps (G1 to G13). This plan does not restate them.
 Reference: the frozen mock at `~/scratch/spacevibe-reins/linear-directions/` (outside git, F4); see the spec's "Reference mock".
 Checkout: `spacevibe-reins` on `main`, shared with other sessions. When this plan was written the go-core rename R1 (`REINS_*` to `SPACEVIBE_*`) was being applied, uncommitted, in the same checkout. Commit with `git commit -- <paths>` only (W11).
-Started 2026-11-07. Status: not started; the U0 gates are open.
+Started 2026-11-07. Status: U0 closed 2026-11-07 (see Handoff); U1 next.
 
 ## Relation to other plans (D0)
 
@@ -49,13 +49,20 @@ Shots, mock captures, crops, contrast output and review sheets go to `/tmp/reins
 ```
 TEST   scripts/test.sh
        → "Test run with N tests in M suites passed", N > 0; N recorded before and after the task; any change in N explained
+       → if it fails only in `go vet`/`go test` of a package another session has uncommitted under `core/` (W11; check
+         `git status --porcelain core/`), run the fallback /tmp/reins-v5/swift-test.sh (test.sh minus the Go vet and test
+         line; it still builds the core, checks the golden hashes and runs swift test) and write "test.sh red from go-core
+         WIP in <package>; Swift half: N passed", never "test.sh passes". U13 needs the real test.sh green.
 BUILD  scripts/build-app.sh
        → prints "minos 15.0"
 SHOTS  SPACEVIBE_UI_V5=1 SPACEVIBE_SHOT_SCREEN=<key> scripts/dev-fixture.sh --shots /tmp/reins-v5/<task>/<key>
        → PNGs in dark and light; the agent opens and reads them itself (its own check, not shown to the owner, W18)
-MOCK   python3 -m http.server <free port> --directory ~/scratch/spacevibe-reins/linear-directions   (in the background)
-       Playwright at 1440 x 900: http://127.0.0.1:<port>/index.html#page=<page>&theme=<dark|light>&accent=1
-       → /tmp/reins-v5/mock/<page>-<theme>.png (the page frame only, without the hub strip); stop the server and close the browser after
+MOCK   headless Chrome, never the Playwright MCP (it writes `.playwright-mcp/` into the repo; owner, 2026-11-07):
+       /tmp/reins-v5/mock/capture.sh <out.png> '<page folder>/index.html?theme=<dark|light>&accent=1&hdr=1' [w h]
+       (serves the mock folder on a free 127.0.0.1 port, shoots at 1440 x 900 by default, device scale 2, stops the server)
+       → /tmp/reins-v5/mock/<page>-<theme>.png, the page frame only; pages: skills c3, subagents b-subagents, hooks b-hooks,
+         rules b-rules, activity b-activity, limits b-limits; components system/components.html (1440 x 6000)
+       → the bottom-left dev panel (header 1/2, accent dots, theme) is mock-only, an expected difference
 SIDE   one HTML sheet per task in /tmp/reins-v5/<task>/side.html: mock PNG beside app PNG per surface and theme
        → the agent reads it; differences are listed against the spec's "Mock substitutions" (anything else is a defect or a named departure)
 RUN    (W22, the runtime the owner looks at; agent memory "reins-dev-app-launch")
@@ -87,7 +94,7 @@ DOCS   bash ~/.claude/scripts/docs-compliance.sh && bash ~/.claude/scripts/docs-
 
 Every task: `git status --porcelain` before the first edit, leave other sessions' changes alone, one conventional commit with a scope (W5) through `git commit -- <paths>`, temporary files deleted at the end (W8). A task that changes a documented responsibility updates its owning doc in the same commit ([AGENTS.md](../../AGENTS.md), "Read before work").
 
-- [ ] **U0. Gates (no code)**
+- [x] **U0. Gates (no code)**
   - Build: ask the owner G-0 and G-2 and show the spec's traceability table (G-1). The answer to D-5 is recorded in the go-core ledger by that plan's P0.2, not here.
   - Verify: Handoff holds the date and the owner's words for G-0, G-1 and G-2.
   - Acceptance: spec "Traceability (W20)".
@@ -261,17 +268,26 @@ Every task: `git status --porcelain` before the first edit, leave other sessions
 
 ## Verification evidence
 
-None yet. This plan has run no command.
+### Baseline (2026-11-07, before U1, HEAD 01b8712)
+
+- `scripts/test.sh` → exit 1 before any Swift test ran: `vet: internal/activity/fold-common.go:184:3: undefined: foldCodex`, later `internal/activity/sessions.go:324:15: undefined: codexProcessID`. `core/internal/activity/`, `inventory/` and `usage/` are untracked, written by the go-core session (G2.1, G2.2) in the shared checkout; not this track's. `go build ./cmd/spacevibe` passes (the binary does not import those packages).
+- Fallback `/tmp/reins-v5/swift-test.sh` → `Test run with 416 tests in 46 suites passed`. Baseline N = 416.
+- G-0 check: no `Sources/Reins/Core/` (go-core S.1 not started); last `Sources/Reins` commit is 416f512 (G1.4). H2: `ls Sources` → CZstd, Reins, ReinsCore, ReinsStatusline; `grep -c SPACEVIBE_ scripts/test.sh` → 5; bundle id `dev.spacevibe.reins`.
+- Mock reference set: `/tmp/reins-v5/mock/<skills|subagents|hooks|rules|activity|limits|components>-<dark|light>.png` from `capture.sh`.
 
 ## Handoff
 
-- Date:
-- Progress (task, commit):
-- Checkout, branch, PR:
-- Observed verification (N tests before and after, shot folders, trace tables):
-- Remaining work:
-- Blockers:
+- Date: 2026-11-07
+- Progress (task, commit): U0 closed (this commit).
+- Checkout, branch, PR: `spacevibe-reins` on `main`, shared with the go-core session (uncommitted `core/` work); no PR.
+- Observed verification (N tests before and after, shot folders, trace tables): baseline N = 416 (Swift half; see "Baseline").
+- Remaining work: U1 to U13, then U14.
+- Blockers: none for U1. `test.sh` stays red while the go-core session's WIP under `core/internal/` does not vet; tasks use the TEST fallback until it does.
 - Owner decisions recorded (G-0, G-1, G-2, OQ1 to OQ9, per-surface approval):
+  - G-0 (2026-11-07): "G-0 làm UI trước go-core S.1 hoặc sau S.8, không chạy song song". S.1 had not started, so this track runs now and go-core S.1 waits until it ends.
+  - G-1 (2026-11-07): "G-1 đã xem bảng truy vết".
+  - G-2 (2026-11-07): "G-2 duyệt track (mỗi thay đổi nhỏ đã kiểm chứng được push và merge không cần hỏi)". The owner also said: "Hỏi trước khi làm X1, release, deploy".
+  - Execution (2026-11-07): one subagent per task, in order; shots by headless Chrome or SHOTS, never the Playwright MCP.
 - Follow-ups outside this plan: pointers from the Agents plan (A8, A10, A12) and the v4 plan (V2 to V8) to this plan; the 2026-11-03 spec's "v4 changes" marked superseded; PRODUCT.md's primary-datum line if open question 1 keeps 28; the go-core plan's D-5 answer recorded in its ledger.
 
 /goal Build Reins UI v5 per docs/specs/2026-11-06-reins-design-language-v5.md and docs/plans/2026-11-07-reins-ui-v5-build.md: after the U0 gates (go-core D-5 answered, the W20 table shown, track approved), do U1 to U13 in order on main, one commit each, every v5 surface behind SPACEVIBE_UI_V5 (debug or non-distribution builds only) with the old app as the default. Done means scripts/test.sh passes with N above the starting count, including the contrast, hue, style-boundary, icon-policy, launch-mode, Answer and write tests against TempHome; scripts/build-app.sh prints minos 15.0; shots of every page and every V5-R62 state exist in dark and light beside the frozen mock, and the V5-A20 real-data trace, the V5-A22 fit and the V5-A23 conformance results are pasted in the plan. Stop at U14 for the owner's one batch eye approval, comparing each surface with the mock in dark and light; X1 cut-over, push, merge and release need the owner. Never touch the real ~/.claude or ~/.codex.
