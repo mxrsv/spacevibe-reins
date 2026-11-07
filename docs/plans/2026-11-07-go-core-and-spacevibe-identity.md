@@ -495,6 +495,7 @@ Each task ports the named Swift unit tests as Go table tests with the same vecto
   - Files: `Sources/ReinsCore/WriteLock.swift` (flock `<data>/write.lock` at the outermost depth), new `Tests/ReinsTests/CoreWriteLockInteropTests.swift`
   - Depends on: G1.7
   - Verify: SW. Concurrent Swift and Go writers hammering one journal → entry count equals the total written, no lost edit.
+  - Status 2026-11-07: built, not committed. `WriteLock.run` now takes `roots`. `CoreWriteLockInteropTests` passes; with the `flock` disabled it loses 10 to 13 of 90 entries in each of 3 runs.
 - [ ] **S.1 `CoreService` seam and DTOs, no behavior change (one commit per screen)**
   - Files:
     - New in `Sources/Reins/Core/`: `CoreService.swift`, `CoreTypes*.swift`, `InProcessCore.swift`.
@@ -518,6 +519,7 @@ Each task ports the named Swift unit tests as Go table tests with the same vecto
     - stderr goes to `os.Logger` at debug level.
     - Lines are read off the main actor.
   - Verify: SW includes `CoreClientTests`, all passing: handshake against the real binary on the fixture home; a `kill -9` of the core, after which the next call succeeds after re-init; every `core/testdata/rpc/*.jsonl` response decodes into its DTO; the Swift env-prefix constant equals the `initialize` value. (SV3, SV4, SV12)
+  - Status 2026-11-07: built, not committed; no screen uses it yet. The restart, cancel and retry rules are in [core-protocol.md](../internals/core-protocol.md#swift-client). `CoreJournalInteropTests` (Swift-recorded undone by Go and the reverse) also passes.
 - [ ] **S.3 Cut over Activity and Stop.** Depends on: G2.2, S.2. Build: make the core path the default; delete the in-process Activity path and `Sources/Reins/Activity/FixtureProcessAdapter.swift`. Verify: SW; ACT contract cases; identical `activity` shots; `git grep -nE 'readActivity|stopSession|SystemProcessAdapter|FixtureProcessAdapter' -- Sources/Reins` → empty. (AC4)
 - [ ] **S.4 Cut over Limits** (sidebar block on every tab, and the page). Depends on: G2.5, S.2. Verify: SW; identical `limits` shots for both fixture variants (`typical`, `edge`); `git grep -n 'Limits.read' -- Sources/Reins` → empty. (AC10)
 - [ ] **S.5 Cut over Loadout reads.** Depends on: G2.1, S.2. Verify: SW; identical `loadout` shots; `git grep -nE 'Inventory\.(read\|attachUsage\|filterCounts)\|UsageScanner' -- Sources/Reins` → empty.
@@ -643,20 +645,345 @@ The owner signs both CLIs in to that home; real sessions spend quota. H9: Claude
 
 ## Coverage ledger (filled during G tasks; it gates S.8)
 
-| Swift test file (Tests/ReinsCoreTests) | Go owner task | Swift cases | Go cases |
-| --- | --- | --- | --- |
-| ZstdStreamTests, LogFilesTests, TailReaderTests | G1.4 | | |
-| OrderedJSONTests | G1.2 | | |
-| TOMLReaderTests | G1.3 | | |
-| FrontmatterTests, InventoryTests, UsageScanTests | G2.1 | | |
-| RootsTests, WriteGuardTests | G1.6, G2.3 | | |
-| FileEditTests, WriteConcurrencyTests, JournalTests, MutationTransactionTests, MutateTests | G1.7, G2.3 | | |
-| RulesTests, RulesGoldenTests | G2.4 | | |
-| ActivityTests, ActivitySafetyTests, ActivityGoldenTests, ActivityStopTests, ProcessGuardTests, ActivityPricingTests | G1.1, G1.8, G1.9, G2.2 | | |
-| ReadHardeningTests | G1.3, G1.4, G2.1 | | |
-| LimitsTests, LimitsStatuslineTests, LimitsGoldenTests | G2.5, G2.6 | | |
-| FixtureHomeTests | G1.10 | | |
-| ToolchainTests | retired: checks the Swift test toolchain, which `Tests/SpaceVibeTests` still exercises | | n/a |
+Counts are exact (`grep -c @Test`: 298 across the 30 files). "Go ported" counts Swift tests that have a Go counterpart found by a `// Swift:` comment or by reading the Go test; a parametrized test counts once. Total: 298 Swift, 297 with a Go counterpart, 1 retired (Toolchain), 0 unmapped.
+
+| Swift test file (Tests/ReinsCoreTests) | Go owner task | Go owner package(s) | Swift @Test | Go ported | Notes |
+| --- | --- | --- | --- | --- | --- |
+| ZstdStreamTests | G1.4 | `logs` | 7 | 7 |  |
+| LogFilesTests | G1.4 | `logs` | 6 | 6 |  |
+| TailReaderTests | G1.4 | `logs` | 14 | 14 |  |
+| OrderedJSONTests | G1.2 | `ojson` | 19 | 19 | round trip x11 arguments, rejects x16 arguments (counts in the Go comments) |
+| TOMLReaderTests | G1.3 | `toml` | 13 | 13 |  |
+| FrontmatterTests | G2.1 | `inventory` | 9 | 9 | 7 cases are rows of one table test; the other 2 are own funcs |
+| InventoryTests | G2.1 | `hashes`, `inventory` | 24 | 24 |  |
+| UsageScanTests | G2.1 | `usage` | 10 | 10 |  |
+| RootsTests | G1.6, G2.3 | `roots` | 10 | 10 |  |
+| WriteGuardTests | G1.6, G2.3 | `mutate`, `rules` | 11 | 11 |  |
+| FileEditTests | G1.7, G2.3 | `fsx`, `mutate`, `roots` | 14 | 14 |  |
+| WriteConcurrencyTests | G1.7, G2.3 | `fsx`, `mutate`, `rules` | 6 | 6 | the rule-addition case lives in `rules` (`transaction_test.go`) |
+| JournalTests | G1.7, G2.3 | `hashes`, `mutate` | 15 | 15 |  |
+| MutationTransactionTests | G1.7, G2.3 | `mutate`, `rules` | 4 | 4 | 2 of the 4 are parametrized x10 operations: `mutate` runs all 10 (its "rule" slot is an `EditJSON` stand-in) and `rules` runs the real rule write |
+| MutateTests | G1.7, G2.3 | `mutate` | 18 | 18 | "replay" is parametrized x37 scenarios (37 `t.Run` subtests of `TestGoldenMutate`, count asserted) |
+| RulesTests | G2.4 | `rules` | 22 | 22 |  |
+| RulesGoldenTests | G2.4 | `rules` | 4 | 4 | all 4 are sections of the single `TestGoldenRules` (shared, main, codex, writes) |
+| ActivityTests | G1.1, G1.8, G1.9, G2.2 | `activity`, `hashes`, `proc`, `roots`, `textjs` | 21 | 21 | 18 cases port inside `activity`; "process adapter parsers" lands in `proc`, "text helpers" (10 asserts) in `textjs` and `hashes`, "a real home is refused" in `roots` |
+| ActivitySafetyTests | G1.1, G1.8, G1.9, G2.2 | `activity` | 4 | 4 |  |
+| ActivityGoldenTests | G1.1, G1.8, G1.9, G2.2 | `activity` | 3 | 3 | `TestGoldenActivityShared`, `TestGoldenActivityExtra` (the golden tests) |
+| ActivityStopTests | G1.1, G1.8, G1.9, G2.2 | `activity`, `proc` | 5 | 5 | the real-adapter case is darwin only (skips elsewhere) |
+| ProcessGuardTests | G1.1, G1.8, G1.9, G2.2 | `proc`, `activity` | 3 | 3 | the third test (`stopSession` with a status file of pid 0 or -1) is `activity` `TestStopIgnoresUnsafePidInStatusFile` (`activity/ported-gaps_test.go`; real system adapter for `IsAlive`, recording `Terminate`, darwin only); the adapter half is `proc` `TestSystemIsAliveRefuses` |
+| ActivityPricingTests | G1.1, G1.8, G1.9, G2.2 | `pricing` | 2 | 2 |  |
+| ReadHardeningTests | G1.3, G1.4, G2.1 | `activity`, `inventory`, `logs`, `proc`, `toml` | 19 | 19 | "a symlinked Claude root still gives its sessions a state and a tool" is `activity` `TestSymlinkedClaudeRootKeepsStateAndTool` (`activity/ported-gaps_test.go`), with its Walk half in `logs` `TestWalkKeepsGivenBase`; FIFO test is x2 (`linked` false and true) |
+| LimitsTests | G2.5, G2.6 | `limits` | 13 | 13 |  |
+| LimitsStatuslineTests | G2.5, G2.6 | `limits`, `statusline` | 9 | 9 |  |
+| LimitsGoldenTests | G2.5, G2.6 | `limits`, `statusline` | 2 | 2 | Swift-only by nature: records and compares `limits.json`; Go owner is `TestGoldenLimits` plus the status-line snapshot test |
+| FixtureHomeTests | G1.10 | `goldentest` | 8 | 8 | Swift-only by nature: tests the Swift fixture materializer; Go has its own in `goldentest`, same eight checks |
+| ToolchainTests | retired | n/a | 1 | n/a | retired: checks the Swift test toolchain only; no Go port, none needed |
+| CanonicalJSONTests | G1.10 | `goldentest` | 2 | 2 | Swift-only by nature: tests the Swift canonical writer, superseded by `goldentest` canonical tests (`TestCanonicalNumberText`, `TestCanonicalLayoutKeysAndEscapes`; `$HOME` substitution in `TestFixtureHomeTokenAndCanonicalDifference`) |
+
+### Per-test mapping
+
+- ActivityGoldenTests.swift › shared fixture HOME: sessions, failures and files match the Node report → activity TestGoldenActivityShared
+- ActivityGoldenTests.swift › section fixture HOME: ended, unknown, unpriced, compressed, child, hook and legacy cases match the Node report → activity TestGoldenActivityExtra
+- ActivityGoldenTests.swift › a compressed rollout is read once, and a tail cut is reported → activity TestCompressedRollouts
+- ActivityPricingTests.swift › the Swift price table equals core/internal/pricing/pricing.json → pricing TestEmbeddedTableEqualsSwiftLiteral
+- ActivityPricingTests.swift › estimate sums per model and says why when it cannot → pricing TestEstimateSimple
+- ActivitySafetyTests.swift › a confirmed threadless row cannot stop a replacement process with the same pid → activity TestSafetyReusedCodexPid
+- ActivitySafetyTests.swift › unknown and legacy bare pid rows never authorize Stop → activity TestSafetyMissingIdentity
+- ActivitySafetyTests.swift › malformed numeric status timestamps produce an unknown title and safe ages → activity TestSafetyInvalidStatusTimestamps
+- ActivitySafetyTests.swift › time conversion rejects non-finite and out-of-domain inputs before integer arithmetic → activity TestSafetyTimeBounds
+- ActivityStopTests.swift › signals the Claude process that the status file names, and reports that it exited → activity TestStopClaude
+- ActivityStopTests.swift › refuses a reused pid, a dead process and an unknown session, and signals nothing → activity TestStopRefuses
+- ActivityStopTests.swift › finds a Codex process by its thread lock, or by pid and start identity before the first prompt → activity TestStopCodex
+- ActivityStopTests.swift › says when the process ignored the signal, and turns a permission error into a plain message → activity TestStopSignalOutcomes
+- ActivityStopTests.swift › the real adapter ends a child process this test spawned, matched by its real start time → proc TestSystemEndsSpawnedChild; activity TestStopRealAdapter
+- ActivityTests.swift › Claude: each state comes from the status file and the transcript tail → activity TestClaudeStates
+- ActivityTests.swift › Claude: a session with no transcript yet is listed from its status file → activity TestClaudeWithoutTranscript
+- ActivityTests.swift › junk titles fall back to the first meaningful request, then to date and short id → activity TestTitles
+- ActivityTests.swift › a worktree slug is never the project name → activity TestWorktreeProjects
+- ActivityTests.swift › Codex: a process maps to its rollout by thread lock; state comes from the rollout tail → activity TestCodexStates
+- ActivityTests.swift › Codex: thread name from the session index, junk names fall back to the first request → activity TestCodexTitles
+- ActivityTests.swift › cost: estimated from logged tokens, deduplicated, and nil when the model has no price → activity TestCosts
+- ActivityTests.swift › cost: a log too large to read in full gives no estimate rather than a partial sum → activity TestTruncatedCost
+- ActivityTests.swift › cost: subagent transcripts count toward the session cost → activity TestSubagentCost
+- ActivityTests.swift › many subagent transcripts: the newest write decides liveness, not directory order → activity TestSubagentLiveness
+- ActivityTests.swift › failed commands group by command with a count, one title form, and a neutral laterPass → activity TestFailureGroups
+- ActivityTests.swift › laterPass is the first passing run after the last failure of the same command → activity TestLaterPass
+- ActivityTests.swift › file history: edits across sessions and CLIs, with labels that keep two rank.ts apart → activity TestFileHistory
+- ActivityTests.swift › older Codex rollouts that record patches only as tool text still give file history → activity TestLegacyPatches
+- ActivityTests.swift › shortestLabels: shortest unique suffix; a path that is a suffix of another keeps its whole path → activity TestShortestLabels
+- ActivityTests.swift › unmeasurable limits are listed even when nothing is running → activity TestLimitsListedWhenIdle
+- ActivityTests.swift › a second read with the same engine folds only appended bytes and sees the new state → activity TestIncrementalRead
+- ActivityTests.swift › process adapter parsers read ps and lsof output → proc TestParsersReadPsAndLsof
+- ActivityTests.swift › Codex tokens: interleaved streams, repeated totals and an inherited first total do not inflate the count → activity TestCodexTokenTotals
+- ActivityTests.swift › text helpers behave like the JavaScript they replace → textjs TestIsoString; textjs TestParseTimestamp; textjs TestParseProcessStart; textjs TestSquash; textjs TestPrefix; textjs TestBasenameDirname; hashes TestSha
+- ActivityTests.swift › a real home is refused: Activity tests only run on a TempHome → roots TestRefusesRealRoots
+- CanonicalJSONTests.swift › numbers print as ES6 JSON.stringify does → goldentest TestCanonicalNumberText
+- CanonicalJSONTests.swift › keys sort by UTF-16 units, strings escape as JSON.stringify does, and $HOME replaces the root in keys and values → goldentest TestCanonicalLayoutKeysAndEscapes; goldentest TestFixtureHomeTokenAndCanonicalDifference
+- FileEditTests.swift › set then undo restores identical bytes and keeps the mode, for tab, space and CRLF files → fsx TestAtomicWriteSetsExactModeDespiteUmask; mutate TestSetThenUndo
+- FileEditTests.swift › undo is refused once the file changed, and leaves the hand edit alone → mutate TestUndoRefusedAfterHandEdit
+- FileEditTests.swift › a second undo of the same entry is refused → mutate TestDoubleUndo
+- FileEditTests.swift › a validator that rejects the temp file leaves the target, the folder and the journal untouched → fsx TestAtomicWriteValidatorRejects; mutate TestFailedWriteLeavesNothing
+- FileEditTests.swift › invalid JSON and wrong shapes are refused with a 409 that never quotes content → mutate TestInvalidInputRefused
+- FileEditTests.swift › a symlinked settings file stays a symlink and the target is written → fsx TestSymlinkedTargetStaysALink; mutate TestSymlinkKept
+- FileEditTests.swift › a link to nothing is refused instead of being replaced → fsx TestDanglingLinkRefused; mutate TestDanglingLink
+- FileEditTests.swift › a missing file is created with mode 0600, and undo moves it to the trash → fsx TestMissingTargetIsCreatedWith0600; mutate TestCreatedFile
+- FileEditTests.swift › a no-op writes nothing and records nothing, even for a missing file → mutate TestNoOp
+- FileEditTests.swift › a blank file counts as an empty object → mutate TestBlankFile
+- FileEditTests.swift › text edit keeps bytes that Swift string equality would treat as equal → fsx TestAtomicWriteKeepsCanonicallyEquivalentBytes; mutate TestCanonicalEquivalence
+- FileEditTests.swift › a file that is not UTF-8 text is refused, not rewritten → mutate TestBinaryRefused
+- FileEditTests.swift › a secret in the settings never appears in an error message, a label or the journal → mutate TestEditCanaryNeverLeaks
+- FileEditTests.swift › under SPACEVIBE_TEST=1 an edit refuses a path under the real home → roots TestRefusesPathUnderRealHome; fsx TestManagedDirectoryRefusesUnderTheRealHome; mutate TestRefusesRealHome
+- FixtureHomeTests.swift › the manifest lists the tree, and every listed file is committed → goldentest TestFixtureManifestListsCommittedTree
+- FixtureHomeTests.swift › the committed tree is synthetic: no real home path, user name or leftover temp path → goldentest TestLeakNoRealHomeOrUserNameUnderTestdata
+- FixtureHomeTests.swift › materialize builds the tree at the canonical path with paths and mtimes restored → goldentest TestFixtureMaterialize
+- FixtureHomeTests.swift › a private copy substitutes its own path and leaves no token → goldentest TestFixturePrivateCopy
+- FixtureHomeTests.swift › the fixture roots pass the real-home guard → goldentest TestFixtureRootsPassRealHomeGuard
+- FixtureHomeTests.swift › inventory.json parses and describes the tree: items, hooks, usage input, filter counts → goldentest TestFixtureInventoryGoldenShape
+- FixtureHomeTests.swift › every file the inventory golden names exists in the materialized tree, and no real path leaks → goldentest TestFixtureInventoryGoldenAgreesWithTree
+- FixtureHomeTests.swift › normalize and firstDifference behave as the later comparisons need → goldentest TestFixtureHomeTokenAndCanonicalDifference
+- FrontmatterTests.swift › plain, double-quoted and single-quoted values → inventory TestFrontmatter (table case 1 of 7)
+- FrontmatterTests.swift › a folded > block joins its lines with spaces → inventory TestFrontmatter (table case 2 of 7)
+- FrontmatterTests.swift › a literal | block keeps newlines; strip and keep markers are accepted → inventory TestFrontmatter (table case 3 of 7)
+- FrontmatterTests.swift › CRLF files read the same → inventory TestFrontmatter (table case 4 of 7)
+- FrontmatterTests.swift › no header, an unterminated header or an empty header give no fields → inventory TestFrontmatterMissing
+- FrontmatterTests.swift › indented lines, lists and keys that do not start with a letter are ignored → inventory TestFrontmatter (table case 5 of 7)
+- FrontmatterTests.swift › a colon inside the value is kept; the last duplicate key wins; keys may hold dashes → inventory TestFrontmatter (table case 6 of 7)
+- FrontmatterTests.swift › a malformed double-quoted value drops its first and last character, like the Node reader → inventory TestFrontmatter (table case 7 of 7)
+- FrontmatterTests.swift › the fixture skills and agents read → inventory TestFrontmatterFixture
+- InventoryTests.swift › sha is the first 12 hex digits of SHA-1 (known vector) → inventory TestShaAndBare
+- InventoryTests.swift › bare drops the plugin prefix → hashes TestBare
+- InventoryTests.swift › scriptPaths finds quoted and bare absolute script paths and nothing else → inventory TestScriptPaths
+- InventoryTests.swift › the inventory with usage attached equals inventory.json from the Node core → inventory TestGoldenInventory
+- InventoryTests.swift › skills and agents of both CLIs: names, owners, symlinks, system folders, plugins → inventory TestItemsAndOwners
+- InventoryTests.swift › skillOverrides reach global Claude skills only → inventory TestOverrides
+- InventoryTests.swift › a hook is dead only when it names script paths and none exists; the hash is event plus command → inventory TestDeadHooks
+- InventoryTests.swift › a duplicated event key counts once, with the last value, as JSON.parse has it → inventory TestDuplicateKeys
+- InventoryTests.swift › hooks come from settings.json and hooks.json; a file that is not valid JSON is reported, not fatal → inventory TestInvalidJSON
+- InventoryTests.swift › projects come from Claude session logs and Codex project tables; worktrees, home and missing folders are skipped → inventory TestProjects
+- InventoryTests.swift › the project hook shows the runs of its event plus command, from every log → inventory TestProjectHookUsage
+- InventoryTests.swift › an empty home gives an empty inventory → inventory TestEmptyHome
+- InventoryTests.swift › counted, with zero runs meaning never ran → inventory TestCellsCounted
+- InventoryTests.swift › missing when not installed in that CLI; both rows of one skill show the same cells → inventory TestCellsMissing
+- InventoryTests.swift › pending when no log window covers the item yet → inventory TestCellsPending
+- InventoryTests.swift › pending for everything until the scan has finished, and when a CLI has no logs → inventory TestCellsPendingWithoutScan
+- InventoryTests.swift › hooks: Claude counted with errors, Codex unmeasurable, an absent CLI missing → inventory TestCellsHooks
+- InventoryTests.swift › filter counts: all, only in one CLI, never ran, dead → inventory TestFilterCounts
+- InventoryTests.swift › a dead hook with zero runs is counted under dead only → inventory TestDeadOnly
+- InventoryTests.swift › values of env keys in settings never appear in any output → inventory TestSecretsStayOut
+- InventoryTests.swift › unreadable, oversized, and odd files never crash the read → inventory TestHostileFiles
+- InventoryTests.swift › readItemFile caps the text and says so → inventory TestItemFile
+- InventoryTests.swift › a root under the real home is refused when SPACEVIBE_TEST=1, so no read or scan can reach it → inventory TestGuardRefusesRealHome
+- InventoryTests.swift › items and hooks survive a JSON round trip → inventory TestCodableRoundTrip
+- JournalTests.swift › sha256 matches CryptoKit and the Node core → hashes TestSHA256Hex
+- JournalTests.swift › record writes the Node layout: newest first, key order, lowercase id, ms timestamp, mode 0600 → mutate TestRecordLayout
+- JournalTests.swift › keeps at most 200 entries → mutate TestJournalKeepsTwoHundred
+- JournalTests.swift › reads a journal written by the Node core, undoes an entry, refuses one already undone (409), and keeps foreign ops intact → mutate TestReadsNodeJournal
+- JournalTests.swift › an entry written here has the shape the Node core reads → mutate TestEntryHasNodeShape
+- JournalTests.swift › unknown id is 404 and a second undo is 409 → mutate TestUndoErrors
+- JournalTests.swift › created, moved and link-removed ops undo in reverse order → mutate TestFileOpsUndoInReverse
+- JournalTests.swift › an entry that cannot be undone fully changes nothing → mutate TestNeverPartial
+- JournalTests.swift › moved: when a later-reversed op refuses, the op already reversed is moved back to the trash → mutate TestMovedRollsBack
+- JournalTests.swift › moved: refuses (409) when the original path exists again, and when the saved copy is gone → mutate TestMovedRefusals
+- JournalTests.swift › link-removed: refuses (409) when something exists at the path again → mutate TestLinkRemovedRefusal
+- JournalTests.swift › file-edited: refuses (409) when the saved copy is gone, and leaves the file as it is → mutate TestFileEditedBackupGone
+- JournalTests.swift › an op type this version does not know is refused (400) before anything is reversed → mutate TestUnknownOpType
+- JournalTests.swift › a journal.json that is not JSON makes record throw 409 and leaves the file untouched → mutate TestCorruptJournalRefusesRecord
+- JournalTests.swift › a journal.json holding a JSON object is refused the same way, by record and by undo (409, not 404) → mutate TestObjectJournalRefusesRecordAndUndo
+- LimitsGoldenTests.swift › every Limits scenario reads the same as the committed golden, byte for byte → limits TestGoldenLimits
+- LimitsGoldenTests.swift › the status line snapshot the cases write by hand is what the collector writes → statusline TestSnapshotShapeMatchesCapture
+- LimitsStatuslineTests.swift › regression: status line 76% used supersedes the old 62% cache → statusline TestCaptureSupersedesCache; limits TestStatuslineSupersedesCache
+- LimitsStatuslineTests.swift › idle sessions cannot move usage backwards; a new reset window can → limits TestStatuslineIdleSessions
+- LimitsStatuslineTests.swift › missing quota, invalid input and a partial malformed reading cannot overwrite a snapshot → statusline TestCaptureInvalidInput; limits TestParseWindows
+- LimitsStatuslineTests.swift › a later partial payload keeps both recent windows, fractional usage and exact resets → statusline TestCaptureIndependentWindows; limits TestStatuslineIndependentWindows
+- LimitsStatuslineTests.swift › a newer usage-cache fetch supersedes an older status-line snapshot → limits TestStatuslineNewerCacheWins
+- LimitsStatuslineTests.swift › managed subdirectory links cannot redirect collector or installer writes → statusline TestInstallManagedDirectoryLink; statusline TestCaptureManagedDirectoryLink; limits TestStatuslineManagedDirectoryLinkIsNotRead
+- LimitsStatuslineTests.swift › account switches reject previous snapshots and prevent an old session relabeling its quota → statusline TestCaptureAccountSwitch; limits TestStatuslineAccountSwitch
+- LimitsStatuslineTests.swift › malformed, future and special-file snapshots fall back without blocking → limits TestStatuslineInvalidFiles
+- LimitsStatuslineTests.swift › setup preserves the original command and unrelated bytes; repeated setup is a no-op and Undo restores → statusline TestInstallPreservesAndUndoes
+- LimitsTests.swift › Claude Code: each cached limit becomes a window with its share, reset and fetch time → limits TestClaudeCacheMeasured
+- LimitsTests.swift › Claude Code: without CLAUDE_CONFIG_DIR the state file is the one in HOME → limits TestClaudeStateInHome
+- LimitsTests.swift › Claude Code: no cache, an empty list, and no install read differently → limits TestClaudeNotRecorded
+- LimitsTests.swift › Claude Code: a broken file or an unknown entry shape is unreadable, never a partial list → limits TestClaudeUnreadable
+- LimitsTests.swift › Claude Code: window length comes from the group or kind, unknown names stay unknown → limits TestWindowMinutes
+- LimitsTests.swift › Codex: the newest token_count event with limits is the reading → limits TestCodexMeasured
+- LimitsTests.swift › Codex: the most recently written log wins over the newest path → limits TestCodexNewestByModification
+- LimitsTests.swift › Codex: the older relative reset counts from the event time → limits TestCodexRelativeReset
+- LimitsTests.swift › Codex: no install, no event and an unknown window shape read differently → limits TestCodexOtherStates
+- LimitsTests.swift › Gemini CLI keeps no limit on disk, so it is not measurable once installed → limits TestGemini
+- LimitsTests.swift › read reports Claude Code, Codex and Gemini CLI in order → limits TestReadAllOrder
+- LimitsTests.swift › a window whose reset has passed is no longer current → limits TestPassedResetIsNotCurrent
+- LimitsTests.swift › the Limits readers start no request and no process (S-R4, S-R5) → limits TestNoNetworkOrProcess
+- LogFilesTests.swift › naming: which names are logs, and the shared base name of both forms → logs TestNaming
+- LogFilesTests.swift › walk finds both forms, lists only the plain one when both exist, ignores symlinks and other files → logs TestWalk
+- LogFilesTests.swift › forEachLine reads plain and compressed logs the same, including a last line without a newline → logs TestForEachLinePlainAndCompressed
+- LogFilesTests.swift › forEachLine on the 5.5 MB compressed log yields every line once, intact across chunk boundaries → logs TestForEachLineLarge
+- LogFilesTests.swift › a line over the cap is skipped and counted; the lines around it survive → logs TestForEachLineCap
+- LogFilesTests.swift › the reader factory picks the class from the extension → logs TestNewReaderPicksByExtension
+- MutateTests.swift › the golden loaded: 37 or more Node scenarios are replayed → mutate TestGoldenMutate (AssertCaseCount 37 scenarios, hookFiles non-empty)
+- MutateTests.swift › the fixture copy hashes like the Node copy → mutate TestGoldenMutate
+- MutateTests.swift › an operation does what the Node core does, and undo puts every byte back (arguments) → mutate TestGoldenMutate (37 subtests)
+- MutateTests.swift › removing a linked skill leaves its target; undo makes the link again → mutate TestRemoveLinkedSkill
+- MutateTests.swift › a removed skill folder is in the app trash with its bytes, not deleted → mutate TestRemovedGoesToTrash
+- MutateTests.swift › project-scoped and plugin-owned items are read-only (403) → mutate TestReadOnlyItems
+- MutateTests.swift › names: only lowercase letters, digits and dashes, 1 to 64 characters → mutate TestNameRules
+- MutateTests.swift › a name that exists in the second CLI leaves nothing behind in the first → mutate TestExistingNameInSecondCLI
+- MutateTests.swift › hooks: a failure on the second CLI puts the first file back and records nothing → mutate TestHookRollback
+- MutateTests.swift › hooks: validation wording and the per-CLI event list → mutate TestHookValidation
+- MutateTests.swift › copying a hook: into Claude Code when it knows the event, never into Codex → mutate TestCopyHook
+- MutateTests.swift › a copied skill is a new item: its files are not older than the copy → mutate TestCopiedSkillIsFresh
+- MutateTests.swift › an agent keeps its quotes and backslashes through markdown and TOML → mutate TestAgentRoundTrip; mutate TestTomlInstructions
+- MutateTests.swift › JavaScript trim and whitespace collapse → mutate TestJSText
+- MutateTests.swift › undo when the file changed since: the hook is reversed, the hand edit and the secrets stay → mutate TestUndoAfterHandEdit
+- MutateTests.swift › undo of one hook while a later hook stays → mutate TestUndoOlderHook
+- MutateTests.swift › hook ops written by the Node core (no restore data) are undone by editing the hooks → mutate TestUndoNodeHookOps
+- MutateTests.swift › no error or label quotes a secret from settings, even when the file is broken → mutate TestCanaryNeverLeaks
+- MutationTransactionTests.swift › corrupt history refuses every mutation before touching configuration (arguments) → rules TestCorruptJournalRefusesRuleWrite; mutate TestCorruptJournalRefusesEveryMutation
+- MutationTransactionTests.swift › journal persistence failure restores every mutation, including shared hook backups (arguments) → rules TestPersistenceFailureRestoresRuleWrite; mutate TestPersistenceFailureRestoresEveryMutation
+- MutationTransactionTests.swift › a journal that fails after preflight restores a symlink target and its mode → mutate TestFailureAfterPreflightRestoresSymlinkTarget
+- MutationTransactionTests.swift › rollback failure preserves a concurrent edit and still restores the other operations → mutate TestRollbackFailurePreservesConcurrentEdit
+- OrderedJSONTests.swift › an unmodified document is written back as the same bytes (arguments) → ojson TestRoundTripKeepsEveryByte
+- OrderedJSONTests.swift › a fixture settings file round-trips byte for byte → ojson TestFixtureSettingsRoundTrip
+- OrderedJSONTests.swift › values parse with key order and duplicates kept → ojson TestValuesKeepOrderAndDuplicates
+- OrderedJSONTests.swift › escapes decode, including surrogate pairs and a lone surrogate → ojson TestEscapesDecode
+- OrderedJSONTests.swift › replacing a value touches only that value → ojson TestReplaceInPlace
+- OrderedJSONTests.swift › a new key goes at the end, in the document's indent → ojson TestAddKeyInDocumentStyle
+- OrderedJSONTests.swift › missing parents are created as nested objects → ojson TestMissingParentsAreCreated
+- OrderedJSONTests.swift › appending to an array: multi-line, inline, empty and missing → ojson TestAppend
+- OrderedJSONTests.swift › removing keeps the commas valid wherever the member sits → ojson TestRemoveKeepsCommasValid
+- OrderedJSONTests.swift › a nested object value is written in the document's style → ojson TestNestedValueInDocumentStyle
+- OrderedJSONTests.swift › only the edited region changes: bytes before and after are identical → ojson TestOnlyTheEditedRegionChanges
+- OrderedJSONTests.swift › every edit result is valid JSON that Foundation reads the same way → ojson TestEditedTextIsValid
+- OrderedJSONTests.swift › edits on a wrong path fail without changing anything → ojson TestEditErrors
+- OrderedJSONTests.swift › with duplicate keys an edit targets the last one, as lookups do → ojson TestDuplicateKeyEditTargetsTheLast
+- OrderedJSONTests.swift › invalid JSON is rejected with a position, never with file content (arguments) → ojson TestRejectsInvalidJSON
+- OrderedJSONTests.swift › an error never contains the text of the file → ojson TestErrorsNeverCarryFileContent
+- OrderedJSONTests.swift › invalid UTF-8 is rejected → ojson TestRejectsInvalidUTF8
+- OrderedJSONTests.swift › absurd nesting is rejected instead of overflowing the stack → ojson TestNestingLimit
+- OrderedJSONTests.swift › pretty prints a new document in a chosen indent → ojson TestPretty
+- ProcessGuardTests.swift › terminate refuses a pid that is zero, negative or does not fit in pid_t, before any signal → proc TestSystemTerminateRefuses
+- ProcessGuardTests.swift › isAlive is false for a pid that is zero, negative or too large, and startTime is nil → proc TestSystemIsAliveRefuses
+- ProcessGuardTests.swift › stopSession with a status file that carries pid 0 or -1 finds no live session and signals nothing → activity TestStopIgnoresUnsafePidInStatusFile; adapter half is proc TestSystemIsAliveRefuses
+- ReadHardeningTests.swift › inventory readers reject FIFOs and links to FIFOs without waiting for input (arguments) → inventory TestRejectFIFO
+- ReadHardeningTests.swift › a discovered project with FIFO settings reports unreadable and preserves other inventory → inventory TestDiscoveredProjectFIFO
+- ReadHardeningTests.swift › regular files and symlinks retain byte limits and JSON classifications → inventory TestRegularReadSemantics
+- ReadHardeningTests.swift › walk returns paths under the folder as given, even when that folder is a symlink → logs TestWalkKeepsGivenBase
+- ReadHardeningTests.swift › a symlinked Claude root still gives its sessions a state and a tool → activity TestSymlinkedClaudeRootKeepsStateAndTool; Walk half is logs TestWalkKeepsGivenBase
+- ReadHardeningTests.swift › a hook whose script sits under a folder that denies the lookup is not dead, and a problem says so → inventory TestDeniedScriptIsNotDead
+- ReadHardeningTests.swift › presence: only ENOENT and ENOTDIR mean missing → inventory TestPresenceKinds
+- ReadHardeningTests.swift › a project under a folder Reins cannot stat is listed and reported as not readable, not dropped → inventory TestDeniedProject
+- ReadHardeningTests.swift › 100000 nested brackets or braces are skipped, not recursed into → toml TestDeepNestingIsSkipped
+- ReadHardeningTests.swift › nesting up to 64 levels reads; one more does not; ordinary nested values are unaffected → toml TestDepthLimit
+- ReadHardeningTests.swift › a stream of 200000 short lines is read with only about maxBytes of lines held → logs TestCompressedRingBufferBoundsMemory
+- ReadHardeningTests.swift › LineTail keeps at least one line and drops the oldest first → logs TestLineTailKeepsOneLine
+- ReadHardeningTests.swift › a dropped line over the length cap marks the read truncated → logs TestCompressedOversizedLineIsTruncated
+- ReadHardeningTests.swift › a small file that expands past the output cap throws tooLarge → logs TestZstdDecompressionCap
+- ReadHardeningTests.swift › the default cap stops a 600 MB expansion for the reader, and a second poll of the same file fails at once → logs TestCompressedDefaultCapAndSecondPoll; logs TestZstdDefaultCapStopsSixHundredMegabytes
+- ReadHardeningTests.swift › an I/O error while reading the input is rethrown, not taken for the end of the file → logs TestZstdIOErrorRethrown
+- ReadHardeningTests.swift › a stream whose size is an exact multiple of the output buffer is not reported as truncated → logs TestZstdExactBlockMultiple
+- ReadHardeningTests.swift › merge: a pid without a lock has no thread, and a pid with locks is not repeated → proc TestMergeThreads
+- ReadHardeningTests.swift › stopSession turns an unexpected signal error into a 500 with the error number → activity TestStopSignalOutcomes (EINVAL case, 500 + "error N" text)
+- RootsTests.swift › accepts temp roots and derives the CLI folders → roots TestAcceptsTempRoots
+- RootsTests.swift › Claude Code's state file follows CLAUDE_CONFIG_DIR, else sits in HOME; Gemini CLI's folder is in HOME → roots TestStateFileAndGemini
+- RootsTests.swift › falls back to folders under HOME and ignores empty values → roots TestDefaults
+- RootsTests.swift › SPACEVIBE_TEST=1 refuses a root under the real home → roots TestRefusesRealRoots
+- RootsTests.swift › the error names the root and the label → roots TestErrorDetails
+- RootsTests.swift › a symlink that leads into the real home is refused, even for a root that does not exist yet → roots TestRefusesThroughSymlinks
+- RootsTests.swift › a symlinked home is compared by its real path → roots TestRealHomeBehindSymlink
+- RootsTests.swift › a sibling folder whose name starts like the real home is not under it → roots TestPrefixIsNotAncestor
+- RootsTests.swift › without SPACEVIBE_TEST nothing is checked → roots TestNoGuardWithoutFlag
+- RootsTests.swift › the account's real home, as the password database says, is refused → roots TestTheActualRealHome
+- RulesGoldenTests.swift › shared fixture HOME: rules, grids, previews and Codex keys match the Node core → rules TestGoldenRules (shared section)
+- RulesGoldenTests.swift › section fixture HOME (rules-home/main): the same reads match, including broken, null and empty projects → rules TestGoldenRules (main section)
+- RulesGoldenTests.swift › Codex configs of rules-home match the Node reader → rules TestGoldenRules (codex section)
+- RulesGoldenTests.swift › every write case of the Node core gives the same settings, label and refusal → rules TestGoldenRules (writes section)
+- RulesTests.swift › parseRule: Tool, Tool(specifier), blanks, and what is not a rule → rules TestParseRuleShapes
+- RulesTests.swift › pushes and deploys are recognised by ASCII word rules, as JavaScript does → rules TestPushDeployText
+- RulesTests.swift › lists rules by scope and keeps values that are not rules out of the tool/specifier fields → rules TestListing
+- RulesTests.swift › a project folder must be one discovery found: others are refused with 404 and nothing is created → rules TestUndiscoveredFolder
+- RulesTests.swift › add, change and remove keep other keys and the indent; undo restores identical bytes and the mode → rules TestAddChangeRemoveUndo
+- RulesTests.swift › CRLF line endings, a compact one-line file and a missing trailing newline are kept → rules TestFormattingKept
+- RulesTests.swift › rules go into a file without a permissions block, into `permissions: null`, and a created file is removed by undo → rules TestMissingBlockAndCreatedFile
+- RulesTests.swift › values in a rule list that are not strings are kept, and a removed rule goes everywhere it appears → rules TestNonStringsAndDuplicates
+- RulesTests.swift › a symlinked settings file stays a symlink and the target is edited → rules TestSymlinkedSettings
+- RulesTests.swift › invalid JSON, wrong shapes and bad input are refused without touching the file or quoting its text → rules TestRefusals
+- RulesTests.swift › undo refuses when the file changed after the edit → rules TestUndoAfterHandEdit
+- RulesTests.swift › capability grid, one row per mapping → rules TestGridMapping
+- RulesTests.swift › a star specifier is wide for every tool, so Read(*) reads as allow → rules TestStarSpecifier
+- RulesTests.swift › preview and set replace the cell's rules, journaled and undoable; a no-op writes nothing → rules TestSetCapability
+- RulesTests.swift › push and secrets cells write their canonical rules and report a rule that still wins → rules TestPushAndSecrets
+- RulesTests.swift › a mixed cell is refused for preview and write, and nothing changes → rules TestMixedRefused
+- RulesTests.swift › a cell write in a project scope only touches that project file → rules TestProjectScopeWrite
+- RulesTests.swift › a secret in settings never appears in a return value, a message, a label or the journal → rules TestSecretsNeverEscape
+- RulesTests.swift › all writes stay inside the temporary HOME (SPACEVIBE_TEST=1) → rules TestStaysInTempHome
+- RulesTests.swift › Codex reader: legacy model, comments, multi-line arrays, inline tables, and nothing from mcp or env tables → rules TestCodexLegacy
+- RulesTests.swift › Codex reader: profiles model, granular approval policy, and a missing config → rules TestCodexProfiles
+- RulesTests.swift › Codex reader: both models set warns → rules TestCodexBoth
+- TOMLReaderTests.swift › scalars at the top level and in tables → toml TestScalars
+- TOMLReaderTests.swift › quoted table names and quoted keys, as Codex writes project trust and permission profiles → toml TestQuotedNames
+- TOMLReaderTests.swift › dotted keys split outside quotes → toml TestDottedKeys
+- TOMLReaderTests.swift › arrays, nested arrays and arrays over several lines with comments → toml TestArrays
+- TOMLReaderTests.swift › inline tables, also nested and holding arrays → toml TestInlineTables
+- TOMLReaderTests.swift › strings: escapes, triple-quoted basic and literal, line-ending backslash → toml TestStrings
+- TOMLReaderTests.swift › an agent file's developer_instructions block reads whole → toml TestAgentFile
+- TOMLReaderTests.swift › a hash inside a string is not a comment → toml TestHashInString
+- TOMLReaderTests.swift › array tables are marked and keep their path → toml TestArrayTables
+- TOMLReaderTests.swift › the last assignment wins and CRLF files read the same → toml TestLastWinsAndCRLF
+- TOMLReaderTests.swift › a broken line is skipped and counted; the rest still reads → toml TestTolerant
+- TOMLReaderTests.swift › entries carry their line numbers → toml TestLines
+- TOMLReaderTests.swift › reads the Codex config of the synthetic fixture → toml TestFixture
+- TailReaderTests.swift › a second read returns only what was appended; a half-written line waits for its newline → logs TestTailIncremental
+- TailReaderTests.swift › a file that shrank is read again from the start, with onReset → logs TestTailTruncation
+- TailReaderTests.swift › a file replaced by another (new inode), even a longer one, is read again from the start → logs TestTailReplacedInode
+- TailReaderTests.swift › a missing file reports missing, then reads once it appears → logs TestTailMissing
+- TailReaderTests.swift › maxBytes starts late and drops the cut line → logs TestTailMaxBytes
+- TailReaderTests.swift › an over-long line is skipped and counted, and the next lines still arrive → logs TestTailLineCap
+- TailReaderTests.swift › a line that grows past the cap across reads is dropped once, whole → logs TestTailCapAcrossReads
+- TailReaderTests.swift › lines that are not objects are counted, blank lines are not → logs TestTailInvalidLines
+- TailReaderTests.swift › with the shape check off, any non-blank line passes → logs TestTailShapeCheckOff
+- TailReaderTests.swift › multi-byte characters survive chunk boundaries → logs TestTailMultibyte
+- TailReaderTests.swift › an unreadable file throws an error that carries only errno → logs TestTailUnreadable
+- TailReaderTests.swift › reads a .zst log once, then nothing until the file changes → logs TestCompressedReadsOnce
+- TailReaderTests.swift › maxBytes keeps the last lines of the log → logs TestCompressedTail
+- TailReaderTests.swift › a truncated archive surfaces ZstdError.truncated and a missing one reports missing → logs TestCompressedErrors
+- ToolchainTests.swift › swift-testing discovers and runs a test → retired, no Go port
+- UsageScanTests.swift › hook errors are counted for every error record shape, per event plus command → usage TestHookErrors
+- UsageScanTests.swift › skills, slash commands and subagents count sessions, not mentions; plugin prefixes are dropped → usage TestSkillsAndAgents
+- UsageScanTests.swift › the log window is reported per CLI; a cache entry from an older parser is scanned again → usage TestWindowAndCacheVersion
+- UsageScanTests.swift › a corrupt cache file is an empty cache; the cache is private to the user → usage TestCorruptCache
+- UsageScanTests.swift › compressed Codex rollouts count like plain ones, and a session in both forms counts once → usage TestCompressedRollouts
+- UsageScanTests.swift › Codex agents and skills are read from tool calls only → usage TestCodexCalls
+- UsageScanTests.swift › an unreadable log, an oversized line, an empty file and binary junk never crash the scan → usage TestHostileLogs
+- UsageScanTests.swift › progress is reported and ends at the file count; cancelling throws and writes no cache → usage TestProgressAndCancel
+- UsageScanTests.swift › a scan of the shared fixture tree equals usage.json from the Node core → usage TestGoldenUsage
+- UsageScanTests.swift › the scan never reads the real home: the roots it is given are the temp ones, and the guard refuses the real ones → usage TestNeverTouchesRealHome
+- WriteConcurrencyTests.swift › 200 concurrent records all survive, in the journal, with no temp file left → fsx TestConcurrentRecordsAllSurvive; mutate TestConcurrentRecordsAllSurvive
+- WriteConcurrencyTests.swift › 50 concurrent rule additions to one settings.json all land, each with its own journal entry → fsx TestConcurrentSettingsAppendsNeverConflict; rules TestConcurrentSettingsAppends; mutate TestConcurrentSettingsAppends
+- WriteConcurrencyTests.swift › an Undo interleaved with writes never loses an entry → fsx TestUndoInterleavedNeverLosesAnEntry; mutate TestUndoInterleavedNeverLosesAnEntry
+- WriteConcurrencyTests.swift › writers next to one target never share a temp file (the lock is not what protects this) → fsx TestConcurrentWritersNeverShareATempFile; mutate TestUniqueTempNames
+- WriteConcurrencyTests.swift › a file changed by someone else between the read and the rename is left alone (409) → fsx TestExternalChangeBeforeRename; mutate TestExternalChangeBeforeRename
+- WriteConcurrencyTests.swift › a file created by someone else while a new file is being written is left alone (409) → fsx TestExternalCreateBeforeRename; mutate TestExternalCreateBeforeRename
+- WriteGuardTests.swift › a project whose .claude is a link to another folder is refused (409) and that folder is untouched → rules TestClaudeFolderLinkEscapes
+- WriteGuardTests.swift › a project settings file that is a link to another file is refused (409) and that file is untouched → rules TestSettingsFileLinkEscapes
+- WriteGuardTests.swift › a normal project is still edited, and the global settings file may be a link (followed) → rules TestControlsStillWork
+- WriteGuardTests.swift › removing a skill whose path goes out of the CLI folder is 403 and changes nothing → mutate TestRemoveOutsideCLIFolder
+- WriteGuardTests.swift › a skills folder that is itself a link (dotfiles) still lets its skills be removed → mutate TestRemoveThroughLinkedSkillsFolder
+- WriteGuardTests.swift › addSkill into both CLIs: when the second folder cannot be written the first skill is gone and nothing is recorded → mutate TestCreateAllRollback
+- WriteGuardTests.swift › a settings path that is a folder is refused (409): no temp file, no journal entry, no trash slot → mutate TestSettingsPathIsFolder
+- WriteGuardTests.swift › a read-only folder: 500, file untouched, no journal entry, no temp file, no trash slot → mutate TestReadOnlyFolder
+- WriteGuardTests.swift › hook timeout: 0 and nil leave the key out (as Node does), whole numbers have no decimals, 2.5 stays 2.5 → mutate TestHookTimeoutFormats
+- WriteGuardTests.swift › hook timeout: nan and infinity are refused (400) and nothing is written → mutate TestHookTimeoutNonFinite
+- WriteGuardTests.swift › undo after a hand edit, on a hook file the same entry created: the hook goes, the hand edit stays → mutate TestUndoHookFileCreatedBySameEntryAfterHandEdit
+- ZstdStreamTests.swift › reads a file written by zlib.zstdCompressSync byte for byte → logs TestZstdSmallFromNode
+- ZstdStreamTests.swift › reads a file written by the zstd command line tool (level 19) → logs TestZstdSmallFromCLI
+- ZstdStreamTests.swift › concatenated frames read as one stream → logs TestZstdConcatenatedFrames
+- ZstdStreamTests.swift › a 5.5 MB stream decodes to identical bytes, in several chunks → logs TestZstdLarge
+- ZstdStreamTests.swift › a file cut inside a frame is reported as truncated → logs TestZstdTruncated
+- ZstdStreamTests.swift › garbage is reported as corrupt without quoting its content → logs TestZstdCorruptDoesNotQuote
+- ZstdStreamTests.swift › a missing file is cannotOpen → logs TestZstdMissingIsCannotOpen
+
+Retired by disposition: ToolchainTests.swift › swift-testing discovers and runs a test (Swift test toolchain only).
+
+Unmapped: none
 
 ## Acceptance map
 
