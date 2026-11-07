@@ -1,6 +1,8 @@
 package roots
 
 import (
+	"os"
+	"path/filepath"
 	"syscall"
 	"unsafe"
 )
@@ -10,9 +12,24 @@ import (
 // filepath.EvalSymlinks keeps the caller's. Without this, /users/ME/.claude would slip past a guard
 // that compares against /Users/me (H4). F_GETPATH asks the kernel for the path of an open file; on
 // any failure the input is returned unchanged.
+//
+// Only a directory or a regular file is opened. open(2) on a FIFO blocks until a peer opens it, even
+// with O_EVTONLY, which would hang a root that points at one. Any other kind (FIFO, socket, device,
+// symlink) keeps its own name and takes the stored spelling of its parent. O_NONBLOCK still guards
+// the window between the Lstat and the open, and O_CLOEXEC keeps the descriptor out of children.
 func canonicalCase(path string) string {
-	// O_EVTONLY opens without read access and without blocking, so a FIFO or an unreadable folder is fine.
-	fd, err := syscall.Open(path, syscall.O_EVTONLY, 0)
+	info, err := os.Lstat(path)
+	if err != nil {
+		return path
+	}
+	if !info.IsDir() && !info.Mode().IsRegular() {
+		parent := filepath.Dir(path)
+		if parent == path {
+			return path
+		}
+		return filepath.Join(canonicalCase(parent), filepath.Base(path))
+	}
+	fd, err := syscall.Open(path, syscall.O_EVTONLY|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
 	if err != nil {
 		return path
 	}

@@ -229,3 +229,32 @@ func TestTheActualRealHome(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// Roots.swift keeps every root as given: resolvedPath is used only inside the real-home guard, never on
+// the returned URLs. Checked by compiling Roots.swift: HOME=/tmp/x gives /tmp/x/.claude, not
+// /private/tmp/x/.claude. A symlinked HOME must stay as the link the caller passed.
+func TestResolveKeepsSymlinkedHomeAsGiven(t *testing.T) {
+	h := newTempHome(t)
+	target := h.url("target")
+	if err := os.Mkdir(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	link := h.url("link")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	r, err := Resolve(config.Config{Test: true, UserHome: link}, "/real/me")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		"claude": filepath.Join(link, ".claude"), "data": filepath.Join(link, ".spacevibe"),
+		"state": filepath.Join(link, ".claude.json"), "gemini": filepath.Join(link, ".gemini"),
+	}
+	got := map[string]string{"claude": r.Claude.Root, "data": r.Data, "state": r.ClaudeState, "gemini": r.Gemini}
+	for k, w := range want {
+		if got[k] != w {
+			t.Errorf("%s = %q, want %q", k, got[k], w)
+		}
+	}
+}
