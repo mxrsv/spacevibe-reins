@@ -37,6 +37,10 @@ enum CodexWording {
     static let sandboxTitles: [(value: String, title: String)] = [("read-only", "Read only"), ("workspace-write", "Workspace"), ("danger-full-access", "Full access")]
     static let networkTitles = ["Off", "On"]
 
+    /// `config.toml` exists but cannot be read: nothing about Codex's settings is known, so nothing is guessed, least of all the defaults.
+    static let notReadableSentence = "Cannot read ~/.codex/config.toml, so Codex's settings are not known."
+    static let trustNotReadableSentence = "Cannot read ~/.codex/config.toml, so project trust is not known."
+
     /// A config string as it may be shown: itself when it is a short lowercase word, else `hiddenText`.
     static func word(_ text: String) -> String { isWord(text) ? text : hiddenText }
 
@@ -58,6 +62,8 @@ enum CodexWording {
     // MARK: Status
 
     static func status(_ codex: CoreCodexPermissions) -> CodexStatus {
+        // Unreadable is checked first: `present` and every setting below it are unknown then, not the defaults.
+        guard !codex.notReadable else { return CodexStatus(tone: .warn, sentence: notReadableSentence, detail: nil) }
         guard codex.present else {
             return CodexStatus(tone: .neutral, sentence: "Runs on its defaults: there is no ~/.codex/config.toml", detail: nil)
         }
@@ -116,7 +122,7 @@ enum CodexWording {
     // MARK: Rows
 
     static func rows(_ codex: CoreCodexPermissions) -> [CodexSettingRow] {
-        guard codex.present else { return [] }
+        guard codex.present, !codex.notReadable else { return [] }
         var out = [approvalRow(codex)]
         if codex.sandboxMode != nil || codex.defaultPermissions == nil { out += sandboxRows(codex) }
         if let name = codex.defaultPermissions { out += profileRows(codex, name: name) }

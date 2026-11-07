@@ -100,13 +100,13 @@ struct RulesModelTests {
         notReadable: false, skippedLines: 0
     )
 
-    private static func snapshot(scope: CoreRuleScope = .global, dir: String? = nil, notReadable: Bool = false, problems: [String] = []) -> CoreRulesSnapshot {
+    private static func snapshot(scope: CoreRuleScope = .global, dir: String? = nil, notReadable: Bool = false, problems: [String] = [], codex: CoreCodexPermissions? = nil) -> CoreRulesSnapshot {
         let push = rule("Bash(git push:*)", .allow, scope: scope, dir: dir)
         return CoreRulesSnapshot(
             projectDirs: [project], globalRuleCount: 3, scope: scope, dir: dir, fileLabel: scope == .global ? "~/.claude/settings.json" : ".claude/settings.json",
             exists: true, problems: problems, rules: [push, rule("Bash(rm -rf:*)", .deny, scope: scope, dir: dir)],
             grid: [cell(.read, "Read files", .allow), cell(.run, "Run commands", .mixed), cell(.push, "Push and deploy", .allow, rules: [push])],
-            codex: codex, notReadable: notReadable, globalNotReadable: false
+            codex: codex ?? Self.codex, notReadable: notReadable, globalNotReadable: false
         )
     }
 
@@ -196,6 +196,25 @@ struct RulesModelTests {
         model.requestSet(.push, to: .deny)
         try await Task.sleep(for: .milliseconds(50))
         #expect(model.pending == nil && core.calls == ["snapshot global - refresh=true"])
+    }
+
+    @Test("an unreadable config.toml reaches the page as the fixed unknown sentence, never as the defaults, whether or not the file is present")
+    func codexNotReadable() async throws {
+        for present in [false, true] {
+            var unreadable = Self.codex
+            unreadable.present = present
+            unreadable.notReadable = true
+            unreadable.warnings = ["~/.codex/config.toml could not be read."]
+            let core = FakeRulesCore(snapshot: Self.snapshot(codex: unreadable))
+            let model = try await started(core)
+            let codex = try #require(model.snapshot?.codex)
+            #expect(codex.notReadable)
+            let status = CodexWording.status(codex)
+            #expect(status == CodexStatus(tone: .warn, sentence: CodexWording.notReadableSentence, detail: nil))
+            #expect(!status.sentence.contains("defaults") && !status.sentence.contains("there is no"))
+            #expect(CodexWording.rows(codex).isEmpty)
+            #expect(RulesWording.codexNotices(codex) == ["~/.codex/config.toml could not be read."])
+        }
     }
 
     // MARK: Grid writes

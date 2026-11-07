@@ -257,7 +257,9 @@ struct CoreClientTests {
         let seen = folder.appendingPathComponent("seen")
         try "#!/bin/sh\nprintf '%s' \"$HOME\" > '\(seen.path)'\nread line\n".write(to: script, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
-        let client = CoreClient(binary: script, handshakeTimeout: .milliseconds(400))
+        // No short handshake timeout: under load it killed the shell before its first command ran, so `seen` was never written.
+        // The script ends on its own once it has read the `initialize` line, and that is what fails the read.
+        let client = CoreClient(binary: script)
         defer { client.shutdown() }
         _ = try? await client.inventoryRead()
         #expect(try String(contentsOf: seen, encoding: .utf8) == ProcessInfo.processInfo.environment["HOME"])

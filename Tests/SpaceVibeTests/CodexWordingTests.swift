@@ -134,6 +134,23 @@ struct CodexWordingTests {
         #expect(CodexWording.rows(codex).isEmpty)
     }
 
+    @Test("a config.toml that cannot be read is unknown, not the defaults: one sentence, no rows, whether or not the file is present")
+    func notReadable() {
+        for present in [false, true] {
+            // As the core sends it for an unreadable file: every setting empty, the flag set. `present: true` also carries stale-looking values.
+            let codex = CoreCodexPermissions(
+                present: present, model: .legacy, unrestricted: false, warnings: [], approvalPolicy: present ? .mode("never") : nil,
+                sandboxMode: present ? "danger-full-access" : nil, sandboxWorkspaceWrite: nil, defaultPermissions: nil, approvalsReviewer: nil,
+                profiles: [], projects: [],
+                rules: CoreCodexRulesSummary(files: 0, allow: 0, prompt: 0, forbidden: 0, other: 0, unreadable: 0, folderNotReadable: false),
+                notReadable: true, skippedLines: 0
+            )
+            #expect(CodexWording.status(codex) == CodexStatus(tone: .warn, sentence: "Cannot read ~/.codex/config.toml, so Codex's settings are not known.", detail: nil))
+            #expect(CodexWording.rows(codex).isEmpty)
+            #expect(!shown(codex).contains("defaults") && !shown(codex).contains("is not set") && !shown(codex).contains("there is no"))
+        }
+    }
+
     @Test("command rules are counted per decision, strictest first, with no pattern")
     func ruleCounts() async throws {
         let codex = try await permissions("approval_policy = \"on-request\"\n", rules: """

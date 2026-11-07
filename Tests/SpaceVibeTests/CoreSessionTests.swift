@@ -112,7 +112,8 @@ struct CoreSessionTests {
             #expect(ended.isSet, "the connection was not told, so it would not restart the core")
             let lost = await #expect(throws: CoreSession.Lost.self) { try await request.value }
             #expect(lost?.sent == true)
-            #expect(!session.process.isRunning)
+            // `end` fails the request first and terminates the process after, and SIGTERM is not instant.
+            #expect(await eventually { !session.process.isRunning }, "the process outlived the session")
         }
     }
 }

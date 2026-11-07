@@ -26,7 +26,9 @@ struct RulesCodexPage: View {
     private func settings(_ codex: CoreCodexPermissions) -> some View {
         GroupedList {
             CardHeader("How Codex runs", detail: "~/.codex/config.toml", columns: { Tag("Read only", icon: .lock) })
-            if !codex.present {
+            if codex.notReadable {
+                EmptyRow(CodexWording.notReadableSentence)
+            } else if !codex.present {
                 EmptyRow("There is no ~/.codex/config.toml, so Codex runs on its defaults.")
             }
             ForEach(CodexWording.rows(codex), id: \.title) { row in
@@ -60,14 +62,20 @@ struct RulesCodexPage: View {
             let project = codex.projects.first { $0.path == dir }
             GroupedList {
                 CardHeader("This project", detail: "trust_level in config.toml")
-                CodexTrustRow(path: dir, level: project?.trustLevel, listed: project != nil)
+                if codex.notReadable {
+                    EmptyRow(CodexWording.trustNotReadableSentence)
+                } else {
+                    CodexTrustRow(path: dir, level: project?.trustLevel, listed: project != nil)
+                }
                 EmptyRow("Codex reads no permission file inside a project: everything above comes from ~/.codex/config.toml.")
             }
         } else {
             let shown = model.showsAllTrust ? codex.projects : Array(codex.projects.prefix(Self.trustPreview))
             GroupedList {
-                CardHeader("Project trust", count: codex.projects.count, detail: "[projects] in config.toml")
-                if codex.projects.isEmpty {
+                CardHeader("Project trust", count: codex.notReadable ? nil : codex.projects.count, detail: "[projects] in config.toml")
+                if codex.notReadable {
+                    EmptyRow(CodexWording.trustNotReadableSentence)
+                } else if codex.projects.isEmpty {
                     EmptyRow("config.toml lists no project.")
                 }
                 ForEach(shown, id: \.path) { project in
