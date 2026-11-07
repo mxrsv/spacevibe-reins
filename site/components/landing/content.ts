@@ -2,7 +2,7 @@
  * Every word and number on the landing page. Product truth comes from
  * `../../PRODUCT.md` and `docs/specs/2026-11-02-reins.md`; nothing here claims a
  * feature the spec does not. The example rows mirror the synthetic fixture home the
- * app's own tests run against (`Tests/ReinsCoreTests/Fixtures`), so every value is
+ * app's own tests run against (`core/testdata/fixtures`), so every value is
  * one the engine really produced, and every panel that shows them says "demo data".
  */
 

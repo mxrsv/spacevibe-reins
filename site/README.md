@@ -10,4 +10,4 @@ The public page for `reins.spacevibe.dev`: Next.js 16 (App Router, static export
 
 Layout: `app/` (layout, page, `globals.css` tokens, `scene.css` planet scene), `components/landing/` (one file per section; `content.ts` holds every word and number), `public/landing/` (the deep-space raster and three star tiles, shared with the Academy landing).
 
-The example rows mirror the app's synthetic fixture home (`../Tests/ReinsCoreTests/Fixtures`), never a real `~/.claude`; every panel that shows them says "demo data".
+The example rows mirror the app's synthetic fixture home (`../core/testdata/fixtures`), never a real `~/.claude`; every panel that shows them says "demo data".

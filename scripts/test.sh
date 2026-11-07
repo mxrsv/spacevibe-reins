@@ -30,5 +30,7 @@ else
 fi
 
 export REINS_TEST=1
+# The frozen goldens (SV5) must be byte-identical to the committed hashes.
+(cd core/testdata/fixtures && shasum -a 256 -c --quiet SHA256SUMS)
 # The `+` form: bash 3.2 with `set -u` treats an empty array as unbound, which is the Xcode case above.
 exec swift test ${FLAGS[@]+"${FLAGS[@]}"} "$@"

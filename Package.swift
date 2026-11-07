@@ -41,7 +41,6 @@ let package = Package(
         .testTarget(
             name: "ReinsCoreTests",
             dependencies: ["ReinsCore"],
-            exclude: ["Fixtures"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .testTarget(

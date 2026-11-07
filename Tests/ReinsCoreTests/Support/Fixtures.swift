@@ -1,11 +1,12 @@
 import CryptoKit
 import Foundation
 
-/// Committed test data under Tests/ReinsCoreTests/Fixtures (frozen goldens (SV5), last generated at b58269d3f3eb).
+/// Committed test data under core/testdata/fixtures (frozen goldens (SV5), last generated at b58269d3f3eb).
 enum Fixtures {
     static let directory = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()
-        .appendingPathComponent("Fixtures", isDirectory: true)
+        .deletingLastPathComponent().deletingLastPathComponent()
+        .appendingPathComponent("core/testdata/fixtures", isDirectory: true)
 
     static func url(_ relative: String) -> URL { directory.appendingPathComponent(relative) }
 
