@@ -13,7 +13,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         }
     }
 
-    var icon: ReinsGlyph {
+    var icon: SpaceVibeGlyph {
         switch self {
         case .appearance: .palette
         case .update: .update
@@ -22,7 +22,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 }
 
 extension ThemeSetting {
-    var icon: ReinsGlyph {
+    var icon: SpaceVibeGlyph {
         switch self {
         case .system: .monitor
         case .light: .sun
@@ -42,7 +42,7 @@ enum SettingsWording {
     struct StatusTag: Equatable {
         let text: String
         let tone: TagTone
-        let icon: ReinsGlyph?
+        let icon: SpaceVibeGlyph?
     }
 
     static func tag(_ status: UpdateController.Status) -> StatusTag? {
@@ -50,7 +50,7 @@ enum SettingsWording {
         case .notChecked, .unavailable: nil
         case .checking: StatusTag(text: "Checking\u{2026}", tone: .neutral, icon: .refresh)
         case .upToDate: StatusTag(text: "Up to date", tone: .success, icon: nil)
-        case .available(let version): StatusTag(text: "Reins \(version) is available", tone: .neutral, icon: .download)
+        case .available(let version): StatusTag(text: "SpaceVibe \(version) is available", tone: .neutral, icon: .download)
         case .failed: StatusTag(text: "Check failed", tone: .warn, icon: nil)
         }
     }
@@ -72,9 +72,9 @@ enum SettingsWording {
         return "Checked \(formatted(date, "MMM d", locale: "en_US")) at \(time)"
     }
 
-    /// "Reins 0.1.0", or "Reins" outside an app bundle.
+    /// "SpaceVibe 0.1.0", or "SpaceVibe" outside an app bundle.
     static func appName(version: String?) -> String {
-        version.map { "Reins \($0)" } ?? "Reins"
+        version.map { "SpaceVibe \($0)" } ?? "SpaceVibe"
     }
 
     private static func formatted(_ date: Date, _ format: String, locale: String) -> String {

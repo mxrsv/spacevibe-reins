@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// The Reins mark from `Resources/AppIcon.svg`, drawn as shapes (only the CLI marks are images, `IconPolicyTests`): a dark
+/// The SpaceVibe mark from `Resources/AppIcon.svg`, drawn as shapes (only the CLI marks are images, `IconPolicyTests`): a dark
 /// rounded square with two bars and an open ring, turned 45 degrees. It leads the Settings > Update card.
-struct ReinsMark: View {
-    var size: CGFloat = Metrics.reinsMarkSize
+struct SpaceVibeMark: View {
+    var size: CGFloat = Metrics.spaceVibeMarkSize
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: size * Metrics.reinsMarkRadiusFraction, style: .continuous).fill(Palette.markGround)
+            RoundedRectangle(cornerRadius: size * Metrics.spaceVibeMarkRadiusFraction, style: .continuous).fill(Palette.markGround)
             ForEach(MarkPart.allCases, id: \.self) { part in
                 MarkShape(part: part).fill(Palette.markInk)
             }

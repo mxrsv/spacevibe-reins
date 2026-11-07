@@ -212,7 +212,7 @@ enum CodexWording {
             ("Prompt", "Asks before running", rules.prompt),
             ("Allow", "Runs without asking", rules.allow),
         ]
-        if rules.other > 0 { out.append((title: "Other", meaning: "A decision Reins does not know", count: rules.other)) }
+        if rules.other > 0 { out.append((title: "Other", meaning: "A decision SpaceVibe does not know", count: rules.other)) }
         return out
     }
 

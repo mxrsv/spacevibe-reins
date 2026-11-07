@@ -14,7 +14,7 @@ import (
 	"spacevibe.dev/core/internal/toml"
 )
 
-// Project discovery. Claude Code keeps no list of projects, so Reins looks where a path is already recorded:
+// Project discovery. Claude Code keeps no list of projects, so SpaceVibe looks where a path is already recorded:
 //   - the cwd in the head of the newest session logs of each folder under claude/projects (the folder name is a
 //     lossy encoding of the path and cannot be decoded), and
 //   - the [projects."<path>"] tables of Codex config.toml.

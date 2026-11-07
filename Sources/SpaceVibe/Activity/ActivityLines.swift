@@ -24,7 +24,7 @@ struct ActivityLines: View {
             title.lineLimit(1).truncationMode(.tail).help(help ?? "")
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 Text(line.text)
-                    .reinsText(line.code ? .code : .caption, tone: line.code ? .secondary : .tertiary)
+                    .spaceVibeText(line.code ? .code : .caption, tone: line.code ? .secondary : .tertiary)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }

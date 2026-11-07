@@ -15,18 +15,18 @@ struct RowText<Tags: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: Space.s8) {
                 Text(title)
-                    .reinsText(codeTitle ? .codeTitle : .rowTitle, tone: .primary)
+                    .spaceVibeText(codeTitle ? .codeTitle : .rowTitle, tone: .primary)
                     .lineLimit(1)
                     .truncationMode(.tail)
                 tags
             }
-            .frame(height: ReinsType.rowTitle.lineBox)
+            .frame(height: SpaceVibeType.rowTitle.lineBox)
             if let subtitle {
                 Text(subtitle)
-                    .reinsText(codeSubtitle ? .code : .caption, tone: .tertiary)
+                    .spaceVibeText(codeSubtitle ? .code : .caption, tone: .tertiary)
                     .lineLimit(1)
                     .truncationMode(.middle)
-                    .frame(minHeight: ReinsType.caption.lineBox)
+                    .frame(minHeight: SpaceVibeType.caption.lineBox)
             }
         }
     }

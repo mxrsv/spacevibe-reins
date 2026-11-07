@@ -29,7 +29,7 @@ struct TextInputField: View {
                     .autocorrectionDisabled()
             }
         }
-        .reinsText(code ? .code : .body)
+        .spaceVibeText(code ? .code : .body)
         .lineLimit(1)
         .padding(.horizontal, Space.s8)
         .frame(height: Metrics.controlHeight)

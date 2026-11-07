@@ -8,7 +8,7 @@ struct NumberCell: View {
 
     var body: some View {
         Text(text)
-            .reinsText(.number, tone: muted ? .tertiary : .primary)
+            .spaceVibeText(.number, tone: muted ? .tertiary : .primary)
             .lineLimit(1)
             .frame(width: width, alignment: .trailing)
     }
@@ -45,7 +45,7 @@ struct ReadOnlyMark: View {
     let reason: String
 
     var body: some View {
-        ReinsIcon(.lock, label: reason)
+        SpaceVibeIcon(.lock, label: reason)
             .foregroundStyle(TextTone.tertiary.color)
             .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
             .help(reason)
@@ -125,7 +125,7 @@ struct ShareCell: View {
 
     var body: some View {
         Text(percent.map { "\($0)%" } ?? "\u{2014}")
-            .reinsText(.heading, tone: .primary)
+            .spaceVibeText(.heading, tone: .primary)
             .lineLimit(1)
             .frame(width: Metrics.ListRow.shareWidth, alignment: .trailing)
             .accessibilityLabel(percent.map { "\($0)% left" } ?? "Not known")
@@ -139,7 +139,7 @@ struct CountCell: View {
 
     var body: some View {
         Text(text)
-            .reinsText(.prose, tone: .secondary)
+            .spaceVibeText(.prose, tone: .secondary)
             .lineLimit(1)
             .frame(width: width, alignment: .trailing)
     }
@@ -153,7 +153,7 @@ struct MetaCell: View {
 
     var body: some View {
         Text(text)
-            .reinsText(.meta, tone: .tertiary)
+            .spaceVibeText(.meta, tone: .tertiary)
             .lineLimit(1)
             .frame(width: width, alignment: alignment)
     }

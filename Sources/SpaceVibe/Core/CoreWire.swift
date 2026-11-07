@@ -72,12 +72,12 @@ enum CoreWire {
         return rpc.coreError ?? CoreError(protocolFaultMessage, status: 500)
     }
 
-    static let protocolFaultMessage = "The Reins helper reported an internal problem."
-    static let undecodableMessage = "The Reins helper sent an answer this version of Reins does not understand."
-    static let restartedMessage = "The Reins helper restarted before it answered, so this was not done. Try again."
-    static let startFailedMessage = "The Reins helper could not be started."
-    static let incompatibleMessage = "This copy of Reins and its helper do not match. Reinstall Reins."
-    static let closedMessage = "The Reins helper was shut down."
+    static let protocolFaultMessage = "The SpaceVibe helper reported an internal problem."
+    static let undecodableMessage = "The SpaceVibe helper sent an answer this version of SpaceVibe does not understand."
+    static let restartedMessage = "The SpaceVibe helper restarted before it answered, so this was not done. Try again."
+    static let startFailedMessage = "The SpaceVibe helper could not be started."
+    static let incompatibleMessage = "This copy of SpaceVibe and its helper do not match. Reinstall SpaceVibe."
+    static let closedMessage = "The SpaceVibe helper was shut down."
 }
 
 /// A JSON-RPC error that reached the session's caller as it came; `CoreConnection` maps it.

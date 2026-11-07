@@ -8,7 +8,7 @@ struct AppearanceSettings: View {
         @Bindable var appearance = appearance
         VStack(spacing: Rhythm.cards) {
             GroupedList {
-                CardHeader("Theme", lead: { ReinsIcon(.palette, size: .row) })
+                CardHeader("Theme", lead: { SpaceVibeIcon(.palette, size: .row) })
                 HStack(spacing: Rhythm.tiles) {
                     ForEach(ThemeSetting.allCases, id: \.self) { theme in
                         ThemeTile(title: theme.title, icon: theme.icon, appearance: theme.fixed?.colorScheme, isSelected: appearance.theme == theme) {
@@ -23,7 +23,7 @@ struct AppearanceSettings: View {
             }
 
             GroupedList {
-                CardHeader("Font size", lead: { ReinsIcon(.text, size: .row) }, columns: {
+                CardHeader("Font size", lead: { SpaceVibeIcon(.text, size: .row) }, columns: {
                     SegmentedControl(label: "Font size", options: FontSizeChoice.allCases.map { SegmentOption($0.title, value: $0) },
                                      selection: $appearance.fontSize)
                 })
@@ -34,8 +34,8 @@ struct AppearanceSettings: View {
             }
 
             GroupedList {
-                CardHeader("Language", lead: { ReinsIcon(.globe, size: .row) }, columns: {
-                    Text(SettingsWording.language).reinsText(.body, tone: .secondary)
+                CardHeader("Language", lead: { SpaceVibeIcon(.globe, size: .row) }, columns: {
+                    Text(SettingsWording.language).spaceVibeText(.body, tone: .secondary)
                 })
             }
         }
@@ -56,7 +56,7 @@ private struct FontSizeSample: View {
 
     private func sampleRow(_ name: String, _ description: String, runs: Int) -> some View {
         Row { RowText(name, subtitle: description) }
-            .lead { ReinsIcon(.skill, size: .row) }
+            .lead { SpaceVibeIcon(.skill, size: .row) }
             .cells { UsageCell(cli: .claude, model: .counted(runs: runs), max: 142) }
     }
 }

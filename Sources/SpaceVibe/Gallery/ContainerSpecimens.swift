@@ -31,7 +31,7 @@ struct ContainerSpecimens: View {
                         ListRow("notify") { MetaCell(text: "No Notification event") }
                         ListRow("ask-review") { MetaCell(text: "Can't run prompt handlers") }
                     }
-                } actions: { Button("Why") {}.buttonStyle(.reins(.normal)) })),
+                } actions: { Button("Why") {}.buttonStyle(.spaceVibe(.normal)) })),
             ("loading", AnyView(Tile("Usage windows", layout: .bare, isOpen: open("loading")) { LoadingSkeleton() })),
             ("empty", AnyView(Tile("Hooks", count: "0", layout: .bare, isOpen: open("empty")) {
                 QuietEmptyState("No hooks", message: "Neither CLI has a hook configured.")
@@ -69,9 +69,9 @@ struct ContainerSpecimens: View {
                            verdict: VerdictBox(glyph: .used, glyphLabel: "Advice", title: "typecheck-edit",
                                                text: "PostToolUse runs a script that is gone.", small: "Added 3 weeks ago."),
                            moreMarked: 2, isOpen: open("answer")) {
-                    Button("Remove") {}.buttonStyle(.reins(.danger))
-                    Button("Open file") {}.buttonStyle(.reins(.normal))
-                } headerActions: { Button("Copy /usage") {}.buttonStyle(.reins(.normal)) })),
+                    Button("Remove") {}.buttonStyle(.spaceVibe(.danger))
+                    Button("Open file") {}.buttonStyle(.spaceVibe(.normal))
+                } headerActions: { Button("Copy /usage") {}.buttonStyle(.spaceVibe(.normal)) })),
             ("nothing needs you", AnyView(AnswerCard(sentence: "Nothing needs you.", isOpen: open("calm")))),
             ("loading", AnyView(AnswerCard(sentence: nil, isOpen: open("answer-loading")))),
         ])
@@ -90,7 +90,7 @@ struct ContainerSpecimens: View {
                         Band("Codex", count: 4, isOpen: open("band-codex", false)) { windowRows } lead: {
                             CLIMark(CoreLimitsCLI.codex, size: .control)
                         } extras: {
-                            HStack(spacing: Space.s4) { ReinsIcon(content: .clock, size: .inline); Text("read 8 h ago").reinsText(.meta) }
+                            HStack(spacing: Space.s4) { SpaceVibeIcon(content: .clock, size: .inline); Text("read 8 h ago").spaceVibeText(.meta) }
                                 .foregroundStyle(Palette.fg3)
                         }
                         Band("Gemini CLI", isOpen: open("band-gemini", false)) { EmptyView() } lead: { CLIMark(CoreLimitsCLI.gemini, size: .control) }
@@ -242,11 +242,11 @@ struct ContainerSpecimens: View {
             })),
             ("nothing matches, with Clear filters, in a card", AnyView(Tile("Subagents", count: "0", layout: .bare, isOpen: open("nomatch")) {
                 QuietEmptyState("Nothing matches", message: "No subagent fits these filters.") {
-                    Button("Clear filters") {}.buttonStyle(.reins(.normal))
+                    Button("Clear filters") {}.buttonStyle(.spaceVibe(.normal))
                 }
             })),
             ("nothing matches, in a list", AnyView(QuietEmptyState("Nothing matches", message: "No skill fits these filters.", placement: .list) {
-                Button("Clear filters") {}.buttonStyle(.reins(.normal))
+                Button("Clear filters") {}.buttonStyle(.spaceVibe(.normal))
             })),
             ("loading skeleton, in a card", AnyView(Tile("Answer", layout: .bare, isOpen: open("skeleton")) { LoadingSkeleton() })),
         ])
@@ -260,7 +260,7 @@ struct ContainerSpecimens: View {
 
     private func panel<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: Space.s12) {
-            Text(title).reinsText(.meta, tone: .tertiary)
+            Text(title).spaceVibeText(.meta, tone: .tertiary)
             content()
         }
         .padding(Space.s24)
@@ -269,7 +269,7 @@ struct ContainerSpecimens: View {
     }
 
     private func caption(_ text: String) -> some View {
-        Text(text).reinsText(.small, tone: .tertiary)
+        Text(text).spaceVibeText(.small, tone: .tertiary)
     }
 
     /// A card of a split page at 1440 x 900: half the canvas (the mock's tile), so crops line up with the mock's at one scale.

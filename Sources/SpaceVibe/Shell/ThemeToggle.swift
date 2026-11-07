@@ -11,9 +11,9 @@ struct ThemeToggle: View {
         let target: AppearanceChoice = scheme == .dark ? .light : .dark
         let label = "Switch to \(target.rawValue) theme"
         Button { appearance.theme = ThemeSetting(target) } label: {
-            ReinsIcon(target == .light ? .sun : .moon)
+            SpaceVibeIcon(target == .light ? .sun : .moon)
         }
-        .buttonStyle(.reins(.plainIcon))
+        .buttonStyle(.spaceVibe(.plainIcon))
         .help(label)
         .accessibilityLabel(label)
     }

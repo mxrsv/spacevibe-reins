@@ -10,9 +10,9 @@ struct GroupLabel<Lead: View>: View {
     var body: some View {
         HStack(alignment: .center, spacing: Space.s8) {
             lead
-            Text(title).reinsText(.captionStrong, tone: .secondary)
+            Text(title).spaceVibeText(.captionStrong, tone: .secondary)
             if let count { Count(count) }
-            if let detail { Text(detail).reinsText(.caption, tone: .tertiary) }
+            if let detail { Text(detail).spaceVibeText(.caption, tone: .tertiary) }
         }
         .padding(.horizontal, Space.s4)
         .padding(.top, Space.s24)

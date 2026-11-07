@@ -13,7 +13,7 @@ import (
 // G-fix.3: journal.json is a file a user, a sync tool or another program can edit, and Undo moves, writes and
 // removes the paths it names. Before an undo changes anything, every path of the entry is checked:
 //
-//   - file, path and from must be inside a folder Reins manages: the Claude Code or Codex folder, the data folder, or
+//   - file, path and from must be inside a folder SpaceVibe manages: the Claude Code or Codex folder, the data folder, or
 //     the .claude folder of a project that discovery found (rules edit a project's settings.json). A file-edited
 //     file may also be the real file a configuration link points at (a dotfiles setup: the journal records the target).
 //   - backup and to must be inside <data>/trash.

@@ -150,7 +150,7 @@ func TestPresenceKinds(t *testing.T) {
 	}
 }
 
-// Swift: ReadHardeningTests.swift "a project under a folder Reins cannot stat is listed and reported as not readable, not dropped"
+// Swift: ReadHardeningTests.swift "a project under a folder SpaceVibe cannot stat is listed and reported as not readable, not dropped"
 func TestDeniedProject(t *testing.T) {
 	requireNotRoot(t)
 	h := newTempHome(t)

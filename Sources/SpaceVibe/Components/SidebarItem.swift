@@ -6,7 +6,7 @@ import SwiftUI
 /// fill (`surface` on the well), never its text, weight or icon.
 struct SidebarItem<Mark: View>: View {
     let title: String
-    let icon: ReinsGlyph
+    let icon: SpaceVibeGlyph
     var count: Int?
     var alert = false
     /// What VoiceOver says for the count ("2 sessions running"); the number when nil.
@@ -21,22 +21,22 @@ struct SidebarItem<Mark: View>: View {
         let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
         Button(action: select) {
             HStack(spacing: Space.s8) {
-                ReinsIcon(icon, size: .sidebar).foregroundStyle(TextTone.secondary.color)
+                SpaceVibeIcon(icon, size: .sidebar).foregroundStyle(TextTone.secondary.color)
                 Text(title)
                 mark
                 Spacer(minLength: 0)
                 if let count {
-                    Text("\(count)").reinsText(alert ? .bodyStrong : .body, tone: alert ? .danger : .tertiary)
+                    Text("\(count)").spaceVibeText(alert ? .bodyStrong : .body, tone: alert ? .danger : .tertiary)
                 }
             }
-            .reinsText(.title, tone: .primary)
+            .spaceVibeText(.title, tone: .primary)
             .padding(.horizontal, Metrics.sidebarItemPadding)
             .frame(height: Metrics.sidebarItemHeight)
             .background(shape.fill(isActive ? Palette.surface : (hovering ? Palette.hover : .clear)))
             .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .reinsFocusable(cornerRadius: Metrics.controlRadius)
+        .spaceVibeFocusable(cornerRadius: Metrics.controlRadius)
         .onHover { hovering = $0 }
         .accessibilityAddTraits(isActive ? .isSelected : [])
         .accessibilityLabel(count.map { "\(title), \(spokenCount ?? String($0))" } ?? title)
@@ -44,7 +44,7 @@ struct SidebarItem<Mark: View>: View {
 }
 
 extension SidebarItem where Mark == EmptyView {
-    init(title: String, icon: ReinsGlyph, count: Int? = nil, alert: Bool = false, spokenCount: String? = nil, isActive: Bool,
+    init(title: String, icon: SpaceVibeGlyph, count: Int? = nil, alert: Bool = false, spokenCount: String? = nil, isActive: Bool,
          select: @escaping () -> Void) {
         self.init(title: title, icon: icon, count: count, alert: alert, spokenCount: spokenCount, isActive: isActive,
                   mark: EmptyView(), select: select)
@@ -52,7 +52,7 @@ extension SidebarItem where Mark == EmptyView {
 }
 
 extension SidebarItem {
-    init(title: String, icon: ReinsGlyph, isActive: Bool, @ViewBuilder mark: () -> Mark, select: @escaping () -> Void) {
+    init(title: String, icon: SpaceVibeGlyph, isActive: Bool, @ViewBuilder mark: () -> Mark, select: @escaping () -> Void) {
         self.init(title: title, icon: icon, count: nil, alert: false, spokenCount: nil, isActive: isActive, mark: mark(),
                   select: select)
     }

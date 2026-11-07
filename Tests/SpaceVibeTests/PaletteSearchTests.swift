@@ -4,10 +4,10 @@ import Testing
 
 /// A tab that only supplies palette items, so the cap can be reached without piling up demo content.
 @MainActor
-private final class ItemsTab: ReinsTab {
+private final class ItemsTab: SpaceVibeTab {
     let id = "stub"
     let title = "Stub"
-    let icon = ReinsGlyph.info
+    let icon = SpaceVibeGlyph.info
     let paletteItems: [PaletteEntry]
     init(items: [PaletteEntry]) { paletteItems = items }
     var content: AnyView { AnyView(EmptyView()) }

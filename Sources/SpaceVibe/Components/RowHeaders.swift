@@ -15,7 +15,7 @@ struct SectionRow: View {
         HStack(spacing: Metrics.rowSpacing) {
             Color.clear.frame(width: Metrics.rowLeadWidth, height: 1)
             HStack(spacing: Space.s6) {
-                Text(title).reinsText(.captionStrong, tone: .secondary)
+                Text(title).spaceVibeText(.captionStrong, tone: .secondary)
                 if let count { Count(count) }
             }
             Spacer(minLength: 0)

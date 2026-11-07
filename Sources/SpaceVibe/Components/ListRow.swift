@@ -40,7 +40,7 @@ struct ListRow<Leading: View, Trailing: View>: View {
             if lead != nil || onPick != nil { leadSlot(hovered: hovered) }
             leading
             Text(name)
-                .reinsText(.rowName, tone: .primary)
+                .spaceVibeText(.rowName, tone: .primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(width: nameWidth, alignment: .leading)
@@ -82,7 +82,7 @@ struct ListRow<Leading: View, Trailing: View>: View {
             if checkbox, let onPick {
                 RowCheckbox(name: name, isPicked: isPicked, onPick: onPick)
             } else if let lead {
-                ReinsIcon(source: lead, size: .control, ink: Palette.fg3)
+                SpaceVibeIcon(source: lead, size: .control, ink: Palette.fg3)
             }
         }
         .frame(width: Metrics.ListRow.checkbox, height: Metrics.ListRow.checkbox)
@@ -127,7 +127,7 @@ private struct RowCheckbox: View {
             ZStack {
                 shape.fill(isPicked ? Palette.accent : Palette.bgPanel)
                 shape.strokeBorder(isPicked ? Palette.accent : Palette.fg3, lineWidth: Metrics.ListRow.checkboxBorder)
-                if isPicked { ReinsIcon(content: .check, size: .small, ink: Palette.onAccent) }
+                if isPicked { SpaceVibeIcon(content: .check, size: .small, ink: Palette.onAccent) }
             }
             .frame(width: Metrics.ListRow.checkbox, height: Metrics.ListRow.checkbox)
             .contentShape(shape)

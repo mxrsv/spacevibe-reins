@@ -23,12 +23,12 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
   It registers per process on first use: from `Contents/Resources/Fonts` in the app
   ([`build-app.sh`](../scripts/build-app.sh) copies it before signing) and, in debug builds only, from the checkout.
 - **Sizes 12, 14 and 16**, plus `figure` (24) for one leading number per Tokens card and `display` (72, line box 88) for the share left on the Limits page. Each role in
-  [`ReinsType`](../Sources/SpaceVibe/Tokens/ReinsType.swift) fixes size, weight (400, 500, 600), line box (16, 20, 24) and
-  tracking. Views take a role with `.reinsText(_:tone:)` and a colour by meaning with `TextTone`.
+  [`SpaceVibeType`](../Sources/SpaceVibe/Tokens/SpaceVibeType.swift) fixes size, weight (400, 500, 600), line box (16, 20, 24) and
+  tracking. Views take a role with `.spaceVibeText(_:tone:)` and a colour by meaning with `TextTone`.
 - **Settings > Font size moves 12, 14 and 16 together** by one point (Small 11/13/15, Large 13/15/17) across the whole
   app, at once: every role reads [`TypeScale`](../Sources/SpaceVibe/Tokens/TypeScale.swift), so a view that uses a role
   re-renders when it changes. Line boxes, spacing, icons, `figure` and `display` stay. Never build a role as a stored
-  constant outside `ReinsType`: it would keep the size it had when it was made.
+  constant outside `SpaceVibeType`: it would keep the size it had when it was made.
 - **Hierarchy within a size comes from weight and tone.** Card title `title` 16/600, row name `rowTitle` 14/500, second
   line `caption` 12 in the tertiary tone.
 - **Machine strings stay Inter** with `ss02` and `zero` on (`code`, `codeTitle`, `codeBody`): slashed zero, distinct l,
@@ -69,7 +69,7 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
   category glyphs ([`CategoryGlyph`](../Sources/SpaceVibe/Components/CategoryIconData.swift): Skills `flash-line`, Subagents
   `robot-line`, Hooks `fish-symbol-line`), Phosphor Duotone for the sidebar and content glyphs
   ([`ContentGlyph`](../Sources/SpaceVibe/Components/ContentIconData.swift), Rules is its checklist glyph), and Solar Bold
-  Duotone ([`ReinsGlyph`](../Sources/SpaceVibe/Components/ReinsIconData.swift)) only for the screens not yet rebuilt. The five
+  Duotone ([`SpaceVibeGlyph`](../Sources/SpaceVibe/Components/SpaceVibeIconData.swift)) only for the screens not yet rebuilt. The five
   hexagon verdict glyphs are shapes in [`VerdictGlyph`](../Sources/SpaceVibe/Components/VerdictGlyph.swift), one colour (`fg2`).
   The credits are in the About panel ([`Credits`](../Sources/SpaceVibe/App/Credits.swift)).
   [`IconPolicyTests`](../Tests/SpaceVibeTests/IconPolicyTests.swift) fails on an SF Symbol or any other image outside
@@ -81,8 +81,8 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
   `@iconify-json` packages (downloaded into a scratch folder, never committed) into the three data files: layers per glyph as
   path code in a 24 box (Phosphor's 256 grid is scaled). A glyph that is missing gets a line in the script's table, then a
   rerun; the files are never edited by hand. The tables name the icon behind each glyph. A glyph name that exists in two sets
-  is picked by label: `ReinsIcon(.lock)` is Solar, `ReinsIcon(category: .skill)` and `ReinsIcon(content: .stack)` the v5 sets.
-- **One colour per icon.** [`ReinsIcon`](../Sources/SpaceVibe/Components/ReinsIcon.swift) draws the layers in the current
+  is picked by label: `SpaceVibeIcon(.lock)` is Solar, `SpaceVibeIcon(category: .skill)` and `SpaceVibeIcon(content: .stack)` the v5 sets.
+- **One colour per icon.** [`SpaceVibeIcon`](../Sources/SpaceVibe/Components/SpaceVibeIcon.swift) draws the layers in the current
   foreground style, the lighter at its set's opacity (Solar 50%, Phosphor 25% as the mock draws it, with the mock's thin
   outline around Phosphor shapes). Only a state tag and a banner tint an icon with their tone's ink.
 - **Sizes** (`IconSize`): v5 uses 16 (controls, tabs, rows, menus, sidebar), 14 (popovers, file rows, notes, beside 12 pt
@@ -101,16 +101,16 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
 | Limits | Layout H of the Limits mock: a 340 pt list (`limitsListWidth`) of [`LimitWindowTile`](../Sources/SpaceVibe/Components/LimitWindowTile.swift)s on the well (each its own `surface` block: 28 pt `CLIMark`, name, "CLI · resets in" line, small `Ruler`, share; `selection` over `surface` when chosen), 8 apart, and the selected window in a [`ContentCard`](../Sources/SpaceVibe/Components/ContentCard.swift) (a card with free content, 24 inside): mark and "CLI · window" title, [`LimitFigure`](../Sources/SpaceVibe/Components/LimitFigure.swift) (the share in `display`, toned by `LimitTone`, then "left of this window"), the 32 pt ruler, three [`FactTile`](../Sources/SpaceVibe/Components/FactTile.swift)s (a raised block inside the card, the one nesting) and the reading's source under them; [`LimitSidebarTile`](../Sources/SpaceVibe/Components/LimitSidebarTile.swift) with [`CLIMark`](../Sources/SpaceVibe/Components/CLIMark.swift) above the sidebar footer; the page itself is a [`SidebarItem`](../Sources/SpaceVibe/Components/SidebarItem.swift) after the tabs, its `mark` slot holding the stale clock |
 | Cells | `UsageCell`, `NumberCell`, `StateCell`, `FixedCell`, `EmptyActionSlot`, `ReadOnlyMark`, `ColumnSpacer` ([Cells](../Sources/SpaceVibe/Components/Cells.swift)) |
 | Labels | `Tag` (24, radius 6, `surfaceRaised`, neutral text; the tone is a 6 pt dot, or tints the icon when it has one; warn and danger keep their ink), `CLITag`, `CLIDot`, `Count`, `Kbd`; [`CLIMark`](../Sources/SpaceVibe/Components/CLIMark.swift)`(size: .glyph)` is the bare 14 pt brand glyph a `SegmentOption` can lead with |
-| Icons | `ReinsIcon` (a `ReinsGlyph` at an `IconSize`), `Chevron` |
-| Controls | `ReinsButtonStyle` kinds (normal, primary, danger, ghost, icon, plainIcon, inverse), `RowActionButton` (with a CLI badge), `SegmentedControl` (a segment may carry a CLI glyph and a shortcut), [`SegmentReadout`](../Sources/SpaceVibe/Components/SegmentedControl.swift) (the same frame for a value that is shown, not set: every option written out, the real one filled with `track`, or the warn tint), `FilterChip` (and its dismissible form), `ScopePicker`, `SearchField`, `TextInputField` |
+| Icons | `SpaceVibeIcon` (a `SpaceVibeGlyph` at an `IconSize`), `Chevron` |
+| Controls | `SpaceVibeButtonStyle` kinds (normal, primary, danger, ghost, icon, plainIcon, inverse), `RowActionButton` (with a CLI badge), `SegmentedControl` (a segment may carry a CLI glyph and a shortcut), [`SegmentReadout`](../Sources/SpaceVibe/Components/SegmentedControl.swift) (the same frame for a value that is shown, not set: every option written out, the real one filled with `track`, or the warn tint), `FilterChip` (and its dismissible form), `ScopePicker`, `SearchField`, `TextInputField` |
 | Messages | `Banner`, `EmptyState`, `NoteRegion`, `InsetBox`, `WarningNote`, `UsageLegend`, `ToastView`, `ConfirmationDialog`; [`StatusLead`](../Sources/SpaceVibe/Components/StatusLead.swift) (a page's one plain sentence on a `surface` block, led by a 40 pt tile in the tone's tint: neutral, success, warn) and [`CLISummaryBar`](../Sources/SpaceVibe/Components/CLISummaryBar.swift) (a 48 pt `surface` block on how the other CLI stands, on a page that shows one) |
-| Settings | [`RailTab`](../Sources/SpaceVibe/Components/RailTab.swift) (96 x 60, 24 pt icon over the `label` name, the chosen one filled with `surface`), [`ThemeTile`](../Sources/SpaceVibe/Components/ThemeTile.swift) (a small Reins window drawn from the tokens with the appearance forced, System half and half; the chosen tile takes `selection`), [`ReinsSwitch`](../Sources/SpaceVibe/Components/ReinsSwitch.swift) (drawn, 32 x 20, `accentSolid` when on: AppKit's switch does not render in the screenshots), [`ReinsMark`](../Sources/SpaceVibe/Components/ReinsMark.swift) (the app mark from `Resources/AppIcon.svg` as shapes), [`RaisedBlock`](../Sources/SpaceVibe/Components/InsetBox.swift) (a borderless `surfaceRaised` block inside a card, like `FactTile`) |
+| Settings | [`RailTab`](../Sources/SpaceVibe/Components/RailTab.swift) (96 x 60, 24 pt icon over the `label` name, the chosen one filled with `surface`), [`ThemeTile`](../Sources/SpaceVibe/Components/ThemeTile.swift) (a small Reins window drawn from the tokens with the appearance forced, System half and half; the chosen tile takes `selection`), [`SpaceVibeSwitch`](../Sources/SpaceVibe/Components/SpaceVibeSwitch.swift) (drawn, 32 x 20, `accentSolid` when on: AppKit's switch does not render in the screenshots), [`SpaceVibeMark`](../Sources/SpaceVibe/Components/SpaceVibeMark.swift) (the app mark from `Resources/AppIcon.svg` as shapes), [`RaisedBlock`](../Sources/SpaceVibe/Components/InsetBox.swift) (a borderless `surfaceRaised` block inside a card, like `FactTile`) |
 | Page and shell | `PageLayout` (or `.pageTools()`, `.pageContent()`, `.pageBackground()`), `HintBar` (`shellKeys: false` drops `⌘K` and `Esc Close`), `SidebarItem` (48, `title` role in every state, the active one changes only its fill to `surface`) with `.sidebarSurface()`, `PaletteCard` and its parts, `Scrim` |
 
 ## Traps
 
 - `Font.custom("Inter", …)` silently falls back to the system font: the family is `Inter Variable`. Build fonts only
-  through `ReinsType`, which creates them by PostScript name.
+  through `SpaceVibeType`, which creates them by PostScript name.
 - `@Entry` needs SwiftUI's macro plugin, which the Command Line Tools lack; container and environment keys are written out.
 - Solar draws a few icons with overlapping half-opacity shapes (the Loadout `layers` glyph): the browser darkens the overlap,
   one light layer does not. Check a new glyph in the gallery's icon section before using it.

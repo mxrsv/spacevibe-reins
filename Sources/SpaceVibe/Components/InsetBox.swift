@@ -21,8 +21,8 @@ struct WarningNote: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: Space.s8) {
-            ReinsIcon(.warning, ink: TextTone.warn.color)
-            Text(text).reinsText(.caption, tone: .primary).fixedSize(horizontal: false, vertical: true)
+            SpaceVibeIcon(.warning, ink: TextTone.warn.color)
+            Text(text).spaceVibeText(.caption, tone: .primary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(Space.s12)
         .frame(maxWidth: .infinity, alignment: .leading)

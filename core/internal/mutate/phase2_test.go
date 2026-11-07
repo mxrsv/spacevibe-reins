@@ -33,7 +33,7 @@ func idOf(t *testing.T, r roots.Roots, name string, kind inventory.Kind, cli usa
 }
 
 // G-fix.3: a journal.json is a file anyone can edit; Undo must not move, write or remove anything outside the folders
-// Reins manages, and refuses before it changes anything.
+// SpaceVibe manages, and refuses before it changes anything.
 func TestUndoRefusesPathsOutsideTheManagedFolders(t *testing.T) {
 	h := newCopy(t)
 	r := h.r
@@ -101,7 +101,7 @@ func TestUndoStillAcceptsWhatTheEngineRecords(t *testing.T) {
 	if len(projects) == 0 {
 		t.Fatal("the fixture has no project")
 	}
-	file := filepath.Join(projects[0], ".claude", "reins-test-undo.json")
+	file := filepath.Join(projects[0], ".claude", "spacevibe-test-undo.json")
 	entry := must(EditJSON(h.r, file, "Added", nil, addRule("Read")))
 	must(Undo(h.r, entry.ID))
 	if exists(file) {

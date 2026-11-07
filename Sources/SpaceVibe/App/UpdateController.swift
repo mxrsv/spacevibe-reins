@@ -77,7 +77,7 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
             lastCheck = updater.updater.lastUpdateCheckDate
             logger.notice("Updater started, automatic checks: \(updater.updater.automaticallyChecksForUpdates, privacy: .public)")
         } catch {
-            status = .unavailable("Updates could not start. Quit and reopen Reins, then try again.")
+            status = .unavailable("Updates could not start. Quit and reopen SpaceVibe, then try again.")
             logger.error("Updater failed to start: \(error.localizedDescription, privacy: .public)")
         }
     }
@@ -170,7 +170,7 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
         let wantsToast = !state.userInitiated && !showingInFocus
         logger.notice("Update \(update.versionString, privacy: .public) found, by user: \(state.userInitiated, privacy: .public), toast: \(wantsToast, privacy: .public)")
         guard wantsToast else { return }
-        reminder = toasts.show("Reins \(update.displayVersionString) is available", action: Self.viewAction { [weak self] in
+        reminder = toasts.show("SpaceVibe \(update.displayVersionString) is available", action: Self.viewAction { [weak self] in
             self?.checkForUpdates()
         })
     }

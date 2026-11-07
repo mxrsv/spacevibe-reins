@@ -9,10 +9,10 @@ struct DemoLoadoutList: View {
     private struct Item {
         var name: String
         var subtitle: String
-        var icon = ReinsGlyph.skill
+        var icon = SpaceVibeGlyph.skill
         var claude: UsageCellModel
         var codex: UsageCellModel
-        var tags: [(String, TagTone, ReinsGlyph?)] = []
+        var tags: [(String, TagTone, SpaceVibeGlyph?)] = []
         var codeSubtitle = false
         var removable: [InventoryCLI] = [.claude]
     }
@@ -56,7 +56,7 @@ struct DemoLoadoutList: View {
                 ForEach(item.tags, id: \.0) { tag in Tag(tag.0, tone: tag.1, icon: tag.2) }
             }
         }
-        .lead { ReinsIcon(item.icon, size: .row) }
+        .lead { SpaceVibeIcon(item.icon, size: .row) }
         .cells {
             UsageCell(cli: .claude, model: item.claude, max: max, onAdd: nil)
             UsageCell(cli: .codex, model: item.codex, max: max, onAdd: item.codex == .missing ? {} : nil)
@@ -65,7 +65,7 @@ struct DemoLoadoutList: View {
             HStack(spacing: Space.s4) {
                 if item.removable.isEmpty {
                     Color.clear.frame(width: Metrics.controlHeight, height: 1)
-                    ReinsIcon(.lock, label: "Owned by a plugin").foregroundStyle(Palette.textTertiary)
+                    SpaceVibeIcon(.lock, label: "Owned by a plugin").foregroundStyle(Palette.textTertiary)
                         .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
                 } else {
                     ForEach(InventoryCLI.allCases, id: \.self) { cli in

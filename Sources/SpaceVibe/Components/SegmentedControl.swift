@@ -58,9 +58,9 @@ struct SegmentedControl<Value: Hashable>: View {
                 if let cli = option.cli { CLIMark(cli, size: .glyph) }
                 // The hidden semibold copy holds the width; the visible title sits on it.
                 Text(option.title)
-                    .reinsText(.bodyStrong)
+                    .spaceVibeText(.bodyStrong)
                     .hidden()
-                    .overlay { Text(option.title).reinsText(isOn ? .bodyStrong : .body, tone: isOn ? .primary : .secondary) }
+                    .overlay { Text(option.title).spaceVibeText(isOn ? .bodyStrong : .body, tone: isOn ? .primary : .secondary) }
                 if let count = option.count { Count(count) }
             }
             .padding(.horizontal, Space.s8)
@@ -104,9 +104,9 @@ struct SegmentReadout: View {
             ForEach(options, id: \.self) { option in
                 let isOn = option == selected
                 Text(option)
-                    .reinsText(.bodyStrong)
+                    .spaceVibeText(.bodyStrong)
                     .hidden()
-                    .overlay { Text(option).reinsText(isOn ? .bodyStrong : .body, tone: isOn ? (warn ? .warn : .primary) : .tertiary) }
+                    .overlay { Text(option).spaceVibeText(isOn ? .bodyStrong : .body, tone: isOn ? (warn ? .warn : .primary) : .tertiary) }
                     .padding(.horizontal, Space.s8)
                     .frame(height: Metrics.segmentHeight)
                     .background(RoundedRectangle(cornerRadius: Metrics.segmentRadius, style: .continuous).fill(isOn ? (warn ? Palette.warnTint : Palette.track) : .clear))

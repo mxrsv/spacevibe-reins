@@ -13,7 +13,7 @@ struct Count: View {
 
     var body: some View {
         Text("\(value)")
-            .reinsText(alert ? .countStrong : .count, tone: alert ? .danger : .tertiary)
+            .spaceVibeText(alert ? .countStrong : .count, tone: alert ? .danger : .tertiary)
             .lineLimit(1)
     }
 }

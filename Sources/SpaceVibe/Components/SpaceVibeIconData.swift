@@ -2,9 +2,9 @@
 // Solar by 480 Design, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
 import CoreGraphics
 
-/// Every icon the old screens draw, from Solar Bold Duotone. Each has a solid layer and a lighter one in a 24 x 24 box (`ReinsIcon`
+/// Every icon the old screens draw, from Solar Bold Duotone. Each has a solid layer and a lighter one in a 24 x 24 box (`SpaceVibeIcon`
 /// draws them in one colour, the lighter at `layerOpacity`). The v5 screens use `CategoryGlyph` and `ContentGlyph` instead.
-enum ReinsGlyph: CaseIterable, GlyphSource {
+enum SpaceVibeGlyph: CaseIterable, GlyphSource {
     /// The Activity tab (waveform.path.ecg).
     case activity
     /// Add (plus).

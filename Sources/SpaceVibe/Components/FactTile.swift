@@ -16,8 +16,8 @@ struct FactTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
-            Text(label).reinsText(.caption, tone: .secondary)
-            Text(value).reinsText(.title, tone: tone).lineLimit(1)
+            Text(label).spaceVibeText(.caption, tone: .secondary)
+            Text(value).spaceVibeText(.title, tone: tone).lineLimit(1)
         }
         .padding(Space.s12)
         .frame(maxWidth: .infinity, alignment: .topLeading)

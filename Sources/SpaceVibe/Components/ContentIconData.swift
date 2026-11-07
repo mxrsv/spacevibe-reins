@@ -4,7 +4,7 @@
 import CoreGraphics
 
 /// The sidebar and content glyphs, from Phosphor Duotone, scaled from its 256 grid to a 24 x 24 box. Each has a solid layer and a lighter
-/// one (`ReinsIcon` draws them in one colour, the lighter at `layerOpacity`, both with the kit's thin outline `outlineWidth`).
+/// one (`SpaceVibeIcon` draws them in one colour, the lighter at `layerOpacity`, both with the kit's thin outline `outlineWidth`).
 enum ContentGlyph: CaseIterable, GlyphSource {
     /// A failed command (Activity: Failed tab); the mock draws its own bug, this is Phosphor's nearest.
     case bug

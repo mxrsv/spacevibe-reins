@@ -34,10 +34,10 @@ struct FilterChip: View {
             pill(trailing: Space.s8) {
                 Text(title)
                 Button(action: onDismiss) {
-                    ReinsIcon(.close).foregroundStyle(TextTone.secondary.color)
+                    SpaceVibeIcon(.close).foregroundStyle(TextTone.secondary.color)
                 }
                 .buttonStyle(.plain)
-                .reinsFocusable(cornerRadius: Metrics.segmentRadius)
+                .spaceVibeFocusable(cornerRadius: Metrics.segmentRadius)
                 .help("Clear \(title)")
                 .accessibilityLabel("Clear \(title)")
             }
@@ -51,7 +51,7 @@ struct FilterChip: View {
                 }
             }
             .buttonStyle(.plain)
-            .reinsFocusable(cornerRadius: Metrics.chipHeight / 2)
+            .spaceVibeFocusable(cornerRadius: Metrics.chipHeight / 2)
             .accessibilityAddTraits(isOn ? [.isSelected] : [])
             .accessibilityLabel(count.map { "\(title), \($0)" } ?? title)
             .accessibilityHint("Filter")
@@ -60,7 +60,7 @@ struct FilterChip: View {
 
     private func pill<Content: View>(trailing: CGFloat, @ViewBuilder content: () -> Content) -> some View {
         HStack(spacing: Space.s6) { content() }
-            .reinsText(.body, tone: isOn ? .primary : .secondary)
+            .spaceVibeText(.body, tone: isOn ? .primary : .secondary)
             .padding(.leading, Space.s12)
             .padding(.trailing, trailing)
             .frame(height: Metrics.chipHeight)

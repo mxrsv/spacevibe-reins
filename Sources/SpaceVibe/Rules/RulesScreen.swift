@@ -104,7 +104,7 @@ struct RulesScreen: View {
                     Banner(.error, message: problem, detail: "The grid and the rules below are read-only until the file is valid.")
                 }
             } else if snapshot.codex.model == .both {
-                Banner(.warn, message: snapshot.codex.warnings.first ?? "Both Codex permission models are set.", detail: "Reins shows both and writes neither.")
+                Banner(.warn, message: snapshot.codex.warnings.first ?? "Both Codex permission models are set.", detail: "SpaceVibe shows both and writes neither.")
             }
             ForEach(notices(snapshot), id: \.self) { Banner(.warn, message: $0) }
         }

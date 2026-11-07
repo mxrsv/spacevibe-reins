@@ -2,12 +2,12 @@ import SwiftUI
 
 /// Registers Activity with the shell: sidebar item, badge, palette entries and the screen.
 @MainActor
-final class ActivityTab: ReinsTab {
+final class ActivityTab: SpaceVibeTab {
     static let tabID = "activity"
 
     let id = ActivityTab.tabID
     let title = "Activity"
-    let icon = ReinsGlyph.activity
+    let icon = SpaceVibeGlyph.activity
     let model: ActivityModel
 
     init(env: AppEnvironment? = nil) { model = ActivityModel(env: env ?? .shared) }

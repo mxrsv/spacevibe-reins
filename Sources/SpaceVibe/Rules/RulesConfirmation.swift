@@ -16,23 +16,23 @@ struct RulesConfirmation: View {
             if let warning = pending.warning { WarningNote(text: warning) }
         } actions: {
             Button("Cancel", action: cancel)
-                .buttonStyle(.reins(.normal))
+                .buttonStyle(.spaceVibe(.normal))
                 .keyboardShortcut(.cancelAction)
             Button("Set to \(RulesWording.title(pending.verdict))", action: confirm)
-                .buttonStyle(.reins(.primary))
-                .reinsFocusable(cornerRadius: Metrics.controlRadius, focusOnAppear: true)
+                .buttonStyle(.spaceVibe(.primary))
+                .spaceVibeFocusable(cornerRadius: Metrics.controlRadius, focusOnAppear: true)
         }
     }
 
     private func group(_ title: String, rules: [CoreVerdictRule], empty: String) -> some View {
         VStack(alignment: .leading, spacing: Space.s6) {
-            Text(title).reinsText(.captionStrong, tone: .secondary).padding(.top, Space.s6)
+            Text(title).spaceVibeText(.captionStrong, tone: .secondary).padding(.top, Space.s6)
             InsetBox {
-                if rules.isEmpty { Text(empty).reinsText(.caption, tone: .tertiary) }
+                if rules.isEmpty { Text(empty).spaceVibeText(.caption, tone: .tertiary) }
                 ForEach(rules, id: \.self) { rule in
                     HStack(spacing: Space.s8) {
                         Tag(RulesWording.title(rule.verdict), tone: RulesWording.tone(rule.verdict))
-                        Text(rule.rule).reinsText(.code, tone: .primary).lineLimit(1).truncationMode(.middle)
+                        Text(rule.rule).spaceVibeText(.code, tone: .primary).lineLimit(1).truncationMode(.middle)
                     }
                 }
             }

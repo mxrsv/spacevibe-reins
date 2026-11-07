@@ -3,12 +3,12 @@ import SwiftUI
 /// Registers Rules with the shell: sidebar item and badge, hint, palette entries and the screen. Building it reads nothing;
 /// the screen's first appearance starts the read.
 @MainActor
-final class RulesTab: ReinsTab {
+final class RulesTab: SpaceVibeTab {
     static let tabID = "rules"
 
     let id = RulesTab.tabID
     let title = "Rules"
-    let icon = ReinsGlyph.rules
+    let icon = SpaceVibeGlyph.rules
     let model: RulesModel
 
     init(env: AppEnvironment? = nil) { model = RulesModel(env: env ?? .shared) }

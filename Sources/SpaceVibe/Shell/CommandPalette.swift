@@ -76,7 +76,7 @@ struct CommandPalette: View {
     private func results(sections: [PaletteSection], flat: [PaletteEntry], current: String?) -> some View {
         let height = min(Metrics.paletteListMaxHeight, CGFloat(flat.count) * Metrics.paletteRowHeight + CGFloat(sections.count) * Metrics.paletteSectionHeight + Space.s12)
         return ScrollViewReader { proxy in
-            ReinsScrollView {
+            SpaceVibeScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     if flat.isEmpty { PaletteEmptyRow(text: "No matches") }
                     ForEach(sections) { section in
@@ -98,8 +98,8 @@ struct CommandPalette: View {
 
     private var footer: some View {
         PaletteFooter {
-            PaletteHint(text: "navigate") { ReinsIcon(.navigate, size: .inline) }
-            PaletteHint(text: "run") { ReinsIcon(.enter, size: .inline) }
+            PaletteHint(text: "navigate") { SpaceVibeIcon(.navigate, size: .inline) }
+            PaletteHint(text: "run") { SpaceVibeIcon(.enter, size: .inline) }
             PaletteHint(text: "close") { Kbd("Esc") }
         }
     }

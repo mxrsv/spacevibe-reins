@@ -53,7 +53,7 @@ func parseHooks(config ojson.Value, cli CLI, owner *string, sourceFile string, p
 					continue
 				}
 				paths := ScriptPaths(command)
-				// Dead only when every script is known to be gone: a script under a folder Reins cannot stat
+				// Dead only when every script is known to be gone: a script under a folder SpaceVibe cannot stat
 				// may well work.
 				allMissing, anyUnknown := true, false
 				for _, p := range paths {
@@ -119,7 +119,7 @@ func timeoutOf(hook ojson.Value) *float64 {
 
 type plugin struct{ name, path string }
 
-// plugins are the enabled Claude plugins whose install folder still exists. Read-only: Reins never changes a
+// plugins are the enabled Claude plugins whose install folder still exists. Read-only: SpaceVibe never changes a
 // plugin.
 func plugins(r roots.Roots, settings ojson.Value, haveSettings bool) []plugin {
 	installed, status := readJSON(join(r.Claude.Root, "plugins", "installed_plugins.json"))

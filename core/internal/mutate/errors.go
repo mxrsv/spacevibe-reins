@@ -8,12 +8,12 @@ const (
 	UnreadableMessage = "The undo history (journal.json) is not valid JSON, so it was not written. Fix or move the file, then try again."
 
 	// RollbackFailureMessage is shown when a failed change could not be fully put back.
-	RollbackFailureMessage = "The change failed and could not be fully rolled back. Some configuration may have changed. Review the configuration and the saved copies in the Reins trash before trying again."
+	RollbackFailureMessage = "The change failed and could not be fully rolled back. Some configuration may have changed. Review the configuration and the saved copies in the SpaceVibe trash before trying again."
 
 	// PartlyUndoneMessage is shown when an undo failed part way and some of the ops it had already reversed could not be put back (G-fix.9).
-	PartlyUndoneMessage = "The undo failed part way and some changes could not be put back, so this entry is partly undone. Review the files and the saved copies in the Reins trash."
+	PartlyUndoneMessage = "The undo failed part way and some changes could not be put back, so this entry is partly undone. Review the files and the saved copies in the SpaceVibe trash."
 
-	outsideManagedMessage = "This history entry points outside the folders Reins manages, so it was not undone. Nothing was changed."
+	outsideManagedMessage = "This history entry points outside the folders SpaceVibe manages, so it was not undone. Nothing was changed."
 	unknownEntryMessage   = "Unknown history entry."
 )
 

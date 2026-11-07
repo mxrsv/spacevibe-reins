@@ -21,13 +21,13 @@ struct NoteRegion: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s12) {
-            Text(title).reinsText(.captionStrong, tone: .secondary).accessibilityAddTraits(.isHeader)
+            Text(title).spaceVibeText(.captionStrong, tone: .secondary).accessibilityAddTraits(.isHeader)
             HStack(alignment: .top, spacing: Space.s24) {
                 ForEach(columns) { column in
                     VStack(alignment: .leading, spacing: Space.s6) {
                         HStack(spacing: Space.s6) {
                             CLIDot(column.cli, decorative: true)
-                            Text(column.cli.label).reinsText(.captionStrong, tone: .secondary)
+                            Text(column.cli.label).spaceVibeText(.captionStrong, tone: .secondary)
                         }
                         .padding(.bottom, Space.s2)
                         ForEach(column.notes, id: \.self) { note in line(note) }
@@ -46,9 +46,9 @@ struct NoteRegion: View {
 
     private func line(_ text: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
-            ReinsIcon(.info, size: .inline)
+            SpaceVibeIcon(.info, size: .inline)
             Text(text).fixedSize(horizontal: false, vertical: true)
         }
-        .reinsText(.caption, tone: .tertiary)
+        .spaceVibeText(.caption, tone: .tertiary)
     }
 }

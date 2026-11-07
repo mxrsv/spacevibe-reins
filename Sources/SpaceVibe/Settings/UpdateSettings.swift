@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings > Update: the lead card (the Reins mark, version and build, the last check's result and time, one button) and
+/// Settings > Update: the lead card (the SpaceVibe mark, version and build, the last check's result and time, one button) and
 /// the automatic-check switch. Opening it never starts a check.
 struct UpdateSettings: View {
     @Environment(UpdateController.self) private var updates
@@ -10,11 +10,11 @@ struct UpdateSettings: View {
         VStack(spacing: Rhythm.cards) {
             ContentCard {
                 HStack(spacing: Space.s16) {
-                    ReinsMark()
+                    SpaceVibeMark()
                     VStack(alignment: .leading, spacing: Space.s6) {
                         HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
-                            Text(SettingsWording.appName(version: updates.version)).reinsText(.title, tone: .primary)
-                            if let build = updates.build { Text("Build \(build)").reinsText(.caption, tone: .tertiary) }
+                            Text(SettingsWording.appName(version: updates.version)).spaceVibeText(.title, tone: .primary)
+                            if let build = updates.build { Text("Build \(build)").spaceVibeText(.caption, tone: .tertiary) }
                         }
                         status
                     }
@@ -24,8 +24,8 @@ struct UpdateSettings: View {
                 if case .unavailable(let reason) = updates.status {
                     RaisedBlock {
                         HStack(alignment: .top, spacing: Space.s8) {
-                            ReinsIcon(.info).foregroundStyle(TextTone.secondary.color)
-                            Text(reason).reinsText(.body, tone: .secondary).fixedSize(horizontal: false, vertical: true)
+                            SpaceVibeIcon(.info).foregroundStyle(TextTone.secondary.color)
+                            Text(reason).spaceVibeText(.body, tone: .secondary).fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     .padding(.top, Space.s24)
@@ -34,9 +34,9 @@ struct UpdateSettings: View {
 
             GroupedList {
                 Row { RowText(SettingsWording.automaticChecks, subtitle: SettingsWording.automaticChecksDetail) }
-                    .lead { ReinsIcon(.refresh, size: .row) }
+                    .lead { SpaceVibeIcon(.refresh, size: .row) }
                     .cells {
-                        ReinsSwitch(label: SettingsWording.automaticChecks, isOn: $updates.automaticChecks)
+                        SpaceVibeSwitch(label: SettingsWording.automaticChecks, isOn: $updates.automaticChecks)
                             .disabled(!updates.isRunning)
                     }
             }
@@ -50,7 +50,7 @@ struct UpdateSettings: View {
         if tag != nil || time != nil {
             HStack(spacing: Space.s8) {
                 if let tag { Tag(tag.text, tone: tag.tone, icon: tag.icon) }
-                if let time { Text(time).reinsText(.caption, tone: .tertiary) }
+                if let time { Text(time).spaceVibeText(.caption, tone: .tertiary) }
             }
             .accessibilityElement(children: .combine)
         }
@@ -60,10 +60,10 @@ struct UpdateSettings: View {
     private var action: some View {
         if case .available = updates.status {
             Button("View Update") { updates.checkForUpdates() }
-                .buttonStyle(.reins(.primary))
+                .buttonStyle(.spaceVibe(.primary))
         } else {
             Button("Check Now") { updates.checkNow() }
-                .buttonStyle(.reins())
+                .buttonStyle(.spaceVibe())
                 .disabled(!updates.isRunning || updates.status == .checking)
         }
     }

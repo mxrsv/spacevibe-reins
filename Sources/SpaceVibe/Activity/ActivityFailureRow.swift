@@ -14,7 +14,7 @@ struct ActivityFailureRow: View {
         let isHook = failure.kind == .hook
         Row(tall: true) {
             ActivityLines(
-                title: Text(failure.title).reinsText(.codeTitle, tone: .primary),
+                title: Text(failure.title).spaceVibeText(.codeTitle, tone: .primary),
                 lines: [ActivityLines.Line(wording.how)]
                     + [wording.reason.map { ActivityLines.Line($0, code: true) }, wording.laterPass.map { ActivityLines.Line($0) }].compactMap { $0 },
                 help: failure.title
@@ -22,7 +22,7 @@ struct ActivityFailureRow: View {
         }
         .lead {
             if isHook {
-                ReinsIcon(.hook, size: .row, label: "Hook")
+                SpaceVibeIcon(.hook, size: .row, label: "Hook")
             } else {
                 CLIDot(failure.cli, decorative: true)
             }

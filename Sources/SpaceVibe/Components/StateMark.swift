@@ -39,6 +39,6 @@ struct StateMarkIcon: View {
     var size: IconSize = .control
 
     var body: some View {
-        ReinsIcon(content: mark.glyph, size: size, ink: mark.color, label: mark.label)
+        SpaceVibeIcon(content: mark.glyph, size: size, ink: mark.color, label: mark.label)
     }
 }

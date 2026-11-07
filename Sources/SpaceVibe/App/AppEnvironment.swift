@@ -3,7 +3,7 @@ import Observation
 
 /// The services every screen shares: where the config and logs live, the Go core, the toast, and the way to
 /// run a write with Undo. One instance per run (`AppEnvironment.shared`), injected into the SwiftUI environment by
-/// `reinsRoot` and handed to a tab by its initialiser (`ActivityTab(env: .shared)` style).
+/// `spaceVibeRoot` and handed to a tab by its initialiser (`ActivityTab(env: .shared)` style).
 ///
 ///     // a screen model that writes:
 ///     env.performWithUndo(label: "Removed Bash(git push:*)", via: env.goCore, afterChange: { reload() }) { core in
@@ -27,7 +27,7 @@ final class AppEnvironment {
     @ObservationIgnored private let makeCoreClient: () -> any CoreService
     /// The Limits readings, shared by the sidebar block on every tab and its detail.
     @ObservationIgnored lazy var limits = LimitsModel(env: self)
-    /// The updater and what Settings > Update shows. `ReinsApp` starts it in a normal launch; elsewhere it never runs.
+    /// The updater and what Settings > Update shows. `SpaceVibeApp` starts it in a normal launch; elsewhere it never runs.
     @ObservationIgnored lazy var updates = UpdateController(toasts: toasts)
 
     init(toasts: ToastCenter? = nil, makeCoreClient: @escaping () -> any CoreService = { CoreClient() }) {

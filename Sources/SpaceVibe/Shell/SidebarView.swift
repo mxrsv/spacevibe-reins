@@ -25,13 +25,13 @@ struct SidebarView: View {
             HStack(spacing: Space.s8) {
                 if let status = shell.statusMessage {
                     Text(status)
-                        .reinsText(.caption, tone: .tertiary)
+                        .spaceVibeText(.caption, tone: .tertiary)
                         .lineLimit(1)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
                 Spacer(minLength: 0)
-                Button { shell.openSettings() } label: { ReinsIcon(.settings) }
-                    .buttonStyle(.reins(.plainIcon))
+                Button { shell.openSettings() } label: { SpaceVibeIcon(.settings) }
+                    .buttonStyle(.spaceVibe(.plainIcon))
                     .help("Settings (\u{2318},)")
                     .accessibilityLabel("Settings")
                 ThemeToggle()

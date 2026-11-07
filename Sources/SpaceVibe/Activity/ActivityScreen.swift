@@ -51,7 +51,7 @@ struct ActivityScreen: View {
         } else if let failure = model.failure {
             PageLayout {
                 EmptyState("Could not read the session logs.", message: failure, icon: .warning) {
-                    Button("Try again", action: model.retry).buttonStyle(.reins(.normal))
+                    Button("Try again", action: model.retry).buttonStyle(.spaceVibe(.normal))
                 }
             }
         } else {
@@ -70,7 +70,7 @@ private struct LoadingMark: View {
 
     var body: some View {
         if isShotRendering {
-            ReinsIcon(.refresh).foregroundStyle(TextTone.tertiary.color)
+            SpaceVibeIcon(.refresh).foregroundStyle(TextTone.tertiary.color)
         } else {
             ProgressView().controlSize(.small)
         }

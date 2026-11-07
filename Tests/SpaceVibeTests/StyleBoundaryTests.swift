@@ -167,7 +167,7 @@ struct StyleBoundaryTests {
         #expect(Self.violations(in: "x.frame(width: 58, alignment: .trailing)") == 1)
         #expect(Self.violations(in: "x.frame(maxWidth: .infinity)") == 0)
         #expect(Self.violations(in: "RoundedRectangle(cornerRadius: 6)") >= 1)
-        #expect(Self.violations(in: "// .font(ReinsFont.body) in a comment") == 0)
-        #expect(Self.violations(in: "x.reinsText(.caption, tone: .tertiary)") == 0)
+        #expect(Self.violations(in: "// .font(SpaceVibeFont.body) in a comment") == 0)
+        #expect(Self.violations(in: "x.spaceVibeText(.caption, tone: .tertiary)") == 0)
     }
 }

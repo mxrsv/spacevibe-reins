@@ -34,7 +34,7 @@ const (
 // Store reads and writes the permission rules of Claude Code settings files. Behavior reference: Node rules
 // (git b58269d). Differences from Node, on purpose:
 //   - A project folder must be one that project discovery found (404 otherwise). In Node this check sits in the IPC
-//     layer; here it is in the engine so no caller can make Reins create <any folder>/.claude/settings.json.
+//     layer; here it is in the engine so no caller can make SpaceVibe create <any folder>/.claude/settings.json.
 //   - The file is edited in place (only the changed list), not rewritten.
 //   - A project or local file must really live in <project>/.claude: a .claude that resolves elsewhere, or a settings
 //     file that is itself a link, is refused (409), because a hostile repo could point it at any other JSON file. The
@@ -111,7 +111,7 @@ func (s *Store) File(scope Scope) (string, error) {
 	case folderGone:
 		return "", coreerr.NewStatus(projectGoneMessage, coreerr.StatusNotFound)
 	case folderUnreadable:
-		return "", coreerr.NewStatus(file+" is not readable, so Reins left it alone.", coreerr.StatusConflict)
+		return "", coreerr.NewStatus(file+" is not readable, so SpaceVibe left it alone.", coreerr.StatusConflict)
 	}
 	return file, nil
 }
@@ -126,14 +126,14 @@ func requireInsideProject(file string, scope Scope) error {
 	expected := roots.ResolvedPath(filepath.Dir(claudeDir)) + "/.claude"
 	if _, err := os.Lstat(claudeDir); err == nil {
 		if _, err := filepath.EvalSymlinks(claudeDir); err != nil {
-			return coreerr.NewStatus(claudeDir+" is a link to nothing, so Reins left it alone.", coreerr.StatusConflict)
+			return coreerr.NewStatus(claudeDir+" is a link to nothing, so SpaceVibe left it alone.", coreerr.StatusConflict)
 		}
 		if roots.ResolvedPath(claudeDir) != expected {
-			return coreerr.NewStatus(claudeDir+" points outside the project, so Reins left it alone.", coreerr.StatusConflict)
+			return coreerr.NewStatus(claudeDir+" points outside the project, so SpaceVibe left it alone.", coreerr.StatusConflict)
 		}
 	}
 	if info, err := os.Lstat(file); err == nil && info.Mode()&os.ModeSymlink != 0 {
-		return coreerr.NewStatus(file+" is a link, so Reins left it alone. Edit the file it points at.", coreerr.StatusConflict)
+		return coreerr.NewStatus(file+" is a link, so SpaceVibe left it alone. Edit the file it points at.", coreerr.StatusConflict)
 	}
 	return nil
 }
@@ -214,7 +214,7 @@ func (s *Store) ListRules(scopes ...Scope) (Listing, error) {
 }
 
 // notReadableSentence ends the problem of a settings file or project folder that cannot be looked at.
-const notReadableSentence = " is not readable, so Reins cannot tell what rules it holds."
+const notReadableSentence = " is not readable, so SpaceVibe cannot tell what rules it holds."
 
 // AddRule adds rule under verdict. It refuses (409) a rule that is already in the file under any verdict.
 func (s *Store) AddRule(scope Scope, verdict Verdict, rule string) (mutate.Entry, error) {

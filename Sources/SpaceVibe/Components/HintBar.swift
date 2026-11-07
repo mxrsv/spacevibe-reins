@@ -19,7 +19,7 @@ struct HintBar: View {
             }
             Spacer(minLength: 0)
         }
-        .reinsText(.caption, tone: .tertiary)
+        .spaceVibeText(.caption, tone: .tertiary)
         .padding(.horizontal, Metrics.pagePadding)
         .frame(height: Metrics.hintBarHeight)
         .frame(maxWidth: .infinity)

@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum ReinsButtonKind {
+enum SpaceVibeButtonKind {
     /// Filled, no outline: `surface` on the well, `surfaceRaised` inside a card. The default.
     case normal
     /// Solid accent. One per surface at most.
@@ -29,8 +29,8 @@ extension EnvironmentValues {
     }
 }
 
-struct ReinsButtonStyle: ButtonStyle {
-    var kind: ReinsButtonKind = .normal
+struct SpaceVibeButtonStyle: ButtonStyle {
+    var kind: SpaceVibeButtonKind = .normal
 
     func makeBody(configuration: Configuration) -> some View {
         StyledButton(configuration: configuration, kind: kind)
@@ -38,7 +38,7 @@ struct ReinsButtonStyle: ButtonStyle {
 
     private struct StyledButton: View {
         let configuration: ButtonStyle.Configuration
-        let kind: ReinsButtonKind
+        let kind: SpaceVibeButtonKind
         @Environment(\.isEnabled) private var isEnabled
         @Environment(\.isFocused) private var isFocused
         @Environment(\.actionsConcealed) private var concealed
@@ -48,7 +48,7 @@ struct ReinsButtonStyle: ButtonStyle {
         var body: some View {
             let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
             configuration.label
-                .reinsText(kind == .primary ? .bodyStrong : .body)
+                .spaceVibeText(kind == .primary ? .bodyStrong : .body)
                 .foregroundStyle(foreground)
                 .lineLimit(1)
                 .padding(.horizontal, horizontalPadding)
@@ -98,16 +98,16 @@ struct ReinsButtonStyle: ButtonStyle {
     }
 }
 
-extension ButtonStyle where Self == ReinsButtonStyle {
-    static func reins(_ kind: ReinsButtonKind = .normal) -> ReinsButtonStyle { ReinsButtonStyle(kind: kind) }
+extension ButtonStyle where Self == SpaceVibeButtonStyle {
+    static func spaceVibe(_ kind: SpaceVibeButtonKind = .normal) -> SpaceVibeButtonStyle { SpaceVibeButtonStyle(kind: kind) }
 }
 
 /// A small button for a row's trailing actions: revealed on hover, focus or selection (see `Row`).
 /// `iconOnly` with an `icon` makes a square icon button; the title is then its accessibility label and tooltip.
 struct RowActionButton: View {
     let title: String
-    var icon: ReinsGlyph?
-    var kind: ReinsButtonKind = .normal
+    var icon: SpaceVibeGlyph?
+    var kind: SpaceVibeButtonKind = .normal
     var iconOnly = false
     /// A CLI's dot in the icon button's corner: which CLI this action touches ("Remove from Codex").
     var badge: InventoryCLI?
@@ -116,7 +116,7 @@ struct RowActionButton: View {
     var body: some View {
         Button(action: action) {
             if iconOnly, let icon {
-                ReinsIcon(icon)
+                SpaceVibeIcon(icon)
                     .foregroundStyle(kind == .danger ? Palette.dangerInk : Palette.text)
                     .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
                     .overlay(alignment: .topTrailing) {
@@ -124,14 +124,14 @@ struct RowActionButton: View {
                     }
             } else if let icon {
                 HStack(spacing: Space.s6) {
-                    ReinsIcon(icon)
+                    SpaceVibeIcon(icon)
                     Text(title)
                 }
             } else {
                 Text(title)
             }
         }
-        .buttonStyle(.reins(iconOnly ? .icon : kind))
+        .buttonStyle(.spaceVibe(iconOnly ? .icon : kind))
         .help(title)
         .accessibilityLabel(title)
     }

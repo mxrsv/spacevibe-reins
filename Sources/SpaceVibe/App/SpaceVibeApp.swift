@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ReinsApp: App {
+struct SpaceVibeApp: App {
     @State private var shell: ShellModel
     @State private var env = AppEnvironment.shared
     private let mode = LaunchMode.current()
@@ -12,7 +12,7 @@ struct ReinsApp: App {
     }
 
     var body: some Scene {
-        Window("Reins", id: "main") {
+        Window("SpaceVibe", id: "main") {
             Group {
                 if case .gallery = mode {
                     ComponentGalleryWindow()
@@ -20,7 +20,7 @@ struct ReinsApp: App {
                     ShellView()
                 }
             }
-            .reinsRoot(shell: shell, toasts: env.toasts, env: env)
+            .spaceVibeRoot(shell: shell, toasts: env.toasts, env: env)
             .frame(minWidth: 960, minHeight: 600)
         }
         .windowStyle(.hiddenTitleBar)
@@ -30,7 +30,7 @@ struct ReinsApp: App {
             ShellCommands(shell: shell)
             // The standard About panel, with the licences the app must show (Credits).
             CommandGroup(replacing: .appInfo) {
-                Button("About Reins") { Credits.showAboutPanel() }
+                Button("About SpaceVibe") { Credits.showAboutPanel() }
                 Button("Check for Updates\u{2026}") { env.updates.checkForUpdates() }
             }
         }

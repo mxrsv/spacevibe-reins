@@ -106,7 +106,7 @@ struct ToastActionTests {
     func runsAction() {
         let toasts = ToastCenter(announce: false)
         var runs = 0
-        toasts.show("Reins 0.2.0 is available", action: UpdateController.viewAction { runs += 1 })
+        toasts.show("SpaceVibe 0.2.0 is available", action: UpdateController.viewAction { runs += 1 })
         #expect(toasts.current?.action?.title == "View")
         toasts.runCurrentAction()
         #expect(runs == 1)
@@ -125,11 +125,11 @@ struct ToastActionTests {
     @Test("dismissing by id leaves a toast that replaced it")
     func dismissById() {
         let toasts = ToastCenter(announce: false)
-        let first = toasts.show("Reins 0.2.0 is available", action: UpdateController.viewAction {})
+        let first = toasts.show("SpaceVibe 0.2.0 is available", action: UpdateController.viewAction {})
         toasts.show("Removed ponytail", undo: {})
         toasts.dismiss(id: first)
         #expect(toasts.current?.message == "Removed ponytail")
-        let second = toasts.show("Reins 0.2.0 is available", action: UpdateController.viewAction {})
+        let second = toasts.show("SpaceVibe 0.2.0 is available", action: UpdateController.viewAction {})
         toasts.dismiss(id: second)
         #expect(toasts.current == nil)
     }

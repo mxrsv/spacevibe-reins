@@ -3,7 +3,7 @@ import Testing
 @testable import SpaceVibe
 
 /// The Loadout screen runs on the Go core (plan S.5 and S.6). Every test runs on a private copy of the synthetic fixture home
-/// (S-R1: never the real one), so a write test's byte comparison is the whole home outside Reins' own folder.
+/// (S-R1: never the real one), so a write test's byte comparison is the whole home outside SpaceVibe's own folder.
 @Suite("Loadout, Go core")
 @MainActor
 struct LoadoutModelEngineTests {
@@ -174,7 +174,7 @@ struct LoadoutModelEngineTests {
             "copy an unknown id: 404 This item no longer exists. Refresh the list.",
             "remove an unknown id: 404 This item no longer exists. Refresh the list.",
             "remove a plugin item: 403 This one belongs to a plugin. Remove the plugin instead.",
-            "remove a project item: 403 This one belongs to a project folder, so Reins only shows it. Change it in the project.",
+            "remove a project item: 403 This one belongs to a project folder, so SpaceVibe only shows it. Change it in the project.",
             "remove dead hooks from Codex: 409 No dead hooks to remove.",
             "undo an unknown entry: 404 That history entry is gone.",
         ])

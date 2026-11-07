@@ -221,7 +221,7 @@ func TestCopyHook(t *testing.T) {
 		t.Errorf("message %q", m)
 	}
 	_, err = CopyToOther(h.r, claudeHook.ID)
-	if m := wantErr(t, err, 400); m != "Reins does not copy hooks into Codex." {
+	if m := wantErr(t, err, 400); m != "SpaceVibe does not copy hooks into Codex." {
 		t.Errorf("message %q", m)
 	}
 	if e := must(CopyToOther(h.r, stop.ID)); e.Label != "Added Stop hook to Claude Code" {

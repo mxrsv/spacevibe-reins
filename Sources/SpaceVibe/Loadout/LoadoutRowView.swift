@@ -17,7 +17,7 @@ struct LoadoutRowView: View {
                 }
             }
         }
-        .lead { ReinsIcon(row.kind.icon, size: .row) }
+        .lead { SpaceVibeIcon(row.kind.icon, size: .row) }
         .cells {
             ForEach(CoreCLI.allCases, id: \.self) { cli in
                 UsageCell(

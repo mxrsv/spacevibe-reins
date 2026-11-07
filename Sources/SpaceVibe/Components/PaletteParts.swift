@@ -34,7 +34,7 @@ struct PaletteCard<Content: View>: View {
 extension View {
     /// The palette's search line: `paletteInput` type, 48 pt high.
     func paletteField() -> some View {
-        reinsText(.paletteInput, tone: .primary)
+        spaceVibeText(.paletteInput, tone: .primary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Space.s16)
             .frame(height: Metrics.paletteFieldHeight)
@@ -52,7 +52,7 @@ struct PaletteSectionTitle: View {
 
     var body: some View {
         Text(title)
-            .reinsText(.label, tone: .tertiary)
+            .spaceVibeText(.label, tone: .tertiary)
             .padding(.horizontal, Space.s8)
             .padding(.top, Space.s8)
             .padding(.bottom, Space.s4)
@@ -66,7 +66,7 @@ struct PaletteEmptyRow: View {
 
     var body: some View {
         Text(text)
-            .reinsText(.body, tone: .tertiary)
+            .spaceVibeText(.body, tone: .tertiary)
             .padding(.horizontal, Space.s8)
             .frame(height: Metrics.paletteRowHeight)
     }
@@ -83,17 +83,17 @@ struct PaletteRow: View {
         let shape = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
         Button(action: action) {
             HStack(spacing: Space.s8) {
-                if let icon = entry.icon { ReinsIcon(icon) }
+                if let icon = entry.icon { SpaceVibeIcon(icon) }
                 Text(entry.title).lineLimit(1)
                 if let subtitle = entry.subtitle {
-                    Text(subtitle).reinsText(.caption, tone: .tertiary).lineLimit(1)
+                    Text(subtitle).spaceVibeText(.caption, tone: .tertiary).lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 if let trailing = entry.trailing {
-                    Text(trailing).reinsText(.caption, tone: .tertiary)
+                    Text(trailing).spaceVibeText(.caption, tone: .tertiary)
                 }
             }
-            .reinsText(.body, tone: isHighlighted ? .primary : .secondary)
+            .spaceVibeText(.body, tone: isHighlighted ? .primary : .secondary)
             .padding(.horizontal, Space.s8)
             .frame(height: Metrics.paletteRowHeight)
             .background(shape.fill(isHighlighted ? Palette.selection : (hovering ? Palette.hover : .clear)))
@@ -116,7 +116,7 @@ struct PaletteFooter<Content: View>: View {
             content
             Spacer(minLength: 0)
         }
-        .reinsText(.caption, tone: .tertiary)
+        .spaceVibeText(.caption, tone: .tertiary)
         .padding(.horizontal, Space.s16)
         .frame(height: Metrics.paletteFooterHeight)
         .accessibilityHidden(true)

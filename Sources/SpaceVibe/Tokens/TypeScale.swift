@@ -26,7 +26,7 @@ enum FontSizeChoice: String, CaseIterable {
     }
 }
 
-/// The current Font size step for the whole app. `ReinsType` roles read `step`, and a view body that reads a role is
+/// The current Font size step for the whole app. `SpaceVibeType` roles read `step`, and a view body that reads a role is
 /// observed through it, so changing the setting re-renders exactly the text that uses a role, without a relaunch.
 /// Only the app's own `AppearanceStore` and the screenshot runs write it.
 @Observable

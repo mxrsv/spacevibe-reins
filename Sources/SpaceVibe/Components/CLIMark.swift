@@ -103,7 +103,7 @@ enum BrandMark {
     private static func checkoutURL(_ name: String) -> URL? {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent() // Components
-            .deletingLastPathComponent() // Reins
+            .deletingLastPathComponent() // SpaceVibe
             .deletingLastPathComponent() // Sources
             .deletingLastPathComponent() // checkout
             .appendingPathComponent("Resources/Brand/\(name)")

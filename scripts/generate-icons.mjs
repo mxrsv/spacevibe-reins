@@ -3,7 +3,7 @@
 // No SVG is shipped or parsed at run time (spec docs/specs/2026-11-03-reins-design-language.md, v3 "Icons"; v5 spec V5-R9,
 // V5-R10, V5-R12).
 //
-//   ReinsIconData.swift     Solar Bold Duotone (480 Design, CC BY 4.0): the old screens, until the cut-over deletes them
+//   SpaceVibeIconData.swift     Solar Bold Duotone (480 Design, CC BY 4.0): the old screens, until the cut-over deletes them
 //   CategoryIconData.swift  MingCute Line (MingCute Design, Apache-2.0): the category glyphs
 //   ContentIconData.swift   Phosphor Duotone (Phosphor Icons, MIT): the v5 sidebar and content glyphs
 //
@@ -324,9 +324,9 @@ const CONTENT_GLYPHS = [
 const SOURCES = [
   {
     key: 'solar', label: 'Solar', prefix: 'solar', pkg: '@iconify-json/solar', license: 'CC-BY-4.0', box: 24, suffix: '-bold-duotone',
-    glyphs: GLYPHS, out: 'ReinsIconData.swift', type: 'ReinsGlyph', light: true, sourceOpacity: 0.5, layerOpacity: 0.5, outline: 0,
+    glyphs: GLYPHS, out: 'SpaceVibeIconData.swift', type: 'SpaceVibeGlyph', light: true, sourceOpacity: 0.5, layerOpacity: 0.5, outline: 0,
     credit: 'Solar by 480 Design, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).',
-    doc: ['Every icon the old screens draw, from Solar Bold Duotone. Each has a solid layer and a lighter one in a 24 x 24 box (`ReinsIcon`',
+    doc: ['Every icon the old screens draw, from Solar Bold Duotone. Each has a solid layer and a lighter one in a 24 x 24 box (`SpaceVibeIcon`',
       'draws them in one colour, the lighter at `layerOpacity`). The v5 screens use `CategoryGlyph` and `ContentGlyph` instead.'],
   },
   {
@@ -340,7 +340,7 @@ const SOURCES = [
     glyphs: CONTENT_GLYPHS, out: 'ContentIconData.swift', type: 'ContentGlyph', light: true, sourceOpacity: 0.2, layerOpacity: 0.25, outline: 8,
     credit: 'Phosphor Icons, Copyright (c) 2023 Phosphor Icons, MIT (https://github.com/phosphor-icons/core/blob/main/LICENSE).\n// Changed from the original: the SVG path data is rewritten as absolute move, line and cubic commands and scaled from the 256 grid to 24.',
     doc: ['The sidebar and content glyphs, from Phosphor Duotone, scaled from its 256 grid to a 24 x 24 box. Each has a solid layer and a lighter',
-      'one (`ReinsIcon` draws them in one colour, the lighter at `layerOpacity`, both with the kit\'s thin outline `outlineWidth`).'],
+      'one (`SpaceVibeIcon` draws them in one colour, the lighter at `layerOpacity`, both with the kit\'s thin outline `outlineWidth`).'],
   },
 ];
 

@@ -157,7 +157,7 @@ enum PaletteValue {
         ColorValue(light: fill.light, dark: fill.dark, lightAlpha: tintAlpha, darkAlpha: tintAlpha)
     }
 
-    // The Reins mark (`Resources/AppIcon.svg`): the same in both appearances, like the app icon.
+    // The SpaceVibe mark (`Resources/AppIcon.svg`): the same in both appearances, like the app icon.
     static let markGround = ColorValue(light: 0x050608, dark: 0x050608)
     static let markInk = ColorValue(light: 0xF4F5F7, dark: 0xF4F5F7)
     /// Monochrome brand artwork, independent of chart and status hues.

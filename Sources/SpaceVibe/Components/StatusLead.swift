@@ -4,7 +4,7 @@ import SwiftUI
 enum StatusTone: Equatable {
     case neutral, success, warn
 
-    var icon: ReinsGlyph {
+    var icon: SpaceVibeGlyph {
         switch self {
         case .neutral: .info
         case .success: .check
@@ -42,15 +42,15 @@ struct StatusLead: View {
         HStack(spacing: Space.s16) {
             ZStack {
                 RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous).fill(tone.tint)
-                ReinsIcon(tone.icon, size: .row, ink: tone.ink)
+                SpaceVibeIcon(tone.icon, size: .row, ink: tone.ink)
             }
             .frame(width: Metrics.statusTileSize, height: Metrics.statusTileSize)
             VStack(alignment: .leading, spacing: 0) {
                 Text(sentence)
-                    .reinsText(.title, tone: tone == .warn ? .warn : .primary)
+                    .spaceVibeText(.title, tone: tone == .warn ? .warn : .primary)
                     .fixedSize(horizontal: false, vertical: true)
                 if let detail {
-                    Text(detail).reinsText(.code, tone: .tertiary).lineLimit(1).truncationMode(.middle)
+                    Text(detail).spaceVibeText(.code, tone: .tertiary).lineLimit(1).truncationMode(.middle)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -4,14 +4,14 @@ import SwiftUI
 /// screens in screenshots so the shell is judged with realistic rows. Never registered in `TabRegistry`.
 @MainActor
 enum DemoTabs {
-    static func make() -> [any ReinsTab] { [DemoLoadoutTab(), DemoRulesTab(), DemoActivityTab()] }
+    static func make() -> [any SpaceVibeTab] { [DemoLoadoutTab(), DemoRulesTab(), DemoActivityTab()] }
 }
 
 @MainActor
-final class DemoLoadoutTab: ReinsTab {
+final class DemoLoadoutTab: SpaceVibeTab {
     let id = "loadout"
     let title = "Loadout"
-    let icon = ReinsGlyph.loadout
+    let icon = SpaceVibeGlyph.loadout
     var badge: TabBadge? { TabBadge(value: 22) }
     var hints: [KeyHint] { [KeyHint(keys: "Tab", label: "Row actions")] }
     var paletteItems: [PaletteEntry] {
@@ -26,20 +26,20 @@ final class DemoLoadoutTab: ReinsTab {
 }
 
 @MainActor
-final class DemoRulesTab: ReinsTab {
+final class DemoRulesTab: SpaceVibeTab {
     let id = "rules"
     let title = "Rules"
-    let icon = ReinsGlyph.rules
+    let icon = SpaceVibeGlyph.rules
     var badge: TabBadge? { TabBadge(value: 11) }
     var hints: [KeyHint] { [KeyHint(keys: "Space", label: "Set Allow, Ask or Deny")] }
     var content: AnyView { AnyView(DemoRulesScreen()) }
 }
 
 @MainActor
-final class DemoActivityTab: ReinsTab {
+final class DemoActivityTab: SpaceVibeTab {
     let id = "activity"
     let title = "Activity"
-    let icon = ReinsGlyph.activity
+    let icon = SpaceVibeGlyph.activity
     var badge: TabBadge? { TabBadge(value: 2, alert: true, spoken: "2 sessions running") }
     var hints: [KeyHint] { [KeyHint(keys: "Tab", label: "Why a state is what it is")] }
     var content: AnyView { AnyView(DemoActivityScreen()) }
@@ -89,7 +89,7 @@ private struct DemoRulesScreen: View {
                                 SegmentOption("Deny", value: "deny"),
                             ], selection: .constant("allow"))
                             .frame(width: column, alignment: .leading)
-                            Text("no setting").reinsText(.body, tone: .tertiary)
+                            Text("no setting").spaceVibeText(.body, tone: .tertiary)
                                 .frame(width: column, alignment: .leading)
                         }
                 }

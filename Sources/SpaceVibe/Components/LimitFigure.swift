@@ -40,14 +40,14 @@ struct LimitFigure: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: Space.s12) {
             if let left {
-                Text("\(left)%").reinsText(.display, tone: tone.figureTone).lineLimit(1)
-                Text("left of this window").reinsText(.body, tone: .secondary).lineLimit(1)
+                Text("\(left)%").spaceVibeText(.display, tone: tone.figureTone).lineLimit(1)
+                Text("left of this window").spaceVibeText(.body, tone: .secondary).lineLimit(1)
             } else {
-                Text("\u{2014}").reinsText(.display, tone: .tertiary).lineLimit(1)
-                Text("unknown until the next reading").reinsText(.body, tone: .secondary).lineLimit(1)
+                Text("\u{2014}").spaceVibeText(.display, tone: .tertiary).lineLimit(1)
+                Text("unknown until the next reading").spaceVibeText(.body, tone: .secondary).lineLimit(1)
             }
         }
-        .frame(minHeight: ReinsType.display.lineBox, alignment: .leading)
+        .frame(minHeight: SpaceVibeType.display.lineBox, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 }

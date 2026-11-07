@@ -1,4 +1,4 @@
-// Package roots finds the folders of the CLIs Reins reads and Reins' own data folder, and refuses
+// Package roots finds the folders of the CLIs SpaceVibe reads and SpaceVibe's own data folder, and refuses
 // any of them under the real home when SPACEVIBE_TEST=1 (AC3).
 // Ported from Sources/ReinsCore/Roots.swift and FileEdit.refuseRealHomeUnderTest
 // (Node inventory roots(), git b58269d).
@@ -12,7 +12,7 @@ import (
 	"spacevibe.dev/core/internal/identity"
 )
 
-// CLIRoots are the folders of one CLI that Reins reads.
+// CLIRoots are the folders of one CLI that SpaceVibe reads.
 type CLIRoots struct {
 	Root   string
 	Skills string
@@ -23,11 +23,11 @@ type CLIRoots struct {
 	Logs string
 }
 
-// Roots is where the config, the logs and Reins' own data live.
+// Roots is where the config, the logs and SpaceVibe's own data live.
 type Roots struct {
 	Claude CLIRoots
 	Codex  CLIRoots
-	// Data is Reins' own data: journal, trash, caches.
+	// Data is SpaceVibe's own data: journal, trash, caches.
 	Data string
 	// ClaudeState is Claude Code's global state file: .claude.json in CLAUDE_CONFIG_DIR when that is
 	// set, otherwise in HOME beside .claude. Limits reads its usage cache and nothing else from it.
@@ -38,7 +38,7 @@ type Roots struct {
 
 // UnderRealHomeError means SPACEVIBE_TEST=1 and a root sits under the real home.
 type UnderRealHomeError struct {
-	// Label is claude, codex, reins, "claude state" or gemini.
+	// Label is claude, codex, spacevibe, "claude state" or gemini.
 	Label string
 	// Path is the offending root, as configured.
 	Path string
@@ -67,7 +67,7 @@ func Resolve(cfg config.Config, realHome string) (Roots, error) {
 	geminiRoot := filepath.Join(home, ".gemini")
 	if cfg.Test {
 		err := assertNotUnderRealHome(realHome, []labelled{
-			{"claude", claudeRoot}, {"codex", codexRoot}, {"reins", dataRoot},
+			{"claude", claudeRoot}, {"codex", codexRoot}, {"spacevibe", dataRoot},
 			{"claude state", claudeState}, {"gemini", geminiRoot},
 		})
 		if err != nil {

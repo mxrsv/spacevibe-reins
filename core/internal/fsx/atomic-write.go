@@ -1,4 +1,4 @@
-// Package fsx holds the filesystem primitives every Reins write goes through: the atomic write,
+// Package fsx holds the filesystem primitives every SpaceVibe write goes through: the atomic write,
 // the symlink-aware target lookup, the write lock (in-process and cross-process) and the managed
 // directory check.
 // Ported from Sources/ReinsCore/FileEditAtomicWrite.swift, WriteLock.swift, TailReader.swift

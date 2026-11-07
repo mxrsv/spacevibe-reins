@@ -17,7 +17,7 @@ struct CoreFixtureHome {
         let token = try #require(manifest["token"] as? String)
         let mtimes = try #require(manifest["mtimes"] as? [String: Double])
         home = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-            .appendingPathComponent("reins-core-client-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
+            .appendingPathComponent("spacevibe-core-client-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
         let fm = FileManager.default
         for (relative, mtime) in mtimes {
             let text = try String(contentsOf: source.appendingPathComponent("home/\(relative)"), encoding: .utf8)
@@ -45,7 +45,7 @@ struct CoreFixtureHome {
 
     func client() throws -> CoreClient { CoreClient(binary: try Self.coreBinary(), environment: environment) }
 
-    /// Every file under the home except Reins' own data folder: path relative to the home, and its bytes.
+    /// Every file under the home except SpaceVibe's own data folder: path relative to the home, and its bytes.
     func tree() throws -> [String: Data] {
         var out: [String: Data] = [:]
         for relative in try FileManager.default.subpathsOfDirectory(atPath: home.path) where relative != ".spacevibe" && !relative.hasPrefix(".spacevibe/") {

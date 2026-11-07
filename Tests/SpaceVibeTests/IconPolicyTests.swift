@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import SpaceVibe
 
-/// Every icon comes from a generated set or from Reins's own verdict glyphs (V5-A4; the v3 rule DL7 it extends): category
+/// Every icon comes from a generated set or from SpaceVibe's own verdict glyphs (V5-A4; the v3 rule DL7 it extends): category
 /// glyphs from MingCute Line, sidebar and content glyphs from Phosphor Duotone, Solar only for the screens not yet rebuilt,
 /// the CLI marks from `CLIMark`; no SF Symbol outside `Gallery/`, no size under 12, and a credit for every set in use.
 /// The checks read `allCases`, so the cut-over that deletes Solar needs no edit here beyond dropping its row.
@@ -24,7 +24,7 @@ struct IconPolicyTests {
     }
 
     static let sets: [GlyphSet] = [
-        GlyphSet(glyphs: ReinsGlyph.allCases, file: "ReinsIconData.swift", package: "@iconify-json/solar", suffix: "-bold-duotone", layers: 2,
+        GlyphSet(glyphs: SpaceVibeGlyph.allCases, file: "SpaceVibeIconData.swift", package: "@iconify-json/solar", suffix: "-bold-duotone", layers: 2,
                  credit: "Solar by 480 Design", licence: "CC BY 4.0"),
         GlyphSet(glyphs: CategoryGlyph.allCases, file: "CategoryIconData.swift", package: "@iconify-json/mingcute", suffix: "-line", layers: 1,
                  credit: "MingCute by MingCute Design", licence: "Apache-2.0"),
@@ -81,7 +81,7 @@ struct IconPolicyTests {
         #expect(count(symbol, #"Image(systemName: "trash")"#) == 1)
         #expect(count(symbol, #"Label("Copy", systemImage: "doc.on.doc")"#) == 1)
         #expect(count(image, #"Image(systemName: "trash")"#) == 1)
-        #expect(count(image, "ReinsIcon(.trash)") == 0)
+        #expect(count(image, "SpaceVibeIcon(.trash)") == 0)
         #expect(count(image, "ImageRenderer(content: view)") == 0)
     }
 
@@ -104,7 +104,7 @@ struct IconPolicyTests {
             }
         }
         // The light layer's opacity per set: Solar's own, and the mock's 25% for Phosphor's (its set gives 20%).
-        #expect(ReinsGlyph.allCases.allSatisfy { $0.layerOpacity == 0.5 && $0.outlineWidth == 0 })
+        #expect(SpaceVibeGlyph.allCases.allSatisfy { $0.layerOpacity == 0.5 && $0.outlineWidth == 0 })
         #expect(ContentGlyph.allCases.allSatisfy { $0.layerOpacity == 0.25 && $0.outlineWidth == 0.75 })
         #expect(CategoryGlyph.allCases.allSatisfy { $0.outlineWidth == 0 })
     }
@@ -124,13 +124,13 @@ struct IconPolicyTests {
         #expect(Set(content.values).isDisjoint(with: Set(category.values)))
     }
 
-    @Test("verdict glyphs are Reins's own: five shapes in fg2, in no generated set")
+    @Test("verdict glyphs are SpaceVibe's own: five shapes in fg2, in no generated set")
     func verdicts() throws {
         #expect(VerdictGlyph.Kind.allCases.map { String(describing: $0) } == ["heavy", "used", "never", "dead", "nm"])
         let generated = Set(Self.sets.flatMap { $0.glyphs.map { String(describing: $0) } })
         #expect(generated.isDisjoint(with: VerdictGlyph.Kind.allCases.map { String(describing: $0) }))
         let source = try Self.source("Components/VerdictGlyph.swift")
-        #expect(!source.contains("ReinsIcon(") && !source.contains("GlyphSource"), "the verdict glyphs are shapes, not generated paths")
+        #expect(!source.contains("SpaceVibeIcon(") && !source.contains("GlyphSource"), "the verdict glyphs are shapes, not generated paths")
         let palette = try NSRegularExpression(pattern: #"Palette\.(\w+)"#).matches(in: source, range: NSRange(source.startIndex..., in: source))
             .map { String(source[Range($0.range(at: 1), in: source)!]) }
         #expect(Set(palette) == ["fg2", "onVerdict"], "D58: one neutral colour, the cut-out in onVerdict; found \(Set(palette))")
@@ -138,7 +138,7 @@ struct IconPolicyTests {
 
     @Test("v5 screen folders draw no Solar glyph")
     func v5ScreensLeaveSolar() throws {
-        let solar = try NSRegularExpression(pattern: #"ReinsGlyph|ReinsIcon\(\s*\."#)
+        let solar = try NSRegularExpression(pattern: #"SpaceVibeGlyph|SpaceVibeIcon\(\s*\."#)
         for folder in StyleBoundaryTests.v5Folders {
             let root = Self.appSources.appendingPathComponent(folder)
             guard let walker = FileManager.default.enumerator(atPath: root.path) else { continue }

@@ -8,7 +8,7 @@ struct TopBarView: View {
     var body: some View {
         HStack(spacing: Space.s12) {
             Text(shell.title)
-                .reinsText(.title, tone: .primary)
+                .spaceVibeText(.title, tone: .primary)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)
             SearchField(placeholder: "Search or run a command", shortcut: "\u{2318}K", spokenShortcut: "Command K") { shell.openPalette() }

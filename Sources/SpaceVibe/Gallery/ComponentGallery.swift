@@ -70,7 +70,7 @@ struct ComponentGalleryContent: View {
                     HStack(spacing: Rhythm.tools) {
                         TextInputField(label: "Rule", placeholder: "Bash(npm test *)", text: $draft, code: true, focused: $draftFocused) {}
                         TextInputField(label: "Rule", placeholder: "Bash(npm test *)", text: $badDraft, code: true, invalid: true, focused: $badDraftFocused) {}
-                        Text("Write the rule as Tool(pattern).").reinsText(.caption, tone: .danger)
+                        Text("Write the rule as Tool(pattern).").spaceVibeText(.caption, tone: .danger)
                         Spacer(minLength: 0)
                     }
                 }
@@ -89,11 +89,11 @@ struct ComponentGalleryContent: View {
                     GroupedList {
                         CardHeader("Rows", count: 5)
                         Row { RowText("Plain row", subtitle: "Second line in the muted colour") }
-                            .lead { ReinsIcon(.skill, size: .row) }
+                            .lead { SpaceVibeIcon(.skill, size: .row) }
                         Row(selected: true, revealActions: true, onActivate: {}) {
                             RowText("Selected row with actions", subtitle: "Actions stay visible while selected")
                         }
-                        .lead { ReinsIcon(.skill, size: .row) }
+                        .lead { SpaceVibeIcon(.skill, size: .row) }
                         .actions {
                             RowActionButton(title: "Copy to Codex", icon: .copy) {}
                             RowActionButton(title: "Remove", icon: .trash, kind: .danger, iconOnly: true) {}
@@ -102,13 +102,13 @@ struct ComponentGalleryContent: View {
                             .lead { CLIDot(.codex) }
                             .cells { StateCell { Tag("not measurable", icon: .warning) }; NumberCell(text: "~$148.20") }
                         Row(onActivate: {}) { RowText("A row with nothing to change", subtitle: "Owned by a plugin") }
-                            .lead { ReinsIcon(.skill, size: .row) }
+                            .lead { SpaceVibeIcon(.skill, size: .row) }
                             .cells { FixedCell { Tag("\u{00D7}3") }; NumberCell(text: "~$1.33") }
                             .actions { HStack(spacing: Space.s4) { EmptyActionSlot(); ReadOnlyMark(reason: "Read-only: owned by a plugin") } }
                         Row(tall: true) {
                             VStack(alignment: .leading, spacing: 0) {
                                 RowText("pnpm tsc --noEmit", subtitle: "exit 2 \u{00B7} spacevibe-bench \u{00B7} last 1 h ago", mono: true, codeSubtitle: false)
-                                Text("lib/leaderboard/rank.ts(41,9): error TS2322").reinsText(.code, tone: .secondary)
+                                Text("lib/leaderboard/rank.ts(41,9): error TS2322").spaceVibeText(.code, tone: .secondary)
                             }
                         }
                         .lead { CLIDot(.claude) }
@@ -141,8 +141,8 @@ struct ComponentGalleryContent: View {
                 section("Inset box and warning, as inside a confirmation") {
                     VStack(alignment: .leading, spacing: Space.s12) {
                         InsetBox {
-                            HStack(spacing: Space.s8) { Tag("Deny", tone: .danger); Text("Bash(git push *)").reinsText(.code, tone: .primary) }
-                            HStack(spacing: Space.s8) { Tag("Allow"); Text("Bash(vercel *)").reinsText(.code, tone: .primary) }
+                            HStack(spacing: Space.s8) { Tag("Deny", tone: .danger); Text("Bash(git push *)").spaceVibeText(.code, tone: .primary) }
+                            HStack(spacing: Space.s8) { Tag("Allow"); Text("Bash(vercel *)").spaceVibeText(.code, tone: .primary) }
                         }
                         WarningNote(text: "A rule that stays in this file still wins, so Push and deploy will read Ask, not Allow.")
                     }
@@ -150,8 +150,8 @@ struct ComponentGalleryContent: View {
                 }
                 section("Confirmation") {
                     ConfirmationDialog("Stop Fix leaderboard rank tie?", message: "The current turn ends and work already done stays. This cannot be undone.", cancel: {}) {
-                        Button("Cancel") {}.buttonStyle(.reins(.normal))
-                        Button("Stop") {}.buttonStyle(.reins(.danger))
+                        Button("Cancel") {}.buttonStyle(.spaceVibe(.normal))
+                        Button("Stop") {}.buttonStyle(.spaceVibe(.danger))
                     }
                     .frame(height: Metrics.galleryOverlayHeight)
                     .clipShape(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous))
@@ -179,7 +179,7 @@ struct ComponentGalleryContent: View {
                             .paletteList()
                             Hairline()
                             PaletteFooter {
-                                PaletteHint(text: "navigate") { ReinsIcon(.navigate, size: .inline) }
+                                PaletteHint(text: "navigate") { SpaceVibeIcon(.navigate, size: .inline) }
                                 PaletteHint(text: "close") { Kbd("Esc") }
                             }
                         }
@@ -199,7 +199,7 @@ struct ComponentGalleryContent: View {
                 section("Empty state") {
                     GroupedList {
                         EmptyState("No skills yet", message: "Skills you add to Claude Code or Codex show up here with how often they ran.", icon: .loadout) {
-                            Button("Rescan") {}.buttonStyle(.reins(.normal))
+                            Button("Rescan") {}.buttonStyle(.spaceVibe(.normal))
                         }
                     }
                 }
@@ -214,7 +214,7 @@ struct ComponentGalleryContent: View {
                     HintBar(hints: [KeyHint(keys: "Tab", label: "Row actions")])
                         .clipShape(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous))
                 }
-                section("Settings: rail tabs, theme tiles (System, Light, Dark), the switch on, off and disabled, the Reins mark, a raised block") {
+                section("Settings: rail tabs, theme tiles (System, Light, Dark), the switch on, off and disabled, the SpaceVibe mark, a raised block") {
                     SettingsSpecimens()
                 }
             }
@@ -226,17 +226,17 @@ struct ComponentGalleryContent: View {
 
     private var buttons: some View {
         HStack(spacing: Rhythm.tools) {
-            Button("Normal") {}.buttonStyle(.reins(.normal))
-            Button("Primary") {}.buttonStyle(.reins(.primary))
-            Button("Remove") {}.buttonStyle(.reins(.danger))
+            Button("Normal") {}.buttonStyle(.spaceVibe(.normal))
+            Button("Primary") {}.buttonStyle(.spaceVibe(.primary))
+            Button("Remove") {}.buttonStyle(.spaceVibe(.danger))
             Button {} label: {
-                HStack(spacing: Space.s4) { ReinsIcon(.add); Text("Add to Codex") }
+                HStack(spacing: Space.s4) { SpaceVibeIcon(.add); Text("Add to Codex") }
             }
-            .buttonStyle(.reins(.ghost))
-            Button {} label: { ReinsIcon(.trash) }.buttonStyle(.reins(.icon)).accessibilityLabel("Remove")
+            .buttonStyle(.spaceVibe(.ghost))
+            Button {} label: { SpaceVibeIcon(.trash) }.buttonStyle(.spaceVibe(.icon)).accessibilityLabel("Remove")
             RowActionButton(title: "Remove from Claude Code", icon: .trash, kind: .danger, iconOnly: true, badge: .claude) {}
             RowActionButton(title: "Remove from Codex", icon: .trash, kind: .danger, iconOnly: true, badge: .codex) {}
-            Button("Disabled") {}.buttonStyle(.reins(.normal)).disabled(true)
+            Button("Disabled") {}.buttonStyle(.spaceVibe(.normal)).disabled(true)
             Spacer(minLength: 0)
         }
         .environment(\.actionsConcealed, false)
@@ -257,8 +257,8 @@ struct ComponentGalleryContent: View {
             HStack(spacing: Space.s6) { CLIDot(.claude); CLIDot(.codex) }
             Kbd("\u{2318}K")
             Kbd("Esc")
-            HStack(spacing: Space.s6) { Text("Skills").reinsText(.captionStrong, tone: .secondary); Count(10) }
-            HStack(spacing: Space.s6) { Text("Activity").reinsText(.body); Count(2, alert: true) }
+            HStack(spacing: Space.s6) { Text("Skills").spaceVibeText(.captionStrong, tone: .secondary); Count(10) }
+            HStack(spacing: Space.s6) { Text("Activity").spaceVibeText(.body); Count(2, alert: true) }
             Spacer(minLength: 0)
         }
     }
@@ -296,7 +296,7 @@ struct ComponentGalleryContent: View {
 
 /// Every text role with its size, line box and weight, set in itself.
 private struct TypeRoles: View {
-    private let roles: [(String, ReinsType)] = [
+    private let roles: [(String, SpaceVibeType)] = [
         ("caption", .caption), ("captionStrong", .captionStrong), ("label", .label), ("count", .count),
         ("body", .body), ("bodyStrong", .bodyStrong), ("rowTitle", .rowTitle), ("number", .number),
         ("code", .code), ("codeTitle", .codeTitle), ("title", .title), ("figure", .figure), ("display", .display),
@@ -306,10 +306,10 @@ private struct TypeRoles: View {
         GroupedList {
             ForEach(roles, id: \.0) { name, role in
                 HStack(spacing: Metrics.rowSpacing) {
-                    Text(name).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth, alignment: .leading)
-                    Text("\(Int(role.size)) / \(Int(role.lineBox))").reinsText(.count, tone: .tertiary).frame(width: Metrics.costWidth, alignment: .leading)
-                    Text(role.code ? "Bash(rm -rf:*) 0O lI1" : role.size > ReinsType.figure.size ? "92%" : "ponytail \u{00B7} Add to Codex \u{00B7} 1,204")
-                        .reinsText(role, tone: .primary)
+                    Text(name).spaceVibeText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth, alignment: .leading)
+                    Text("\(Int(role.size)) / \(Int(role.lineBox))").spaceVibeText(.count, tone: .tertiary).frame(width: Metrics.costWidth, alignment: .leading)
+                    Text(role.code ? "Bash(rm -rf:*) 0O lI1" : role.size > SpaceVibeType.figure.size ? "92%" : "ponytail \u{00B7} Add to Codex \u{00B7} 1,204")
+                        .spaceVibeText(role, tone: .primary)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                 }
@@ -328,19 +328,19 @@ struct ComponentGalleryWindow: View {
         ZStack {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
-                    Text("Component gallery").reinsText(.title).accessibilityAddTraits(.isHeader)
+                    Text("Component gallery").spaceVibeText(.title).accessibilityAddTraits(.isHeader)
                     Spacer(minLength: 0)
                     Button("Toast with Undo") { toasts.show("Removed ponytail", undo: { toasts.show("Undone: removed ponytail") }) }
-                        .buttonStyle(.reins(.normal))
+                        .buttonStyle(.spaceVibe(.normal))
                     Button("Error toast") { toasts.show("Could not write settings.json", tone: .danger) }
-                        .buttonStyle(.reins(.normal))
+                        .buttonStyle(.spaceVibe(.normal))
                     ThemeToggle()
                 }
                 .padding(.leading, Metrics.pagePadding + 70)
                 .padding(.trailing, Metrics.pagePadding)
                 .padding(.top, 16)
                 .padding(.bottom, 4)
-                ReinsScrollView { ComponentGalleryContent() }
+                SpaceVibeScrollView { ComponentGalleryContent() }
             }
             ToastHost()
         }
@@ -370,7 +370,7 @@ private struct Swatches: View {
                                 .fill(token.1)
                                 .frame(height: 28)
                                 .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Palette.border, lineWidth: 1))
-                            Text(token.0).reinsText(.caption, tone: .tertiary).lineLimit(1)
+                            Text(token.0).spaceVibeText(.caption, tone: .tertiary).lineLimit(1)
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -387,20 +387,20 @@ private struct IconSpecimens: View {
 
     var body: some View {
         GroupedList {
-            ForEach(Array(ReinsGlyph.allCases.enumerated()), id: \.offset) { _, glyph in
+            ForEach(Array(SpaceVibeGlyph.allCases.enumerated()), id: \.offset) { _, glyph in
                 HStack(spacing: Metrics.rowSpacing) {
-                    Text(glyph.iconName).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
+                    Text(glyph.iconName).spaceVibeText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
                     ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
-                        ReinsIcon(glyph, size: size).frame(width: Metrics.iconLarge)
+                        SpaceVibeIcon(glyph, size: size).frame(width: Metrics.iconLarge)
                     }
-                    ReinsIcon(glyph, size: .control, ink: Palette.warnInk)
+                    SpaceVibeIcon(glyph, size: .control, ink: Palette.warnInk)
                     Spacer(minLength: 0)
                 }
                 .foregroundStyle(Palette.textSecondary)
                 .padding(.horizontal, Metrics.rowHorizontalPadding)
             }
             HStack(spacing: Metrics.rowSpacing) {
-                Text("chevron (drawn)").reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
+                Text("chevron (drawn)").spaceVibeText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
                 ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
                     Chevron(.right, size: size).frame(width: Metrics.iconLarge)
                 }
@@ -434,7 +434,7 @@ private struct RulerSpecimens: View {
                     .cells {
                         HStack(spacing: Metrics.rowSpacing) {
                             Ruler(share: share, fill: tone.barFill ?? Palette.claude)
-                            Text(label).reinsText(.number, tone: .secondary).frame(width: Metrics.usageNumberWidth, alignment: .trailing)
+                            Text(label).spaceVibeText(.number, tone: .secondary).frame(width: Metrics.usageNumberWidth, alignment: .trailing)
                         }
                         .frame(width: Metrics.usageCellWidth)
                         Ruler(share: share, fill: tone.barFill ?? Palette.codex).frame(width: Metrics.usageCellWidth * 2)
@@ -517,11 +517,11 @@ private struct SettingsSpecimens: View {
                 .padding(.top, Space.s8)
                 .groupedListPart(.plain)
                 HStack(spacing: Space.s16) {
-                    ReinsSwitch(label: "On", isOn: $on)
-                    ReinsSwitch(label: "Off", isOn: $off)
-                    ReinsSwitch(label: "Disabled", isOn: .constant(false)).disabled(true)
-                    ReinsMark()
-                    RaisedBlock { Text("A raised block inside a card").reinsText(.body, tone: .secondary) }
+                    SpaceVibeSwitch(label: "On", isOn: $on)
+                    SpaceVibeSwitch(label: "Off", isOn: $off)
+                    SpaceVibeSwitch(label: "Disabled", isOn: .constant(false)).disabled(true)
+                    SpaceVibeMark()
+                    RaisedBlock { Text("A raised block inside a card").spaceVibeText(.body, tone: .secondary) }
                         .frame(width: Metrics.usageCellWidth * 2)
                     Spacer(minLength: 0)
                 }
@@ -543,12 +543,12 @@ private struct V5IconSpecimens: View {
         VStack(alignment: .leading, spacing: Space.s12) {
             GroupedList {
                 specimenGrid(CategoryGlyph.allCases.map { glyph in
-                    (glyph.iconName, { size, ink in ReinsIcon(category: glyph, size: size, ink: ink) })
+                    (glyph.iconName, { size, ink in SpaceVibeIcon(category: glyph, size: size, ink: ink) })
                 })
             }
             GroupedList {
                 specimenGrid(ContentGlyph.allCases.map { glyph in
-                    (glyph.iconName, { size, ink in ReinsIcon(content: glyph, size: size, ink: ink) })
+                    (glyph.iconName, { size, ink in SpaceVibeIcon(content: glyph, size: size, ink: ink) })
                 })
             }
             GroupedList {
@@ -566,7 +566,7 @@ private struct V5IconSpecimens: View {
                 HStack(alignment: .center, spacing: Space.s16) {
                     ForEach(Array(row.enumerated()), id: \.offset) { _, item in
                         HStack(spacing: Space.s8) {
-                            Text(item.0).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.4, alignment: .leading)
+                            Text(item.0).spaceVibeText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.4, alignment: .leading)
                             ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
                                 item.1(size, nil).frame(width: Metrics.iconLarge)
                             }

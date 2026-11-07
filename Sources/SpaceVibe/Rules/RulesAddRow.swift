@@ -22,12 +22,12 @@ struct RulesAddRow: View {
                         selection: $model.draftVerdict
                     )
                     Button("Add rule") { model.submitDraft() }
-                        .buttonStyle(.reins(.normal))
+                        .buttonStyle(.spaceVibe(.normal))
                         .disabled(model.draft.trimmingCharacters(in: .whitespaces).isEmpty || model.isWriting || model.snapshot?.problems.isEmpty == false)
                 }
                 if let error = model.addError {
                     Text(error)
-                        .reinsText(.caption, tone: .danger)
+                        .spaceVibeText(.caption, tone: .danger)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.updatesFrequently)
                 }

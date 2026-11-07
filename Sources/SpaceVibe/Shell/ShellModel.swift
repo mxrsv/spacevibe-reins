@@ -6,7 +6,7 @@ import SwiftUI
 @MainActor
 @Observable
 final class ShellModel {
-    let tabs: [any ReinsTab]
+    let tabs: [any SpaceVibeTab]
     let appearance: AppearanceStore
 
     var activeID: String
@@ -22,14 +22,14 @@ final class ShellModel {
     /// A short line at the bottom of the sidebar ("Counting usage 3/9"). Nil hides it.
     var statusMessage: String?
 
-    init(tabs: [any ReinsTab], appearance: AppearanceStore, activeID: String? = nil) {
+    init(tabs: [any SpaceVibeTab], appearance: AppearanceStore, activeID: String? = nil) {
         precondition(!tabs.isEmpty, "TabRegistry returned no tabs")
         self.tabs = tabs
         self.appearance = appearance
         self.activeID = activeID ?? tabs[0].id
     }
 
-    var activeTab: any ReinsTab { tabs.first { $0.id == activeID } ?? tabs[0] }
+    var activeTab: any SpaceVibeTab { tabs.first { $0.id == activeID } ?? tabs[0] }
 
     /// The top bar's title: the active tab's, or the Limits page's while it shows.
     var title: String { isLimitsOpen ? LimitsPage.title : activeTab.title }

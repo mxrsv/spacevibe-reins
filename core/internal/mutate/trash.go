@@ -35,7 +35,7 @@ func trashDir(r roots.Roots) string { return filepath.Join(r.Data, "trash") }
 
 func ensureDataFolders(r roots.Roots) error {
 	if err := fsx.MkdirAll(trashDir(r), 0o700); err != nil {
-		return fail("Could not create the Reins data folder "+r.Data+".", coreerr.StatusInternalFailure)
+		return fail("Could not create the SpaceVibe data folder "+r.Data+".", coreerr.StatusInternalFailure)
 	}
 	return nil
 }
@@ -44,11 +44,11 @@ func ensureDataFolders(r roots.Roots) error {
 func slot(r roots.Roots, name string) (string, error) {
 	var b [4]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		return "", fail("Could not create the Reins trash folder.", coreerr.StatusInternalFailure)
+		return "", fail("Could not create the SpaceVibe trash folder.", coreerr.StatusInternalFailure)
 	}
 	folder := filepath.Join(trashDir(r), strconv.FormatInt(time.Now().UnixMilli(), 10)+"-"+hex.EncodeToString(b[:]))
 	if err := fsx.MkdirAll(folder, 0o700); err != nil {
-		return "", fail("Could not create the Reins trash folder.", coreerr.StatusInternalFailure)
+		return "", fail("Could not create the SpaceVibe trash folder.", coreerr.StatusInternalFailure)
 	}
 	return filepath.Join(folder, filepath.Base(name)), nil
 }

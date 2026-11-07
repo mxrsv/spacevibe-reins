@@ -9,11 +9,11 @@ import (
 func Quote(text string) string { return "'" + strings.ReplaceAll(text, "'", `'\''`) + "'" }
 
 // maxUnwrap bounds how many nested wrappers unwrap removes. It also heals a command that an older build wrapped
-// twice; a longer chain is not something Reins wrote.
+// twice; a longer chain is not something SpaceVibe wrote.
 const maxUnwrap = 8
 
 // words splits command into the words Quote produces, joined by single spaces: quoted segments, \' and bare
-// letters, digits and "_-./". Anything else (an operator, a variable, a second space) is not text Reins wrote, so
+// letters, digits and "_-./". Anything else (an operator, a variable, a second space) is not text SpaceVibe wrote, so
 // the result is false and the caller treats the command as the user's own.
 func words(command string) ([]string, bool) {
 	var out []string
@@ -58,7 +58,7 @@ func collector(word, name string) bool {
 	return path.IsAbs(word) && path.Base(word) == name && path.Base(path.Dir(word)) == "bin"
 }
 
-// unwrapOnce returns the command a Reins wrapper delegates to. It knows both spellings, whatever data folder
+// unwrapOnce returns the command a SpaceVibe wrapper delegates to. It knows both spellings, whatever data folder
 // they name (G-fix.19: the Swift check looked only for its own prefix, so a moved data root wrapped twice):
 //
 //	'<dir>/bin/reins-statusline' --capture '<data>' '<claude>' '<original>'            (the Swift collector)
@@ -79,7 +79,7 @@ func unwrapOnce(command string) (string, bool) {
 	return "", false
 }
 
-// unwrap removes every Reins wrapper around command and returns what the user's own status line runs.
+// unwrap removes every SpaceVibe wrapper around command and returns what the user's own status line runs.
 func unwrap(command string) string {
 	for range maxUnwrap {
 		inner, ok := unwrapOnce(command)

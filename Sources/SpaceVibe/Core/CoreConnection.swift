@@ -47,7 +47,7 @@ final class CoreConnection: @unchecked Sendable {
     private var sent: [String: Int] = [:]
     private var identity: CoreInitializeResult?
 
-    init(binary: URL, environment: [String: String]?, clientName: String = "Reins", clientVersion: String, handshakeTimeout: Duration = .seconds(10)) {
+    init(binary: URL, environment: [String: String]?, clientName: String = "SpaceVibe", clientVersion: String, handshakeTimeout: Duration = .seconds(10)) {
         self.handshakeTimeout = handshakeTimeout
         self.binary = binary
         self.environment = environment

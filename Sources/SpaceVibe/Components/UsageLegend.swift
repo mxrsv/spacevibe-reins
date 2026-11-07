@@ -7,13 +7,13 @@ struct UsageLegend: View {
     var body: some View {
         HStack(spacing: Space.s16) {
             item(swatch: Capsule().fill(Palette.textSecondary).frame(width: Metrics.legendSwatchWidth, height: Metrics.barHeight), "counted from logs")
-            item(swatch: Text("0").reinsText(.countStrong, tone: .danger), "never ran")
+            item(swatch: Text("0").spaceVibeText(.countStrong, tone: .danger), "never ran")
             item(swatch: Capsule().strokeBorder(Palette.textTertiary, style: StrokeStyle(lineWidth: 1, dash: [3, 2])).frame(width: Metrics.legendSwatchWidth, height: Metrics.barHeight), "not counted yet")
-            item(swatch: ReinsIcon(.warning, size: .inline), "not measurable")
+            item(swatch: SpaceVibeIcon(.warning, size: .inline), "not measurable")
             Spacer(minLength: 0)
             if let note { Text(note).lineLimit(1).truncationMode(.tail).accessibilityAddTraits(.updatesFrequently) }
         }
-        .reinsText(.caption, tone: .tertiary)
+        .spaceVibeText(.caption, tone: .tertiary)
         .padding(.horizontal, Space.s4)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Usage key: counted from logs, never ran, not counted yet, not measurable" + (note.map { ". \($0)" } ?? ""))

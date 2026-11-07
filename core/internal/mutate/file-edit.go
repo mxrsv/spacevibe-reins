@@ -13,7 +13,7 @@ import (
 	"spacevibe.dev/core/internal/roots"
 )
 
-// The one way Reins changes a config file: atomic, undoable, content-safe (FileEdit.swift). Same job as editFile in
+// The one way SpaceVibe changes a config file: atomic, undoable, content-safe (FileEdit.swift). Same job as editFile in
 // Node mutate, plus a JSON layer that does what parseConfig and serialize do in Node rules.
 //
 //   - The previous bytes are copied to the app trash first; the returned op lets Undo put back exactly those bytes
@@ -118,7 +118,7 @@ func (tx *Tx) Apply(file string, validate func(string) error, change TextChange)
 		// Another process (a CLI, a hand edit) may have written since the read above; never overwrite that.
 		BeforeRename: func() error {
 			if !fsx.UnchangedSince(target.Real, before) {
-				return fail(target.Real+" changed while Reins was editing it, so it was left alone. Try again.", coreerr.StatusConflict)
+				return fail(target.Real+" changed while SpaceVibe was editing it, so it was left alone. Try again.", coreerr.StatusConflict)
 			}
 			return nil
 		},

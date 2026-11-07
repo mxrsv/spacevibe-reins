@@ -27,7 +27,7 @@ enum LoadoutKind: CaseIterable {
         }
     }
 
-    var icon: ReinsGlyph {
+    var icon: SpaceVibeGlyph {
         switch self {
         case .skill: .skill
         case .agent: .agent

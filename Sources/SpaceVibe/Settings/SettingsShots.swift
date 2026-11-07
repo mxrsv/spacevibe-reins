@@ -73,7 +73,7 @@ enum SettingsShots {
     private static func write(_ shell: ShellModel, _ toasts: ToastCenter, _ env: AppEnvironment, _ name: String,
                               _ choice: AppearanceChoice, to directory: URL) throws {
         let view = ShellView()
-            .reinsRoot(shell: shell, toasts: toasts, env: env)
+            .spaceVibeRoot(shell: shell, toasts: toasts, env: env)
             .frame(width: ShotRenderer.size.width, height: ShotRenderer.size.height)
         try ShotRenderer.write(view, name: name, choice: choice, to: directory)
     }

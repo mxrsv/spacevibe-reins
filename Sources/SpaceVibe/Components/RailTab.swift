@@ -4,7 +4,7 @@ import SwiftUI
 /// chosen one changes only its fill (`surface` on the well) and its tone; the others fill with `hover` under the pointer.
 struct RailTab: View {
     let title: String
-    let icon: ReinsGlyph
+    let icon: SpaceVibeGlyph
     let isActive: Bool
     let select: () -> Void
 
@@ -14,8 +14,8 @@ struct RailTab: View {
         let shape = RoundedRectangle(cornerRadius: Metrics.controlRadius, style: .continuous)
         Button(action: select) {
             VStack(spacing: Space.s4) {
-                ReinsIcon(icon, size: .large)
-                Text(title).reinsText(.label)
+                SpaceVibeIcon(icon, size: .large)
+                Text(title).spaceVibeText(.label)
             }
             .foregroundStyle(isActive ? TextTone.primary.color : TextTone.secondary.color)
             .frame(width: Metrics.railTabWidth, height: Metrics.railTabHeight)
@@ -23,7 +23,7 @@ struct RailTab: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .reinsFocusable(cornerRadius: Metrics.controlRadius)
+        .spaceVibeFocusable(cornerRadius: Metrics.controlRadius)
         .onHover { hovering = $0 }
         .accessibilityLabel(title)
         .accessibilityAddTraits(isActive ? .isSelected : [])

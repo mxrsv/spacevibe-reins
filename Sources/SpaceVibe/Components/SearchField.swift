@@ -15,12 +15,12 @@ struct SearchField: View {
         let shape = RoundedRectangle(cornerRadius: Metrics.fieldRadius, style: .continuous)
         Button(action: action) {
             HStack(spacing: Space.s8) {
-                ReinsIcon(.search)
+                SpaceVibeIcon(.search)
                 Text(placeholder).lineLimit(1)
                 Spacer(minLength: 0)
                 Kbd(shortcut).controlGround(.card)
             }
-            .reinsText(.body, tone: .tertiary)
+            .spaceVibeText(.body, tone: .tertiary)
             .padding(.leading, Space.s8)
             .padding(.trailing, Space.s4)
             .frame(width: Metrics.topBarSearchWidth, height: Metrics.controlHeight)
@@ -28,7 +28,7 @@ struct SearchField: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .reinsFocusable(cornerRadius: Metrics.fieldRadius)
+        .spaceVibeFocusable(cornerRadius: Metrics.fieldRadius)
         .onHover { hovering = $0 }
         .accessibilityLabel(placeholder)
         .accessibilityHint(spokenShortcut)

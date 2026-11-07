@@ -239,12 +239,12 @@ struct RulesModelTests {
     func writeRefused() async throws {
         let core = FakeRulesCore(snapshot: Self.snapshot())
         let model = try await started(core)
-        core.writeFailure = CoreError("~/.claude/settings.json is not valid JSON, so Reins left it alone.", status: 409)
+        core.writeFailure = CoreError("~/.claude/settings.json is not valid JSON, so SpaceVibe left it alone.", status: 409)
         model.requestSet(.push, to: .deny)
         try await settle("the confirmation") { model.pending != nil }
         model.confirmPending()
         try await settle("the refusal") { model.env.toasts.current != nil && !model.isWriting }
-        #expect(model.env.toasts.current?.message == "~/.claude/settings.json is not valid JSON, so Reins left it alone.")
+        #expect(model.env.toasts.current?.message == "~/.claude/settings.json is not valid JSON, so SpaceVibe left it alone.")
         #expect(model.env.toasts.current?.tone == .danger)
         #expect(core.calls.filter { $0.hasPrefix("snapshot") }.count == 1, "a refused write reloads nothing")
     }

@@ -10,8 +10,8 @@ enum GlyphBox {
     static let side: CGFloat = 24
 }
 
-/// One glyph of a generated icon set (`ReinsIconData.swift`, `CategoryIconData.swift`, `ContentIconData.swift`): its shapes in
-/// the 24 x 24 box and how the set is drawn. `ReinsIcon` draws any of them.
+/// One glyph of a generated icon set (`SpaceVibeIconData.swift`, `CategoryIconData.swift`, `ContentIconData.swift`): its shapes in
+/// the 24 x 24 box and how the set is drawn. `SpaceVibeIcon` draws any of them.
 protocol GlyphSource: Sendable {
     /// The icon of the set this glyph is drawn from, for example `flash-line`.
     var iconName: String { get }
@@ -92,9 +92,9 @@ enum IconSize: CaseIterable {
 /// current foreground style, so an icon is neutral wherever it sits; `ink` is for the two places that tint one (a state tag, a
 /// banner). Hidden from VoiceOver unless it has a `label`, for an icon that carries meaning on its own.
 ///
-/// `ReinsIcon(.lock)` draws a Solar glyph (old screens). The v5 sets have their own labels, so a name that exists in two sets
-/// never reads two ways: `ReinsIcon(category: .skill)` (MingCute) and `ReinsIcon(content: .stack)` (Phosphor).
-struct ReinsIcon: View {
+/// `SpaceVibeIcon(.lock)` draws a Solar glyph (old screens). The v5 sets have their own labels, so a name that exists in two sets
+/// never reads two ways: `SpaceVibeIcon(category: .skill)` (MingCute) and `SpaceVibeIcon(content: .stack)` (Phosphor).
+struct SpaceVibeIcon: View {
     let source: any GlyphSource
     var size: IconSize = .control
     var ink: Color?
@@ -107,7 +107,7 @@ struct ReinsIcon: View {
         self.label = label
     }
 
-    init(_ glyph: ReinsGlyph, size: IconSize = .control, ink: Color? = nil, label: String? = nil) {
+    init(_ glyph: SpaceVibeGlyph, size: IconSize = .control, ink: Color? = nil, label: String? = nil) {
         self.init(source: glyph, size: size, ink: ink, label: label)
     }
 

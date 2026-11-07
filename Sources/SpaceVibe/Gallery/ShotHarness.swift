@@ -31,15 +31,15 @@ enum ShotHarness {
     }
 
     /// The registry's shell with `tab` standing in for the tab of the same id, and that tab active.
-    static func shell(around tab: any ReinsTab, choice: AppearanceChoice) -> ShellModel {
-        let tabs: [any ReinsTab] = TabRegistry.makeTabs().map { $0.id == tab.id ? tab : $0 }
+    static func shell(around tab: any SpaceVibeTab, choice: AppearanceChoice) -> ShellModel {
+        let tabs: [any SpaceVibeTab] = TabRegistry.makeTabs().map { $0.id == tab.id ? tab : $0 }
         return ShellModel(tabs: tabs, appearance: AppearanceStore(forced: choice), activeID: tab.id)
     }
 
     /// The shell as one 1440x900 frame, with the services of `env` (and its toasts) in the environment.
     static func view(_ shell: ShellModel, env: AppEnvironment) -> some View {
         ShellView()
-            .reinsRoot(shell: shell, toasts: env.toasts, env: env)
+            .spaceVibeRoot(shell: shell, toasts: env.toasts, env: env)
             .frame(width: ShotRenderer.size.width, height: ShotRenderer.size.height)
     }
 }

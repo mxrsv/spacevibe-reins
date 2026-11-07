@@ -214,7 +214,7 @@ struct CoreClientTests {
 
     @Test("a helper that speaks another protocol version is a fixed startup problem, not a restart loop", .timeLimit(.minutes(1)))
     func versionMismatch() async throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("reins-fake-core-\(UUID().uuidString)", isDirectory: true)
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("spacevibe-fake-core-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let script = folder.appendingPathComponent("spacevibe")
@@ -234,7 +234,7 @@ struct CoreClientTests {
 
     @Test("a helper that never answers initialize is ended after the deadline", .timeLimit(.minutes(1)))
     func silentHelper() async throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("reins-silent-core-\(UUID().uuidString)", isDirectory: true)
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("spacevibe-silent-core-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let script = folder.appendingPathComponent("spacevibe")
@@ -250,7 +250,7 @@ struct CoreClientTests {
 
     @Test("a client given no environment starts the helper with ours, so the folders it names reach the core", .timeLimit(.minutes(1)))
     func inheritsEnvironment() async throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("reins-env-core-\(UUID().uuidString)", isDirectory: true)
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("spacevibe-env-core-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let script = folder.appendingPathComponent("spacevibe")

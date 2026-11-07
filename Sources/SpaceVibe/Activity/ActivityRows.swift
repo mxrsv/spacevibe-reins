@@ -42,7 +42,7 @@ enum ActivityRows {
 struct SessionWording {
     let tagText: String
     let tagTone: TagTone
-    let tagIcon: ReinsGlyph?
+    let tagIcon: SpaceVibeGlyph?
     /// The engine's reason, shown as help for every state so "why" is always one hover away.
     let help: String
     let subtitle: String

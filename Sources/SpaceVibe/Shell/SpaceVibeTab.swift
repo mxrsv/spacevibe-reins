@@ -21,7 +21,7 @@ struct PaletteEntry: Identifiable {
     let id: String
     var title: String
     var subtitle: String?
-    var icon: ReinsGlyph?
+    var icon: SpaceVibeGlyph?
     /// Right-aligned hint such as a shortcut.
     var trailing: String?
     /// Extra words the search matches besides the title.
@@ -36,20 +36,20 @@ struct PaletteEntry: Identifiable {
 /// Make a screen a `final class` conforming to this, mark it `@Observable` if its count or actions change:
 /// the shell reads `badge`, `hints` and the palette entries while rendering, so Observation updates them.
 ///
-///     @MainActor @Observable final class LoadoutTab: ReinsTab {
-///         let id = "loadout"; let title = "Loadout"; let icon = ReinsGlyph.loadout
+///     @MainActor @Observable final class LoadoutTab: SpaceVibeTab {
+///         let id = "loadout"; let title = "Loadout"; let icon = SpaceVibeGlyph.loadout
 ///         var badge: TabBadge? { TabBadge(value: items.count) }
 ///         var content: AnyView { AnyView(LoadoutScreen(model: model)) }
 ///     }
 ///
 /// Screens read shared services from the environment: `@Environment(ToastCenter.self)` and `@Environment(ShellModel.self)`.
 @MainActor
-protocol ReinsTab: AnyObject {
+protocol SpaceVibeTab: AnyObject {
     /// Stable, lowercase. Position in `TabRegistry` decides the `⌘1`, `⌘2`, `⌘3` shortcut.
     var id: String { get }
     var title: String { get }
     /// An SF Symbol name; one weight across the app.
-    var icon: ReinsGlyph { get }
+    var icon: SpaceVibeGlyph { get }
     var badge: TabBadge? { get }
     /// Shown after the always-present `⌘K Search or run` and before `Esc Close`.
     var hints: [KeyHint] { get }
@@ -60,7 +60,7 @@ protocol ReinsTab: AnyObject {
     var content: AnyView { get }
 }
 
-extension ReinsTab {
+extension SpaceVibeTab {
     var badge: TabBadge? { nil }
     var hints: [KeyHint] { [] }
     var paletteActions: [PaletteEntry] { [] }

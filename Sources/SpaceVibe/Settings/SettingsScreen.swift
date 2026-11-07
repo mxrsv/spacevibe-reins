@@ -8,7 +8,7 @@ struct SettingsScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             rail
-            ReinsScrollView {
+            SpaceVibeScrollView {
                 Group {
                     switch shell.settingsSection {
                     case .appearance: AppearanceSettings()
@@ -40,7 +40,7 @@ struct SettingsScreen: View {
             .accessibilityLabel("Settings sections")
 
             Button { shell.closeSettings() } label: { Chevron(.left) }
-                .buttonStyle(.reins(.plainIcon))
+                .buttonStyle(.spaceVibe(.plainIcon))
                 // `Esc` belongs to the palette while it is open over Settings.
                 .keyboardShortcut(shell.isPaletteOpen ? nil : .cancelAction)
                 .help("Back to \(shell.title) (Esc)")

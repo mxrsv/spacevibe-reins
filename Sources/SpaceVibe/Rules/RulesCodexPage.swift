@@ -49,7 +49,7 @@ struct RulesCodexPage: View {
                     Row { RowText(item.title, subtitle: item.meaning) }
                         .cells { NumberCell(text: "\(item.count)", muted: item.count == 0) }
                 }
-                EmptyRow("Reins counts these rules and does not show their commands, which can hold a secret.")
+                EmptyRow("SpaceVibe counts these rules and does not show their commands, which can hold a secret.")
             }
         }
     }

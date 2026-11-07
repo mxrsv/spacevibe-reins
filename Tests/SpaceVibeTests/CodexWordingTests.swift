@@ -11,7 +11,7 @@ struct CodexWordingTests {
     /// Reads a config.toml (and rules files) from a throwaway home through the core, the way the Rules screen does.
     private func permissions(_ toml: String?, rules: String? = nil) async throws -> CoreCodexPermissions {
         let base = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        let root = base.appendingPathComponent("reins-codex-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
+        let root = base.appendingPathComponent("spacevibe-codex-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
         defer { try? FileManager.default.removeItem(at: root) }
         let codex = root.appendingPathComponent(".codex", isDirectory: true)
         try FileManager.default.createDirectory(at: codex.appendingPathComponent("rules"), withIntermediateDirectories: true)

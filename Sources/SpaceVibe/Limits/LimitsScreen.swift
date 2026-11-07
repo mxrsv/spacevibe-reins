@@ -29,11 +29,11 @@ struct LimitsScreen: View {
         HStack(spacing: Rhythm.tools) {
             Button { Task { await model.readOnce() } } label: {
                 HStack(spacing: Space.s6) {
-                    ReinsIcon(.refresh)
+                    SpaceVibeIcon(.refresh)
                     Text("Refresh")
                 }
             }
-            .buttonStyle(.reins(.normal))
+            .buttonStyle(.spaceVibe(.normal))
             .keyboardShortcut("r", modifiers: .command)
             FilterChip("Show windows not in use", isOn: model.showInactive) { model.showInactive.toggle() }
             Spacer(minLength: 0)
@@ -110,7 +110,7 @@ private struct LimitsSelection: View {
                 VStack(alignment: .leading, spacing: Space.s16) {
                     HStack(spacing: Space.s8) {
                         CLIMark(entry.cli, size: .medium)
-                        Text(title(entry)).reinsText(.title, tone: .primary).lineLimit(1)
+                        Text(title(entry)).spaceVibeText(.title, tone: .primary).lineLimit(1)
                         if let window = entry.window, !window.active { Tag("not in use") }
                     }
                     .accessibilityElement(children: .combine)
@@ -159,7 +159,7 @@ private struct WindowFacts: View {
     private var source: some View {
         if let source = LimitsWording.source(limits) {
             HStack(spacing: Space.s12) {
-                Text(source.title).reinsText(.caption, tone: .secondary).help(source.body)
+                Text(source.title).spaceVibeText(.caption, tone: .secondary).help(source.body)
                 if limits.cli == .claude && limits.source != .claudeStatusline { CopyUsageButton() }
             }
         }
@@ -172,11 +172,11 @@ private struct StateNote: View {
 
     var body: some View {
         let note = LimitsWording.entryNote(limits)
-        let icon: ReinsGlyph = limits.state == .notMeasurable || limits.state == .unreadable ? .warning : .info
+        let icon: SpaceVibeGlyph = limits.state == .notMeasurable || limits.state == .unreadable ? .warning : .info
         VStack(alignment: .leading, spacing: Space.s12) {
             HStack(alignment: .top, spacing: Space.s8) {
-                ReinsIcon(icon, ink: TextTone.secondary.color).padding(.top, Space.s2)
-                (Text("\(note.title). ").reinsText(.bodyStrong, tone: .primary) + Text(note.body).reinsText(.body, tone: .secondary))
+                SpaceVibeIcon(icon, ink: TextTone.secondary.color).padding(.top, Space.s2)
+                (Text("\(note.title). ").spaceVibeText(.bodyStrong, tone: .primary) + Text(note.body).spaceVibeText(.body, tone: .secondary))
                     .fixedSize(horizontal: false, vertical: true)
             }
             if limits.cli == .claude && limits.state == .notRecorded { CopyUsageButton() }
@@ -189,15 +189,15 @@ private struct CopyUsageButton: View {
     var body: some View {
         Button { LimitsClipboard.copyUsageCommand() } label: {
             HStack(spacing: Space.s6) {
-                ReinsIcon(.copy)
+                SpaceVibeIcon(.copy)
                 Text("Copy \(LimitsWording.copyHint)")
             }
         }
-        .buttonStyle(.reins(.normal))
+        .buttonStyle(.spaceVibe(.normal))
     }
 }
 
-/// Copies text only. Reins never runs the command (S-R4).
+/// Copies text only. SpaceVibe never runs the command (S-R4).
 enum LimitsClipboard {
     @MainActor
     static func copyUsageCommand() {

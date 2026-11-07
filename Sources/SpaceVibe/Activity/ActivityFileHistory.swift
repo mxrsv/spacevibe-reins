@@ -31,18 +31,18 @@ private struct ActivityFileRowView: View {
         let cut = file.label.lastIndex(of: "/").map { file.label.index(after: $0) } ?? file.label.startIndex
         let folder = String(file.label[..<cut])
         let name = String(file.label[cut...])
-        let title = Text(folder).reinsText(.codeBody, tone: .tertiary) + Text(name).reinsText(.codeTitle, tone: .primary)
+        let title = Text(folder).spaceVibeText(.codeBody, tone: .tertiary) + Text(name).spaceVibeText(.codeTitle, tone: .primary)
         Row {
             ActivityLines(title: title, lines: [ActivityFormat.projects(file.projects)].compactMap { $0 }.map { ActivityLines.Line($0) }, help: file.path)
         }
-        .lead { ReinsIcon(.file, size: .row) }
+        .lead { SpaceVibeIcon(.file, size: .row) }
         .cells {
             HStack(spacing: Space.s4) {
                 ForEach(file.clis, id: \.rawValue) { CLIDot($0) }
             }
             .frame(width: Metrics.fileCLIsWidth, alignment: .trailing)
             Text([ActivityFormat.plural(file.edits, "edit"), ActivityFormat.plural(file.sessions, "session"), ActivityFormat.ago(file.last, now: now)].joined(separator: " \u{00B7} "))
-                .reinsText(.caption, tone: .tertiary)
+                .spaceVibeText(.caption, tone: .tertiary)
                 .frame(width: Metrics.fileMetaWidth, alignment: .trailing)
         }
         .accessibilityLabel(file.path)

@@ -16,7 +16,7 @@ import (
 // (os/user/cgo_lookup_syscall.go), so no cgo is needed. The "osusergo" build tag would swap that for
 // a $HOME-reading stub on darwin, so no-osusergo.go refuses to build with it.
 // Limit: on Linux without cgo, an account missing from /etc/passwd (a container with an arbitrary
-// uid) makes the standard library fall back to $HOME; Reins' test hosts are macOS.
+// uid) makes the standard library fall back to $HOME; SpaceVibe's test hosts are macOS.
 // Windows has no uid (os.Getuid is -1); user.Current reads the account token there, not $HOME.
 func RealHome() (string, error) {
 	var u *user.User

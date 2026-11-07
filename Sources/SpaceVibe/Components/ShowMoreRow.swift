@@ -9,9 +9,9 @@ struct ShowMoreRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: Space.s8) {
-                Text("Show \(reveal) more").reinsText(.bodyStrong, tone: .accent)
+                Text("Show \(reveal) more").spaceVibeText(.bodyStrong, tone: .accent)
                 if hiddenAfter > 0 {
-                    Text("\(hiddenAfter) more after that").reinsText(.caption, tone: .tertiary)
+                    Text("\(hiddenAfter) more after that").spaceVibeText(.caption, tone: .tertiary)
                 }
                 Spacer(minLength: 0)
             }
@@ -21,7 +21,7 @@ struct ShowMoreRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .reinsFocusable(cornerRadius: 0)
+        .spaceVibeFocusable(cornerRadius: 0)
         .groupedListPart(.plain)
     }
 }

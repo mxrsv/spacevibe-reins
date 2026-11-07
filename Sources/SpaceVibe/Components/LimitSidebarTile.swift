@@ -16,17 +16,17 @@ struct LimitSidebarTile: View {
                 HStack(spacing: Space.s8) {
                     CLIMark(cli, size: .small)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(name).reinsText(.body, tone: .secondary).lineLimit(1)
-                        Text(value).reinsText(.caption, tone: .secondary).lineLimit(1)
+                        Text(name).spaceVibeText(.body, tone: .secondary).lineLimit(1)
+                        Text(value).spaceVibeText(.caption, tone: .secondary).lineLimit(1)
                     }
                     Spacer(minLength: 0)
                 }
             } else {
                 HStack(spacing: Space.s8) {
                     CLIMark(cli, size: .small)
-                    Text(name).reinsText(.bodyStrong, tone: .primary).lineLimit(1).layoutPriority(1)
+                    Text(name).spaceVibeText(.bodyStrong, tone: .primary).lineLimit(1).layoutPriority(1)
                     Spacer(minLength: Space.s4)
-                    Text(value).reinsText(.bodyStrong, tone: tone.figureTone).lineLimit(1)
+                    Text(value).spaceVibeText(.bodyStrong, tone: tone.figureTone).lineLimit(1)
                 }
             }
         }
@@ -45,6 +45,6 @@ struct LimitSidebarTile: View {
 /// A warn clock beside the block's title: at least one CLI's reading is older than six hours.
 struct StaleMark: View {
     var body: some View {
-        ReinsIcon(.clock, ink: Palette.warnInk, label: "A reading is old")
+        SpaceVibeIcon(.clock, ink: Palette.warnInk, label: "A reading is old")
     }
 }

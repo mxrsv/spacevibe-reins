@@ -138,7 +138,7 @@ final class RulesModel {
     }
 
     /// Selects `~/.codex/config.toml` (or the Codex folder when there is none) in the Finder. Editing stays in the user's
-    /// editor; Reins starts no other app (AGENTS.md S-R4).
+    /// editor; SpaceVibe starts no other app (AGENTS.md S-R4).
     func revealCodexConfig() {
         let root = Self.codexFolder()
         let file = root.appendingPathComponent("config.toml")

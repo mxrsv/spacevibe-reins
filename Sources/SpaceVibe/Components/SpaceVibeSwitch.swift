@@ -3,7 +3,7 @@ import SwiftUI
 /// An on/off setting (Settings > Update > Check for updates automatically), drawn rather than AppKit's switch so it
 /// renders in the screenshots too: a 32 x 20 capsule, `accentSolid` when on and `track` when off, with a 16 pt knob.
 /// Space and a click flip it; VoiceOver reads it as a switch with `label`. The row beside it shows the name.
-struct ReinsSwitch: View {
+struct SpaceVibeSwitch: View {
     let label: String
     @Binding var isOn: Bool
 
@@ -25,7 +25,7 @@ struct ReinsSwitch: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .reinsFocusable(cornerRadius: Metrics.switchHeight / 2)
+        .spaceVibeFocusable(cornerRadius: Metrics.switchHeight / 2)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityValue(isOn ? "On" : "Off")

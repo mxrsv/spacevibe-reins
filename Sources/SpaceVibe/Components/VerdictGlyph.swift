@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Reins's own hexagon verdict glyphs (V5-R14, D58): the shape carries the meaning, so all five are one neutral colour
+/// SpaceVibe's own hexagon verdict glyphs (V5-R14, D58): the shape carries the meaning, so all five are one neutral colour
 /// (`fg2`). `used` is Ran, `heavy` Ran in the top 20% tier, `never` Never ran, `nm` Unmeasurable; `dead` is not shown for
 /// skills or subagents. Drawn as shapes from the kit's `v2-*` symbols (`system/shared.js`), not generated from a set.
 /// Hidden from VoiceOver unless it has a `label`: a verdict also has a sentence beside it (V5-R43).

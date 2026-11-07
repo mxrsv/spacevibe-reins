@@ -4,7 +4,7 @@ import SwiftUI
 /// A screen agent replaces its stub here with the real tab; nothing else in `Shell/` changes.
 @MainActor
 enum TabRegistry {
-    static func makeTabs() -> [any ReinsTab] {
+    static func makeTabs() -> [any SpaceVibeTab] {
         [
             LoadoutTab(),
             RulesTab(),

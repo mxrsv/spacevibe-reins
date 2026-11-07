@@ -3,7 +3,7 @@ import Testing
 @testable import SpaceVibe
 
 /// The Rules screen against the real Go core (plan S.7). Every test runs on a private copy of the synthetic fixture home
-/// (S-R1: never the real one); a write test compares the whole home outside Reins' own folder, byte for byte, after the write
+/// (S-R1: never the real one); a write test compares the whole home outside SpaceVibe's own folder, byte for byte, after the write
 /// and its Undo.
 @Suite("Rules, Go core")
 @MainActor

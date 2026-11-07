@@ -57,7 +57,7 @@ func modeOf(t *testing.T, path string) os.FileMode {
 	return info.Mode().Perm()
 }
 
-// strayTempFiles lists every .tmp in the folders, not only Reins's own: the stricter check.
+// strayTempFiles lists every .tmp in the folders, not only SpaceVibe's own: the stricter check.
 func strayTempFiles(t *testing.T, folders ...string) []string {
 	t.Helper()
 	var out []string
@@ -296,7 +296,7 @@ func TestExternalChangeBeforeRename(t *testing.T) {
 	file := filepath.Join(dir, "settings.json")
 	writeFile(t, file, "{\n  \"model\": \"mine\"\n}\n", 0o600)
 	before := []byte(readFile(t, file))
-	conflict := coreerr.NewStatus(file+" changed while Reins was editing it, so it was left alone. Try again.", coreerr.StatusConflict)
+	conflict := coreerr.NewStatus(file+" changed while SpaceVibe was editing it, so it was left alone. Try again.", coreerr.StatusConflict)
 	err := AtomicWrite(file, []byte("{\n  \"model\": \"next\"\n}\n"), 0o600, AtomicWriteOptions{
 		// Validate runs on the temp file, after the read and before the rename: write the target from "another process".
 		Validate: func([]byte) error { return os.WriteFile(file, []byte("{\"model\":\"theirs\"}\n"), 0o600) },

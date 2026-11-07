@@ -22,14 +22,14 @@ struct UsageCell: View {
             if let onAdd {
                 Button(action: onAdd) {
                     HStack(spacing: Space.s4) {
-                        ReinsIcon(.add)
+                        SpaceVibeIcon(.add)
                         Text("Add to \(cli.label)")
                     }
                 }
-                .buttonStyle(.reins(.ghost))
+                .buttonStyle(.spaceVibe(.ghost))
             } else {
                 Text("not installed")
-                    .reinsText(.body, tone: .tertiary)
+                    .spaceVibeText(.body, tone: .tertiary)
                     .accessibilityLabel("\(cli.label): not installed")
             }
         case .pending(let reason):
@@ -47,10 +47,10 @@ struct UsageCell: View {
             .accessibilityHint(reason ?? "")
         case .unmeasurable(let reason):
             HStack(spacing: Space.s6) {
-                ReinsIcon(.warning)
+                SpaceVibeIcon(.warning)
                 Text("not measurable")
             }
-            .reinsText(.body, tone: .tertiary)
+            .spaceVibeText(.body, tone: .tertiary)
             .help(reason)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(cli.label): not measurable")
@@ -59,7 +59,7 @@ struct UsageCell: View {
             HStack(spacing: Metrics.rowSpacing) {
                 UsageBar(fraction: UsageCellModel.barFraction(runs: runs, max: max), fill: cli.fill)
                 Text(runs.formatted(.number.locale(Locale(identifier: "en_US"))))
-                    .font(runs == 0 ? ReinsType.numberStrong.font : ReinsType.number.font)
+                    .font(runs == 0 ? SpaceVibeType.numberStrong.font : SpaceVibeType.number.font)
                     .foregroundStyle(runs == 0 ? Palette.dangerInk : Palette.text)
                     .frame(width: Metrics.usageNumberWidth, alignment: .trailing)
             }

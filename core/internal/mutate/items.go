@@ -112,7 +112,7 @@ func requireRemovable(removable bool, scope inventory.Scope) error {
 		return nil
 	}
 	if scope == inventory.ScopeProject {
-		return fail("This one belongs to a project folder, so Reins only shows it. Change it in the project.", coreerr.StatusForbidden)
+		return fail("This one belongs to a project folder, so SpaceVibe only shows it. Change it in the project.", coreerr.StatusForbidden)
 	}
 	return fail("This one belongs to a plugin. Remove the plugin instead.", coreerr.StatusForbidden)
 }
@@ -139,7 +139,7 @@ func RemoveItem(r roots.Roots, id string) (Entry, error) {
 
 // CopyToOther copies a skill, an agent or a hook to the other CLI. A plugin or project item may be copied; only
 // removal is refused. A hook is copied into Claude Code when it knows the event, never into Codex: Codex loading a hook
-// Reins wrote is unverified (spec, "To verify"), and the approved Loadout mock offers no such copy. The Node core throws
+// SpaceVibe wrote is unverified (spec, "To verify"), and the approved Loadout mock offers no such copy. The Node core throws
 // a TypeError for every hook copy, so there is nothing to mirror.
 func CopyToOther(r roots.Roots, id string) (Entry, error) {
 	return locked(r, func(tx *Tx) (Entry, error) {
@@ -149,7 +149,7 @@ func CopyToOther(r roots.Roots, id string) (Entry, error) {
 		}
 		if f.hook != nil {
 			target := f.hook.CLI.Other()
-			if err := need(target == inventory.Claude, "Reins does not copy hooks into Codex."); err != nil {
+			if err := need(target == inventory.Claude, "SpaceVibe does not copy hooks into Codex."); err != nil {
 				return Entry{}, err
 			}
 			if err := need(slices.Contains(events(target), f.hook.Event), label(target)+" has no "+f.hook.Event+" event."); err != nil {

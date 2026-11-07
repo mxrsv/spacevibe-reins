@@ -72,7 +72,7 @@ func RemoveFile(path string) error {
 }
 
 // RemoveTree deletes path and everything under it (links inside are removed, not followed). It
-// refuses a relative path, a filesystem root and a missing path is not an error. Meant for Reins'
+// refuses a relative path, a filesystem root and a missing path is not an error. Meant for SpaceVibe's
 // own scratch such as an abandoned backup folder, never for user content (that goes to the trash).
 func RemoveTree(path string) error {
 	if err := checkWrite(path); err != nil {

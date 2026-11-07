@@ -16,7 +16,7 @@ struct PageLayout<Tools: View, Content: View>: View {
                     .padding(.bottom, Space.s24)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            ReinsScrollView {
+            SpaceVibeScrollView {
                 VStack(alignment: .leading, spacing: 0) { content }
                     .padding(.horizontal, Metrics.pagePadding)
                     .padding(.top, Tools.self == EmptyView.self ? Space.s24 : 0)

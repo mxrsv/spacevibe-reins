@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Sizes, radii and spacing. One place so a number is never typed twice. Spec: `docs/specs/2026-11-03-reins-design-language.md`
-/// (Spacing, sizes, radii, colour). Text roles live in `ReinsType`. A width measured for text grows with the Font size
+/// (Spacing, sizes, radii, colour). Text roles live in `SpaceVibeType`. A width measured for text grows with the Font size
 /// setting (`TypeScale.width(_:at:)`, the size it was measured at) and never shrinks below the measured value.
 enum Metrics {
     static let sidebarWidth: CGFloat = 232
@@ -55,9 +55,9 @@ enum Metrics {
 
     /// One CLI's usage column: bar plus number. Header cells use the same width so columns line up.
     static let usageCellWidth: CGFloat = 200
-    /// Fits "12,345" in `ReinsType.body`.
+    /// Fits "12,345" in `SpaceVibeType.body`.
     static var usageNumberWidth: CGFloat { TypeScale.shared.width(52, at: 14) }
-    /// Fits "~$148.20" in `ReinsType.number`.
+    /// Fits "~$148.20" in `SpaceVibeType.number`.
     static var costWidth: CGFloat { TypeScale.shared.width(72, at: 14) }
     /// Activity's state tag column; fits "not measurable" with its 16 pt icon (125 measured in Inter 12/500, v3 tag).
     static var stateWidth: CGFloat { TypeScale.shared.width(128, at: 12) }
@@ -130,9 +130,9 @@ enum Metrics {
     static let switchWidth: CGFloat = 32
     static let switchHeight: CGFloat = 20
     static let switchKnob: CGFloat = 16
-    /// The Reins mark on the Update card, and its corner as a share of its side (`Resources/AppIcon.svg`: 57.5 of 256).
-    static let reinsMarkSize: CGFloat = 56
-    static let reinsMarkRadiusFraction: CGFloat = 57.5 / 256
+    /// The SpaceVibe mark on the Update card, and its corner as a share of its side (`Resources/AppIcon.svg`: 57.5 of 256).
+    static let spaceVibeMarkSize: CGFloat = 56
+    static let spaceVibeMarkRadiusFraction: CGFloat = 57.5 / 256
 
     /// Confirmation cards (Stop, a rule write).
     static let dialogWidth: CGFloat = 420

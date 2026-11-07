@@ -312,7 +312,7 @@ struct CoreTypesTests {
         #expect(try roundTrip(omitted, as: CoreInventoryItem.self) == nil)
     }
 
-    @Test("CoreError is the shape of a -32000 data member and reads like a ReinsError")
+    @Test("CoreError is the shape of a -32000 data member and keeps the message-and-status call shape")
     func coreErrorShape() throws {
         let error = CoreError("Gone.", status: 404)
         #expect(error == CoreError(status: 404, message: "Gone."))

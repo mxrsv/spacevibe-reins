@@ -29,7 +29,7 @@ struct RulesScope: Equatable, Hashable, Sendable {
     static func local(_ dir: String) -> RulesScope { RulesScope(kind: .local, dir: dir) }
 }
 
-/// A project Reins discovered, with a name that tells it apart from the others.
+/// A project SpaceVibe discovered, with a name that tells it apart from the others.
 struct RulesProject: Equatable, Hashable {
     let dir: String
     let name: String

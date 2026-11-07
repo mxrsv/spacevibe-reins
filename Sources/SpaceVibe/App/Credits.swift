@@ -1,7 +1,7 @@
 import AppKit
 
-/// The licences the app must show: the bundled typeface, the three icon sets and the Go library inside the bundled core. Shown in the standard About panel (Reins menu,
-/// About Reins), which has no other credits.
+/// The licences the app must show: the bundled typeface, the three icon sets and the Go library inside the bundled core. Shown in the standard About panel (SpaceVibe menu,
+/// About SpaceVibe), which has no other credits.
 enum Credits {
     /// Solar draws the old screens, until the v5 cut-over deletes them. CC BY 4.0 asks for the author, the licence with its link, and a note of what was changed.
     static let icons = "Icons: Solar by 480 Design, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to SwiftUI paths; each icon's lighter shapes are drawn as one layer."
@@ -50,8 +50,8 @@ enum Credits {
     @MainActor
     static func showAboutPanel() {
         var attributes: [NSAttributedString.Key: Any] = [.foregroundColor: NSColor.labelColor]
-        // Inter, like the rest of the app; registering it is what `ReinsType` does on first use.
-        if InterFont.isRegistered, let font = NSFont(name: InterFont.Weight.regular.postScriptName, size: ReinsType.caption.size) {
+        // Inter, like the rest of the app; registering it is what `SpaceVibeType` does on first use.
+        if InterFont.isRegistered, let font = NSFont(name: InterFont.Weight.regular.postScriptName, size: SpaceVibeType.caption.size) {
             attributes[.font] = font
         }
         NSApplication.shared.orderFrontStandardAboutPanel(options: [.credits: NSAttributedString(string: text, attributes: attributes)])

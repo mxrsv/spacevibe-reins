@@ -130,7 +130,7 @@ enum LoadoutRows {
 
     /// The id of the item to copy when `to`'s cell is empty, or nil when no copy may be offered: project configuration is
     /// read-only here, a dead hook is not worth copying, and a hook goes only into Claude Code, never into Codex (Codex
-    /// loading a hook Reins wrote is unverified), and only when Claude knows the event.
+    /// loading a hook SpaceVibe wrote is unverified), and only when Claude knows the event.
     static func copyPlan(_ row: LoadoutRow, to: CoreCLI, events: [String: [String]]) -> String? {
         guard row.project == nil, !row.flags.dead, row.cells[to] == .missing, let source = row.members[to.other] else { return nil }
         if case .hook(let hook) = source {

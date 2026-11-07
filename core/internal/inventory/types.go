@@ -5,7 +5,7 @@
 //
 // Ported from Sources/ReinsCore/Inventory*.swift (InventoryReader, InventoryTypes, InventoryFileIO,
 // InventoryProjects, InventoryHash, InventoryScriptPaths, InventoryUsageAttach, InventoryFilterCounts) and
-// Frontmatter.swift, plus the pure helpers of Sources/Reins/Loadout/LoadoutRows.swift (LoadoutData.build,
+// Frontmatter.swift, plus the pure helpers of Sources/SpaceVibe/Loadout/LoadoutRows.swift (LoadoutData.build,
 // the per-row filter flags). The usage side lives in internal/usage, which this package imports.
 package inventory
 

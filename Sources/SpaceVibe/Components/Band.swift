@@ -69,12 +69,12 @@ private struct BandHeader<Lead: View, Extras: View>: View {
         let isFocused = focused || specimen.contains(.focus)
         let hovered = hovering || specimen.contains(.hover)
         HStack(spacing: Metrics.Band.spacing) {
-            ReinsIcon(content: .caretDown, size: .small, ink: Palette.fg3)
+            SpaceVibeIcon(content: .caretDown, size: .small, ink: Palette.fg3)
                 .rotationEffect(.degrees(isOpen ? 0 : -90))
                 .animation(reduceMotion ? nil : .easeOut(duration: Metrics.Motion.quick), value: isOpen)
             lead
-            Text(label).reinsText(.controlStrong, tone: .primary).lineLimit(1)
-            if let count { Text("\(count)").reinsText(.meta, tone: .tertiary).lineLimit(1).fixedSize() }
+            Text(label).spaceVibeText(.controlStrong, tone: .primary).lineLimit(1)
+            if let count { Text("\(count)").spaceVibeText(.meta, tone: .tertiary).lineLimit(1).fixedSize() }
             if let state {
                 StateMarkIcon(mark: state).padding(.leading, Metrics.Band.stateSpacing - Metrics.Band.spacing)
             }

@@ -1,4 +1,4 @@
-// Package mutate is every write Reins makes to the CLIs' configuration: add, remove and copy
+// Package mutate is every write SpaceVibe makes to the CLIs' configuration: add, remove and copy
 // skills, agents and hooks, the file edit they and the rules package share, the undo journal and
 // the app trash.
 //
@@ -27,7 +27,7 @@
 // no trailing newline, the same file and entry shape the Swift engine writes. A journal that exists
 // but is not a JSON array makes every write path refuse with 409 (fail closed), and History
 // reports it instead of an empty list (G-fix.8). Undo checks every path in an entry against the
-// folders Reins manages before it changes anything (G-fix.3, containment.go).
+// folders SpaceVibe manages before it changes anything (G-fix.3, containment.go).
 //
 // # Not RPC
 //

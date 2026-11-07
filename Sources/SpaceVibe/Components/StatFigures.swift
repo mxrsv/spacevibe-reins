@@ -30,8 +30,8 @@ struct StatFigures: View {
 
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
-                Text(figure.value).reinsText(.heading, tone: .primary).lineLimit(1).lineBox(.heading)
-                Text(figure.label).reinsText(.meta, tone: .tertiary).lineLimit(2).fixedSize(horizontal: false, vertical: true).lineBox(.meta)
+                Text(figure.value).spaceVibeText(.heading, tone: .primary).lineLimit(1).lineBox(.heading)
+                Text(figure.label).spaceVibeText(.meta, tone: .tertiary).lineLimit(2).fixedSize(horizontal: false, vertical: true).lineBox(.meta)
             }
             .accessibilityElement(children: .combine)
         }

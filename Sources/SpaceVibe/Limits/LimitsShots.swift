@@ -39,7 +39,7 @@ enum LimitsShots {
 
     private static func page(_ shell: ShellModel, _ toasts: ToastCenter, _ env: AppEnvironment) -> some View {
         ShellView()
-            .reinsRoot(shell: shell, toasts: toasts, env: env)
+            .spaceVibeRoot(shell: shell, toasts: toasts, env: env)
             .frame(width: ShotRenderer.size.width, height: ShotRenderer.size.height)
     }
 }

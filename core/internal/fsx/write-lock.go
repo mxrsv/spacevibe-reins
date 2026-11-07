@@ -14,9 +14,9 @@ const LockFileName = "write.lock"
 // processLock serializes the writers of this process. It is not re-entrant.
 var processLock sync.Mutex
 
-// WithWriteLock runs fn while holding the one write lock around every write Reins makes to config,
+// WithWriteLock runs fn while holding the one write lock around every write SpaceVibe makes to config,
 // the journal and the trash: a process-wide mutex, then an exclusive flock on <dataDir>/write.lock,
-// so a second Reins process (the Swift app, another core) is excluded too. fn's error is returned
+// so a second SpaceVibe process (the Swift app, another core) is excluded too. fn's error is returned
 // as is. If the lock cannot be taken, fn does not run (fail closed).
 // Ported from WriteLock.run (WriteLock.swift); the cross-process part is new (X-lock).
 //
@@ -65,5 +65,5 @@ func WithWriteLockValue[T any](dataDir string, fn func() (T, error)) (T, error) 
 }
 
 func lockError() error {
-	return coreerr.NewStatus("Could not lock the Reins data folder, so nothing was changed.", coreerr.StatusInternalFailure)
+	return coreerr.NewStatus("Could not lock the SpaceVibe data folder, so nothing was changed.", coreerr.StatusInternalFailure)
 }

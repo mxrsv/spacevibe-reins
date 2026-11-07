@@ -266,7 +266,7 @@ func (tx *Tx) undoFileEdit(op Op) (putBack, error) {
 	}
 	err = fsx.AtomicWrite(file, old, mode, fsx.AtomicWriteOptions{BeforeRename: func() error {
 		if !fsx.UnchangedSince(file, now) {
-			return fail(file+" changed while Reins was undoing, so it was left alone.", coreerr.StatusConflict)
+			return fail(file+" changed while SpaceVibe was undoing, so it was left alone.", coreerr.StatusConflict)
 		}
 		return nil
 	}})

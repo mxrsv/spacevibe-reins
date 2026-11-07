@@ -6,8 +6,8 @@ extension ShellModel {
     /// A shell over the demo tabs (or the given ones) with its own throwaway defaults suite, forced dark, so no test reads
     /// or writes the real preferences.
     @MainActor
-    static func forTests(tabs: [any ReinsTab]? = nil) -> ShellModel {
-        let defaults = UserDefaults(suiteName: "reins-tests-\(UUID().uuidString)")!
+    static func forTests(tabs: [any SpaceVibeTab]? = nil) -> ShellModel {
+        let defaults = UserDefaults(suiteName: "spacevibe-tests-\(UUID().uuidString)")!
         return ShellModel(tabs: tabs ?? DemoTabs.make(), appearance: AppearanceStore(defaults: defaults, forced: .dark))
     }
 }

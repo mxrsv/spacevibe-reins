@@ -15,7 +15,7 @@ import (
 )
 
 // The paths of these vectors sit under a CLI folder (.claude/...) where Swift used the home folder itself: Undo now
-// refuses a path outside the folders Reins manages (G-fix.3), so the ported inputs moved under a root. Nothing else
+// refuses a path outside the folders SpaceVibe manages (G-fix.3), so the ported inputs moved under a root. Nothing else
 // about the vectors changed.
 
 func labelsOf(h []EntryRef) []string {

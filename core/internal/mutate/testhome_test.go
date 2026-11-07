@@ -88,7 +88,7 @@ func exists(p string) bool {
 	return err == nil
 }
 
-// strayTemp lists any .tmp file in the folders (every .tmp counts, not only Reins' own).
+// strayTemp lists any .tmp file in the folders (every .tmp counts, not only SpaceVibe's own).
 func strayTemp(folders ...string) []string {
 	var out []string
 	for _, f := range folders {

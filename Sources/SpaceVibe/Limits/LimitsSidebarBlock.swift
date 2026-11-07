@@ -36,7 +36,7 @@ struct LimitsSidebarBlock: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .reinsFocusable(cornerRadius: Metrics.controlRadius)
+            .spaceVibeFocusable(cornerRadius: Metrics.controlRadius)
             .accessibilityHint("Opens Limits")
         }
         .task(id: scenePhase == .active) {

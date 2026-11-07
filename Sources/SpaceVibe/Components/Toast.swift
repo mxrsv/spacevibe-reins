@@ -9,21 +9,21 @@ struct ToastView: View {
     var body: some View {
         HStack(spacing: Space.s12) {
             if toast.tone == .danger {
-                ReinsIcon(.warning)
+                SpaceVibeIcon(.warning)
             }
-            Text(toast.message).reinsText(.body)
+            Text(toast.message).spaceVibeText(.body)
             if let action = toast.action {
                 Button(action: run) {
                     HStack(spacing: Space.s6) {
-                        ReinsIcon(action.icon)
+                        SpaceVibeIcon(action.icon)
                         Text(action.title)
                     }
-                    .reinsText(.bodyStrong)
+                    .spaceVibeText(.bodyStrong)
                 }
-                .buttonStyle(.reins(.inverse))
+                .buttonStyle(.spaceVibe(.inverse))
             } else {
-                Button(action: dismiss) { ReinsIcon(.close) }
-                    .buttonStyle(.reins(.inverse))
+                Button(action: dismiss) { SpaceVibeIcon(.close) }
+                    .buttonStyle(.spaceVibe(.inverse))
                     .accessibilityLabel("Dismiss")
             }
         }

@@ -11,7 +11,7 @@ struct Kbd: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Metrics.kbdRadius, style: .continuous)
         Text(keys)
-            .reinsText(.label, tone: .secondary)
+            .spaceVibeText(.label, tone: .secondary)
             .padding(.horizontal, Space.s6)
             .frame(minWidth: Metrics.kbdHeight, minHeight: Metrics.kbdHeight)
             .background(shape.fill(ground.fill))

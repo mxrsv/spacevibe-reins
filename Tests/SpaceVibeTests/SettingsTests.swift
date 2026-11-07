@@ -8,7 +8,7 @@ import Testing
 @Suite("Settings")
 struct SettingsTests {
     private func throwawayDefaults() -> UserDefaults {
-        UserDefaults(suiteName: "reins-tests-\(UUID().uuidString)")!
+        UserDefaults(suiteName: "spacevibe-tests-\(UUID().uuidString)")!
     }
 
     @Test("Theme and Font size are remembered; Dark and Default when nothing is saved")
@@ -49,11 +49,11 @@ struct SettingsTests {
     @Test("a step moves the 12, 14 and 16 roles by 1 pt and leaves figure and display", arguments: FontSizeChoice.allCases)
     func typeScale(choice: FontSizeChoice) {
         for base: CGFloat in [12, 14, 16] {
-            let role = ReinsType.role(size: base, step: choice.step, weight: .regular, lineBox: 20)
+            let role = SpaceVibeType.role(size: base, step: choice.step, weight: .regular, lineBox: 20)
             #expect(role.size == base + choice.step)
             #expect(role.lineBox == 20)
         }
-        #expect(ReinsType.role(size: 72, scales: false, step: choice.step, weight: .semibold, lineBox: 88).size == 72)
+        #expect(SpaceVibeType.role(size: 72, scales: false, step: choice.step, weight: .semibold, lineBox: 88).size == 72)
     }
 
     @Test("a measured text width grows at Large and never shrinks at Small")
@@ -71,7 +71,7 @@ struct SettingsTests {
         (UpdateController.Status.notChecked, nil as String?),
         (.checking, "Checking\u{2026}"),
         (.upToDate, "Up to date"),
-        (.available(version: "0.2.0"), "Reins 0.2.0 is available"),
+        (.available(version: "0.2.0"), "SpaceVibe 0.2.0 is available"),
         (.failed, "Check failed"),
         (.unavailable("No feed."), nil),
     ])
@@ -102,7 +102,7 @@ struct SettingsTests {
 
     @Test("the app name carries the version when the bundle has one")
     func appName() {
-        #expect(SettingsWording.appName(version: "0.1.0") == "Reins 0.1.0")
-        #expect(SettingsWording.appName(version: nil) == "Reins")
+        #expect(SettingsWording.appName(version: "0.1.0") == "SpaceVibe 0.1.0")
+        #expect(SettingsWording.appName(version: nil) == "SpaceVibe")
     }
 }

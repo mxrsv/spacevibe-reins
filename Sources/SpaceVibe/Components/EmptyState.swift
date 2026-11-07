@@ -4,20 +4,20 @@ import SwiftUI
 struct EmptyState<Action: View>: View {
     let title: String
     var message: String?
-    var icon: ReinsGlyph?
+    var icon: SpaceVibeGlyph?
     let action: Action
 
     var body: some View {
         VStack(spacing: Space.s8) {
             if let icon {
-                ReinsIcon(icon, size: .large)
+                SpaceVibeIcon(icon, size: .large)
                     .foregroundStyle(Palette.textTertiary)
                     .padding(.bottom, Space.s4)
             }
-            Text(title).reinsText(.bodyStrong, tone: .primary)
+            Text(title).spaceVibeText(.bodyStrong, tone: .primary)
             if let message {
                 Text(message)
-                    .reinsText(.caption, tone: .tertiary)
+                    .spaceVibeText(.caption, tone: .tertiary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: Metrics.emptyStateMessageWidth)
             }
@@ -31,7 +31,7 @@ struct EmptyState<Action: View>: View {
 }
 
 extension EmptyState where Action == EmptyView {
-    init(_ title: String, message: String? = nil, icon: ReinsGlyph? = nil) {
+    init(_ title: String, message: String? = nil, icon: SpaceVibeGlyph? = nil) {
         self.title = title
         self.message = message
         self.icon = icon
@@ -40,7 +40,7 @@ extension EmptyState where Action == EmptyView {
 }
 
 extension EmptyState {
-    init(_ title: String, message: String? = nil, icon: ReinsGlyph? = nil, @ViewBuilder action: () -> Action) {
+    init(_ title: String, message: String? = nil, icon: SpaceVibeGlyph? = nil, @ViewBuilder action: () -> Action) {
         self.title = title
         self.message = message
         self.icon = icon
@@ -56,7 +56,7 @@ struct EmptyRow: View {
 
     var body: some View {
         Text(text)
-            .reinsText(.caption, tone: .tertiary)
+            .spaceVibeText(.caption, tone: .tertiary)
             .padding(.horizontal, Metrics.rowHorizontalPadding)
             .padding(.vertical, Space.s12)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -86,8 +86,8 @@ struct QuietEmptyState<Action: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text(title).reinsText(.control, tone: .secondary).lineBox(.control).padding(.bottom, Metrics.EmptyState.titleSpacing)
-            Text(message).reinsText(.prose, tone: .tertiary).fixedSize(horizontal: false, vertical: true).lineBox(.prose)
+            Text(title).spaceVibeText(.control, tone: .secondary).lineBox(.control).padding(.bottom, Metrics.EmptyState.titleSpacing)
+            Text(message).spaceVibeText(.prose, tone: .tertiary).fixedSize(horizontal: false, vertical: true).lineBox(.prose)
             if Action.self != EmptyView.self { action.padding(.top, Metrics.EmptyState.actionAbove) }
         }
         .multilineTextAlignment(.center)

@@ -44,11 +44,11 @@ struct Tile<Actions: View, Content: View>: View {
     private var header: some View {
         HStack(spacing: Metrics.Tile.headerSpacing) {
             Text(title)
-                .reinsText(.cardTitle, tone: .primary)
+                .spaceVibeText(.cardTitle, tone: .primary)
                 .lineLimit(1)
                 .accessibilityAddTraits(.isHeader)
             if let count {
-                Text(count).reinsText(.prose, tone: .tertiary).lineLimit(1).fixedSize()
+                Text(count).spaceVibeText(.prose, tone: .tertiary).lineLimit(1).fixedSize()
             }
             if let state { StateMarkIcon(mark: state) }
             Spacer(minLength: 0)
@@ -128,7 +128,7 @@ private struct TileCollapseButton: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Metrics.Radius.control, style: Metrics.Radius.cornerStyle)
         Button { isOpen.toggle() } label: {
-            ReinsIcon(content: .caretDown, size: .control)
+            SpaceVibeIcon(content: .caretDown, size: .control)
                 .rotationEffect(.degrees(isOpen ? 0 : -90))
                 .animation(reduceMotion ? nil : .easeOut(duration: Metrics.Motion.quick), value: isOpen)
                 .foregroundStyle(hovering ? Palette.fg : Palette.fg2)
@@ -138,7 +138,7 @@ private struct TileCollapseButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .reinsFocusable(cornerRadius: Metrics.Radius.control)
+        .spaceVibeFocusable(cornerRadius: Metrics.Radius.control)
         .accessibilityLabel("\(isOpen ? "Collapse" : "Expand") \(title)")
         .accessibilityValue(isOpen ? "Expanded" : "Collapsed")
     }

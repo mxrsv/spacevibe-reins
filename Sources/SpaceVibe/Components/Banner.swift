@@ -3,7 +3,7 @@ import SwiftUI
 enum BannerKind {
     case error, warn
 
-    var icon: ReinsGlyph { self == .error ? .error : .warning }
+    var icon: SpaceVibeGlyph { self == .error ? .error : .warning }
     var ink: Color { self == .error ? Palette.dangerInk : Palette.warnInk }
     var tint: Color { self == .error ? Palette.dangerTint : Palette.warnTint }
     var outline: Color { self == .error ? Palette.danger : Palette.warn }
@@ -30,14 +30,14 @@ struct Banner: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous)
         HStack(alignment: .center, spacing: Metrics.rowSpacing) {
-            ReinsIcon(kind.icon, size: .row, ink: kind.ink)
+            SpaceVibeIcon(kind.icon, size: .row, ink: kind.ink)
             VStack(alignment: .leading, spacing: 0) {
-                Text(message).reinsText(.bodyStrong, tone: .primary)
-                if let detail { Text(detail).reinsText(.caption, tone: .secondary) }
+                Text(message).spaceVibeText(.bodyStrong, tone: .primary)
+                if let detail { Text(detail).spaceVibeText(.caption, tone: .secondary) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             if let actionTitle, let action {
-                Button(actionTitle, action: action).buttonStyle(.reins(.normal))
+                Button(actionTitle, action: action).buttonStyle(.spaceVibe(.normal))
             }
         }
         .padding(.horizontal, Metrics.rowHorizontalPadding)

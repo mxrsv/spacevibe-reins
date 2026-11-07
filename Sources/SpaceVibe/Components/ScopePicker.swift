@@ -31,7 +31,7 @@ struct ScopePicker: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .reinsFocusable(cornerRadius: Metrics.controlRadius)
+            .spaceVibeFocusable(cornerRadius: Metrics.controlRadius)
             .accessibilityLabel("Scope")
             .accessibilityValue(current.label)
         }
@@ -44,7 +44,7 @@ struct ScopePicker: View {
             Spacer(minLength: 0)
             Chevron(.upDown).foregroundStyle(Palette.textTertiary)
         }
-        .reinsText(.body, tone: .primary)
+        .spaceVibeText(.body, tone: .primary)
         .padding(.leading, Space.s12)
         .padding(.trailing, Space.s8)
         .frame(minWidth: minWidth, alignment: .leading)

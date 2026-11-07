@@ -15,7 +15,7 @@ struct ActivitySessionRow: View {
         let fallback = ActivityFormat.isFallbackTitle(session.title)
         Row(revealActions: revealActions) {
             ActivityLines(
-                title: Text(session.title).reinsText(fallback ? .codeTitle : .rowTitle, tone: .primary),
+                title: Text(session.title).spaceVibeText(fallback ? .codeTitle : .rowTitle, tone: .primary),
                 lines: [ActivityLines.Line(wording.subtitle)],
                 help: session.title
             )

@@ -13,10 +13,10 @@ struct CLISummaryBar: View {
     var body: some View {
         HStack(spacing: Metrics.rowSpacing) {
             CLIMark(cli, size: .small)
-            Text(cli.label).reinsText(.bodyStrong, tone: .primary)
+            Text(cli.label).spaceVibeText(.bodyStrong, tone: .primary)
             HStack(spacing: Space.s6) {
-                if warn { ReinsIcon(.warning, size: .inline, ink: TextTone.warn.color) }
-                Text(message).reinsText(.body, tone: warn ? .warn : .secondary).lineLimit(1).truncationMode(.tail)
+                if warn { SpaceVibeIcon(.warning, size: .inline, ink: TextTone.warn.color) }
+                Text(message).spaceVibeText(.body, tone: warn ? .warn : .secondary).lineLimit(1).truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Button(action: action) {
@@ -25,7 +25,7 @@ struct CLISummaryBar: View {
                     Chevron(.right)
                 }
             }
-            .buttonStyle(.reins(.ghost))
+            .buttonStyle(.spaceVibe(.ghost))
         }
         .padding(.leading, Metrics.rowHorizontalPadding)
         .padding(.trailing, Space.s8)

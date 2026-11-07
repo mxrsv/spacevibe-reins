@@ -56,7 +56,7 @@ enum ShotRenderer {
             try write(shell(choice) { shell, _ in shell.openPalette() }, name: "shell-palette", choice: choice, to: directory)
             try write(shell(choice) { shell, _ in shell.openPalette(query: "p") }, name: "shell-palette-filtered", choice: choice, to: directory)
             try write(shell(choice) { _, toasts in toasts.show("Removed ponytail", undo: {}) }, name: "shell-toast", choice: choice, to: directory)
-            try write(shell(choice) { _, toasts in toasts.show("Reins 0.2.0 is available", action: UpdateController.viewAction {}) }, name: "shell-toast-update", choice: choice, to: directory)
+            try write(shell(choice) { _, toasts in toasts.show("SpaceVibe 0.2.0 is available", action: UpdateController.viewAction {}) }, name: "shell-toast-update", choice: choice, to: directory)
             try write(gallery(choice, part: .first), name: "gallery", choice: choice, to: directory, fullHeight: true)
             try write(gallery(choice, part: .second), name: "gallery-more", choice: choice, to: directory, fullHeight: true)
             if LaunchMode.uiV5Enabled() {
@@ -70,7 +70,7 @@ enum ShotRenderer {
         let toasts = ToastCenter(announce: false)
         configure(shell, toasts)
         return ShellView()
-            .reinsRoot(shell: shell, toasts: toasts)
+            .spaceVibeRoot(shell: shell, toasts: toasts)
             .frame(width: size.width, height: size.height)
     }
 
@@ -78,7 +78,7 @@ enum ShotRenderer {
         let shell = ShellModel(tabs: DemoTabs.make(), appearance: AppearanceStore(forced: choice))
         return VStack(alignment: .leading, spacing: 0) {
             Text("Component gallery")
-                .reinsText(.title)
+                .spaceVibeText(.title)
                 .padding(.horizontal, Metrics.pagePadding)
                 .padding(.top, 20)
                 .padding(.bottom, 4)
@@ -86,7 +86,7 @@ enum ShotRenderer {
         }
         .frame(width: size.width, alignment: .topLeading)
         .background(Palette.background)
-        .reinsRoot(shell: shell, toasts: ToastCenter(announce: false))
+        .spaceVibeRoot(shell: shell, toasts: ToastCenter(announce: false))
     }
 
     static func write<V: View>(_ view: V, name: String, choice: AppearanceChoice, to directory: URL, fullHeight: Bool = false) throws {

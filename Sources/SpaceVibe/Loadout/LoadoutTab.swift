@@ -2,12 +2,12 @@ import SwiftUI
 
 /// Registers Loadout with the shell: sidebar item, badge, hint, palette entries and the screen.
 @MainActor
-final class LoadoutTab: ReinsTab {
+final class LoadoutTab: SpaceVibeTab {
     static let tabID = "loadout"
 
     let id = LoadoutTab.tabID
     let title = "Loadout"
-    let icon = ReinsGlyph.loadout
+    let icon = SpaceVibeGlyph.loadout
     let model: LoadoutModel
 
     init(env: AppEnvironment? = nil) { model = LoadoutModel(env: env ?? .shared) }

@@ -73,7 +73,7 @@ enum InterFont {
     private static var checkoutURL: URL? {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent() // Tokens
-            .deletingLastPathComponent() // Reins
+            .deletingLastPathComponent() // SpaceVibe
             .deletingLastPathComponent() // Sources
             .deletingLastPathComponent() // checkout
             .appendingPathComponent("Resources/Fonts/\(fileName)")

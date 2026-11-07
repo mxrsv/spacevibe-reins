@@ -8,12 +8,12 @@ import SwiftUI
 /// fill that block with radius 8, and the card hides the dividers on both sides of it.
 ///
 ///     Row { RowText("ponytail", subtitle: "Pick the laziest solution") }
-///         .lead { ReinsIcon(.skill, size: .row) }
+///         .lead { SpaceVibeIcon(.skill, size: .row) }
 ///         .cells { UsageCell(cli: .claude, model: .counted(runs: 142), max: 142) }
 ///         .actions { RowActionButton(title: "Remove", icon: .trash, iconOnly: true) { ... } }
 ///
 /// With `onActivate` the whole row is focusable and acts on Return and Space; inner buttons keep their own action.
-/// Actions must be `RowActionButton`s (or any `ReinsButtonStyle` button) so they hide and reveal with the row.
+/// Actions must be `RowActionButton`s (or any `SpaceVibeButtonStyle` button) so they hide and reveal with the row.
 struct Row<Lead: View, Main: View, Cells: View, Actions: View>: View {
     var selected = false
     var tall = false

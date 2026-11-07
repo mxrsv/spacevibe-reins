@@ -168,7 +168,7 @@ enum LimitsWording {
         switch limits.state {
         case .measured: return nil
         case .notMeasurable:
-            return ("Not measurable", "\(name) keeps no usage limit on disk, and Reins does not go online for it.")
+            return ("Not measurable", "\(name) keeps no usage limit on disk, and SpaceVibe does not go online for it.")
         case .notInstalled:
             return ("Not installed", "No \(name) folder on this Mac.")
         case .notRecorded:
@@ -177,7 +177,7 @@ enum LimitsWording {
                 : "No Codex turn has logged limits yet."
             return ("No reading yet", body)
         case .unreadable:
-            return ("Unreadable", "The file is in a shape Reins does not know.")
+            return ("Unreadable", "The file is in a shape SpaceVibe does not know.")
         }
     }
 
@@ -189,7 +189,7 @@ enum LimitsWording {
     /// Where a CLI's usage reading comes from, shown with the reading's age on the page.
     static func source(_ limits: CoreLimitsEntry) -> (title: String, body: String)? {
         if limits.source == .claudeStatusline {
-            return ("From Claude Code's status line", "Last quota received from a Claude Code session. Reins makes no network request.")
+            return ("From Claude Code's status line", "Last quota received from a Claude Code session. SpaceVibe makes no network request.")
         }
         return source(limits.cli)
     }

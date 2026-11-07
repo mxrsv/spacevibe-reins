@@ -36,7 +36,7 @@ struct ColumnChart: View {
             HStack(spacing: 0) {
                 ForEach(Array(axis.enumerated()), id: \.offset) { offset, label in
                     if offset > 0 { Spacer(minLength: Metrics.Stats.spacing) }
-                    Text(label).reinsText(.small, tone: .tertiary).lineLimit(1).lineBox(.small)
+                    Text(label).spaceVibeText(.small, tone: .tertiary).lineLimit(1).lineBox(.small)
                 }
             }
             .accessibilityHidden(true)

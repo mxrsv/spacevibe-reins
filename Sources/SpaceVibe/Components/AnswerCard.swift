@@ -31,7 +31,7 @@ struct AnswerCard<Fixes: View, HeaderActions: View>: View {
     @ViewBuilder
     private func answerBody(_ sentence: String) -> some View {
         Text(sentence)
-            .reinsText(.answer, tone: .primary)
+            .spaceVibeText(.answer, tone: .primary)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityAddTraits(.isHeader)
         if let verdict { verdict }
@@ -40,7 +40,7 @@ struct AnswerCard<Fixes: View, HeaderActions: View>: View {
         }
         if moreMarked > 0 {
             Text("\(moreMarked) more \(moreMarked == 1 ? "is" : "are") marked in the list.")
-                .reinsText(.meta, tone: .tertiary)
+                .spaceVibeText(.meta, tone: .tertiary)
                 .lineBox(.meta)
         }
     }
@@ -81,12 +81,12 @@ struct VerdictBox: View {
         HStack(alignment: .top, spacing: Metrics.VerdictBox.spacing) {
             VerdictGlyph(glyph, size: .row, label: glyphLabel)
             VStack(alignment: .leading, spacing: Metrics.VerdictBox.smallAbove) {
-                (Text("\(title). ").reinsText(.control, tone: .primary) + Text(text).reinsText(.prose, tone: .primary))
-                    .lineSpacing(ReinsType.prose.lineSpacing)
+                (Text("\(title). ").spaceVibeText(.control, tone: .primary) + Text(text).spaceVibeText(.prose, tone: .primary))
+                    .lineSpacing(SpaceVibeType.prose.lineSpacing)
                     .fixedSize(horizontal: false, vertical: true)
                     .lineBox(.prose)
                 if let small {
-                    Text(small).reinsText(.meta, tone: .tertiary).fixedSize(horizontal: false, vertical: true).lineBox(.meta)
+                    Text(small).spaceVibeText(.meta, tone: .tertiary).fixedSize(horizontal: false, vertical: true).lineBox(.meta)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

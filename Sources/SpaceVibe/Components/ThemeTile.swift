@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// One choice of Settings > Theme: a small Reins window painted in that appearance, with the choice's icon and name under
+/// One choice of Settings > Theme: a small SpaceVibe window painted in that appearance, with the choice's icon and name under
 /// it. 8 pt inside, radius 12; the chosen tile takes the `selection` fill, the others `hover` under the pointer. The
 /// picture is drawn from the real tokens with the appearance forced, so it changes when the palette does.
 struct ThemeTile: View {
     let title: String
-    let icon: ReinsGlyph
+    let icon: SpaceVibeGlyph
     /// What the picture shows; nil is System: dark on the left, light on the right.
     let appearance: ColorScheme?
     let isSelected: Bool
@@ -19,8 +19,8 @@ struct ThemeTile: View {
             VStack(alignment: .leading, spacing: Space.s8) {
                 picture
                 HStack(spacing: Space.s8) {
-                    ReinsIcon(icon).foregroundStyle(TextTone.secondary.color)
-                    Text(title).reinsText(isSelected ? .bodyStrong : .body, tone: isSelected ? .primary : .secondary)
+                    SpaceVibeIcon(icon).foregroundStyle(TextTone.secondary.color)
+                    Text(title).spaceVibeText(isSelected ? .bodyStrong : .body, tone: isSelected ? .primary : .secondary)
                 }
                 .padding(.horizontal, Space.s4)
             }
@@ -30,7 +30,7 @@ struct ThemeTile: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .reinsFocusable(cornerRadius: Metrics.groupRadius)
+        .spaceVibeFocusable(cornerRadius: Metrics.groupRadius)
         .onHover { hovering = $0 }
         .accessibilityLabel(title)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -53,7 +53,7 @@ struct ThemeTile: View {
     }
 }
 
-/// A Reins window at thumbnail size: the sidebar with one active item, a page title and two cards of text lines.
+/// A SpaceVibe window at thumbnail size: the sidebar with one active item, a page title and two cards of text lines.
 private struct MiniWindow: View {
     var body: some View {
         HStack(alignment: .top, spacing: Space.s8) {

@@ -6,7 +6,7 @@ enum ToastTone { case info, danger }
 /// The one button a toast can carry. Undo is the common case; without an action the toast offers only dismiss.
 struct ToastAction {
     let title: String
-    let icon: ReinsGlyph
+    let icon: SpaceVibeGlyph
     let run: @MainActor () -> Void
 
     static func undo(_ run: @escaping @MainActor () -> Void) -> ToastAction {
@@ -26,7 +26,7 @@ struct Toast: Identifiable {
 ///     @Environment(ToastCenter.self) private var toasts
 ///     toasts.show("Removed ponytail") { journal.undo(entry) }          // trailing closure is `undo`
 ///     toasts.show("Could not write settings.json", tone: .danger)
-///     toasts.show("Reins 0.2.0 is available", action: viewUpdate)      // any other single action
+///     toasts.show("SpaceVibe 0.2.0 is available", action: viewUpdate)      // any other single action
 ///
 /// A new toast replaces the current one. It disappears after about 7 seconds, paused while the pointer is on it.
 @MainActor

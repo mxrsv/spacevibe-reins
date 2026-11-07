@@ -14,21 +14,21 @@ struct InterFontTests {
 
     @Test("text roles use only 12, 14 and 16, plus the figure and display exceptions, on a 4 pt line box")
     func rolesStayOnTheScale() {
-        let text: [ReinsType] = [.caption, .captionStrong, .label, .body, .bodyStrong, .rowTitle, .title, .paletteInput, .code, .codeTitle, .number, .numberStrong, .count, .countStrong]
+        let text: [SpaceVibeType] = [.caption, .captionStrong, .label, .body, .bodyStrong, .rowTitle, .title, .paletteInput, .code, .codeTitle, .number, .numberStrong, .count, .countStrong]
         for role in text {
             #expect([12, 14, 16].contains(role.size))
             #expect(role.lineBox.truncatingRemainder(dividingBy: 4) == 0)
             #expect(role.lineBox >= role.naturalLineHeight)
         }
-        #expect(ReinsType.figure.size == 24 && ReinsType.figure.lineBox == 32)
-        let display = ReinsType.display
+        #expect(SpaceVibeType.figure.size == 24 && SpaceVibeType.figure.lineBox == 32)
+        let display = SpaceVibeType.display
         #expect(display.size == 72 && display.lineBox == 88 && display.lineBox >= display.naturalLineHeight)
         #expect(display.lineBox.truncatingRemainder(dividingBy: 4) == 0)
     }
 
     @Test("numbers in columns are tabular, prose is not (Inter's tnum widens the hyphen), machine strings disambiguate")
     func features() {
-        func tags(_ role: ReinsType) -> Set<String> {
+        func tags(_ role: SpaceVibeType) -> Set<String> {
             let settings = CTFontCopyFeatureSettings(role.ctFont) as? [[String: Any]] ?? []
             return Set(settings.compactMap { $0[kCTFontOpenTypeFeatureTag as String] as? String })
         }
@@ -43,7 +43,7 @@ struct InterFontTests {
     /// The v5 type table (spec, "Type"): size, weight, line box and the mock body's features on every new role.
     @Test("v5 roles: 10 to 28 with the mock's weights, line boxes and features")
     func v5Roles() {
-        let expected: [(ReinsType, CGFloat, InterFont.Weight, CGFloat)] = [
+        let expected: [(SpaceVibeType, CGFloat, InterFont.Weight, CGFloat)] = [
             (.micro, 10, .medium, 12), (.small, 11, .regular, 16), (.smallLabel, 11, .medium, 16), (.meta, 12, .regular, 16),
             (.metaLabel, 12, .medium, 16), (.prose, 13, .regular, 20), (.rowName, 13, .book, 20), (.control, 13, .medium, 20),
             (.controlStrong, 13, .semibold, 20), (.field, 14, .regular, 20), (.cardTitle, 16, .semibold, 24),
@@ -55,7 +55,7 @@ struct InterFontTests {
             let settings = CTFontCopyFeatureSettings(role.ctFont) as? [[String: Any]] ?? []
             #expect(Set(settings.compactMap { $0[kCTFontOpenTypeFeatureTag as String] as? String }) == ["tnum", "cv11", "ss03"])
         }
-        #expect(ReinsType.cardTitle.trackingEm == -0.01 && ReinsType.heading.trackingEm == -0.01 && ReinsType.answer.trackingEm == -0.02)
+        #expect(SpaceVibeType.cardTitle.trackingEm == -0.01 && SpaceVibeType.heading.trackingEm == -0.01 && SpaceVibeType.answer.trackingEm == -0.02)
     }
 
     @Test("the 450 row-name weight is the variable font moved on its weight axis")

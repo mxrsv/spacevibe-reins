@@ -38,7 +38,7 @@ private struct RulesGridRow: View {
             RulesClaudeCell(model: model, cell: cell, isEditable: snapshot.isEditable(cell), problemsInFile: !snapshot.problems.isEmpty)
                 .frame(width: Metrics.rulesClaudeColumn, alignment: .leading)
             FixedCell {
-                Text(RulesWording.ruleCount(cell.rules.count)).reinsText(.caption, tone: .tertiary)
+                Text(RulesWording.ruleCount(cell.rules.count)).spaceVibeText(.caption, tone: .tertiary)
             }
         }
         .accessibilityValue(isOpen ? "Expanded" : "Collapsed")
@@ -94,11 +94,11 @@ private struct RulesGridDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s6) {
             if cell.rules.isEmpty {
-                Text("No rule behind this row.").reinsText(.caption, tone: .tertiary)
+                Text("No rule behind this row.").spaceVibeText(.caption, tone: .tertiary)
             }
             ForEach(Array(cell.rules.enumerated()), id: \.offset) { _, rule in
                 HStack(spacing: Space.s8) {
-                    Text(rule.rule).reinsText(.code, tone: .primary).lineLimit(1).truncationMode(.middle)
+                    Text(rule.rule).spaceVibeText(.code, tone: .primary).lineLimit(1).truncationMode(.middle)
                     Tag(RulesWording.title(rule.verdict), tone: RulesWording.tone(rule.verdict))
                 }
             }

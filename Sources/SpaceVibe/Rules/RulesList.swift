@@ -59,7 +59,7 @@ private struct RulesVerdictMenu: View {
 
     var body: some View {
         if isShotRendering {
-            Button {} label: { icon }.buttonStyle(.reins(.icon))
+            Button {} label: { icon }.buttonStyle(.spaceVibe(.icon))
         } else {
             Menu {
                 ForEach(RulesWording.verdicts.filter { $0 != item.verdict }, id: \.self) { verdict in
@@ -70,12 +70,12 @@ private struct RulesVerdictMenu: View {
             }
             .menuStyle(.button)
             .menuIndicator(.hidden)
-            .buttonStyle(.reins(.icon))
+            .buttonStyle(.spaceVibe(.icon))
             .fixedSize()
             .help("Change verdict")
             .accessibilityLabel("Change verdict")
         }
     }
 
-    private var icon: some View { ReinsIcon(.swap, label: "Change verdict") }
+    private var icon: some View { SpaceVibeIcon(.swap, label: "Change verdict") }
 }

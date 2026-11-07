@@ -31,17 +31,17 @@ struct LimitWindowTile<Tags: View>: View {
             CLIMark(cli, size: .medium)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: Space.s8) {
-                    Text(title).reinsText(.bodyStrong, tone: .primary).lineLimit(1)
+                    Text(title).spaceVibeText(.bodyStrong, tone: .primary).lineLimit(1)
                     tags
                 }
-                .frame(height: ReinsType.bodyStrong.lineBox)
-                Text(subtitle).reinsText(.caption, tone: .secondary).lineLimit(1)
+                .frame(height: SpaceVibeType.bodyStrong.lineBox)
+                Text(subtitle).spaceVibeText(.caption, tone: .secondary).lineLimit(1)
                 ruler.padding(.top, Space.s8)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             // One width for "4%", "100%" and "unknown", so the rulers of the list end on one line.
             Text(value)
-                .reinsText(isKnown ? .title : .caption, tone: isKnown ? valueTone : .tertiary)
+                .spaceVibeText(isKnown ? .title : .caption, tone: isKnown ? valueTone : .tertiary)
                 .lineLimit(1)
                 .frame(minWidth: Metrics.usageNumberWidth, alignment: .trailing)
         }

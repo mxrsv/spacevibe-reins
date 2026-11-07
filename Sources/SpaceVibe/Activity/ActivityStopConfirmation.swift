@@ -17,12 +17,12 @@ struct ActivityStopConfirmation: View {
             cancel: cancel
         ) {
             Button("Cancel", action: cancel)
-                .buttonStyle(.reins(.normal))
-                .reinsFocusable(cornerRadius: Metrics.controlRadius, focusOnAppear: true)
+                .buttonStyle(.spaceVibe(.normal))
+                .spaceVibeFocusable(cornerRadius: Metrics.controlRadius, focusOnAppear: true)
                 .disabled(isStopping)
                 .keyboardShortcut(.cancelAction)
             Button(isStopping ? "Stopping\u{2026}" : "Stop", action: confirm)
-                .buttonStyle(.reins(.danger))
+                .buttonStyle(.spaceVibe(.danger))
                 .disabled(isStopping)
         }
     }

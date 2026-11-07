@@ -37,18 +37,18 @@ struct RulesToolbar: View {
                 )
             }
             HStack(spacing: Space.s6) {
-                Text(model.cli == .claude ? snapshot.fileLabel : "~/.codex/config.toml").reinsText(.code, tone: .tertiary)
+                Text(model.cli == .claude ? snapshot.fileLabel : "~/.codex/config.toml").spaceVibeText(.code, tone: .tertiary)
                 Text("\u{00B7}")
                 Text(scopeMeaning)
             }
-            .reinsText(.caption, tone: .tertiary)
+            .spaceVibeText(.caption, tone: .tertiary)
             .lineLimit(1)
             .truncationMode(.middle)
             .padding(.leading, Space.s8)
             Spacer(minLength: 0)
             if model.cli == .codex {
                 Button("Show in Finder") { model.revealCodexConfig() }
-                    .buttonStyle(.reins(.normal))
+                    .buttonStyle(.spaceVibe(.normal))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

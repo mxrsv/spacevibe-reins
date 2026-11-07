@@ -42,9 +42,9 @@ struct ConfirmationDialog<Details: View, Actions: View>: View {
     private var card: some View {
         let shape = RoundedRectangle(cornerRadius: Metrics.paletteRadius, style: .continuous)
         return VStack(alignment: .leading, spacing: Space.s8) {
-            Text(title).reinsText(.bodyStrong, tone: .primary).lineLimit(2)
+            Text(title).spaceVibeText(.bodyStrong, tone: .primary).lineLimit(2)
             if let message {
-                Text(message).reinsText(.body, tone: .secondary).fixedSize(horizontal: false, vertical: true)
+                Text(message).spaceVibeText(.body, tone: .secondary).fixedSize(horizontal: false, vertical: true)
             }
             details
             HStack(spacing: Rhythm.tools) {

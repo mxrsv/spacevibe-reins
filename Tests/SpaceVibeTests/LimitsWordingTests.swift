@@ -155,7 +155,7 @@ struct LimitsWordingTests {
 
     @Test("the detail's state notes name the cause, and only Claude Code is pointed at /usage")
     func stateNotes() {
-        #expect(LimitsWording.stateNote(entry(.gemini, .notMeasurable))?.body == "Gemini CLI keeps no usage limit on disk, and Reins does not go online for it.")
+        #expect(LimitsWording.stateNote(entry(.gemini, .notMeasurable))?.body == "Gemini CLI keeps no usage limit on disk, and SpaceVibe does not go online for it.")
         #expect(LimitsWording.stateNote(entry(.claude, .notRecorded))?.body.contains("/usage") == true)
         #expect(LimitsWording.stateNote(entry(.codex, .notRecorded))?.body == "No Codex turn has logged limits yet.")
         #expect(LimitsWording.stateNote(entry(.gemini, .notInstalled))?.body == "No Gemini CLI folder on this Mac.")
