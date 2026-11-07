@@ -67,14 +67,17 @@ enum PaletteValue {
     static let fg4 = ColorValue(light: 0xB7BAC0, dark: 0x4A4E55)
 
     // Accent: shade 1 of the mock (D10, D68); shades 2 and 3 stay in the spec for the eye pick.
-    /// Departure, dark: spec `#4F86F7` reads 4.12:1 as the toast's `Undo` on a focused or hovered toast button; `#568EFF`
-    /// reads 4.5:1. Text, links and indicators.
-    static let accent = ColorValue(light: 0x2563D9, dark: 0x568EFF)
+    /// Indicators and fills: the current row's bar, a picked checkbox, Activity's active tab, the system tint.
+    static let accent = ColorValue(light: 0x2563D9, dark: 0x4F86F7)
+    /// The accent as text (links, `Show more`, `Clear`, the toast's `Undo`). Departure, dark: shade 1 reads 4.12:1 as
+    /// `Undo` on a focused toast button (`sel` over `bgPop`) and 4.44:1 hovered; `#568EFF`, a step lighter on the same hue,
+    /// reads 4.54:1. Kept apart from `accent` so the shade-1 fills keep their look.
+    static let accentText = ColorValue(light: 0x2563D9, dark: 0x568EFF)
     /// A solid accent fill under white text (primary button, switch, the product mark). Departure, both: white on the
     /// accent reads 3.45:1 in dark; this darker step of the same hue keeps 4.5:1 at rest and with the hover brightening.
     static let accentSolid = ColorValue(light: 0x1E5CD2, dark: 0x2A5DCB)
     /// A picked row and a filter count: the accent at 10% (light) and 16% (dark).
-    static let accentBg = ColorValue(light: 0x2563D9, dark: 0x568EFF, lightAlpha: 0.10, darkAlpha: 0.16)
+    static let accentBg = ColorValue(light: 0x2563D9, dark: 0x4F86F7, lightAlpha: 0.10, darkAlpha: 0.16)
     static let onAccent = ColorValue(light: 0xFFFFFF, dark: 0xFFFFFF)
 
     // State only
@@ -120,8 +123,8 @@ enum PaletteValue {
     static let catHookCountInk = ColorValue(light: 0x074857, dark: 0xEFFAFC)
     static let catRuleInk = ColorValue(light: 0x8B3263, dark: 0xEA8FBD)
     static let catRuleCountInk = ColorValue(light: 0x6A264B, dark: 0xF7D6E7)
-    static let accentInk = ColorValue(light: 0x194394, dark: 0x7DA8FF)
-    static let accentCountInk = ColorValue(light: 0x143575, dark: 0xC7DAFF)
+    static let accentInk = ColorValue(light: 0x194394, dark: 0x7BA4F9)
+    static let accentCountInk = ColorValue(light: 0x143575, dark: 0xC0D3FC)
 
     // Overlay shadows (v5): popover and toast; palette and dialog.
     static let shadowPop = ColorValue(light: 0x000000, dark: 0x000000, lightAlpha: 0.4, darkAlpha: 0.4)
@@ -193,6 +196,7 @@ enum Palette {
     static let fg3 = PaletteValue.fg3.color
     static let fg4 = PaletteValue.fg4.color
     static let accent = PaletteValue.accent.color
+    static let accentText = PaletteValue.accentText.color
     static let accentSolid = PaletteValue.accentSolid.color
     static let accentBg = PaletteValue.accentBg.color
     static let onAccent = PaletteValue.onAccent.color

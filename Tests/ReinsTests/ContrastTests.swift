@@ -115,7 +115,7 @@ struct ContrastTests {
     static var pairs: [Pair] {
         var all = text("fg", P.fg, on: textGrounds) + text("fg2", P.fg2, on: textGrounds) + text("fg3", P.fg3, on: textGrounds)
         // The accent as text: links, `Clear`, the toast's `Undo` at rest, hovered and focused.
-        all += text("accent", P.accent, on: [
+        all += text("accentText", P.accentText, on: [
             ground("bgPanel", P.bgPanel), ground("bgRaise", P.bgRaise), ground("bgPop", P.bgPop),
             ground("hover on bgPop", P.bgPop, Layer(P.hover)), ground("sel on bgPop", P.bgPop, Layer(P.sel)),
         ])
@@ -127,7 +127,8 @@ struct ContrastTests {
             Pair(ink: "onAccent", value: P.onAccent, ground: ground("badSolid", P.badSolid), minimum: 4.5),
         ]
         all += tabChipPairs
-        for (name, value) in [("ok", P.ok), ("warn", P.warn), ("bad", P.bad), ("mute", P.mute)] {
+        // The accent as a mark: the current row's bar, a picked checkbox.
+        for (name, value) in [("ok", P.ok), ("warn", P.warn), ("bad", P.bad), ("mute", P.mute), ("accent", P.accent)] {
             all += marks(name, value, on: markGrounds)
         }
         // CLI status dots in the sidebar.
@@ -156,6 +157,26 @@ struct ContrastTests {
         }
     }
 
+    /// D57 and V5-R41: focus is the `sel` fill. Every text and mark on it is in `pairs` (each `sel` ground is also the
+    /// focused case); here the fill must change the look from rest and stand a step above hover, in both appearances. Its
+    /// contrast with the unfocused state (WCAG 2.4.13, AAA) is about 1.1:1, not 3:1: an open trade-off for the owner at the
+    /// final eye task.
+    @Test("the focus fill differs from rest and from hover")
+    func focusFillDiffers() {
+        let bases: [(String, ColorValue)] = [("bgSide", P.bgSide), ("bgPanel", P.bgPanel), ("bgRaise", P.bgRaise), ("bgPop", P.bgPop)]
+        for appearance in Appearance.allCases {
+            for (name, base) in bases {
+                let rest = ColorMath.composite([Layer(base)], appearance)
+                let hovered = ColorMath.composite([Layer(base), Layer(P.hover)], appearance)
+                let focused = ColorMath.composite([Layer(base), Layer(P.sel)], appearance)
+                let fromRest = ColorMath.contrast(focused, rest)
+                let fromHover = ColorMath.contrast(focused, hovered)
+                #expect(fromRest > ColorMath.contrast(hovered, rest) && fromHover >= 1.02,
+                        "\(appearance) on \(name): focus \(focused.hex) is \(String(format: "%.3f", fromRest)):1 from rest, \(String(format: "%.3f", fromHover)):1 from hover")
+            }
+        }
+    }
+
     @Test("the pair list covers what V5-A2 names")
     func coversTheNamedPairs() {
         let names = Set(Self.pairs.map(\.testDescription))
@@ -164,6 +185,7 @@ struct ContrastTests {
             "fg2 on an inactive tab's count circle", "catSkillInk on the active catSkill chip",
             "catSkillCountInk on the active catSkill count circle", "accentInk on the active accent chip",
             "warn on bgPanel", "warn on bgRaise", "bad on bgPanel", "bad on bgRaise", "onVerdict on a verdict glyph (fg2)",
+            "fg2 on sel on bgRaise", "fg3 on sel on bgPanel",
         ] {
             #expect(names.contains(required), "missing \(required)")
         }

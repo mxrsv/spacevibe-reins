@@ -43,8 +43,9 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
 - **Heights**: 20 key cap, 24 tag and segment, 28 every control, 32 section row and hint bar, 36 palette row, 48 every row,
   sidebar item and the top bar, 56 card header. **Radii**: 4 key cap, 6 tag and segment, 8 control, row block and sidebar
   item, 12 card; filter chips are capsules.
-- **Colour** values live in `PaletteValue` ([Palette.swift](../Sources/Reins/Tokens/Palette.swift)) under the v5 token
-  names and change app-wide at once (D53). Screens not yet rebuilt read them through their old names: `well` is `bgSide`,
+- **Colour** values live in `PaletteValue` ([Palette.swift](../Sources/Reins/Tokens/Palette.swift)) under the token names
+  of the [v5 spec](specs/2026-11-06-reins-design-language-v5.md) and change app-wide at once (D53); this page is rewritten
+  for v5 at its cut-over (X1). Screens not yet rebuilt read them through their old names: `well` is `bgSide`,
   `surface` `bgPanel`, `surfaceRaised` `bgRaise`, `divider` `hair`, `border` `hair2`, `selection` `sel`. The sidebar and
   the content area share the `well`, split by one 1 pt `divider`; the top bar and hint bar have no line. Cards are
   `surface` blocks on the well with no border, so the fill alone sets them off. Only overlays (palette, confirmations,

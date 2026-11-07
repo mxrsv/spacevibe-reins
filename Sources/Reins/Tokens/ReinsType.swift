@@ -155,7 +155,7 @@ enum TextTone {
         case .primary: Palette.text
         case .secondary: Palette.textSecondary
         case .tertiary: Palette.textTertiary
-        case .accent: Palette.accent
+        case .accent: Palette.accentText
         case .onAccent: Palette.onAccent
         case .inverse: Palette.background
         case .danger: Palette.dangerInk
