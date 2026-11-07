@@ -7,10 +7,12 @@ enum ToastTone { case info, danger }
 struct ToastAction {
     let title: String
     let icon: SpaceVibeGlyph
+    /// The key that runs it, shown as a cap in the v5 toast: `Z` for Undo (V5-R38).
+    var keyCap: String?
     let run: @MainActor () -> Void
 
     static func undo(_ run: @escaping @MainActor () -> Void) -> ToastAction {
-        ToastAction(title: "Undo", icon: .undo, run: run)
+        ToastAction(title: "Undo", icon: .undo, keyCap: "Z", run: run)
     }
 }
 

@@ -58,6 +58,12 @@ enum PaletteValue {
     static let trackHi = ColorValue(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.10, darkAlpha: 0.12)
     static let kbdBg = ColorValue(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.035, darkAlpha: 0.06)
     static let kbdBorder = ColorValue(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.12, darkAlpha: 0.10)
+    /// A key cap's edge on a solid fill (the primary and the solid danger button): white at 28%. Departure, both: the mock
+    /// also fills the cap with white at 18%, which puts the white key at 4.13:1 on `accentSolid` (3.32:1 with the hover
+    /// brightening); without the fill the key reads as the button's own label (5.95:1, 4.51:1 hovered).
+    static let kbdOnSolidBorder = ColorValue(light: 0xFFFFFF, dark: 0xFFFFFF, lightAlpha: 0.28, darkAlpha: 0.28)
+    /// The top-edge highlight of a solid button (the mock's `inset 0 1px 0 rgba(255,255,255,.22)`).
+    static let hiOnSolid = ColorValue(light: 0xFFFFFF, dark: 0xFFFFFF, lightAlpha: 0.22, darkAlpha: 0.22)
     static let scrim = ColorValue(light: 0x141418, dark: 0x000000, lightAlpha: 0.25, darkAlpha: 0.5)
 
     // Text
@@ -84,6 +90,10 @@ enum PaletteValue {
     static let accentSolid = ColorValue(light: 0x1E5CD2, dark: 0x2A5DCB)
     /// A picked row and a filter count: the accent at 10% (light) and 16% (dark).
     static let accentBg = ColorValue(light: 0x2563D9, dark: 0x4F86F7, lightAlpha: 0.10, darkAlpha: 0.16)
+    /// The count of picks beside a field in the Filter menu, on its `accentBg` circle. Departure, both: the mock's accent
+    /// reads 3.67:1 (dark, `accentText`) and 4.21:1 (light) there while the field item is hovered or open (`sel` over
+    /// `bgPop`); OKLCH lightness moved, hue and chroma kept, to the first value that reads 4.5:1.
+    static let accentCountText = ColorValue(light: 0x205ED4, dark: 0x69A3FF)
     static let onAccent = ColorValue(light: 0xFFFFFF, dark: 0xFFFFFF)
 
     // State only
@@ -100,6 +110,10 @@ enum PaletteValue {
     /// The solid danger button's fill under white text (Stop). Departure, both: white on `bad` reads 3.43:1 in dark; this
     /// darker step of the same hue keeps 4.5:1 at rest and with the hover brightening.
     static let badSolid = ColorValue(light: 0xBE2C49, dark: 0xB8334C)
+    /// A danger button's text while hovered, on the `sel` fill over the ground it sits on. Departure, both: the mock turns
+    /// the text `bad`, which reads 4.10:1 (dark, over `bgPop`) and 3.94:1 (light, over `bgRaise`); OKLCH lightness moved,
+    /// hue and chroma kept, to the first value that reads 4.5:1 over `bgPanel`, `bgRaise` and `bgPop`.
+    static let badText = ColorValue(light: 0xC5334F, dark: 0xED6476)
     /// The off dot of a CLI status row.
     static let mute = ColorValue(light: 0x7A7F88, dark: 0x8A8F98)
     /// The cut-out inside a verdict glyph.
@@ -133,8 +147,9 @@ enum PaletteValue {
     static let accentInk = ColorValue(light: 0x194394, dark: 0x7BA4F9)
     static let accentCountInk = ColorValue(light: 0x143575, dark: 0xC0D3FC)
 
-    // Overlay shadows (v5): popover and toast; palette and dialog.
+    // Overlay shadows (v5): popover and toast; menus; palette and dialog.
     static let shadowPop = ColorValue(light: 0x000000, dark: 0x000000, lightAlpha: 0.4, darkAlpha: 0.4)
+    static let shadowMenu = ColorValue(light: 0x000000, dark: 0x000000, lightAlpha: 0.35, darkAlpha: 0.35)
     static let shadowDialog = ColorValue(light: 0x000000, dark: 0x000000, lightAlpha: 0.5, darkAlpha: 0.5)
 
     // Kept for the screens not yet rebuilt; the cut-over (X1) deletes each one no rebuilt page uses.
@@ -199,6 +214,8 @@ enum Palette {
     static let trackHi = PaletteValue.trackHi.color
     static let kbdBg = PaletteValue.kbdBg.color
     static let kbdBorder = PaletteValue.kbdBorder.color
+    static let kbdOnSolidBorder = PaletteValue.kbdOnSolidBorder.color
+    static let hiOnSolid = PaletteValue.hiOnSolid.color
     static let scrim = PaletteValue.scrim.color
     static let fg = PaletteValue.fg.color
     static let fg2 = PaletteValue.fg2.color
@@ -208,11 +225,13 @@ enum Palette {
     static let accentText = PaletteValue.accentText.color
     static let accentSolid = PaletteValue.accentSolid.color
     static let accentBg = PaletteValue.accentBg.color
+    static let accentCountText = PaletteValue.accentCountText.color
     static let onAccent = PaletteValue.onAccent.color
     static let ok = PaletteValue.ok.color
     static let warn = PaletteValue.warn.color
     static let bad = PaletteValue.bad.color
     static let badSolid = PaletteValue.badSolid.color
+    static let badText = PaletteValue.badText.color
     static let mute = PaletteValue.mute.color
     static let onVerdict = PaletteValue.onVerdict.color
     static let claude = PaletteValue.claude.color
@@ -232,6 +251,7 @@ enum Palette {
     static let accentInk = PaletteValue.accentInk.color
     static let accentCountInk = PaletteValue.accentCountInk.color
     static let shadowPop = PaletteValue.shadowPop.color
+    static let shadowMenu = PaletteValue.shadowMenu.color
     static let shadowDialog = PaletteValue.shadowDialog.color
 
     // Old names: the screens not yet rebuilt keep them, with the v5 value of the token that replaces each (D53, spec C3).

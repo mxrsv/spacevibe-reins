@@ -46,7 +46,7 @@ struct InterFontTests {
         let expected: [(SpaceVibeType, CGFloat, InterFont.Weight, CGFloat)] = [
             (.micro, 10, .medium, 12), (.small, 11, .regular, 16), (.smallLabel, 11, .medium, 16), (.meta, 12, .regular, 16),
             (.metaLabel, 12, .medium, 16), (.prose, 13, .regular, 20), (.rowName, 13, .book, 20), (.control, 13, .medium, 20),
-            (.controlStrong, 13, .semibold, 20), (.field, 14, .regular, 20), (.cardTitle, 16, .semibold, 24),
+            (.controlStrong, 13, .semibold, 20), (.field, 14, .regular, 20), (.dialogTitle, 14, .semibold, 20), (.cardTitle, 16, .semibold, 24),
             (.heading, 20, .semibold, 28), (.answer, 28, .semibold, 32),
         ]
         for (role, size, weight, lineBox) in expected {
@@ -56,6 +56,11 @@ struct InterFontTests {
             #expect(Set(settings.compactMap { $0[kCTFontOpenTypeFeatureTag as String] as? String }) == ["tnum", "cv11", "ss03"])
         }
         #expect(SpaceVibeType.cardTitle.trackingEm == -0.01 && SpaceVibeType.heading.trackingEm == -0.01 && SpaceVibeType.answer.trackingEm == -0.02)
+        // The key cap keeps the letter shapes but not tabular figures (`font-variant-numeric: normal` in the kit).
+        let cap = SpaceVibeType.keyCap
+        #expect(cap.size == 11 && cap.weight == .medium && cap.lineBox == 16)
+        let capSettings = CTFontCopyFeatureSettings(cap.ctFont) as? [[String: Any]] ?? []
+        #expect(Set(capSettings.compactMap { $0[kCTFontOpenTypeFeatureTag as String] as? String }) == ["cv11", "ss03"])
     }
 
     @Test("the 450 row-name weight is the variable font moved on its weight axis")

@@ -31,7 +31,7 @@ struct ContainerSpecimens: View {
                         ListRow("notify") { MetaCell(text: "No Notification event") }
                         ListRow("ask-review") { MetaCell(text: "Can't run prompt handlers") }
                     }
-                } actions: { Button("Why") {}.buttonStyle(.spaceVibe(.normal)) })),
+                } actions: { Button {} label: { ActionLabel("Why") }.buttonStyle(ActionButtonStyle(size: .compact)) })),
             ("loading", AnyView(Tile("Usage windows", layout: .bare, isOpen: open("loading")) { LoadingSkeleton() })),
             ("empty", AnyView(Tile("Hooks", count: "0", layout: .bare, isOpen: open("empty")) {
                 QuietEmptyState("No hooks", message: "Neither CLI has a hook configured.")
@@ -56,7 +56,7 @@ struct ContainerSpecimens: View {
             MetaCell(text: time, width: 72, alignment: .leading)
             CLIMark(cli, size: .control)
         } trailing: {
-            Color.clear.frame(width: 24, height: 24)
+            WarningSlot()
         }
     }
 
@@ -69,9 +69,11 @@ struct ContainerSpecimens: View {
                            verdict: VerdictBox(glyph: .used, glyphLabel: "Advice", title: "typecheck-edit",
                                                text: "PostToolUse runs a script that is gone.", small: "Added 3 weeks ago."),
                            moreMarked: 2, isOpen: open("answer")) {
-                    Button("Remove") {}.buttonStyle(.spaceVibe(.danger))
-                    Button("Open file") {}.buttonStyle(.spaceVibe(.normal))
-                } headerActions: { Button("Copy /usage") {}.buttonStyle(.spaceVibe(.normal)) })),
+                    Button {} label: { ActionLabel("Remove", glyph: .trash) }.buttonStyle(ActionButtonStyle(kind: .danger))
+                    Button {} label: { ActionLabel("Open file", glyph: .open) }.buttonStyle(ActionButtonStyle())
+                } headerActions: {
+                    Button {} label: { ActionLabel("Copy /usage", key: "C") }.buttonStyle(ActionButtonStyle(size: .compact))
+                })),
             ("nothing needs you", AnyView(AnswerCard(sentence: "Nothing needs you.", isOpen: open("calm")))),
             ("loading", AnyView(AnswerCard(sentence: nil, isOpen: open("answer-loading")))),
         ])
@@ -139,12 +141,15 @@ struct ContainerSpecimens: View {
             ListRow("5-hour", nameWidth: 128, isCurrent: true) { BarCell(share: 0.78); ShareCell(percent: 78); slot }
             ListRow("Weekly", nameWidth: 128) { BarCell(share: 0.41); ShareCell(percent: 41); slot }
             ListRow("Weekly Opus", nameWidth: 128) {
-                BarCell(share: 0.12, tone: .warn); ShareCell(percent: 12); StateMarkIcon(mark: StateMark(.warn, label: "12% left")).frame(width: 24)
+                BarCell(share: 0.12, tone: .warn); ShareCell(percent: 12)
+                WarningSlot(mark: StateMark(.warn, label: "Low"), detail: "Weekly Opus has 12% left.", id: "gallery.weekly-opus") {
+                    PopoverSentence("Weekly Opus has 12% left.")
+                }
             }
         }
     }
 
-    private var slot: some View { Color.clear.frame(width: 24, height: 24) }
+    private var slot: some View { WarningSlot() }
 
     // MARK: - Rows
 
@@ -184,7 +189,19 @@ struct ContainerSpecimens: View {
     private func listRow(_ name: String, current: Bool = false, picked: Bool = false) -> some View {
         let isPicked = picked || self.picked.contains(name)
         return ListRow(name, lead: CategoryGlyph.skill, isCurrent: current, isPicked: isPicked, onPick: { toggle(name) }, onActivate: {}) {
-            MetaCell(text: isPicked ? "picked" : "", width: 64)
+            let mode: LogoToggleMode = name == "neon-postgres" ? .readOnly : .toggles
+            LogoStrip {
+                LogoToggle(cli: .claude, isLit: true, mode: mode) {}
+                LogoToggle(cli: .codex, isLit: name.count.isMultiple(of: 2), mode: mode) {}
+            }
+            if name == "review-change" {
+                WarningSlot(mark: StateMark(.warn, label: "Never ran"), detail: "Never ran in Claude Code. Added 3 weeks ago.",
+                            id: "gallery.review-change") {
+                    PopoverSentence("Never ran in Claude Code. Added 3 weeks ago.")
+                }
+            } else {
+                WarningSlot()
+            }
         }
     }
 
@@ -242,11 +259,11 @@ struct ContainerSpecimens: View {
             })),
             ("nothing matches, with Clear filters, in a card", AnyView(Tile("Subagents", count: "0", layout: .bare, isOpen: open("nomatch")) {
                 QuietEmptyState("Nothing matches", message: "No subagent fits these filters.") {
-                    Button("Clear filters") {}.buttonStyle(.spaceVibe(.normal))
+                    Button {} label: { ActionLabel("Clear filters") }.buttonStyle(ActionButtonStyle(size: .bar))
                 }
             })),
             ("nothing matches, in a list", AnyView(QuietEmptyState("Nothing matches", message: "No skill fits these filters.", placement: .list) {
-                Button("Clear filters") {}.buttonStyle(.spaceVibe(.normal))
+                Button {} label: { ActionLabel("Clear filters") }.buttonStyle(ActionButtonStyle(size: .bar))
             })),
             ("loading skeleton, in a card", AnyView(Tile("Answer", layout: .bare, isOpen: open("skeleton")) { LoadingSkeleton() })),
         ])
@@ -259,37 +276,12 @@ struct ContainerSpecimens: View {
     }
 
     private func panel<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: Space.s12) {
-            Text(title).spaceVibeText(.meta, tone: .tertiary)
-            content()
-        }
-        .padding(Space.s24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .blockSurface(Palette.bgPanel)
+        SpecimenLayout.panel(title, content: content)
     }
 
-    private func caption(_ text: String) -> some View {
-        Text(text).spaceVibeText(.small, tone: .tertiary)
-    }
+    private func caption(_ text: String) -> some View { SpecimenLayout.caption(text) }
 
-    /// A card of a split page at 1440 x 900: half the canvas (the mock's tile), so crops line up with the mock's at one scale.
-    private let halfCanvas: CGFloat = 557
+    private let halfCanvas = SpecimenLayout.halfCanvas
 
-    /// Specimens two to a line, each under its caption, each as wide as a card of a split page.
-    private func pairs(_ items: [(String, AnyView)]) -> some View {
-        let lines = stride(from: 0, to: items.count, by: 2).map { Array(items[$0 ..< min($0 + 2, items.count)]) }
-        return VStack(alignment: .leading, spacing: Space.s24) {
-            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                HStack(alignment: .top, spacing: Space.s24) {
-                    ForEach(Array(line.enumerated()), id: \.offset) { _, item in
-                        VStack(alignment: .leading, spacing: Space.s8) {
-                            caption(item.0)
-                            item.1
-                        }
-                        .frame(width: halfCanvas, alignment: .topLeading)
-                    }
-                }
-            }
-        }
-    }
+    private func pairs(_ items: [(String, AnyView)]) -> some View { SpecimenLayout.pairs(items) }
 }

@@ -12,6 +12,28 @@ extension View {
     }
 }
 
+/// The drop shadow under an overlay (V5-R5: overlays only; cards have none). The kit's CSS blur is twice the radius SwiftUI
+/// takes, so the token's blur is halved here.
+enum OverlayShadow {
+    /// Popover, toast and bottom bar: `0 8 32` black 40%.
+    case pop
+    /// A menu: `0 8 32` black 35%.
+    case menu
+    /// The palette and a confirmation: `0 24 64` black 50%.
+    case dialog
+}
+
+extension View {
+    func overlayShadow(_ kind: OverlayShadow) -> some View {
+        let (color, blur, y): (Color, CGFloat, CGFloat) = switch kind {
+        case .pop: (Palette.shadowPop, Metrics.Shadow.popRadius, Metrics.Shadow.popOffset)
+        case .menu: (Palette.shadowMenu, Metrics.Shadow.popRadius, Metrics.Shadow.popOffset)
+        case .dialog: (Palette.shadowDialog, Metrics.Shadow.dialogRadius, Metrics.Shadow.dialogOffset)
+        }
+        return shadow(color: color, radius: blur / 2, y: y)
+    }
+}
+
 /// The kit's `box-shadow: inset 0 1px 0 var(--hi)`: the shape inside the 1 pt edge, less the same shape moved down 1 pt.
 /// A line 1 pt thick along the top that thins out round the top corners.
 struct TopEdgeHighlight: Shape {

@@ -8,6 +8,8 @@ struct SpecimenInteraction: OptionSet {
 
     static let hover = SpecimenInteraction(rawValue: 1 << 0)
     static let focus = SpecimenInteraction(rawValue: 1 << 1)
+    /// The pointer held down on it (a logo toggle, a button).
+    static let press = SpecimenInteraction(rawValue: 1 << 2)
 }
 
 // Written out: the `@Entry` macro needs SwiftUI's macro plugin, which the Command Line Tools do not ship.

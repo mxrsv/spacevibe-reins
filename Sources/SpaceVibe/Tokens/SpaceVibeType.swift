@@ -137,6 +137,11 @@ struct SpaceVibeType {
     static var controlStrong: SpaceVibeType { v5(13, .semibold, 20) }
     /// The command palette's field.
     static var field: SpaceVibeType { v5(14, .regular, 20) }
+    /// A confirmation's title (the Stop dialog, 14/20 600).
+    static var dialogTitle: SpaceVibeType { v5(14, .semibold, 20) }
+    /// The letter on a key cap: 11/16 500 with the v5 letter shapes but proportional figures (the kit's `kbd` sets
+    /// `font-variant-numeric: normal`).
+    static var keyCap: SpaceVibeType { role(size: 11, weight: .medium, lineBox: 16, stylistic: true) }
     /// A card's title.
     static var cardTitle: SpaceVibeType { v5(16, .semibold, 24, trackingEm: -0.01) }
     /// The Skills pane's heading, a share in a row, a stat figure.

@@ -23,6 +23,15 @@ extension CoreLimitsCLI {
 extension CoreLimitsCLI {
     /// The same CLI as the inventory names it (Claude Code or Codex).
     init(_ cli: CoreCLI) { self = cli == .claude ? .claude : .codex }
+
+    /// The CLI's name as the app writes it (GLOSSARY).
+    var label: String {
+        switch self {
+        case .claude: "Claude Code"
+        case .codex: "Codex"
+        case .gemini: "Gemini CLI"
+        }
+    }
 }
 
 /// A bare CLI brand mark, independent of data/semantic colours: Claude and Gemini retain the asset's colour;
@@ -30,8 +39,8 @@ extension CoreLimitsCLI {
 /// The transparent layout slot keeps existing row alignment and glyph sizes. Decorative: the name is beside it.
 struct CLIMark: View {
     /// `glyph` is the bare mark at 14 beside 12 pt text; `control` the bare mark at 16 beside 13 pt text (a band header's
-    /// lead, a row's logo in v5).
-    enum Size { case large, medium, small, glyph, control }
+    /// lead, a row's logo in v5); `logo` the bare mark at 20 (a logo toggle, a popover's head).
+    enum Size { case large, medium, small, glyph, control, logo }
 
     let cli: CoreLimitsCLI
     var size: Size = .large
@@ -46,17 +55,27 @@ struct CLIMark: View {
     }
 
     var body: some View {
-        if size == .glyph || size == .control {
-            glyph(side: size == .glyph ? Metrics.iconInline : Metrics.iconControl).accessibilityHidden(true)
+        if let bare = bareSide {
+            glyph(side: bare).accessibilityHidden(true)
         } else {
             let side = switch size {
             case .large: Metrics.cliMarkSize
             case .medium: Metrics.cliMarkMediumSize
-            case .small, .glyph, .control: Metrics.cliMarkSmallSize
+            case .small, .glyph, .control, .logo: Metrics.cliMarkSmallSize
             }
             glyph(side: side * Metrics.cliMarkGlyphFraction)
                 .frame(width: side, height: side)
                 .accessibilityHidden(true)
+        }
+    }
+
+    /// The bare sizes draw the mark alone at that side, with no frame around it.
+    private var bareSide: CGFloat? {
+        switch size {
+        case .glyph: Metrics.iconInline
+        case .control: Metrics.iconControl
+        case .logo: Metrics.LogoToggle.logo
+        case .large, .medium, .small: nil
         }
     }
 

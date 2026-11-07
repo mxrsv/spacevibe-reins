@@ -1,11 +1,11 @@
 import SwiftUI
 
 /// Every shared view in every state. Reach it with `SPACEVIBE_GALLERY=1`; the screenshot mode renders the same content in
-/// parts (`part`) because one image taller than 16384 px renders blank. The third part holds the v5 blocks and is empty
-/// without the v5 switch.
+/// parts (`part`) because one image taller than 16384 px renders blank. The third part holds the v5 containers and the
+/// fourth the v5 controls and overlays; both are empty without the v5 switch.
 struct ComponentGalleryContent: View {
     enum Part {
-        case all, first, second, third
+        case all, first, second, third, fourth
     }
 
     var part: Part = .all
@@ -82,6 +82,9 @@ struct ComponentGalleryContent: View {
             }
             if (part == .all || part == .third) && LaunchMode.uiV5Enabled() {
                 section("Containers of the v5 screens, on the content panel's ground") { ContainerSpecimens() }
+            }
+            if (part == .all || part == .fourth) && LaunchMode.uiV5Enabled() {
+                section("Controls and overlays of the v5 screens, on the content panel's ground") { ControlSpecimens() }
             }
             if part == .all || part == .second {
                 section("Cards, rows and the five usage states") { DemoLoadoutList() }
@@ -344,6 +347,7 @@ struct ComponentGalleryWindow: View {
             }
             ToastHost()
         }
+        .overlayHost()
         .background(Palette.well)
         .ignoresSafeArea()
     }

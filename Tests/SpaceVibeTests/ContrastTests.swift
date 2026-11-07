@@ -156,7 +156,64 @@ struct ContrastTests {
         }
         // The cut-out inside a verdict glyph (`fg2`).
         all.append(Pair(ink: "onVerdict", value: P.onVerdict, ground: ground("a verdict glyph (fg2)", P.fg2), minimum: 3))
-        return all + oldScreenPairs
+        return all + controlPairs + oldScreenPairs
+    }
+
+    /// The v5 controls and overlays (U5): what each draws in each state, on the ground it draws on.
+    private static var controlPairs: [Pair] {
+        var pairs: [Pair] = []
+        // The active tab's glyph takes the label's ink, so its pairs are the text pairs of `tabChipPairs`. Departure: the
+        // mock draws it in the category colour, which reads 2.59:1 (light Hooks, focused) to 3.34:1 on its chip in light.
+        // A logo's badge against its ring, which is the ground's colour (V5-R24, V5-R26): success when lit, danger when a
+        // removable lit logo is hovered. The badge carries the state against the ring; the white check inside it repeats
+        // it and is not counted (it reads 2.5:1 on `ok` in dark).
+        for (name, value) in [("ok badge", P.ok), ("bad badge", P.bad)] {
+            pairs += marks(name, value, on: [ground("its ring (bgPanel)", P.bgPanel), ground("its ring (bgPop)", P.bgPop)])
+        }
+        // A key cap's letter (`fg2` on `kbdBg`) where caps sit: the status bar, the palette, a popover and the toast, a
+        // button at rest, hovered or focused (`sel`), the palette's selected row.
+        let kbd = Layer(P.kbdBg)
+        pairs += text("fg2 key", P.fg2, on: [
+            ground("a key cap on bgPanel", P.bgPanel, kbd), ground("a key cap on bgPop", P.bgPop, kbd),
+            ground("a key cap on bgRaise", P.bgRaise, kbd), ground("a key cap on sel on bgRaise", P.bgRaise, Layer(P.sel), kbd),
+            ground("a key cap on sel on bgPop", P.bgPop, Layer(P.sel), kbd), ground("a key cap on hover on bgPop", P.bgPop, Layer(P.hover), kbd),
+            ground("a key cap on sel on bgPanel", P.bgPanel, Layer(P.sel), kbd),
+        ])
+        // A key cap on a solid button has no fill (`kbdOnSolidBorder` only): its letter is the button's own white, at rest and
+        // with the hover and focus brightening.
+        for (name, value) in [("accentSolid", P.accentSolid), ("badSolid", P.badSolid)] {
+            pairs += [
+                Pair(ink: "onAccent key", value: P.onAccent, ground: ground("a key cap on \(name)", value), minimum: 4.5),
+                Pair(ink: "onAccent key", value: P.onAccent,
+                     ground: Ground(name: "a key cap on \(name) brightened for hover", layers: [Layer(value)], brighten: 0.08), minimum: 4.5),
+            ]
+        }
+        // A danger button's text while hovered: `badText` on the `sel` fill over the grounds buttons sit on.
+        pairs += text("badText", P.badText, on: [
+            ground("sel on bgPanel", P.bgPanel, Layer(P.sel)), ground("sel on bgRaise", P.bgRaise, Layer(P.sel)),
+            ground("sel on bgPop", P.bgPop, Layer(P.sel)),
+        ])
+        // The Filter menu: a field's count on its `accentBg` circle, the line at rest and hovered or open; the accent tick of a
+        // picked value at rest and highlighted.
+        pairs += text("accentCountText", P.accentCountText, on: [
+            ground("a field count on bgPop", P.bgPop, Layer(P.accentBg)), ground("a field count on sel on bgPop", P.bgPop, Layer(P.sel), Layer(P.accentBg)),
+        ])
+        pairs += marks("accent tick", P.accent, on: [ground("bgPop", P.bgPop), ground("sel on bgPop", P.bgPop, Layer(P.sel))])
+        // The warning slot's glyph when the slot is hovered (`hover`) or focused (`sel`) inside a row that is itself at rest,
+        // hovered or current, in a list (`bgPanel`) and in a card (`bgRaise`). The clock and lock (`fg3`) as marks.
+        var slotGrounds: [Ground] = []
+        for (base, value) in [("bgPanel", P.bgPanel), ("bgRaise", P.bgRaise)] {
+            slotGrounds += [
+                ground("a hovered slot on \(base)", value, Layer(P.hover)),
+                ground("a hovered slot in a hovered row on \(base)", value, Layer(P.hover), Layer(P.hover)),
+                ground("a hovered slot in a current row on \(base)", value, Layer(P.sel), Layer(P.hover)),
+                ground("a focused slot in a current row on \(base)", value, Layer(P.sel), Layer(P.sel)),
+            ]
+        }
+        for (name, value) in [("warn", P.warn), ("bad", P.bad), ("fg3", P.fg3)] {
+            pairs += marks("\(name) slot", value, on: slotGrounds)
+        }
+        return pairs
     }
 
     @Test("each pair reads at its minimum in both appearances", arguments: pairs)
@@ -202,6 +259,10 @@ struct ContrastTests {
             "fg2 on sel on bgRaise", "fg3 on sel on bgPanel",
             "fg3 on bgBandHover", "fg3 on bgBandFocus", "warn on bgBandHover", "warn on bgBandFocus",
             "warn bar on track on sel on bgRaise",
+            "ok badge on its ring (bgPanel)", "bad badge on its ring (bgPop)",
+            "fg2 key on a key cap on bgPop", "onAccent key on a key cap on accentSolid brightened for hover",
+            "badText on sel on bgRaise", "accentCountText on a field count on sel on bgPop", "accent tick on sel on bgPop",
+            "warn slot on a hovered slot in a current row on bgRaise", "fg on a hovered tab's count circle",
         ] {
             #expect(names.contains(required), "missing \(required)")
         }

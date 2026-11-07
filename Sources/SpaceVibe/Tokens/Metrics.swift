@@ -216,6 +216,9 @@ extension Metrics {
         /// The panel's margin from the window on top, right and bottom.
         static let inset: CGFloat = 12
         static let tabHeadHeight: CGFloat = 60
+        /// The panel's width in a 1440 pt window (the window less the sidebar and the right inset); the gallery draws its
+        /// tab heads at it so crops line up with the mock's.
+        static let widthAt1440: CGFloat = 1440 - AppSidebar.width - inset
         /// A menu opens this far below the tab head's top.
         static let menuOffset: CGFloat = 52
         static let statusBarHeight: CGFloat = 32
@@ -226,7 +229,14 @@ extension Metrics {
     enum TabChip {
         static let height: CGFloat = 36
         static let padding: CGFloat = 14
+        /// Between two chips.
         static let spacing: CGFloat = 10
+        /// Inside a chip: glyph, label and count.
+        static let innerSpacing: CGFloat = 6
+        /// The tab head: tabs from the content edge (`Rhythm.edge`) at the left, 8 before the actions; the actions 4 apart,
+        /// ending at the content edge.
+        static let tabsTrailing: CGFloat = 8
+        static let actionSpacing: CGFloat = 4
         /// The count circle: at least this wide and high, 4 at the sides.
         static let countSize: CGFloat = 16
         static let countPadding: CGFloat = 4
@@ -235,6 +245,8 @@ extension Metrics {
     enum ToolbarButton {
         static let height: CGFloat = 32
         static let padding: CGFloat = 12
+        /// Between the glyph and the label.
+        static let spacing: CGFloat = 4
     }
 
     enum FilterChipRow {
@@ -243,6 +255,8 @@ extension Metrics {
         static let spacing: CGFloat = 8
         static let chipHeight: CGFloat = 24
         static let closeWidth: CGFloat = 24
+        /// The field and the value inside a chip, and the `Clear` chip: 8 at each side.
+        static let partPadding: CGFloat = 8
     }
 
     /// A row in a list or a card, and a band header.
@@ -368,6 +382,17 @@ extension Metrics {
         static let badgeGlyph: CGFloat = 6
         /// The ring in the ground colour around the badge.
         static let badgeRing: CGFloat = 1.5
+        /// The badge's check: drawn in a 12 box, stroked 2.4 (the kit's `BADGE`).
+        static let checkBox: CGFloat = 12
+        static let checkStroke: CGFloat = 2.4
+        /// Logos in a strip.
+        static let spacing: CGFloat = 4
+        /// A dim logo (not in that CLI), and a dim logo under the pointer (press to add).
+        static let dimOpacity: Double = 0.35
+        static let dimHoverOpacity: Double = 0.7
+        /// The just-changed pop: the logo grows from this scale, the badge follows after `badgeDelay`.
+        static let popFrom: CGFloat = 0.8
+        static let badgeDelay: TimeInterval = 0.04
     }
 
     enum WarningSlot {
@@ -379,6 +404,18 @@ extension Metrics {
         static let submenuWidth: CGFloat = 232
         static let padding: CGFloat = 4
         static let itemHeight: CGFloat = 28
+        /// Inside an item: 8 at the sides, 8 between the glyph, the label and the end mark.
+        static let itemPadding: CGFloat = 8
+        static let itemSpacing: CGFloat = 8
+        /// A heading ("Group by"): 8 on top, 8 at the sides, 4 below.
+        static let headingInsets = EdgeInsets(top: 8, leading: 8, bottom: 4, trailing: 8)
+        /// A menu opens this far below its button; a submenu sits this far beside the menu, its top this far above the
+        /// menu's (the kit's `top:-5px` inside the 1 pt edge).
+        static let gap: CGFloat = 4
+        static let submenuRise: CGFloat = 4
+        /// A field's count of picks: at least 16 x 16, 4 at the sides.
+        static let countSize: CGFloat = 16
+        static let countPadding: CGFloat = 4
     }
 
     enum Popover {
@@ -387,6 +424,24 @@ extension Metrics {
         static let spacing: CGFloat = 12
         /// Kept this far inside the window when it is clamped.
         static let windowMargin: CGFloat = 8
+        /// Below its anchor by this much; above it instead when its bottom would come closer than `bottomMargin` to the
+        /// window's bottom edge (the kit's `popover.place`).
+        static let offset: CGFloat = 6
+        static let bottomMargin: CGFloat = 40
+        /// The pointer opens it after resting this long on the anchor and closes it this long after leaving both.
+        static let openDelay: Duration = .milliseconds(150)
+        static let closeDelay: Duration = .milliseconds(100)
+        /// The 120 ms rise: it starts this far below its place.
+        static let rise: CGFloat = 2
+        /// The detail head: the logo or glyph (20) 12 before the name; the sub line's dot (6) 6 before its text.
+        static let headSpacing: CGFloat = 12
+        static let dotSize: CGFloat = 6
+        static let dotSpacing: CGFloat = 6
+        /// A file path sits this much closer to the sentence above it (8 rather than 12).
+        static let pathRise: CGFloat = 4
+        /// Between the actions, and between a note's glyph (14) and its text.
+        static let actionSpacing: CGFloat = 8
+        static let noteSpacing: CGFloat = 8
     }
 
     /// The Skills detail pane.
@@ -403,6 +458,15 @@ extension Metrics {
     enum BottomBar {
         static let height: CGFloat = 44
         static let bottomInset: CGFloat = 48
+        static let leading: CGFloat = 16
+        static let trailing: CGFloat = 8
+        static let spacing: CGFloat = 8
+        /// After the "3 selected" count and before the "Add to" label, on top of `spacing`.
+        static let countTrailing: CGFloat = 4
+        static let labelLeading: CGFloat = 4
+        /// The line between the strip and the buttons: 1 x 20, 4 more on each side.
+        static let separatorHeight: CGFloat = 20
+        static let separatorInset: CGFloat = 4
     }
 
     enum Toast {
@@ -411,6 +475,13 @@ extension Metrics {
         static let bottomInset: CGFloat = 48
         /// Above the bottom bar while one is shown.
         static let bottomInsetOverBar: CGFloat = 104
+        static let leading: CGFloat = 12
+        static let trailing: CGFloat = 8
+        static let spacing: CGFloat = 12
+        /// The `Undo` button: 24 high, 8 at the sides, 6 before its key cap.
+        static let actionHeight: CGFloat = 24
+        static let actionPadding: CGFloat = 8
+        static let actionSpacing: CGFloat = 6
     }
 
     /// Buttons: 32 in the pane and the Answer card, 28 in a popover, a card header, the bottom bar and a dialog.
@@ -419,6 +490,19 @@ extension Metrics {
         static let compactHeight: CGFloat = 28
         static let leading: CGFloat = 12
         static let trailing: CGFloat = 8
+        /// A 28 button in a popover or a card header starts 10 from its edge (the bottom bar's keeps 12).
+        static let compactLeading: CGFloat = 10
+        /// Between the glyph, the label and the key cap; a popover's button adds 2 before the cap.
+        static let spacing: CGFloat = 8
+        static let popoverKeyExtra: CGFloat = 2
+        /// An icon-only button: 28 square.
+        static let iconSide: CGFloat = 28
+        /// Pressed, the button moves down this much.
+        static let pressOffset: CGFloat = 0.5
+        /// Disabled.
+        static let disabledOpacity: Double = 0.45
+        /// A solid button hovered or focused: the kit mixes 12% white into the fill; `ContrastTests` checks white on it.
+        static let solidHoverBrightness: Double = 0.08
     }
 
     enum Dialog {
@@ -426,6 +510,7 @@ extension Metrics {
         static let insets = EdgeInsets(top: 20, leading: 20, bottom: 16, trailing: 20)
         static let spacing: CGFloat = 8
         static let actionsAbove: CGFloat = 12
+        static let actionSpacing: CGFloat = 8
     }
 
     enum KeyCap {
@@ -433,6 +518,9 @@ extension Metrics {
         static let minWidth: CGFloat = 18
         /// The thicker bottom edge.
         static let bottomEdge: CGFloat = 2
+        static let padding: CGFloat = 5
+        /// Between two caps of one hint ("J K"), and between the caps and their word.
+        static let spacing: CGFloat = 6
     }
 
     enum CommandPalette {
@@ -441,6 +529,21 @@ extension Metrics {
         static let rowHeight: CGFloat = 32
         static let footerHeight: CGFloat = 32
         static let topInset: CGFloat = 112
+        static let maxHeight: CGFloat = 480
+        /// The field: 16 at the sides, 12 after the search glyph.
+        static let fieldPadding: CGFloat = 16
+        static let fieldSpacing: CGFloat = 12
+        /// The list inside the card, then a row: 12 at the sides, 12 after the glyph.
+        static let listPadding: CGFloat = 4
+        static let rowPadding: CGFloat = 12
+        static let rowSpacing: CGFloat = 12
+        /// A group title: 8 on top, 12 at the sides, 4 below.
+        static let headingInsets = EdgeInsets(top: 8, leading: 12, bottom: 4, trailing: 12)
+        /// "No command found": 48 on top and below, 24 at the sides.
+        static let emptyInsets = EdgeInsets(top: 48, leading: 24, bottom: 48, trailing: 24)
+        /// The footer: 12 at the sides, 16 between its hints.
+        static let footerPadding: CGFloat = 12
+        static let footerSpacing: CGFloat = 16
     }
 
     /// Animation durations in seconds; reduced motion drops them (V5-R42).
