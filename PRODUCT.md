@@ -18,7 +18,7 @@ Direct, tidy, a little opinionated. It says plainly what is unused and what cann
 Generic AI dashboards, neon on black, gradients, card grids of icon + title + text, marketplace storefronts, terminal costumes, settings-page sprawl.
 
 ## Design principles
-- Usage is evidence: counted, not counted yet and not measurable look different.
+- Usage is evidence: an item either ran or never ran; a fresh install says so in a note, and what a CLI does not log reads as not measurable, never as zero.
 - Rows compared by eye on bars beat hero tiles; severity is tinted in context.
 - Every control performs a real action, and adding or removing is one step (one save for a panel of agent settings) with a visible way back.
 - Cost is an estimate and says so; a model with no price reads as not measured, never as 0.

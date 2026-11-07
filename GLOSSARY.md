@@ -42,25 +42,18 @@ _Avoid_: level, location
 
 ### Usage
 
-**Usage cell**:
-The usage of one item in one CLI, in exactly one state: counted, pending, unmeasurable or missing.
-_Avoid_: status
-
-**Counted**:
-Usage cell state with a run count from scanned local logs; 0 means the item never ran inside those logs.
+**Ran**:
+An item that appears in the scanned local logs at least once, with its count.
 
 **Never ran**:
-A counted item with 0 runs. A state to act on, not a measurement gap.
-_Avoid_: unused, dead (in labels)
-
-**Pending**:
-Installed or changed within the last 24 hours, so no scanned log can have covered it yet. Not "never ran".
+An item that appears in no scanned log. A state to act on. A newly added item carries a quiet note ("added 2 hours ago") so a fresh install is not removed by mistake; there is no separate state for it (D63).
+_Avoid_: unused, dead, pending, not counted yet (in labels)
 
 **Unmeasurable**:
-The CLI keeps no log for this kind of item (Codex hooks). Never shown as 0.
+The CLI keeps no log for this kind of item (Codex hooks). A property of the kind and CLI, never shown as 0.
 
 **Missing**:
-Not installed in that CLI.
+Not installed in that CLI. About installation, not usage.
 _Avoid_: absent, not found
 
 **Window**:
