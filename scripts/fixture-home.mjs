@@ -5,7 +5,7 @@
 //   node scripts/fixture-home.mjs <dir>        write into <dir> (must not exist or be empty) and print env exports
 //   import { writeFixtureHome } from './fixture-home.mjs'
 //
-// Layout under <dir>: .claude/ .codex/ .reins/ (Reins data) and work/spacevibe-{bench,api,academy}/ (projects
+// Layout under <dir>: .claude/ .codex/ .reins/ (app data; the folder name is frozen by the Go goldens) and work/spacevibe-{bench,api,academy}/ (projects
 // with their own .claude/settings.json). Point the app at it with HOME, CLAUDE_CONFIG_DIR, CODEX_HOME and
 // SPACEVIBE_HOME (the printed exports do exactly that), then `npm run dev`, or use scripts/shots.mjs.
 //

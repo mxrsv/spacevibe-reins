@@ -79,7 +79,7 @@ cp Resources/Brand/*.svg "${APP_BUNDLE}/Contents/Resources/Brand/"
 printf 'APPL????' > "${APP_BUNDLE}/Contents/PkgInfo"
 # The app icon, rendered from the mark on every build so the artwork has one source. Resources and frameworks are
 # copied here, before codesign: anything added to a signed bundle invalidates the signature.
-ICON_WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/reins-icon.XXXXXX")"
+ICON_WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/spacevibe-icon.XXXXXX")"
 trap 'rm -rf "${ICON_WORK_DIR}"' EXIT
 swift scripts/build-icon.swift Resources/AppIcon.svg "${ICON_WORK_DIR}/AppIcon.iconset"
 iconutil -c icns "${ICON_WORK_DIR}/AppIcon.iconset" -o "${APP_BUNDLE}/Contents/Resources/AppIcon.icns"

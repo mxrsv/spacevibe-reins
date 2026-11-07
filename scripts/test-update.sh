@@ -25,7 +25,7 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 
 if pgrep -x SpaceVibe >/dev/null; then fail "quit the running SpaceVibe first"; fi
 
-WORK="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/reins-update-test.XXXXXX")" && pwd -P)"
+WORK="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/spacevibe-update-test.XXXXXX")" && pwd -P)"
 SERVER=""
 clear_settings() {
   for key in SULastCheckTime SUHasLaunchedBefore SUUpdateGroupIdentifier SUSkippedMinorVersion; do

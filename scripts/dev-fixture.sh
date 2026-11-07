@@ -34,7 +34,7 @@ case "${1:-}" in
   *) echo "usage: scripts/dev-fixture.sh [--shots <dir> | --prepare]" >&2; exit 2 ;;
 esac
 
-SCRATCH="${SPACEVIBE_BUILD_PATH:-/tmp/reins-build-dev-fixture}"
+SCRATCH="${SPACEVIBE_BUILD_PATH:-/tmp/spacevibe-build-dev-fixture}"
 echo "==> swift build (scratch ${SCRATCH})"
 swift build --scratch-path "${SCRATCH}"
 BIN="$(swift build --scratch-path "${SCRATCH}" --show-bin-path)/SpaceVibe"
@@ -44,7 +44,7 @@ scripts/build-core.sh "${SPACEVIBE_CORE_BINARY}"
 
 # Build first, then write the fixture: its ages are relative to the moment it is written.
 REAL_HOME="$(node -e 'process.stdout.write(require("os").userInfo().homedir)')"
-FIX="$(mktemp -d "${TMPDIR:-/tmp}/reins-fixture.XXXXXX")"
+FIX="$(mktemp -d "${TMPDIR:-/tmp}/spacevibe-fixture.XXXXXX")"
 FIX="$(cd "${FIX}" && pwd -P)"
 case "${FIX}/" in
   "${REAL_HOME}/"*) echo "refusing: ${FIX} is under the real home ${REAL_HOME}" >&2; rmdir "${FIX}"; exit 1 ;;

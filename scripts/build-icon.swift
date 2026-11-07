@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-// Renders Resources/AppIcon.svg (the Reins mark, same artwork as the site's favicon) into a
+// Renders Resources/AppIcon.svg (the SpaceVibe mark, same artwork as the site's favicon) into a
 // macOS iconset: the 1024-point canvas with the mark on the standard 824-point squircle, so
 // the Dock and Finder show it at the same size as every other app icon. The caller passes a
 // temporary directory; only the compiled .icns enters the app bundle (scripts/build-app.sh).

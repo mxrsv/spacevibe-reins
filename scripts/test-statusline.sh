@@ -20,7 +20,7 @@ def home_env(root, data='.spacevibe'):
 def install(env):
     return subprocess.run([binary, 'statusline', 'install'], env=env, capture_output=True, text=True, check=True)
 
-with tempfile.TemporaryDirectory(prefix="reins-statusline ' ") as scratch:
+with tempfile.TemporaryDirectory(prefix="spacevibe-statusline ' ") as scratch:
     root = pathlib.Path(scratch).resolve()
     claude = root / '.claude'
     claude.mkdir()
@@ -101,7 +101,7 @@ with tempfile.TemporaryDirectory(prefix="reins-statusline ' ") as scratch:
     assert settings.read_text() == changed
 
 # G-fix.19: an old wrapper is replaced, never wrapped again, also when the data root moved.
-with tempfile.TemporaryDirectory(prefix="reins-statusline-unwrap ") as scratch:
+with tempfile.TemporaryDirectory(prefix="spacevibe-statusline-unwrap ") as scratch:
     root = pathlib.Path(scratch).resolve()
     (root / '.claude').mkdir()
     settings = root / '.claude/settings.json'

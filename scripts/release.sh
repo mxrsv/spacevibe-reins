@@ -14,6 +14,9 @@
 # Builds from `git archive HEAD` in a temporary folder, so the artifact is exactly the committed revision even when the
 # checkout has other sessions' edits; a dirty tree is still refused so nothing is forgotten. Output goes to
 # build/distribution/v<version>-<sha7>/ (gitignored).
+# working value, repo name not yet chosen by the owner (ledger D-1); GH1 renames the repo
+GITHUB_REPO="mxrsv/spacevibe"
+
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -27,7 +30,6 @@ case "${MODE}" in
 esac
 if [[ $# -ne 1 ]]; then usage >&2; exit 2; fi
 
-GITHUB_REPO="mxrsv/spacevibe-reins"
 APP_NAME="SpaceVibe"
 SIGNING_IDENTITY="${SPACEVIBE_SIGNING_IDENTITY:-Developer ID Application: VAN BINH TRAN (DJDD3T8LH7)}"
 NOTARY_PROFILE="${SPACEVIBE_NOTARY_PROFILE:-}"
@@ -47,7 +49,7 @@ if [[ -n "$(git status --porcelain=v1)" ]]; then
 fi
 
 REVISION="$(git rev-parse HEAD)"
-WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/reins-release.XXXXXX")"
+WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/spacevibe-release.XXXXXX")"
 trap 'rm -rf "${WORK_DIR}"' EXIT
 SOURCE_DIR="${WORK_DIR}/source"
 STAGING_DIR="${WORK_DIR}/image"
