@@ -50,15 +50,6 @@ struct InProcessCoreTests {
         #expect(snapshot.events["claude"]?.contains("PreToolUse") == true)
     }
 
-    @Test("limitsRead answers claude, codex and gemini in that order")
-    func limits() async throws {
-        let fixture = try Fixture()
-        defer { fixture.remove() }
-        let result = try await fixture.core.limitsRead()
-        #expect(result.limits.map(\.cli) == [.claude, .codex, .gemini])
-        #expect(result.limits.allSatisfy { $0.state != .measured ? $0.windows.isEmpty && $0.at == nil : !$0.windows.isEmpty })
-    }
-
     @Test("loadoutRows is scanning until a scan finishes, then ready with cells, counts and row flags")
     func loadoutRows() async throws {
         let fixture = try Fixture()
@@ -242,7 +233,6 @@ struct InProcessCoreTests {
         let core = InProcessCore(roots: nil, startupProblem: "SPACEVIBE_TEST must be 1 or 0, got \"banana\"")
         let expected = CoreError("SPACEVIBE_TEST must be 1 or 0, got \"banana\"", status: 500)
         await expectFailure(expected) { _ = try await core.inventoryRead() }
-        await expectFailure(expected) { _ = try await core.limitsRead() }
         await expectFailure(expected) { _ = try await core.usageScan(progress: nil) }
         await expectFailure(expected) { _ = try await core.rulesCheck(rule: "Bash") }
         await expectFailure(expected) { _ = try await core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false) }

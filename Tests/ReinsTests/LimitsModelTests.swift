@@ -2,45 +2,51 @@ import Foundation
 import Testing
 @testable import Reins
 
-/// The Limits model reads through `env.core(for: .limits)`: in process by default, the Go core when the screen is routed to
-/// it (plan S.1b, cut-over readiness). Both run on a private copy of the synthetic fixture home (S-R1).
+/// The Limits model reads through `env.goCore`, the Go core (plan S.4). The core runs on a private copy of the synthetic
+/// fixture home (S-R1).
 @Suite("Limits model")
 @MainActor
 struct LimitsModelTests {
-    private func model(_ fixture: CoreFixtureHome, viaCore: Bool) throws -> (LimitsModel, CoreClient?) {
-        let client = viaCore ? try fixture.client() : nil
-        let env = AppEnvironment(
-            roots: try fixture.roots(),
-            routing: CoreRouting(viaCore: viaCore ? [.limits] : []), makeCoreClient: { client ?? CoreClient() }
-        )
+    private func model(_ fixture: CoreFixtureHome) throws -> (LimitsModel, CoreClient) {
+        let client = try fixture.client()
+        let env = AppEnvironment(roots: try fixture.roots(), makeCoreClient: { client })
         return (LimitsModel(env: env), client)
     }
 
-    @Test("the in-process path and the Go core give the page the same entries, tiles and summaries")
-    func sameThroughBothEngines() async throws {
+    @Test("the core gives the page the fixture's entries, in order, and the page's tiles and summaries follow from them", .timeLimit(.minutes(1)))
+    func fixtureHome() async throws {
         let fixture = try CoreFixtureHome()
         defer { fixture.remove() }
-        let (inProcess, _) = try model(fixture, viaCore: false)
-        let (viaCore, client) = try model(fixture, viaCore: true)
-        defer { client?.shutdown() }
-        await inProcess.readOnce()
-        await viaCore.readOnce()
-        #expect(inProcess.failure == nil && viaCore.failure == nil)
-        #expect(inProcess.results.map(\.cli) == [.claude, .codex, .gemini])
-        #expect(viaCore.results == inProcess.results)
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
+        #expect(model.isLoading)
+        await model.readOnce()
+        #expect(model.failure == nil && model.readAt != nil && !model.isLoading)
+        #expect(model.results.map(\.cli) == [.claude, .codex, .gemini])
+        #expect(model.results.allSatisfy { $0.state != .measured ? $0.windows.isEmpty && $0.at == nil : !$0.windows.isEmpty })
         let now = Date()
-        for showInactive in [false, true] {
-            #expect(LimitsWording.entries(viaCore.results, showInactive: showInactive) == LimitsWording.entries(inProcess.results, showInactive: showInactive))
-        }
-        #expect(viaCore.results.map { LimitsWording.summary($0, now: now) } == inProcess.results.map { LimitsWording.summary($0, now: now) })
+        let shown = Set(LimitsWording.entries(model.results, showInactive: false).map(\.id))
+        #expect(shown.isSubset(of: Set(LimitsWording.entries(model.results, showInactive: true).map(\.id))))
+        #expect(model.results.map { LimitsWording.summary($0, now: now) }.count == 3)
     }
 
-    @Test("a read that cannot run leaves the engine's sentence as the failure and no results")
-    func failure() async {
-        let env = AppEnvironment(roots: nil, startupProblem: "No home here.")
-        let model = LimitsModel(env: env)
+    @Test("a core that refuses its environment leaves its own sentence as the failure and no results", .timeLimit(.minutes(1)))
+    func coreStartupProblem() async throws {
+        let fixture = try CoreFixtureHome(extraEnvironment: ["SPACEVIBE_TEST": "2"])
+        defer { fixture.remove() }
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
         await model.readOnce()
-        #expect(model.failure == "No home here.")
+        #expect(model.failure?.contains("SPACEVIBE_TEST") == true)
+        #expect(model.results.isEmpty && model.readAt == nil)
+    }
+
+    @Test("when the helper is missing, the page shows the fixed startup sentence and no results")
+    func helperMissing() async {
+        let client = CoreClient(binary: URL(fileURLWithPath: "/nonexistent/spacevibe"))
+        let model = LimitsModel(env: AppEnvironment(roots: nil, makeCoreClient: { client }))
+        await model.readOnce()
+        #expect(model.failure == CoreWire.startFailedMessage)
         #expect(model.results.isEmpty && model.readAt == nil)
     }
 }

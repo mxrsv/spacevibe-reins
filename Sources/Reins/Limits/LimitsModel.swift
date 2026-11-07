@@ -4,7 +4,7 @@ import Observation
 /// The Limits readings, shared by the sidebar block on every tab and the Limits page. One instance per run, created beside
 /// `ShellModel` and injected through the environment. Whether the page shows is the shell's (`ShellModel.isLimitsOpen`).
 ///
-/// A read is `limits.read` on the core `env.core(for: .limits)` picks (in process until the screen cuts over): local files only, no request, no credential, no CLI started (spec, Limits). It runs off the
+/// A read is `limits.read` on the Go core (`env.goCore`): local files only, no request, no credential, no CLI started (spec, Limits). It runs off the
 /// main actor and never throws to the UI; a missing or odd file is a state inside the result. Reads happen at launch,
 /// when the window becomes key (the view calls `readOnce`), every `interval` while the window is visible, and on Refresh.
 @MainActor
@@ -46,7 +46,7 @@ final class LimitsModel {
         isReading = true
         defer { isReading = false }
         do {
-            results = try await env.core(for: .limits).limitsRead().limits
+            results = try await env.goCore.limitsRead().limits
             readAt = Date()
             failure = nil
         } catch is CancellationError {

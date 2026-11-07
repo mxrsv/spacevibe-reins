@@ -10,7 +10,7 @@ import ReinsCore
 /// Not an actor: a blocking inventory read must not queue behind a usage scan. The state the core owns in a process
 /// (the discovered projects, the last scan, whether one runs) sits behind a lock.
 ///
-/// Activity and Stop have cut over (S.3): they live in the Go core only and this adapter no longer serves them.
+/// Activity, Stop (S.3) and Limits (S.4) have cut over: they live in the Go core only and this adapter no longer serves them.
 ///
 /// Two things differ from the Go core, none a behavior change for today's screens:
 /// - `inventoryRead` does not refresh the discovered-project list (the engine's read does not expose it); `rulesSnapshot`
@@ -22,9 +22,9 @@ final class InProcessCore: CoreService, @unchecked Sendable {
     static let version = "in-process"
     /// Every method this adapter still serves; the Go core serves these and the ones that cut over.
     static let methods = [
-        "initialize", "inventory.read", "journal.history", "journal.undo", "limits.read", "loadout.copyToOther",
-        "loadout.removeDeadHooks", "loadout.removeItem", "loadout.rows", "rules.add", "rules.changeVerdict", "rules.check",
-        "rules.preview", "rules.remove", "rules.setCapability", "rules.snapshot", "usage.scan",
+        "initialize", "inventory.read", "journal.history", "journal.undo", "loadout.copyToOther", "loadout.removeDeadHooks",
+        "loadout.removeItem", "loadout.rows", "rules.add", "rules.changeVerdict", "rules.check", "rules.preview", "rules.remove",
+        "rules.setCapability", "rules.snapshot", "usage.scan",
     ]
 
     private final class State: @unchecked Sendable {
@@ -175,13 +175,14 @@ final class InProcessCore: CoreService, @unchecked Sendable {
         }
     }
 
-    // MARK: Served by the Go core only (S.3 Activity and Stop)
+    // MARK: Served by the Go core only (S.3 Activity and Stop, S.4 Limits)
 
     /// The screens that cut over have no path here: `AppEnvironment.goCore` is their only service. These exist because
     /// `CoreService` lists them; S.8 deletes this file.
     func activityRead() async throws -> CoreActivityReport { throw Self.goCoreOnly }
     func activitySubscribe() -> AsyncThrowingStream<CoreActivityReport, Error> { AsyncThrowingStream { $0.finish(throwing: Self.goCoreOnly) } }
     func activityStop(cli: CoreCLI, id: String) async throws -> CoreStopResult { throw Self.goCoreOnly }
+    func limitsRead() async throws -> CoreLimitsResult { throw Self.goCoreOnly }
 
     private static let goCoreOnly = CoreError("This is served by the Go core only.", status: 500)
 
@@ -353,15 +354,6 @@ final class InProcessCore: CoreService, @unchecked Sendable {
         return RulesStore(roots: try requireRoots(), projects: { dirs })
     }
 
-    // MARK: Limits
-
-    func limitsRead() async throws -> CoreLimitsResult {
-        try await run(.utility) { roots in
-            let now = Date()
-            return CoreLimitsResult(limits: Limits.read(roots, now: now).map { Self.limits($0, now: now) })
-        }
-    }
-
     // MARK: Engine type to DTO
 
     /// The engine's own CLI type, named by the call it is passed to: the app's `InventoryCLI` is the DTO's, so this file cannot
@@ -369,31 +361,6 @@ final class InProcessCore: CoreService, @unchecked Sendable {
     private static func engineCLI<Engine: RawRepresentable>(_ cli: CoreCLI) -> Engine where Engine.RawValue == String {
         guard let converted = Engine(rawValue: cli.rawValue) else { preconditionFailure("\(Engine.self) has no case \(cli.rawValue)") }
         return converted
-    }
-
-    private static func limits(_ entry: CLILimits, now: Date) -> CoreLimitsEntry {
-        var state = CoreLimitsState.notInstalled
-        var at: Double?
-        var windows: [CoreLimitWindow] = []
-        switch entry.state {
-        case .measured(let taken, let found):
-            state = .measured
-            at = taken.timeIntervalSince1970
-            windows = found.map { w in
-                CoreLimitWindow(
-                    id: w.id, minutes: w.minutes, scope: w.scope, usedPercent: w.usedPercent,
-                    resetsAt: w.resetsAt.timeIntervalSince1970, active: w.active, current: w.isCurrent(at: now)
-                )
-            }
-        case .notRecorded: state = .notRecorded
-        case .unreadable: state = .unreadable
-        case .notMeasurable: state = .notMeasurable
-        case .notInstalled: state = .notInstalled
-        }
-        return CoreLimitsEntry(
-            cli: same(entry.cli, as: CoreLimitsCLI.self), state: state, plan: entry.plan,
-            source: entry.source.map { $0 == .claudeCache ? CoreLimitsSource.claudeCache : .claudeStatusline }, at: at, windows: windows
-        )
     }
 
     private static func rule(_ item: RuleItem) -> CoreRule {
