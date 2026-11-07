@@ -3,9 +3,11 @@ package activity
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"math"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"spacevibe.dev/core/internal/coreerr"
@@ -51,27 +53,35 @@ func codexProcessID(pid int, start string, hasStart bool) (string, bool) {
 	return "pid:" + strconv.Itoa(pid) + ":" + strconv.FormatInt(int64(started), 10), true
 }
 
-// livePid is the pid of a live session, decided from the system now and never taken from the caller: pids get reused.
-func livePid(ctx context.Context, r roots.Roots, cli CLI, id string, adapter proc.Adapter) (int, bool) {
+// lookup is what livePid found. found is the process (pid and the identity read in the same snapshot as the pid).
+// unverified is true when some candidate or source could not be read, so "not found" does not prove the session is
+// gone: Stop then says it cannot verify instead of "no longer running".
+type lookup struct {
+	pid        int
+	identity   proc.Identity
+	found      bool
+	unverified bool
+}
+
+// livePid is the process of a live session, decided from the system now and never taken from the caller: pids get
+// reused. Its identity (start time and name) is read once here and read again by Stop right before the signal.
+func livePid(ctx context.Context, r roots.Roots, cli CLI, id string, adapter proc.Adapter) lookup {
 	if cli == CLICodex {
-		for _, thread := range adapter.CodexThreads(ctx) {
-			if thread.ThreadID != "" {
-				if thread.ThreadID == id {
-					return thread.Pid, true
-				}
-				continue
-			}
-			start, ok := adapter.StartTime(ctx, thread.Pid)
-			if current, ok := codexProcessID(thread.Pid, start, ok); ok && current == id {
-				return thread.Pid, true
-			}
-		}
-		return 0, false
+		return livePidCodex(ctx, id, adapter)
 	}
+	var out lookup
 	dir := filepath.Join(r.Claude.Root, "sessions")
-	for _, name := range statusFileNames(dir) {
-		data, ok := readRegularFile(filepath.Join(dir, name))
-		if !ok {
+	names, err := listStatusFiles(dir)
+	if err != nil {
+		return lookup{unverified: true}
+	}
+	for _, name := range names {
+		data, err := readRegularFileErr(filepath.Join(dir, name))
+		if err != nil {
+			// A file that vanished or is no regular file is not a live status file; an unreadable one may be ours.
+			if !errors.Is(err, fs.ErrNotExist) && !errors.Is(err, errNotRegular) {
+				out.unverified = true
+			}
 			continue
 		}
 		doc, err := ojson.Parse(data)
@@ -94,25 +104,97 @@ func livePid(ctx context.Context, r roots.Roots, cli CLI, id string, adapter pro
 			continue
 		}
 		pid := int(pid64)
-		have, haveOK := adapter.StartTime(ctx, pid)
+		identity, err := adapter.Identify(ctx, pid)
+		switch {
+		case errors.Is(err, proc.ErrNoSuchProcess):
+			continue
+		case err != nil:
+			out.unverified = true
+			continue
+		}
 		recorded, recordedOK := root.field("procStart").str()
-		if sameStart(have, haveOK, recorded, recordedOK) {
-			return pid, true
+		if sameStart(identity.Start, true, recorded, recordedOK) {
+			out.pid, out.identity, out.found = pid, identity, true
+			return out
 		}
 	}
-	return 0, false
+	return out
 }
 
-// Stop asks one running session to end. The pid is looked up again from the live system (the Claude status file with
-// its start time, or the Codex thread lock), so a stale row cannot signal a reused pid.
+func livePidCodex(ctx context.Context, id string, adapter proc.Adapter) lookup {
+	threads, err := adapter.CodexThreads(ctx)
+	if err != nil {
+		return lookup{unverified: true}
+	}
+	var out lookup
+	for _, thread := range threads {
+		// A thread-less process can only be asked for by its own `pid:<n>:` id, so other processes are not read.
+		byProcess := thread.ThreadID == "" && strings.HasPrefix(id, "pid:"+strconv.Itoa(thread.Pid)+":")
+		switch {
+		case thread.LockUnknown:
+			// Whether this process holds a thread is unknown, so it could be the one asked for.
+			out.unverified = true
+			continue
+		case thread.ThreadID != "" && thread.ThreadID != id, thread.ThreadID == "" && !byProcess:
+			continue
+		}
+		identity, err := adapter.Identify(ctx, thread.Pid)
+		switch {
+		case errors.Is(err, proc.ErrNoSuchProcess):
+			continue
+		case err != nil || identity.Start == "":
+			out.unverified = true
+			continue
+		}
+		if thread.ThreadID == "" {
+			current, ok := codexProcessID(thread.Pid, identity.Start, true)
+			if !ok {
+				out.unverified = true
+				continue
+			}
+			if current != id {
+				continue
+			}
+		}
+		return lookup{pid: thread.Pid, identity: identity, found: true}
+	}
+	return out
+}
+
+var (
+	errNoLongerRunning = coreerr.NewStatus("That session is no longer running.", coreerr.StatusNotFound)
+	errCannotVerify    = coreerr.NewStatus("That session could not be verified, so nothing was stopped.", coreerr.StatusConflict)
+)
+
+// Stop asks one running session to end. The process is looked up again from the live system (the Claude status file
+// with its start time, or the Codex thread lock), and its start time and name are read once with the pid and read
+// again immediately before the signal; if either differs the process is not the one looked up and nothing is sent.
+// (Between that last read and kill(2) a pid could still be reused; the window is that of the two syscalls, and darwin
+// has no pidfd to close it.)
 //
-// Errors are coreerr.Error: 404 when the session is no longer running, 403 when it belongs to another user, 500 for
+// Errors are coreerr.Error: 404 when the session is no longer running, 409 when it cannot be verified (ps, lsof or
+// the sessions folder could not be read, or the start time is unknown), 403 when it belongs to another user, 500 for
 // any other signal error (and on an OS where processes cannot be measured). A cancelled ctx stops the wait for the
 // process to exit but not the signal that was already sent; the result then says whether it had gone.
 func Stop(ctx context.Context, r roots.Roots, cli CLI, id string, adapter proc.Adapter, opts StopOptions) (StopResult, error) {
-	pid, ok := livePid(ctx, r, cli, id, adapter)
-	if !ok {
-		return StopResult{}, coreerr.NewStatus("That session is no longer running.", coreerr.StatusNotFound)
+	if !adapter.Measurable() {
+		return StopResult{}, coreerr.NewStatus("Sessions cannot be stopped on this system.", coreerr.StatusInternalFailure)
+	}
+	found := livePid(ctx, r, cli, id, adapter)
+	if !found.found {
+		if found.unverified {
+			return StopResult{}, errCannotVerify
+		}
+		return StopResult{}, errNoLongerRunning
+	}
+	pid := found.pid
+	switch again, err := adapter.Identify(ctx, pid); {
+	case errors.Is(err, proc.ErrNoSuchProcess):
+		return StopResult{}, errNoLongerRunning
+	case err != nil:
+		return StopResult{}, errCannotVerify
+	case again != found.identity:
+		return StopResult{}, errNoLongerRunning
 	}
 	if err := adapter.Terminate(ctx, pid); err != nil {
 		var signal proc.SignalError

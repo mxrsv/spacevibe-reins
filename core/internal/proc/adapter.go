@@ -20,6 +20,16 @@ import (
 type Thread struct {
 	Pid      int
 	ThreadID string
+	// LockUnknown is true when the lock listing (lsof) failed, so ThreadID being empty does not mean "no
+	// thread yet": the process may hold one. Callers must not treat such a row as thread-less.
+	LockUnknown bool
+}
+
+// Identity is what one reading of the process table says about a pid: the `ps lstart` text and the
+// executable's basename. Two readings of the same process are equal; a reused pid differs in Start.
+type Identity struct {
+	Start string
+	Name  string
 }
 
 // Adapter is the process view Activity uses. Tests pass a fake with the same shape.
@@ -31,8 +41,15 @@ type Adapter interface {
 	// StartTime is the UTC `ps lstart` text, the same format as a Claude status file's procStart.
 	// ok is false when it is unknown.
 	StartTime(ctx context.Context, pid int) (start string, ok bool)
-	// CodexThreads lists the live codex processes with the thread each one holds a lock on.
-	CodexThreads(ctx context.Context) []Thread
+	// Identify reads the start time and executable name of pid in one reading, so Stop can bind its
+	// decision to one process generation and read it again right before the signal. It returns
+	// ErrNoSuchProcess when ps shows no such pid, ErrUnknown when the reading failed (ps missing, timed
+	// out, unparsable), and ErrNotMeasurable on an OS where processes cannot be read.
+	Identify(ctx context.Context, pid int) (Identity, error)
+	// CodexThreads lists the live codex processes with the thread each one holds a lock on. The error is
+	// ErrUnknown when the process list itself could not be read (the list is then not "empty": it is
+	// unknown). When only the lock listing failed, the processes are returned with LockUnknown set.
+	CodexThreads(ctx context.Context) ([]Thread, error)
 	// Terminate sends SIGTERM. It returns ErrNoSuchProcess, ErrNotPermitted, a SignalError, or
 	// ErrNotMeasurable.
 	Terminate(ctx context.Context, pid int) error
@@ -44,6 +61,8 @@ var (
 	ErrNotPermitted  = errors.New("operation not permitted")
 	// ErrNotMeasurable is what an adapter on an unsupported OS returns where an answer was needed.
 	ErrNotMeasurable = errors.New("not measurable on this OS")
+	// ErrUnknown means a ps or lsof reading failed or timed out, so the answer is unknown, never "empty".
+	ErrUnknown = errors.New("process state unknown")
 )
 
 // SignalError is any other errno from kill(2).

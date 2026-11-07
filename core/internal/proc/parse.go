@@ -96,3 +96,33 @@ func LockFds(lsofOutput string) []Thread {
 	}
 	return out
 }
+
+// startFields is how many whitespace-separated words `ps lstart` prints ("Mon Nov  2 11:58:00 2026").
+const startFields = 5
+
+// ParseIdentity reads `ps -o lstart=,comm=` output for one pid: the five start words, then the executable
+// path, of which only the basename is kept (so a moved install does not change the name). ok is false when
+// the start words or the command are missing.
+func ParseIdentity(psOutput string) (Identity, bool) {
+	fields := strings.Fields(psOutput)
+	if len(fields) <= startFields {
+		return Identity{}, false
+	}
+	command := strings.Join(fields[startFields:], " ")
+	name := command
+	if i := strings.LastIndexAny(command, `/\`); i >= 0 {
+		name = command[i+1:]
+	}
+	if name == "" {
+		return Identity{}, false
+	}
+	return Identity{Start: strings.Join(fields[:startFields], " "), Name: name}, true
+}
+
+// LsofUsable says whether an lsof run can be trusted to list the locks of the pids asked about. lsof exits 1
+// when some pids are gone yet still prints the others, so 0 and 1 are fine; a kill by timeout or signal
+// (status -1), any other status, or no output at all (not even the `p<pid>` line every live process gets) is
+// a failed or empty look, which the caller reports as unknown.
+func LsofUsable(status int, stdout string) bool {
+	return (status == 0 || status == 1) && strings.TrimSpace(stdout) != ""
+}

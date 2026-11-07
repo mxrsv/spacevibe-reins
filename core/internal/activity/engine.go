@@ -97,7 +97,7 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 	memo := projectMemo{}
 
 	// 1. Live processes.
-	claudeLive, threads := liveProcesses(ctx, r, index, adapter)
+	claudeLive, threads, codexUnknown := liveProcesses(ctx, r, index, adapter)
 	codexPids := map[int]bool{}
 	for _, t := range threads {
 		if t.ThreadID != "" {
@@ -201,6 +201,10 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 	limits := make([]Limit, len(limitCodes))
 	for i, l := range limitCodes {
 		limits[i] = Limit{CLI: l.cli, Code: l.code, Text: l.code.Text()}
+	}
+	if codexUnknown {
+		// ps failed: the Codex rows cannot be listed at all, so say that instead of showing none.
+		limits = append(limits, Limit{CLI: CLICodex, Code: ReasonCodexProcessUnknown, Text: ReasonCodexProcessUnknown.Text()})
 	}
 	return Report{
 		Sessions: nonNil(sessions), Failures: nonNil(groupFailures(entries, opts.FailureLimit)), Files: nonNil(groupFiles(entries, opts.FileLimit)),

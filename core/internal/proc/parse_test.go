@@ -29,7 +29,7 @@ func TestParsersReadPsAndLsof(t *testing.T) { // Swift: ActivityTests.swift "pro
 }
 
 func TestMergeThreads(t *testing.T) { // Swift: ReadHardeningTests.swift "merge: a pid without a lock has no thread, and a pid with locks is not repeated"
-	locks := []Thread{{10, activityUuid(1)}, {10, activityUuid(2)}, {12, activityUuid(3)}}
+	locks := []Thread{{Pid: 10, ThreadID: activityUuid(1)}, {Pid: 10, ThreadID: activityUuid(2)}, {Pid: 12, ThreadID: activityUuid(3)}}
 	merged := MergeThreads([]int{10, 11, 12, 13}, locks)
 	want := append(append([]Thread{}, locks...), Thread{Pid: 11}, Thread{Pid: 13})
 	if !reflect.DeepEqual(merged, want) {
@@ -97,18 +97,18 @@ func TestLockFdsVectors(t *testing.T) {
 		name, out string
 		want      []Thread
 	}{
-		{"two locks of one pid", "p10\nn" + lock + "\nn/h/.codex/thread-writer-locks/" + activityUuid(8) + ".lock", []Thread{{10, u}, {10, activityUuid(8)}}},
-		{"fd lines are ignored", "p10\nf5\nn" + lock + "\nf6\nn/dev/null", []Thread{{10, u}}},
-		{"windows separators", `p10` + "\n" + `nC:\h\thread-writer-locks\` + u + ".lock", []Thread{{10, u}}},
+		{"two locks of one pid", "p10\nn" + lock + "\nn/h/.codex/thread-writer-locks/" + activityUuid(8) + ".lock", []Thread{{Pid: 10, ThreadID: u}, {Pid: 10, ThreadID: activityUuid(8)}}},
+		{"fd lines are ignored", "p10\nf5\nn" + lock + "\nf6\nn/dev/null", []Thread{{Pid: 10, ThreadID: u}}},
+		{"windows separators", `p10` + "\n" + `nC:\h\thread-writer-locks\` + u + ".lock", []Thread{{Pid: 10, ThreadID: u}}},
 		{"upper case hex is rejected", "p10\nn/h/thread-writer-locks/ABCDEF01-0000-4000-8000-00000000000A.lock", nil},
 		{"wrong folder", "p10\nn/h/other-locks/" + u + ".lock", nil},
 		{"wrong extension", "p10\nn/h/thread-writer-locks/" + u + ".lockx", nil},
 		{"short uuid", "p10\nn/h/thread-writer-locks/0000-4000.lock", nil},
 		{"folder must be a whole segment", "p10\nn/h/xthread-writer-locks/" + u + ".lock", []Thread{}},
 		{"name line before any pid is dropped", "n" + lock, nil},
-		{"unparsable pid drops its names", "p10\nn" + lock + "\npabc\nn" + lock, []Thread{{10, u}}},
+		{"unparsable pid drops its names", "p10\nn" + lock + "\npabc\nn" + lock, []Thread{{Pid: 10, ThreadID: u}}},
 		{"pid line resets the pid", "p10\npxyz\nn" + lock, nil},
-		{"trailing CR", "p10\nn" + lock + "\r", []Thread{{10, u}}},
+		{"trailing CR", "p10\nn" + lock + "\r", []Thread{{Pid: 10, ThreadID: u}}},
 		{"empty", "", nil},
 	}
 	for _, c := range cases {
@@ -121,5 +121,46 @@ func TestLockFdsVectors(t *testing.T) {
 				t.Fatalf("LockFds = %v, want %v", got, c.want)
 			}
 		})
+	}
+}
+
+// G-fix.10: one ps reading gives the start time and the executable basename.
+func TestParseIdentity(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		in   string
+		want Identity
+		ok   bool
+	}{
+		{"full path", "Mon Nov  2 11:58:00 2026 /Users/a/.local/share/claude/versions/2.1.0\n", Identity{"Mon Nov 2 11:58:00 2026", "2.1.0"}, true},
+		{"bare name", "Mon Nov  2 11:58:00 2026 codex", Identity{"Mon Nov 2 11:58:00 2026", "codex"}, true},
+		{"path with spaces", "Mon Nov  2 11:58:00 2026 /Applications/My App/bin/codex", Identity{"Mon Nov 2 11:58:00 2026", "codex"}, true},
+		{"no command", "Mon Nov  2 11:58:00 2026", Identity{}, false},
+		{"trailing slash", "Mon Nov  2 11:58:00 2026 /usr/bin/", Identity{}, false},
+		{"empty", "", Identity{}, false},
+	} {
+		got, ok := ParseIdentity(c.in)
+		if ok != c.ok || got != c.want {
+			t.Errorf("%s: ParseIdentity = %+v, %v; want %+v, %v", c.name, got, ok, c.want, c.ok)
+		}
+	}
+}
+
+func TestLsofUsable(t *testing.T) {
+	for _, c := range []struct {
+		status int
+		out    string
+		want   bool
+	}{
+		{0, "p1\nn/x", true},
+		{1, "p1\nn/x", true}, // some pids already gone, the rest listed
+		{1, "", false},       // nothing listed: not provably "no threads"
+		{0, "  \n", false},
+		{-1, "p1\n", false}, // killed by timeout
+		{2, "p1\n", false},
+	} {
+		if got := LsofUsable(c.status, c.out); got != c.want {
+			t.Errorf("LsofUsable(%d, %q) = %v, want %v", c.status, c.out, got, c.want)
+		}
 	}
 }

@@ -2,7 +2,9 @@ package activity
 
 import (
 	"bytes"
+	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -115,12 +117,24 @@ func mtimeMs(path string) (float64, bool) {
 
 // readRegularFile reads a file that is a regular file. A FIFO would block a reader that has no writer.
 func readRegularFile(path string) ([]byte, bool) {
-	info, err := os.Stat(path)
-	if err != nil || !info.Mode().IsRegular() {
-		return nil, false
-	}
-	data, err := os.ReadFile(path)
+	data, err := readRegularFileErr(path)
 	return data, err == nil
+}
+
+// errNotRegular is what readRegularFileErr returns for a FIFO, a directory or a device.
+var errNotRegular = errors.New("not a regular file")
+
+// readRegularFileErr is readRegularFile with the reason: an fs error (os.IsNotExist tells a vanished file from an
+// unreadable one) or errNotRegular.
+func readRegularFileErr(path string) ([]byte, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() {
+		return nil, errNotRegular
+	}
+	return os.ReadFile(path)
 }
 
 // readJSONObject reads a file whose root is a JSON object.
@@ -225,9 +239,19 @@ func isStatusFileName(name string) bool {
 
 // statusFileNames lists the Claude status files (`<pid>.json`) of a sessions folder, sorted.
 func statusFileNames(dir string) []string {
+	names, _ := listStatusFiles(dir)
+	return names
+}
+
+// listStatusFiles is statusFileNames with the read error. A folder that does not exist is no error (nothing is
+// running); one that cannot be read (permissions, I/O) is, because then "no status file" proves nothing.
+func listStatusFiles(dir string) ([]string, error) {
 	entries, err := os.ReadDir(dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	var names []string
 	for _, e := range entries {
@@ -236,5 +260,5 @@ func statusFileNames(dir string) []string {
 		}
 	}
 	sort.Strings(names)
-	return names
+	return names, nil
 }

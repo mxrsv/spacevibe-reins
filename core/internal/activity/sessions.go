@@ -96,9 +96,9 @@ func codexState(st *logState, lastWriteAgoMs, toolQuietMs float64) stateInfo {
 }
 
 // liveProcesses reads the Claude status files, checks each against the process table, and lists the Codex threads
-// that live processes hold.
-func liveProcesses(ctx context.Context, r roots.Roots, index logIndex, adapter proc.Adapter) ([]claudeLiveSession, []proc.Thread) {
-	var live []claudeLiveSession
+// that live processes hold. codexUnknown is true when the process list itself could not be read: the Codex list is
+// then unknown, not empty.
+func liveProcesses(ctx context.Context, r roots.Roots, index logIndex, adapter proc.Adapter) (live []claudeLiveSession, threads []proc.Thread, codexUnknown bool) {
 	dir := filepath.Join(r.Claude.Root, "sessions")
 	for _, name := range statusFileNames(dir) {
 		s, ok := readJSONObject(filepath.Join(dir, name))
@@ -125,7 +125,8 @@ func liveProcesses(ctx context.Context, r roots.Roots, index logIndex, adapter p
 		}
 		live = append(live, c)
 	}
-	return live, adapter.CodexThreads(ctx)
+	threads, err := adapter.CodexThreads(ctx)
+	return live, threads, err != nil
 }
 
 // truthyNumber is a JSON number that is non-zero and inside the date range (a JavaScript `||` chain).
@@ -278,6 +279,10 @@ func codexSessions(ctx context.Context, threads []proc.Thread, rc *readContext) 
 		if t.ThreadID == "" && rc.codexPids[t.Pid] {
 			continue
 		}
+		if t.LockUnknown {
+			sessions = append(sessions, codexWithoutRollout(ctx, t, names, rc))
+			continue
+		}
 		if file == nil || entry == nil {
 			sessions = append(sessions, codexWithoutRollout(ctx, t, names, rc))
 			continue
@@ -309,7 +314,8 @@ func codexSessions(ctx context.Context, threads []proc.Thread, rc *readContext) 
 }
 
 // codexWithoutRollout is the row of a Codex process whose rollout does not exist yet, so the process start is the
-// only clock.
+// only clock. When the lock listing failed (t.LockUnknown) the row says so instead: the thread, and so the rollout,
+// is not known, and the id is the `:unknown` form that cannot authorize Stop.
 func codexWithoutRollout(ctx context.Context, t proc.Thread, names map[string]string, rc *readContext) Session {
 	processStart, hasStart := rc.proc.StartTime(ctx, t.Pid)
 	var startedAt *float64
@@ -333,6 +339,10 @@ func codexWithoutRollout(ctx context.Context, t proc.Thread, names map[string]st
 		age = &a
 	}
 	reason := ReasonCodexNoRollout
+	if t.LockUnknown {
+		reason = ReasonCodexProcessUnknown
+		id = "pid:" + strconv.Itoa(t.Pid) + ":unknown"
+	}
 	return Session{
 		CLI: CLICodex, ID: id, Title: pickTitle([]string{names[t.ThreadID]}, startedAt, titleID),
 		Pid: t.Pid, State: StateUnmeasurable, StateReason: reason.Text(), ReasonCode: &reason,

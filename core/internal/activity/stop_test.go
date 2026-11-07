@@ -40,11 +40,18 @@ func stopSession(t *testing.T, sb *sandbox, cli CLI, id string, p *fakeProc, opt
 
 func expectRefusal(t *testing.T, sb *sandbox, cli CLI, id string, p *fakeProc, opts StopOptions) {
 	t.Helper()
+	expectRefusalStatus(t, sb, cli, id, p, opts, 404)
+}
+
+// expectRefusalStatus: 404 is "no longer running" (the process read fine and is not the session); 409 is "cannot
+// verify" (G-fix.10: ps, lsof or the sessions folder could not be read, or the start time is unknown).
+func expectRefusalStatus(t *testing.T, sb *sandbox, cli CLI, id string, p *fakeProc, opts StopOptions, want int) {
+	t.Helper()
 	_, err := stopSession(t, sb, cli, id, p, opts)
 	if err == nil {
 		t.Errorf("%s %s: an unverified process identity must not authorize Stop", cli, id)
-	} else if stopStatusOf(err) != 404 {
-		t.Errorf("%s %s: status %d, want 404", cli, id, stopStatusOf(err))
+	} else if stopStatusOf(err) != want {
+		t.Errorf("%s %s: status %d, want %d", cli, id, stopStatusOf(err), want)
 	}
 	if len(p.killedPids()) != 0 {
 		t.Errorf("%s %s: signalled %v", cli, id, p.killedPids())
@@ -74,7 +81,6 @@ func TestStopRefuses(t *testing.T) { // Swift: ActivityStopTests "refuses a reus
 		p   *fakeProc
 	}{
 		{CLIClaude, activitySid(12), newFakeProc([]int{12}, map[int]string{12: "Tue Nov  3 01:00:00 2026"}, nil)}, // pid reused
-		{CLIClaude, activitySid(12), newFakeProc([]int{12}, nil, nil)},                                            // start time unknown: not proven to be the same process
 		{CLIClaude, activitySid(13), newFakeProc(nil, map[int]string{13: stopStart}, nil)},                        // dead
 		{CLICodex, activitySid(99), newFakeProc(nil, nil, nil)},
 	} {
@@ -85,7 +91,7 @@ func TestStopRefuses(t *testing.T) { // Swift: ActivityStopTests "refuses a reus
 func TestStopCodex(t *testing.T) { // Swift: ActivityStopTests "finds a Codex process by its thread lock, or by pid and start identity before the first prompt"
 	sb := newSandbox(t)
 	threads := []proc.Thread{{Pid: 21, ThreadID: activitySid(21)}, {Pid: 22}}
-	byThread := newFakeProc([]int{21, 22}, nil, threads)
+	byThread := newFakeProc([]int{21, 22}, map[int]string{21: stopStart}, threads)
 	if r, err := stopSession(t, sb, CLICodex, activitySid(21), byThread, fastStop); err != nil || !r.Exited {
 		t.Fatalf("by thread: %+v %v", r, err)
 	}
@@ -187,8 +193,9 @@ func TestSafetyReusedCodexPid(t *testing.T) { // Swift: ActivitySafetyTests "a c
 	}
 	// The confirmation keeps the original row while the OS reuses its pid.
 	expectRefusal(t, sb, CLICodex, row.ID, newFakeProc([]int{71}, map[int]string{71: replacementStart}, threads), StopOptions{})
-	expectRefusal(t, sb, CLICodex, row.ID, newFakeProc([]int{71}, nil, threads), StopOptions{})
-	expectRefusal(t, sb, CLICodex, row.ID, newFakeProc([]int{71}, map[int]string{71: "unavailable"}, threads), StopOptions{})
+	// A start that cannot be read, or is not a date, proves nothing either way: "cannot verify", not "not running".
+	expectRefusalStatus(t, sb, CLICodex, row.ID, newFakeProc([]int{71}, nil, threads), StopOptions{}, 409)
+	expectRefusalStatus(t, sb, CLICodex, row.ID, newFakeProc([]int{71}, map[int]string{71: "unavailable"}, threads), StopOptions{}, 409)
 	// The same observed process remains stoppable, including ps whitespace variation.
 	same := newFakeProc([]int{71}, map[int]string{71: "Mon Nov  2  11:00:00  2026"}, threads)
 	if r, err := stopSession(t, sb, CLICodex, row.ID, same, StopOptions{}); err != nil || !r.Exited {

@@ -174,20 +174,45 @@ func (f *Fixture) StartTime(ctx context.Context, pid int) (string, bool) {
 	return s, ok
 }
 
-// CodexThreads returns a copy of the thread list.
-func (f *Fixture) CodexThreads(ctx context.Context) []Thread {
+// fixtureStart and fixtureName stand in for a start time and name the file does not list, so Stop works
+// end to end in a dev run for every pid in the list. They never equal a real procStart.
+const (
+	fixtureStart = "fixture-start"
+	fixtureName  = "fixture"
+)
+
+// Identify returns the recorded start text (or fixtureStart) for a pid in the list, ErrNoSuchProcess otherwise.
+func (f *Fixture) Identify(ctx context.Context, pid int) (Identity, error) {
 	f.firstQuestionDelay(ctx)
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return slices.Clone(f.threads)
+	if !f.knows(pid) {
+		return Identity{}, ErrNoSuchProcess
+	}
+	start, ok := f.starts[pid]
+	if !ok {
+		start = fixtureStart
+	}
+	return Identity{Start: start, Name: fixtureName}, nil
+}
+
+func (f *Fixture) knows(pid int) bool {
+	return f.alive[pid] || slices.ContainsFunc(f.threads, func(t Thread) bool { return t.Pid == pid })
+}
+
+// CodexThreads returns a copy of the thread list; the fixture never fails.
+func (f *Fixture) CodexThreads(ctx context.Context) ([]Thread, error) {
+	f.firstQuestionDelay(ctx)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return slices.Clone(f.threads), nil
 }
 
 // Terminate removes pid from the in-memory list; a pid the list does not know is ErrNoSuchProcess.
 func (f *Fixture) Terminate(_ context.Context, pid int) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	known := f.alive[pid] || slices.ContainsFunc(f.threads, func(t Thread) bool { return t.Pid == pid })
-	if !known {
+	if !f.knows(pid) {
 		return ErrNoSuchProcess
 	}
 	delete(f.alive, pid)

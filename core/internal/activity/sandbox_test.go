@@ -66,6 +66,17 @@ type fakeProc struct {
 	killed         []int
 	terminateError error
 	ignoresSignal  bool
+	// threadsError makes CodexThreads fail (ps unknown); identifyErrors makes Identify fail per pid;
+	// laterStarts replaces a pid's start from its second Identify on (a pid reused between lookup and kill);
+	// names gives a pid its executable name (default "proc"), laterNames the name from the second Identify on.
+	threadsError   error
+	identifyErrors map[int]error
+	laterStarts    map[int]string
+	names          map[int]string
+	laterNames     map[int]string
+	laterErrors    map[int]error // Identify error from the second call on
+	identifyCalls  map[int]int
+	notMeasurable  bool
 }
 
 func newFakeProc(alive []int, starts map[int]string, threads []proc.Thread) *fakeProc {
@@ -76,7 +87,7 @@ func newFakeProc(alive []int, starts map[int]string, threads []proc.Thread) *fak
 	return f
 }
 
-func (f *fakeProc) Measurable() bool { return true }
+func (f *fakeProc) Measurable() bool { return !f.notMeasurable }
 func (f *fakeProc) IsAlive(_ context.Context, pid int) bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -86,7 +97,51 @@ func (f *fakeProc) StartTime(_ context.Context, pid int) (string, bool) {
 	s, ok := f.starts[pid]
 	return s, ok
 }
-func (f *fakeProc) CodexThreads(context.Context) []proc.Thread { return f.threads }
+func (f *fakeProc) CodexThreads(context.Context) ([]proc.Thread, error) {
+	if f.threadsError != nil {
+		return nil, f.threadsError
+	}
+	return f.threads, nil
+}
+
+// Identify is the pid's start (from the starts map; none is ErrUnknown, as a ps that printed nothing useful) and name.
+func (f *fakeProc) Identify(_ context.Context, pid int) (proc.Identity, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.identifyErrors[pid]; err != nil {
+		return proc.Identity{}, err
+	}
+	known := f.alive[pid]
+	for _, t := range f.threads {
+		known = known || t.Pid == pid
+	}
+	if !known {
+		return proc.Identity{}, proc.ErrNoSuchProcess
+	}
+	if f.identifyCalls == nil {
+		f.identifyCalls = map[int]int{}
+	}
+	f.identifyCalls[pid]++
+	later := f.identifyCalls[pid] > 1
+	if err := f.laterErrors[pid]; later && err != nil {
+		return proc.Identity{}, err
+	}
+	start, ok := f.starts[pid]
+	if s, has := f.laterStarts[pid]; later && has {
+		start, ok = s, true
+	}
+	if !ok {
+		return proc.Identity{}, proc.ErrUnknown
+	}
+	name := "proc"
+	if n, has := f.names[pid]; has {
+		name = n
+	}
+	if n, has := f.laterNames[pid]; later && has {
+		name = n
+	}
+	return proc.Identity{Start: start, Name: name}, nil
+}
 func (f *fakeProc) Terminate(_ context.Context, pid int) error {
 	if f.terminateError != nil {
 		return f.terminateError

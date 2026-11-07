@@ -41,8 +41,8 @@ func TestLoadFixtureShape(t *testing.T) {
 			if _, ok := f.StartTime(ctx, 41001); ok {
 				t.Fatal("unknown start reported")
 			}
-			want := []Thread{{52001, "a0000000-0000-4000-8000-000000000001"}, {Pid: 52003}}
-			if got := f.CodexThreads(ctx); !reflect.DeepEqual(got, want) {
+			want := []Thread{{Pid: 52001, ThreadID: "a0000000-0000-4000-8000-000000000001"}, {Pid: 52003}}
+			if got, err := f.CodexThreads(ctx); err != nil || !reflect.DeepEqual(got, want) {
 				t.Fatalf("threads = %v, want %v", got, want)
 			}
 		})
@@ -54,7 +54,7 @@ func TestLoadFixtureWrongTypesCountAsAbsent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if f.IsAlive(ctx, 1) || len(f.CodexThreads(ctx)) != 0 {
+	if got, _ := f.CodexThreads(ctx); f.IsAlive(ctx, 1) || len(got) != 0 {
 		t.Fatal("a mistyped field must read as absent")
 	}
 	if _, ok := f.StartTime(ctx, 5); ok {
@@ -88,14 +88,14 @@ func TestLoadFixtureGoldenFiles(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", rel, err)
 		}
-		if !f.IsAlive(ctx, 41001) || len(f.CodexThreads(ctx)) != 3 {
+		if got, _ := f.CodexThreads(ctx); !f.IsAlive(ctx, 41001) || len(got) != 3 {
 			t.Fatalf("%s: unexpected content", rel)
 		}
 	}
 }
 
 func TestFixtureTerminate(t *testing.T) {
-	f := NewFixture([]int{11}, nil, []Thread{{21, "t"}, {22, ""}}, 0)
+	f := NewFixture([]int{11}, nil, []Thread{{Pid: 21, ThreadID: "t"}, {Pid: 22}}, 0)
 	if err := f.Terminate(ctx, 99); !errors.Is(err, ErrNoSuchProcess) {
 		t.Fatalf("unknown pid: %v", err)
 	}
@@ -108,15 +108,16 @@ func TestFixtureTerminate(t *testing.T) {
 	if err := f.Terminate(ctx, 21); err != nil {
 		t.Fatal(err)
 	}
-	if got, want := f.CodexThreads(ctx), []Thread{{22, ""}}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("threads = %v, want %v", got, want)
+	if got, _ := f.CodexThreads(ctx); !reflect.DeepEqual(got, []Thread{{Pid: 22}}) {
+		t.Fatalf("threads = %v", got)
 	}
 }
 
 func TestFixtureThreadsAreCopies(t *testing.T) {
-	f := NewFixture(nil, nil, []Thread{{1, "a"}}, 0)
-	f.CodexThreads(ctx)[0].ThreadID = "changed"
-	if f.CodexThreads(ctx)[0].ThreadID != "a" {
+	f := NewFixture(nil, nil, []Thread{{Pid: 1, ThreadID: "a"}}, 0)
+	first, _ := f.CodexThreads(ctx)
+	first[0].ThreadID = "changed"
+	if again, _ := f.CodexThreads(ctx); again[0].ThreadID != "a" {
 		t.Fatal("caller mutated the fixture list")
 	}
 }
@@ -159,7 +160,7 @@ func TestNewGating(t *testing.T) {
 		t.Fatalf("test mode with a file: %T", a)
 	}
 	empty, err := New(config.Config{Test: true}, "")
-	if f, ok := empty.(*Fixture); err != nil || !ok || len(f.CodexThreads(ctx)) != 0 || f.IsAlive(ctx, os.Getpid()) {
+	if f, ok := empty.(*Fixture); err != nil || !ok || f.IsAlive(ctx, os.Getpid()) {
 		t.Fatalf("test mode without a file must be the empty fixture: %T %v", empty, err)
 	}
 	bad, err := New(config.Config{Test: true}, filepath.Join(t.TempDir(), "none.json"))
@@ -171,5 +172,18 @@ func TestNewGating(t *testing.T) {
 		if _, ok := sys.(System); err != nil || !ok {
 			t.Fatalf("outside test mode the fixture path %q must be ignored: %T %v", p, sys, err)
 		}
+	}
+}
+
+func TestFixtureIdentify(t *testing.T) {
+	f := NewFixture([]int{11}, map[int]string{11: "Mon Nov  2 11:58:00 2026"}, []Thread{{Pid: 21, ThreadID: "t"}}, 0)
+	if id, err := f.Identify(ctx, 11); err != nil || id.Start != "Mon Nov  2 11:58:00 2026" || id.Name == "" {
+		t.Fatalf("listed start: %+v %v", id, err)
+	}
+	if id, err := f.Identify(ctx, 21); err != nil || id.Start != fixtureStart {
+		t.Fatalf("thread holder without a start gets the stand-in: %+v %v", id, err)
+	}
+	if _, err := f.Identify(ctx, 99); !errors.Is(err, ErrNoSuchProcess) {
+		t.Fatalf("unknown pid: %v", err)
 	}
 }

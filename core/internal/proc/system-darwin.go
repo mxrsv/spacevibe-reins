@@ -25,7 +25,10 @@ const (
 
 // System is the real adapter: ps and lsof through os/exec, kill(2) for the signals. It reads only,
 // except Terminate.
-type System struct{}
+type System struct {
+	// ps and lsof override the tool paths; tests point them at stand-ins. Empty means psPath and lsofPath.
+	ps, lsof string
+}
 
 // NewSystem returns the real adapter.
 func NewSystem() System { return System{} }
@@ -43,11 +46,11 @@ func (System) IsAlive(_ context.Context, pid int) bool {
 }
 
 // StartTime is `ps -o lstart= -p pid` under TZ=UTC, trimmed; not ok when ps fails or prints nothing.
-func (System) StartTime(ctx context.Context, pid int) (string, bool) {
+func (s System) StartTime(ctx context.Context, pid int) (string, bool) {
 	if !validPid(pid) {
 		return "", false
 	}
-	res, ok := run(ctx, psPath, []string{"-o", "lstart=", "-p", strconv.Itoa(pid)}, startTimeout)
+	res, ok := run(ctx, orDefault(s.ps, psPath), []string{"-o", "lstart=", "-p", strconv.Itoa(pid)}, startTimeout)
 	if !ok || res.status != 0 {
 		return "", false
 	}
@@ -55,23 +58,60 @@ func (System) StartTime(ctx context.Context, pid int) (string, bool) {
 	return text, text != ""
 }
 
-// CodexThreads lists live codex processes with the thread lock each holds.
-func (System) CodexThreads(ctx context.Context) []Thread {
-	ps, ok := run(ctx, psPath, []string{"-axo", "pid=,args="}, listTimeout)
+// Identify is `ps -o lstart=,comm= -p pid` under TZ=UTC: one reading gives the start time and the
+// executable basename. ps exits 1 with no output for a pid that does not exist; any other failure (cannot
+// start, timeout, odd status, unparsable text) is ErrUnknown, never "no such process".
+func (s System) Identify(ctx context.Context, pid int) (Identity, error) {
+	if !validPid(pid) {
+		return Identity{}, ErrNoSuchProcess
+	}
+	res, ok := run(ctx, orDefault(s.ps, psPath), []string{"-o", "lstart=", "-o", "comm=", "-p", strconv.Itoa(pid)}, startTimeout)
+	if !ok || (res.status != 0 && res.status != 1) {
+		return Identity{}, ErrUnknown
+	}
+	text := strings.TrimSpace(res.stdout)
+	if text == "" && res.status == 1 {
+		return Identity{}, ErrNoSuchProcess
+	}
+	id, parsed := ParseIdentity(text)
+	if !parsed {
+		return Identity{}, ErrUnknown
+	}
+	return id, nil
+}
+
+// CodexThreads lists live codex processes with the thread lock each holds. A failed or timed out `ps`
+// is ErrUnknown. A failed `lsof` keeps the processes but marks each LockUnknown: without the lock listing a
+// process that holds a thread cannot be told from one that has none yet.
+func (s System) CodexThreads(ctx context.Context) ([]Thread, error) {
+	ps, ok := run(ctx, orDefault(s.ps, psPath), []string{"-axo", "pid=,args="}, listTimeout)
 	if !ok || ps.status != 0 {
-		return nil
+		return nil, ErrUnknown
 	}
 	pids := CodexPids(ps.stdout)
 	if len(pids) == 0 {
-		return nil
+		return nil, nil
 	}
 	list := make([]string, len(pids))
 	for i, p := range pids {
 		list[i] = strconv.Itoa(p)
 	}
-	// lsof exits 1 when some of the pids are already gone but still prints the others, so its status is not checked.
-	lsof, _ := run(ctx, lsofPath, []string{"-nP", "-Fpn", "-p", strings.Join(list, ",")}, listTimeout)
-	return MergeThreads(pids, LockFds(lsof.stdout))
+	lsof, ran := run(ctx, orDefault(s.lsof, lsofPath), []string{"-nP", "-Fpn", "-p", strings.Join(list, ",")}, listTimeout)
+	if !ran || !LsofUsable(lsof.status, lsof.stdout) {
+		threads := make([]Thread, len(pids))
+		for i, p := range pids {
+			threads[i] = Thread{Pid: p, LockUnknown: true}
+		}
+		return threads, nil
+	}
+	return MergeThreads(pids, LockFds(lsof.stdout)), nil
+}
+
+func orDefault(path, fallback string) string {
+	if path != "" {
+		return path
+	}
+	return fallback
 }
 
 // Terminate sends SIGTERM to a pid that passed the guard.

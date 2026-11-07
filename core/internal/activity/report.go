@@ -48,6 +48,9 @@ const (
 	ReasonClaudePromptVsBusy  Reason = "claude-prompt-vs-busy"
 	ReasonClaudeUnknownStatus Reason = "claude-unknown-status"
 	ReasonCodexHookRuns       Reason = "codex-hook-runs"
+	// ReasonCodexProcessUnknown is a failed ps or lsof reading. It is on a row (or one extra limit) only while the
+	// failure lasts and is never in the fixed limit list.
+	ReasonCodexProcessUnknown Reason = "codex-process-unknown"
 )
 
 // Text is the sentence shown for the reason.
@@ -63,6 +66,8 @@ func (r Reason) Text() string {
 		return "The Claude Code status file reports a status this app does not know."
 	case ReasonCodexHookRuns:
 		return "Codex does not log hook runs, so failed hooks are not shown for Codex."
+	case ReasonCodexProcessUnknown:
+		return "The system process check failed just now, so Codex sessions cannot be matched to their logs. This is not a log that is missing."
 	}
 	return ""
 }
