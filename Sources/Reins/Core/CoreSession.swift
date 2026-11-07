@@ -48,7 +48,8 @@ final class CoreSession: @unchecked Sendable {
         process = Process()
         process.executableURL = binary
         process.arguments = ["rpc"]
-        process.environment = environment
+        // Assigning nil leaves the child with an empty environment (macOS 27), so "inherit ours" is spelled out.
+        process.environment = environment ?? ProcessInfo.processInfo.environment
         process.standardInput = input
         process.standardOutput = output
         process.standardError = errors

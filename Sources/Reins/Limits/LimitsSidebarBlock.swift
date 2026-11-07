@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// The Limits entry in the sidebar list, after the tabs (owner, 2026-11-04): active while the page is open, with a warn
@@ -30,7 +29,7 @@ struct LimitsSidebarBlock: View {
         TimelineView(.everyMinute) { context in
             Button { shell.openLimits() } label: {
                 VStack(alignment: .leading, spacing: Space.s6) {
-                    ForEach(LimitsCLI.allCases, id: \.self) { cli in
+                    ForEach(CoreLimitsCLI.allCases, id: \.self) { cli in
                         tile(cli, now: context.date)
                     }
                 }
@@ -46,15 +45,14 @@ struct LimitsSidebarBlock: View {
         }
     }
 
-    static func hasStaleReading(_ results: [CLILimits], now: Date) -> Bool {
+    static func hasStaleReading(_ results: [CoreLimitsEntry], now: Date) -> Bool {
         results.contains { limits in
-            if case .measured(let at, _) = limits.state { return LimitsWording.isStale(at: at, now: now) }
-            return false
+            limits.reading.map { LimitsWording.isStale(at: $0.at, now: now) } ?? false
         }
     }
 
     @ViewBuilder
-    private func tile(_ cli: LimitsCLI, now: Date) -> some View {
+    private func tile(_ cli: CoreLimitsCLI, now: Date) -> some View {
         let name = LimitsWording.cliName(cli)
         if let limits = model.limits(for: cli) {
             switch LimitsWording.summary(limits, now: now) {

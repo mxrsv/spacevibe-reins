@@ -3,7 +3,7 @@ import ReinsCore
 import SwiftUI
 
 /// The colour a CLI carries on the Limits surface. Gemini CLI has no brand colour in the app, so it reads neutral.
-extension LimitsCLI {
+extension CoreLimitsCLI {
     var fill: Color {
         switch self {
         case .claude: Palette.claude
@@ -21,8 +21,9 @@ extension LimitsCLI {
     }
 }
 
-extension LimitsCLI {
+extension CoreLimitsCLI {
     /// The same CLI as the inventory names it (Claude Code or Codex).
+    // bridge: removed with the Loadout migration
     init(_ cli: InventoryCLI) { self = cli == .claude ? .claude : .codex }
 }
 
@@ -32,16 +33,16 @@ extension LimitsCLI {
 struct CLIMark: View {
     enum Size { case large, medium, small, glyph }
 
-    let cli: LimitsCLI
+    let cli: CoreLimitsCLI
     var size: Size = .large
 
-    init(_ cli: LimitsCLI, size: Size = .large) {
+    init(_ cli: CoreLimitsCLI, size: Size = .large) {
         self.cli = cli
         self.size = size
     }
 
     init(_ cli: InventoryCLI, size: Size = .large) {
-        self.init(LimitsCLI(cli), size: size)
+        self.init(CoreLimitsCLI(cli), size: size)
     }
 
     var body: some View {
@@ -77,16 +78,16 @@ struct CLIMark: View {
 /// The brand SVGs in `Resources/Brand`: inside the app bundle, else (debug builds only) in the checkout. A missing file
 /// draws a dot instead of failing.
 enum BrandMark {
-    private static let fileNames: [LimitsCLI: String] = [
+    private static let fileNames: [CoreLimitsCLI: String] = [
         .claude: "claude-spark-clay.svg",
         .codex: "codex-blossom-white.svg",
         .gemini: "gemini.svg",
     ]
 
-    @MainActor private static var cache: [LimitsCLI: NSImage] = [:]
+    @MainActor private static var cache: [CoreLimitsCLI: NSImage] = [:]
 
     @MainActor
-    static func image(_ cli: LimitsCLI) -> NSImage? {
+    static func image(_ cli: CoreLimitsCLI) -> NSImage? {
         if let cached = cache[cli] { return cached }
         guard let name = fileNames[cli],
               let url = [Bundle.main.resourceURL?.appendingPathComponent("Brand/\(name)"), checkoutURL(name)]

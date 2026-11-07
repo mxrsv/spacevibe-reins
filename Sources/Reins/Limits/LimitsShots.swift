@@ -27,7 +27,7 @@ enum LimitsShots {
             env.limits.selectedID = entries.first { $0.cli == .claude }?.id
             try ShotRenderer.write(page(shell, toasts, env), name: "limits-page-claude", choice: choice, to: directory)
             // The edge fixture has a window past its reset: the dash figure, the dashed ruler and "Reset was".
-            if let passed = entries.first(where: { $0.window.map { !$0.isCurrent(at: Date()) } ?? false }) {
+            if let passed = entries.first(where: { $0.window.map { !$0.current } ?? false }) {
                 env.limits.selectedID = passed.id
                 try ShotRenderer.write(page(shell, toasts, env), name: "limits-page-passed", choice: choice, to: directory)
             }

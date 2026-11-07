@@ -8,7 +8,7 @@ enum CoreScreen: String, CaseIterable, Sendable {
 /// Which `CoreService` each screen uses while both engines exist. `SPACEVIBE_CORE_SCREENS` is a comma list of screen
 /// names; a screen in it goes to the Go core, any other stays in process. It is read only when
 /// `CoreEnvironment.overridesAllowed`, so a release build keeps the old path until a screen cuts over. An unknown name
-/// is ignored. No screen asks for this yet.
+/// is ignored. `AppEnvironment.core(for:)` is the one place a screen asks; Limits does today.
 struct CoreRouting: Equatable, Sendable {
     let viaCore: Set<CoreScreen>
 

@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// One entry of the Limits page's window list, a block of its own on the well (layout H): the CLI's mark, the window's name
@@ -12,7 +11,7 @@ struct LimitWindowTile<Tags: View>: View {
         case none
     }
 
-    let cli: LimitsCLI
+    let cli: CoreLimitsCLI
     let title: String
     let subtitle: String
     let meter: Meter
@@ -82,7 +81,7 @@ struct LimitWindowTile<Tags: View>: View {
 }
 
 extension LimitWindowTile where Tags == EmptyView {
-    init(cli: LimitsCLI, title: String, subtitle: String, meter: Meter, value: String, valueTone: TextTone = .primary,
+    init(cli: CoreLimitsCLI, title: String, subtitle: String, meter: Meter, value: String, valueTone: TextTone = .primary,
          selected: Bool = false, onActivate: @escaping () -> Void) {
         self.init(cli: cli, title: title, subtitle: subtitle, meter: meter, value: value, valueTone: valueTone,
                   selected: selected, onActivate: onActivate, tags: EmptyView())
@@ -90,7 +89,7 @@ extension LimitWindowTile where Tags == EmptyView {
 }
 
 extension LimitWindowTile {
-    init(cli: LimitsCLI, title: String, subtitle: String, meter: Meter, value: String, valueTone: TextTone = .primary,
+    init(cli: CoreLimitsCLI, title: String, subtitle: String, meter: Meter, value: String, valueTone: TextTone = .primary,
          selected: Bool = false, onActivate: @escaping () -> Void, @ViewBuilder tags: () -> Tags) {
         self.init(cli: cli, title: title, subtitle: subtitle, meter: meter, value: value, valueTone: valueTone,
                   selected: selected, onActivate: onActivate, tags: tags())

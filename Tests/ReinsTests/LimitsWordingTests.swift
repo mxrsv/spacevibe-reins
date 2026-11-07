@@ -1,6 +1,5 @@
 import Foundation
 import Testing
-@testable import ReinsCore
 @testable import Reins
 
 /// AC10, wording half: share left, tone, resets, reading age, the short states and the stale marker, against fixed dates.
@@ -15,12 +14,17 @@ struct LimitsWordingTests {
         return calendar
     }()
 
-    private func window(_ id: String = "primary", minutes: Int? = 300, scope: String? = nil, used: Double, resets: TimeInterval = 3600, active: Bool = true) -> LimitWindow {
-        LimitWindow(id: id, minutes: minutes, scope: scope, usedPercent: used, resetsAt: Self.now.addingTimeInterval(resets), active: active)
+    /// `current` is the core's flag: the reset is after the moment of the reading, which here is `now`.
+    private func window(_ id: String = "primary", minutes: Int? = 300, scope: String? = nil, used: Double, resets: TimeInterval = 3600, active: Bool = true) -> CoreLimitWindow {
+        CoreLimitWindow(id: id, minutes: minutes, scope: scope, usedPercent: used, resetsAt: Self.now.addingTimeInterval(resets).timeIntervalSince1970, active: active, current: resets > 0)
     }
 
-    private func measured(_ cli: LimitsCLI, at: TimeInterval, _ windows: [LimitWindow]) -> CLILimits {
-        CLILimits(cli: cli, state: .measured(at: Self.now.addingTimeInterval(at), windows: windows))
+    private func measured(_ cli: CoreLimitsCLI, at: TimeInterval, _ windows: [CoreLimitWindow]) -> CoreLimitsEntry {
+        CoreLimitsEntry(cli: cli, state: .measured, plan: nil, source: nil, at: Self.now.addingTimeInterval(at).timeIntervalSince1970, windows: windows)
+    }
+
+    private func entry(_ cli: CoreLimitsCLI, _ state: CoreLimitsState, source: CoreLimitsSource? = nil) -> CoreLimitsEntry {
+        CoreLimitsEntry(cli: cli, state: state, plan: nil, source: source, at: nil, windows: [])
     }
 
     @Test("share left is the complement of used, never below 0, and the tone tints at 20% and 5% left")
@@ -91,7 +95,7 @@ struct LimitsWordingTests {
             window("weekly_scoped:Fable", minutes: 10080, scope: "Fable", used: 0, resets: 2 * 86_400, active: false),
         ])
         let codex = measured(.codex, at: -240, [window("primary", used: 23, resets: 3 * Self.hour), window("secondary", minutes: 10080, used: 61, resets: 6 * 86_400)])
-        let gemini = CLILimits(cli: .gemini, state: .notMeasurable)
+        let gemini = entry(.gemini, .notMeasurable)
         let results = [claude, codex, gemini]
         let entries = LimitsWording.entries(results, showInactive: false)
         #expect(entries.map(\.id) == ["claude:weekly_all", "codex:primary", "codex:secondary", "gemini:state"])
@@ -107,11 +111,11 @@ struct LimitsWordingTests {
     func firstSelection() {
         let claude = measured(.claude, at: -60, [window("weekly_all", minutes: 10080, used: 8, resets: 86_400)])
         let codex = measured(.codex, at: -60, [window("primary", used: 23, resets: 3 * Self.hour), window("secondary", minutes: 10080, used: 61, resets: 86_400)])
-        var results = [claude, codex, CLILimits(cli: .gemini, state: .notMeasurable)]
+        var results = [claude, codex, entry(.gemini, .notMeasurable)]
         var entries = LimitsWording.entries(results, showInactive: false)
         #expect(LimitsWording.firstSelection(results, entries: entries, now: Self.now) == "codex:secondary")
         let passed = measured(.codex, at: -5 * Self.hour, [window("primary", used: 99, resets: -60)])
-        results = [CLILimits(cli: .claude, state: .notRecorded), passed]
+        results = [entry(.claude, .notRecorded), passed]
         entries = LimitsWording.entries(results, showInactive: false)
         #expect(LimitsWording.firstSelection(results, entries: entries, now: Self.now) == "claude:state")
     }
@@ -143,21 +147,21 @@ struct LimitsWordingTests {
         #expect(LimitsWording.summary(old, now: Self.now) == .share(left: 4, tone: .out, stale: true))
         let passed = measured(.codex, at: -5 * Self.hour, [window(used: 88, resets: -26 * 60)])
         #expect(LimitsWording.summary(passed, now: Self.now) == .unknown)
-        #expect(LimitsWording.summary(CLILimits(cli: .claude, state: .notRecorded), now: Self.now) == .state("no reading"))
-        #expect(LimitsWording.summary(CLILimits(cli: .gemini, state: .notInstalled), now: Self.now) == .state("not installed"))
-        #expect(LimitsWording.summary(CLILimits(cli: .gemini, state: .notMeasurable), now: Self.now) == .state("not measurable"))
-        #expect(LimitsWording.summary(CLILimits(cli: .codex, state: .unreadable), now: Self.now) == .state("unreadable"))
+        #expect(LimitsWording.summary(entry(.claude, .notRecorded), now: Self.now) == .state("no reading"))
+        #expect(LimitsWording.summary(entry(.gemini, .notInstalled), now: Self.now) == .state("not installed"))
+        #expect(LimitsWording.summary(entry(.gemini, .notMeasurable), now: Self.now) == .state("not measurable"))
+        #expect(LimitsWording.summary(entry(.codex, .unreadable), now: Self.now) == .state("unreadable"))
     }
 
     @Test("the detail's state notes name the cause, and only Claude Code is pointed at /usage")
     func stateNotes() {
-        #expect(LimitsWording.stateNote(CLILimits(cli: .gemini, state: .notMeasurable))?.body == "Gemini CLI keeps no usage limit on disk, and Reins does not go online for it.")
-        #expect(LimitsWording.stateNote(CLILimits(cli: .claude, state: .notRecorded))?.body.contains("/usage") == true)
-        #expect(LimitsWording.stateNote(CLILimits(cli: .codex, state: .notRecorded))?.body == "No Codex turn has logged limits yet.")
-        #expect(LimitsWording.stateNote(CLILimits(cli: .gemini, state: .notInstalled))?.body == "No Gemini CLI folder on this Mac.")
+        #expect(LimitsWording.stateNote(entry(.gemini, .notMeasurable))?.body == "Gemini CLI keeps no usage limit on disk, and Reins does not go online for it.")
+        #expect(LimitsWording.stateNote(entry(.claude, .notRecorded))?.body.contains("/usage") == true)
+        #expect(LimitsWording.stateNote(entry(.codex, .notRecorded))?.body == "No Codex turn has logged limits yet.")
+        #expect(LimitsWording.stateNote(entry(.gemini, .notInstalled))?.body == "No Gemini CLI folder on this Mac.")
         #expect(LimitsWording.stateNote(measured(.codex, at: 0, []))  == nil)
         #expect(LimitsWording.source(.gemini) == nil)
-        let captured = CLILimits(cli: .claude, state: .notRecorded, source: .claudeStatusline)
+        let captured = entry(.claude, .notRecorded, source: .claudeStatusline)
         #expect(LimitsWording.source(captured)?.title == "From Claude Code's status line")
         #expect(LimitsWording.source(.claude)?.body.contains("fallback") == true)
     }

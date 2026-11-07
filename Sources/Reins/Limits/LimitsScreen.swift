@@ -1,5 +1,4 @@
 import AppKit
-import ReinsCore
 import SwiftUI
 
 /// What the shell shows for the Limits page in place of a tab's title and hints.
@@ -73,7 +72,7 @@ struct LimitsScreen: View {
 /// One tile of the list: a window, or a CLI that lists none.
 private struct LimitsEntryTile: View {
     let entry: LimitsWording.Entry
-    let limits: CLILimits?
+    let limits: CoreLimitsEntry?
     let isSelected: Bool
     let now: Date
     let select: () -> Void
@@ -81,7 +80,7 @@ private struct LimitsEntryTile: View {
     var body: some View {
         let name = LimitsWording.cliName(entry.cli)
         if let window = entry.window {
-            let current = window.isCurrent(at: now)
+            let current = window.current
             let left = LimitsWording.shareLeft(window)
             let tone = current ? LimitsWording.tone(window).tile : .normal
             LimitWindowTile(
@@ -130,12 +129,12 @@ private struct LimitsSelection: View {
 }
 
 private struct WindowFacts: View {
-    let window: LimitWindow
-    let limits: CLILimits
+    let window: CoreLimitWindow
+    let limits: CoreLimitsEntry
     let now: Date
 
     var body: some View {
-        let current = window.isCurrent(at: now)
+        let current = window.current
         let tone = current ? LimitsWording.tone(window).tile : .normal
         let left = LimitsWording.shareLeft(window)
         let reset = LimitsWording.resetFact(window, now: now)
@@ -145,7 +144,7 @@ private struct WindowFacts: View {
             HStack(alignment: .top, spacing: Rhythm.tiles) {
                 FactTile(reset.label, value: reset.value)
                 FactTile(current ? "Resets at" : "Reset at", value: LimitsWording.resetsAt(window, now: now))
-                if case .measured(let at, _) = limits.state {
+                if let at = limits.reading?.at {
                     FactTile("Reading", value: LimitsWording.readAge(at: at, now: now),
                              tone: LimitsWording.isStale(at: at, now: now) ? .warn : .primary)
                 }
@@ -169,7 +168,7 @@ private struct WindowFacts: View {
 
 /// A CLI with no window to show: its state as one line, and `Copy /usage` when Claude Code has never fetched usage.
 private struct StateNote: View {
-    let limits: CLILimits
+    let limits: CoreLimitsEntry
 
     var body: some View {
         let note = LimitsWording.entryNote(limits)

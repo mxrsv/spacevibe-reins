@@ -1,11 +1,10 @@
-import ReinsCore
 import SwiftUI
 
 /// One CLI in the sidebar's Limits block: its mark, name and the share left of its tightest window, as a number only (the
 /// Limits page draws the ruler). Filled with the CLI's tint, or warn or danger when nearly out. A CLI with no reading is
 /// `muted` (plain surface, the reason in `caption` under the name instead of a number).
 struct LimitSidebarTile: View {
-    let cli: LimitsCLI
+    let cli: CoreLimitsCLI
     let name: String
     let value: String
     var tone: LimitTone = .normal

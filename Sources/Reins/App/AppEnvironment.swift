@@ -28,18 +28,30 @@ final class AppEnvironment {
     let toasts: ToastCenter
     /// The engine behind a screen that has moved off `ReinsCore` (plan S.1). In-process until a screen cuts over to the Go core.
     let core: any CoreService
+    /// Which screens read through the Go core (`SPACEVIBE_CORE_SCREENS`, dev builds and tests only). Empty by default.
+    let routing: CoreRouting
+    /// The Go core process, started on the first call of a screen that routes to it.
+    @ObservationIgnored private lazy var coreClient: any CoreService = makeCoreClient()
+    @ObservationIgnored private let makeCoreClient: () -> any CoreService
     /// The Limits readings, shared by the sidebar block on every tab and its detail.
     @ObservationIgnored lazy var limits = LimitsModel(env: self)
     /// The updater and what Settings > Update shows. `ReinsApp` starts it in a normal launch; elsewhere it never runs.
     @ObservationIgnored lazy var updates = UpdateController(toasts: toasts)
 
-    init(roots: Roots?, startupProblem: String? = nil, proc: any ProcessAdapter, toasts: ToastCenter? = nil, core: (any CoreService)? = nil) {
+    init(roots: Roots?, startupProblem: String? = nil, proc: any ProcessAdapter, toasts: ToastCenter? = nil, core: (any CoreService)? = nil, routing: CoreRouting = CoreRouting(), makeCoreClient: @escaping () -> any CoreService = { CoreClient() }) {
         self.roots = roots
         let problem = roots == nil ? (startupProblem ?? "The config folders could not be resolved.") : startupProblem
         self.startupProblem = problem
         self.proc = proc
         self.toasts = toasts ?? ToastCenter()
         self.core = core ?? InProcessCore(roots: roots, startupProblem: problem, proc: proc)
+        self.routing = routing
+        self.makeCoreClient = makeCoreClient
+    }
+
+    /// The engine a screen reads through: `core` (in process) unless `routing` sends the screen to the Go core.
+    func core(for screen: CoreScreen) -> any CoreService {
+        routing.service(for: screen, inProcess: core, core: { coreClient })
     }
 
     static func live(environment: [String: String] = ProcessInfo.processInfo.environment, toasts: ToastCenter? = nil) -> AppEnvironment {

@@ -1,22 +1,22 @@
 import Foundation
 import Observation
-import ReinsCore
 
 /// The Limits readings, shared by the sidebar block on every tab and the Limits page. One instance per run, created beside
 /// `ShellModel` and injected through the environment. Whether the page shows is the shell's (`ShellModel.isLimitsOpen`).
 ///
-/// A read is `Limits.read`: local files only, no request, no credential, no CLI started (spec, Limits). It runs off the
+/// A read is `limits.read` on the core `env.core(for: .limits)` picks (in process until the screen cuts over): local files only, no request, no credential, no CLI started (spec, Limits). It runs off the
 /// main actor and never throws to the UI; a missing or odd file is a state inside the result. Reads happen at launch,
 /// when the window becomes key (the view calls `readOnce`), every `interval` while the window is visible, and on Refresh.
 @MainActor
 @Observable
 final class LimitsModel {
     static let interval: Duration = .seconds(60)
+    private static let unreadable = "The limits could not be read."
 
     let env: AppEnvironment
 
     /// Claude Code, Codex, Gemini CLI, in that order; empty until the first read lands.
-    private(set) var results: [CLILimits] = []
+    private(set) var results: [CoreLimitsEntry] = []
     /// When `results` was read. A window's remaining time is computed from the clock, not from this.
     private(set) var readAt: Date?
     /// A read that could not run (no roots). Cleared by the next successful read.
@@ -32,7 +32,7 @@ final class LimitsModel {
 
     var isLoading: Bool { results.isEmpty && failure == nil }
 
-    func limits(for cli: LimitsCLI) -> CLILimits? { results.first { $0.cli == cli } }
+    func limits(for cli: CoreLimitsCLI) -> CoreLimitsEntry? { results.first { $0.cli == cli } }
 
     /// The entry the page shows among `entries`: the one picked, else the window with the least left.
     func selection(in entries: [LimitsWording.Entry], now: Date) -> String? {
@@ -43,16 +43,17 @@ final class LimitsModel {
     /// One read, unless one is already running.
     func readOnce() async {
         guard !isReading else { return }
-        guard let roots = env.roots else {
-            failure = env.startupProblem ?? "The config folders could not be resolved."
-            return
-        }
         isReading = true
         defer { isReading = false }
-        let fresh = await Task.detached(priority: .utility) { Limits.read(roots) }.value
-        results = fresh
-        readAt = Date()
-        failure = nil
+        do {
+            results = try await env.core(for: .limits).limitsRead().limits
+            readAt = Date()
+            failure = nil
+        } catch is CancellationError {
+            // The window hid mid-read: keep what is shown.
+        } catch {
+            failure = (error as? CoreError)?.message ?? Self.unreadable
+        }
     }
 
     /// The read loop. The view drives it with `.task(id: isWindowVisible)`; SwiftUI cancels it when the window hides, and

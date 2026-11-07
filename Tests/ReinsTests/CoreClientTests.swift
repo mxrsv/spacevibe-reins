@@ -250,6 +250,21 @@ struct CoreClientTests {
         #expect(Date().timeIntervalSince(started) < 10)
     }
 
+    @Test("a client given no environment starts the helper with ours, so the folders it names reach the core", .timeLimit(.minutes(1)))
+    func inheritsEnvironment() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("reins-env-core-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let script = folder.appendingPathComponent("spacevibe")
+        let seen = folder.appendingPathComponent("seen")
+        try "#!/bin/sh\nprintf '%s' \"$HOME\" > '\(seen.path)'\nread line\n".write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+        let client = CoreClient(binary: script, handshakeTimeout: .milliseconds(400))
+        defer { client.shutdown() }
+        _ = try? await client.inventoryRead()
+        #expect(try String(contentsOf: seen, encoding: .utf8) == ProcessInfo.processInfo.environment["HOME"])
+    }
+
     @Test("a missing helper is a fixed startup problem", .timeLimit(.minutes(1)))
     func missingBinary() async throws {
         let client = CoreClient(binary: URL(fileURLWithPath: "/nonexistent/spacevibe"))
