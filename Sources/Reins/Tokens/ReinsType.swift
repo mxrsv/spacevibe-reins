@@ -172,6 +172,13 @@ extension View {
     func reinsText(_ role: ReinsType, tone: TextTone? = nil) -> some View {
         modifier(RoleText(role: role, tone: tone))
     }
+
+    /// The role's whole line box around a block of text, as the kit's CSS draws it: `lineSpacing` puts the leading only
+    /// between lines, so half of it goes above the first line and half below the last. For v5 text that is not centred in a
+    /// fixed height (a sentence, a figure and its label).
+    func lineBox(_ role: ReinsType) -> some View {
+        padding(.vertical, role.lineSpacing / 2)
+    }
 }
 
 private struct RoleText: ViewModifier {

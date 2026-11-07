@@ -6,7 +6,8 @@ import SwiftUI
 ///
 /// `SPACEVIBE_SHOT_SCREEN` picks the run, and nothing else does:
 /// - `shell` (the default): the demo shell states and the gallery, `<name>-<dark|light>.png`, 1440x900 points at 2x for the
-///   shell states and the gallery at its full height, in two images (`gallery`, `gallery-more`). Synthetic demo data only; it never touches the saved appearance choice
+///   shell states and the gallery at its full height, in two images (`gallery`, `gallery-more`), plus `gallery-v5` (the v5
+///   blocks) with the v5 switch on. Synthetic demo data only; it never touches the saved appearance choice
 ///   or the real config folders.
 /// - `settings`: Settings on the demo shell in every update state and at the Large font size, and the demo tabs at Large
 ///   (`SettingsShots`). Synthetic data only, like `shell`.
@@ -58,6 +59,9 @@ enum ShotRenderer {
             try write(shell(choice) { _, toasts in toasts.show("Reins 0.2.0 is available", action: UpdateController.viewAction {}) }, name: "shell-toast-update", choice: choice, to: directory)
             try write(gallery(choice, part: .first), name: "gallery", choice: choice, to: directory, fullHeight: true)
             try write(gallery(choice, part: .second), name: "gallery-more", choice: choice, to: directory, fullHeight: true)
+            if LaunchMode.uiV5Enabled() {
+                try write(gallery(choice, part: .third), name: "gallery-v5", choice: choice, to: directory, fullHeight: true)
+            }
         }
     }
 

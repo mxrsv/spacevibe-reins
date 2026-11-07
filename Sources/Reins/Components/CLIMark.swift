@@ -29,7 +29,9 @@ extension CoreLimitsCLI {
 /// Codex uses its monochrome mark, white in dark mode and black in light mode. No background or border.
 /// The transparent layout slot keeps existing row alignment and glyph sizes. Decorative: the name is beside it.
 struct CLIMark: View {
-    enum Size { case large, medium, small, glyph }
+    /// `glyph` is the bare mark at 14 beside 12 pt text; `control` the bare mark at 16 beside 13 pt text (a band header's
+    /// lead, a row's logo in v5).
+    enum Size { case large, medium, small, glyph, control }
 
     let cli: CoreLimitsCLI
     var size: Size = .large
@@ -44,13 +46,13 @@ struct CLIMark: View {
     }
 
     var body: some View {
-        if size == .glyph {
-            glyph(side: Metrics.iconInline).accessibilityHidden(true)
+        if size == .glyph || size == .control {
+            glyph(side: size == .glyph ? Metrics.iconInline : Metrics.iconControl).accessibilityHidden(true)
         } else {
             let side = switch size {
             case .large: Metrics.cliMarkSize
             case .medium: Metrics.cliMarkMediumSize
-            case .small, .glyph: Metrics.cliMarkSmallSize
+            case .small, .glyph, .control: Metrics.cliMarkSmallSize
             }
             glyph(side: side * Metrics.cliMarkGlyphFraction)
                 .frame(width: side, height: side)

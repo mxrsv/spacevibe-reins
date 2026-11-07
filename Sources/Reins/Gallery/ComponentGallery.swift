@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// Every shared view in every state. Reach it with `SPACEVIBE_GALLERY=1`; the screenshot mode renders the same content, in two
-/// halves (`part`) because one image taller than 16384 px renders blank.
+/// Every shared view in every state. Reach it with `SPACEVIBE_GALLERY=1`; the screenshot mode renders the same content in
+/// parts (`part`) because one image taller than 16384 px renders blank. The third part holds the v5 blocks and is empty
+/// without the v5 switch.
 struct ComponentGalleryContent: View {
     enum Part {
-        case all, first, second
+        case all, first, second, third
     }
 
     var part: Part = .all
@@ -21,7 +22,7 @@ struct ComponentGalleryContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if part != .second {
+            if part == .all || part == .first {
                 section("Colour tokens") { Swatches() }
                 section("Text roles: Inter at 12, 14 and 16, plus figure and display") { TypeRoles() }
                 section("Buttons on the well, then inside a card (no outline: surface, then surfaceRaised)") {
@@ -79,7 +80,10 @@ struct ComponentGalleryContent: View {
                     section("Icons of the v5 screens: MingCute Line (category), Phosphor Duotone (sidebar and content) and the verdict glyphs, at 12, 14, 16 and 24, then in the sidebar's tone") { V5IconSpecimens() }
                 }
             }
-            if part != .first {
+            if (part == .all || part == .third) && LaunchMode.uiV5Enabled() {
+                section("Containers of the v5 screens, on the content panel's ground") { ContainerSpecimens() }
+            }
+            if part == .all || part == .second {
                 section("Cards, rows and the five usage states") { DemoLoadoutList() }
                 section("Rows: the selected one hides the dividers on both sides of it") {
                     GroupedList {

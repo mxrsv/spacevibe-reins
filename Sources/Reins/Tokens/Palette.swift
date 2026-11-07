@@ -37,6 +37,12 @@ enum PaletteValue {
     static let bgPop = ColorValue(light: 0xFFFFFF, dark: 0x1B1C1F)
     /// A band header.
     static let bgBand = ColorValue(light: 0xEEEFF2, dark: 0x1B1C20)
+    /// A hovered band header: `bgBand` mixed with `fg`, 4% (dark) and 3% (light). Departure: the mock mixes 8%, which puts
+    /// `fg3` (the band's count) at 4.38:1 in dark and 4.16:1 in light; in light no mix above 4% keeps it at 4.5:1.
+    static let bgBandHover = ColorValue(light: 0xE8E9EC, dark: 0x242528)
+    /// A focused band header (D57: the hover fill one step stronger), 6% (dark) and 4% (light). Hovered and focused together
+    /// take this one fill, never two stacked.
+    static let bgBandFocus = ColorValue(light: 0xE6E7EA, dark: 0x28292D)
 
     // Lines and fills over a surface
     static let hair = ColorValue(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.08, darkAlpha: 0.075)
@@ -83,9 +89,10 @@ enum PaletteValue {
     // State only
     /// Departure, light: spec `#2F9E6B` reads 2.89:1 as a mark on a current row; `#2A9B68` reads 3:1.
     static let ok = ColorValue(light: 0x2A9B68, dark: 0x4CB782)
-    /// Departure, light: spec `#C4811A` reads 2.76:1 as a mark on a current row and 2.81:1 on a band header; `#BD7A0B`
-    /// reads 3:1.
-    static let warn = ColorValue(light: 0xBD7A0B, dark: 0xE2A33C)
+    /// Departure, light: spec `#C4811A` reads 2.76:1 as a mark on a current row and 2.81:1 on a band header. U2's `#BD7A0B`
+    /// read 3:1 there, then 2.84:1 on a focused band (`bgBandFocus`) and 2.62:1 as a bar on the track of a current row; `#B26F00` (OKLCH
+    /// lightness lowered, chroma and hue kept to the sRGB gamut) reads 3:1 on both.
+    static let warn = ColorValue(light: 0xB26F00, dark: 0xE2A33C)
     /// Departure, both, hue only (OKLCH lightness and chroma kept): the spec's `#E5604F` (dark) and `#D2442F` (light) sit
     /// 9° and 7° of hue from Claude's clay, inside the ±20° danger family (`HuePolicyTests`). Moved redder to hue 15:
     /// clay is now 24° and 23° away, `catRule` 25°.
@@ -180,6 +187,8 @@ enum Palette {
     static let bgSunk = PaletteValue.bgSunk.color
     static let bgPop = PaletteValue.bgPop.color
     static let bgBand = PaletteValue.bgBand.color
+    static let bgBandHover = PaletteValue.bgBandHover.color
+    static let bgBandFocus = PaletteValue.bgBandFocus.color
     static let hair = PaletteValue.hair.color
     static let hair2 = PaletteValue.hair2.color
     static let rowDivider = PaletteValue.rowDivider.color

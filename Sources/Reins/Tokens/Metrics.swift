@@ -178,13 +178,17 @@ extension Metrics {
     }
 
     enum Radius {
-        /// Key cap, checkbox, a chart bar's top.
+        /// Key cap, checkbox, a skeleton bar and a bar cell's ends.
         static let small: CGFloat = 4
         /// Controls, tab chips, sidebar items, a logo toggle, the warning slot, menu items.
         static let control: CGFloat = 6
         /// The content panel, cards, rows, bands, menus, popovers, the toast, dialogs.
         static let block: CGFloat = 8
         static let window: CGFloat = 12
+        /// The kit's corners are CSS arcs, so v5 shapes are circular, not the old screens' continuous corners.
+        static let cornerStyle = RoundedCornerStyle.circular
+        /// A block's edge and its top-edge highlight: 1 pt.
+        static let edge: CGFloat = 1
     }
 
     enum AppSidebar {
@@ -244,6 +248,28 @@ extension Metrics {
     /// A row in a list or a card, and a band header.
     enum ListRow {
         static let height: CGFloat = 44
+        /// Inside the row block: 10 before the lead slot, 8 after the last cell, 8 between cells.
+        static let leading: CGFloat = 10
+        static let trailing: CGFloat = 8
+        static let spacing: CGFloat = 8
+        /// The divider starts this far from the row block's leading edge (where a lead row's name starts) and ends this far
+        /// from its trailing edge, on rows with and without a lead.
+        static let dividerLeading: CGFloat = 34
+        static let dividerTrailing: CGFloat = 8
+        /// The current row's accent bar at the leading edge: its width, and its distance from the top and the bottom.
+        static let currentBarWidth: CGFloat = 2
+        static let currentBarInset: CGFloat = 8
+        /// The checkbox that replaces the lead glyph, and its outline.
+        static let checkbox: CGFloat = 16
+        static let checkboxBorder: CGFloat = 1
+        /// The share left in a row (20/28), right-aligned; fits "100%" at the default Font size.
+        static var shareWidth: CGFloat { TypeScale.shared.width(64, at: 20) }
+    }
+
+    /// A bar cell: 8 high with round ends on the `track`; an unknown share is a 1 pt dashed line.
+    enum Bar {
+        static let height: CGFloat = 8
+        static let unknownDash: [CGFloat] = [3, 3]
     }
 
     /// A card (the Tile, D56).
@@ -251,6 +277,13 @@ extension Metrics {
         static let headerHeight: CGFloat = 52
         static let headerLeading: CGFloat = 16
         static let headerTrailing: CGFloat = 12
+        /// Between the title, count, state glyph and actions; between two header actions.
+        static let headerSpacing: CGFloat = 8
+        static let actionSpacing: CGFloat = 4
+        /// The collapse button and a header action: 28 high.
+        static let headerControl: CGFloat = 28
+        /// An empty state inside a card: 24 on top, 12 at the sides, 28 below.
+        static let emptyInsets = EdgeInsets(top: 24, leading: 12, bottom: 28, trailing: 12)
         /// Rows inside: 0 on top, 12 at the sides, 16 below.
         static let rowsSide: CGFloat = 12
         static let rowsBottom: CGFloat = 16
@@ -267,10 +300,57 @@ extension Metrics {
 
     enum Band {
         static let headerHeight: CGFloat = 44
+        /// Inside the header: 10 before the chevron, 12 after the extras, 8 between parts, 12 before the state glyph.
+        static let leading: CGFloat = 10
+        static let trailing: CGFloat = 12
+        static let spacing: CGFloat = 8
+        static let stateSpacing: CGFloat = 12
         /// Between collapsed bands that follow each other; on Hooks they form a two-column grid, 8 apart.
         static let collapsedSpacing: CGFloat = 10
         static let gridSpacing: CGFloat = 8
         static let gridColumns = 2
+    }
+
+    /// The loading skeleton of a card: three bars on the `track`, the second and third shorter, pulsing 0.5 to 1.
+    enum Skeleton {
+        static let insets = EdgeInsets(top: 4, leading: 12, bottom: 16, trailing: 12)
+        static let spacing: CGFloat = 12
+        static let barHeight: CGFloat = 12
+        /// The bars' widths as shares of the card's.
+        static let widths: [CGFloat] = [1, 0.72, 0.48]
+        static let pulseLow: Double = 0.5
+        static let pulse: TimeInterval = 1.2
+    }
+
+    /// An empty state outside a card (the Skills list): 48 on top and below, 24 at the sides.
+    enum EmptyState {
+        static let listInsets = EdgeInsets(top: 48, leading: 24, bottom: 48, trailing: 24)
+        static let titleSpacing: CGFloat = 4
+        static let actionAbove: CGFloat = 16
+    }
+
+    /// The verdict box: neutral glyph (20), then a sentence with its bold title and a quieter line under it.
+    enum VerdictBox {
+        static let padding: CGFloat = 12
+        static let spacing: CGFloat = 12
+        static let smallAbove: CGFloat = 4
+    }
+
+    /// `Stats`: 2 to 4 figures, each column at least 88 wide, 12 apart.
+    enum Stats {
+        static let columnMinWidth: CGFloat = 88
+        static let spacing: CGFloat = 12
+    }
+
+    /// `Column chart`: bars 72 high at most, 2 apart, top corners 2; an empty bucket is a 2 pt line; the axis labels 16
+    /// below the base line.
+    enum ColumnChart {
+        static let height: CGFloat = 72
+        static let spacing: CGFloat = 2
+        static let barRadius: CGFloat = 2
+        static let barMinWidth: CGFloat = 2
+        static let emptyHeight: CGFloat = 2
+        static let axisAbove: CGFloat = 16
     }
 
     enum SkillsList {

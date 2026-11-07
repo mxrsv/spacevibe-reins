@@ -31,6 +31,7 @@ struct ContrastTests {
     static let textGrounds: [Ground] = [
         ground("bgSide", P.bgSide), ground("bgApp", P.bgApp), ground("bgPanel", P.bgPanel), ground("bgRaise", P.bgRaise),
         ground("bgSunk", P.bgSunk), ground("bgPop", P.bgPop), ground("bgBand", P.bgBand),
+        ground("bgBandHover", P.bgBandHover), ground("bgBandFocus", P.bgBandFocus),
         ground("sel on bgPanel", P.bgPanel, Layer(P.sel)), ground("sel on bgRaise", P.bgRaise, Layer(P.sel)),
         ground("sel on bgPop", P.bgPop, Layer(P.sel)), ground("sel on bgSide", P.bgSide, Layer(P.sel)),
         ground("hover on bgPanel", P.bgPanel, Layer(P.hover)), ground("hover on bgRaise", P.bgRaise, Layer(P.hover)),
@@ -140,6 +141,19 @@ struct ContrastTests {
                 ground("track on bgPanel", P.bgPanel, Layer(P.track)),
             ])
         }
+        // What sits on a hovered or focused band header beside its text (V5-R55): the state glyph (warn, danger) and a CLI
+        // logo. The band at rest is in `markGrounds`.
+        for (name, value) in [("warn", P.warn), ("bad", P.bad), ("claude", P.claude), ("codex", P.codex)] {
+            all += marks(name, value, on: [ground("bgBandHover", P.bgBandHover), ground("bgBandFocus", P.bgBandFocus)])
+        }
+        // A bar cell's fill on its track (V5-R56): neutral, warn and danger, in a card row at rest, hovered and current.
+        for (name, value) in [("fg2", P.fg2), ("warn", P.warn), ("bad", P.bad)] {
+            all += marks("\(name) bar", value, on: [
+                ground("track on bgRaise", P.bgRaise, Layer(P.track)),
+                ground("track on hover on bgRaise", P.bgRaise, Layer(P.hover), Layer(P.track)),
+                ground("track on sel on bgRaise", P.bgRaise, Layer(P.sel), Layer(P.track)),
+            ])
+        }
         // The cut-out inside a verdict glyph (`fg2`).
         all.append(Pair(ink: "onVerdict", value: P.onVerdict, ground: ground("a verdict glyph (fg2)", P.fg2), minimum: 3))
         return all + oldScreenPairs
@@ -186,6 +200,8 @@ struct ContrastTests {
             "catSkillCountInk on the active catSkill count circle", "accentInk on the active accent chip",
             "warn on bgPanel", "warn on bgRaise", "bad on bgPanel", "bad on bgRaise", "onVerdict on a verdict glyph (fg2)",
             "fg2 on sel on bgRaise", "fg3 on sel on bgPanel",
+            "fg3 on bgBandHover", "fg3 on bgBandFocus", "warn on bgBandHover", "warn on bgBandFocus",
+            "warn bar on track on sel on bgRaise",
         ] {
             #expect(names.contains(required), "missing \(required)")
         }

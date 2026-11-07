@@ -60,12 +60,12 @@ struct GlyphShape: Shape {
 }
 
 /// The icon sizes: 16 for controls, tabs, rows, menus and the sidebar; 14 in popovers, file rows, notes and beside 12 pt text;
-/// 12 for chevrons, checks and the filter-chip close; 24 in a pane head's tile (V5-R16). Never below 12. `sidebar` and `row`
-/// are the old screens' sizes and go with them.
+/// 12 for chevrons, checks and the filter-chip close; 24 in a pane head's tile (V5-R16). Never below 12. `sidebar` is the old
+/// screens' size and goes with them; `row` stays for the verdict box.
 enum IconSize: CaseIterable {
     /// A sidebar item of the old screens: 22.
     case sidebar
-    /// A row's lead slot, a banner, in the old screens: 20.
+    /// A row's lead slot, a banner, in the old screens; the verdict glyph in a v5 verdict box (the kit's 20): 20.
     case row
     /// Buttons, tags, fields, cells, tabs, rows, menus and the v5 sidebar: 16.
     case control
