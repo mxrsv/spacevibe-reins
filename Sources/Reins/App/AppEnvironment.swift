@@ -51,7 +51,7 @@ final class AppEnvironment {
         routing.service(for: screen, inProcess: core, core: { coreClient })
     }
 
-    /// The Go core, the only engine of a screen that has cut over (Activity and Stop, Limits, the Loadout reads). It starts on the first call.
+    /// The Go core, the only engine of a screen that has cut over (Activity and Stop, Limits, Loadout), and the engine every Undo runs on. It starts on the first call.
     var goCore: any CoreService { coreClient }
 
     static func live(environment: [String: String] = ProcessInfo.processInfo.environment, toasts: ToastCenter? = nil) -> AppEnvironment {
@@ -60,7 +60,7 @@ final class AppEnvironment {
     }
 
     /// Runs a write through `service` (the engine the screen's writes route to). On success it shows a toast with `label` and an
-    /// Undo that calls `service.journalUndo` with the entry the write returned, and `afterChange` runs on the main actor after the
+    /// Undo that calls `goCore.journalUndo` with the entry the write returned (the journal is one file for both engines), and `afterChange` runs on the main actor after the
     /// write and again after an Undo, so a screen can reload; it does not run when the write failed. On failure it shows a danger
     /// toast with the `CoreError` message, or with `onFailure` the message goes there instead (a screen that shows the error next
     /// to the control, such as the Rules add-rule row).
@@ -71,7 +71,7 @@ final class AppEnvironment {
             guard let self else { return }
             switch outcome {
             case .success(let entry):
-                self.toasts.show(label, undo: { [weak self] in self?.undo(entry, via: service, label: label, afterChange: afterChange) })
+                self.toasts.show(label, undo: { [weak self] in self?.undo(entry, label: label, afterChange: afterChange) })
                 afterChange?()
             case .failure(let error):
                 if let onFailure { onFailure(Self.message(error)) } else { self.toasts.show(Self.message(error), tone: .danger) }
@@ -79,10 +79,11 @@ final class AppEnvironment {
         }
     }
 
-    private func undo(_ entry: CoreJournalEntry, via service: any CoreService, label: String, afterChange: (@MainActor () -> Void)?) {
+    private func undo(_ entry: CoreJournalEntry, label: String, afterChange: (@MainActor () -> Void)?) {
+        let core = goCore
         Task { [weak self] in
             let outcome: Result<CoreUndoResult, Error>
-            do { outcome = .success(try await service.journalUndo(id: entry.id)) } catch { outcome = .failure(error) }
+            do { outcome = .success(try await core.journalUndo(id: entry.id)) } catch { outcome = .failure(error) }
             guard let self else { return }
             switch outcome {
             case .success(let undone):

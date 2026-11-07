@@ -4,15 +4,16 @@ import Testing
 
 /// The Rules screen gives the same answers through the in-process engine and the Go core (plan S.1e, cut-over readiness). Every
 /// test runs on a private copy of the synthetic fixture home (S-R1: never the real one); a write test uses a fresh copy per
-/// engine, so the byte comparison is the whole home outside Reins' own folder.
+/// engine, so the byte comparison is the whole home outside Reins' own folder. Undo always runs on the Go core (S.6), so a write
+/// made in process is undone by the core.
 @Suite("Rules, both engines")
 @MainActor
 struct RulesModelEngineTests {
-    private func model(_ fixture: CoreFixtureHome, viaCore: Bool) throws -> (RulesModel, CoreClient?) {
-        let client = viaCore ? try fixture.client() : nil
+    private func model(_ fixture: CoreFixtureHome, viaCore: Bool) throws -> (RulesModel, CoreClient) {
+        let client = try fixture.client()
         let env = AppEnvironment(
             roots: try fixture.roots(), toasts: ToastCenter(announce: false),
-            routing: CoreRouting(viaCore: viaCore ? [.rules] : []), makeCoreClient: { client ?? CoreClient() }
+            routing: CoreRouting(viaCore: viaCore ? [.rules] : []), makeCoreClient: { client }
         )
         return (RulesModel(env: env), client)
     }
@@ -93,7 +94,7 @@ struct RulesModelEngineTests {
         defer { fixture.remove() }
         let (inProcess, _) = try model(fixture, viaCore: false)
         let (viaCore, client) = try model(fixture, viaCore: true)
-        defer { client?.shutdown() }
+        defer { client.shutdown() }
         try await settled(inProcess)
         try await settled(viaCore)
         for name in [nil, "spacevibe-academy", "spacevibe-bench"] as [String?] {
@@ -116,23 +117,23 @@ struct RulesModelEngineTests {
 
     // MARK: Writes
 
-    @Test("rules.setCapability then journal.undo puts the home back, byte for byte, through both engines")
+    @Test("rules.setCapability then journal.undo puts the home back, byte for byte, whether the write was made in process or by the core")
     func capabilityRoundTrip() async throws {
         var labels: [String] = []
         for viaCore in [false, true] {
             let fixture = try CoreFixtureHome()
             defer { fixture.remove() }
-            let client = viaCore ? try fixture.client() : nil
-            defer { client?.shutdown() }
+            let client = try fixture.client()
+            defer { client.shutdown() }
             let inProcess = InProcessCore(roots: try fixture.roots())
-            let service: any CoreService = client.map { $0 as any CoreService } ?? inProcess
+            let service: any CoreService = viaCore ? client : inProcess
             let before = try fixture.tree()
 
             let entry = try #require(try await service.rulesSetCapability(scope: .global, dir: nil, capability: .push, verdict: .deny).entry)
             labels.append(entry.label)
             #expect(try fixture.tree() != before, "viaCore \(viaCore): the write changed nothing")
             #expect(try await service.rulesSetCapability(scope: .global, dir: nil, capability: .push, verdict: .deny).entry == nil)
-            let undone = try await service.journalUndo(id: entry.id)
+            let undone = try await client.journalUndo(id: entry.id)
             labels.append(undone.label)
             let changed = try fixture.tree().difference(from: before)
             #expect(changed.isEmpty, "differs from the original (viaCore \(viaCore)): \(changed)")
@@ -141,23 +142,23 @@ struct RulesModelEngineTests {
         #expect(labels.count == 4 && labels[2] == labels[0] && labels[3] == labels[1])
     }
 
-    @Test("add, move and remove each write one journal entry that Undo restores, through both engines")
+    @Test("add, move and remove each write one journal entry that the core's Undo restores, whether the writes were made in process or by the core")
     func ruleWritesAndUndo() async throws {
         var labels: [[String]] = []
         for viaCore in [false, true] {
             let fixture = try CoreFixtureHome()
             defer { fixture.remove() }
-            let client = viaCore ? try fixture.client() : nil
-            defer { client?.shutdown() }
+            let client = try fixture.client()
+            defer { client.shutdown() }
             let inProcess = InProcessCore(roots: try fixture.roots())
-            let service: any CoreService = client.map { $0 as any CoreService } ?? inProcess
+            let service: any CoreService = viaCore ? client : inProcess
             let before = try fixture.tree()
 
             let added = try await service.rulesAdd(scope: .global, dir: nil, verdict: .ask, rule: "Bash(echo round-trip)").entry
             let moved = try await service.rulesChangeVerdict(scope: .global, dir: nil, rule: "Bash(echo round-trip)", from: .ask, to: .deny).entry
             let removed = try await service.rulesRemove(scope: .global, dir: nil, verdict: .deny, rule: "Bash(echo round-trip)").entry
             labels.append([added.label, moved.label, removed.label])
-            for entry in [removed, moved, added] { _ = try await service.journalUndo(id: entry.id) }
+            for entry in [removed, moved, added] { _ = try await client.journalUndo(id: entry.id) }
             let changed = try fixture.tree().difference(from: before)
             #expect(changed.isEmpty, "differs from the original (viaCore \(viaCore)): \(changed)")
         }
@@ -170,7 +171,7 @@ struct RulesModelEngineTests {
             let fixture = try CoreFixtureHome()
             defer { fixture.remove() }
             let (model, client) = try model(fixture, viaCore: viaCore)
-            defer { client?.shutdown() }
+            defer { client.shutdown() }
             try await settled(model)
             let before = try fixture.tree()
 
@@ -197,7 +198,7 @@ struct RulesModelEngineTests {
             let fixture = try CoreFixtureHome()
             defer { fixture.remove() }
             let (model, client) = try model(fixture, viaCore: viaCore)
-            defer { client?.shutdown() }
+            defer { client.shutdown() }
             try await settled(model)
             try await pick(model, "spacevibe-bench", .shared)
             let before = try fixture.tree()
@@ -242,11 +243,10 @@ struct RulesModelEngineTests {
         out.append(await run("add to a project discovery did not find") { _ = try await service.rulesAdd(scope: .project, dir: gone, verdict: .ask, rule: "Bash") })
         out.append(await run("preview a project discovery did not find") { _ = try await service.rulesPreview(scope: .project, dir: gone, capability: .run, verdict: .ask) })
         out.append(await run("a global scope with a folder") { _ = try await service.rulesAdd(scope: .global, dir: academy, verdict: .ask, rule: "Bash") })
-        out.append(await run("undo an unknown entry") { _ = try await service.journalUndo(id: "no-such-entry") })
         return out
     }
 
-    @Test("the refusals (duplicate, invalid, missing, same verdict, unknown project, stray folder, unknown Undo) have the same status and sentence through both engines")
+    @Test("the refusals (duplicate, invalid, missing, same verdict, unknown project, stray folder) have the same status and sentence through both engines")
     func sameRefusals() async throws {
         let fixture = try CoreFixtureHome()
         defer { fixture.remove() }
@@ -258,7 +258,7 @@ struct RulesModelEngineTests {
         let academy = try #require(global.projectDirs.first { $0.hasSuffix("spacevibe-academy") })
         let swift = await refusals(inProcess, academy: academy)
         let go = await refusals(client, academy: academy)
-        #expect(swift.count == 8 && swift.allSatisfy { !$0.hasSuffix("accepted") }, "\(swift)")
+        #expect(swift.count == 7 && swift.allSatisfy { !$0.hasSuffix("accepted") }, "\(swift)")
         #expect(go == swift)
         #expect(swift.allSatisfy { !$0.contains(fixture.home.path) }, "a refusal names an absolute path: \(swift)")
     }
@@ -271,7 +271,7 @@ struct RulesModelEngineTests {
             defer { fixture.remove() }
             try Data("{ not json".utf8).write(to: fixture.home.appendingPathComponent(".claude/settings.json"))
             let (model, client) = try model(fixture, viaCore: viaCore)
-            defer { client?.shutdown() }
+            defer { client.shutdown() }
             try await settled(model)
             let problems = try #require(model.snapshot?.problems)
             #expect(!problems.isEmpty && problems.allSatisfy { !$0.contains(fixture.home.path) && $0.contains("~/.claude/settings.json") })

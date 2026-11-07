@@ -9,17 +9,16 @@ struct CoreRoutingTests {
 
     @Test("SPACEVIBE_CORE_SCREENS picks the screens that use the core, ignoring unknown names and spaces")
     func screens() {
-        let routing = CoreRouting(environment: Self.allowed.merging(["SPACEVIBE_CORE_SCREENS": "loadoutWrites, rules ,nope,"]) { $1 })
-        #expect(routing.viaCore == [.loadoutWrites, .rules])
-        #expect(routing.usesCore(.loadoutWrites))
-        #expect(!routing.usesCore(.rules) == false)
+        let routing = CoreRouting(environment: Self.allowed.merging(["SPACEVIBE_CORE_SCREENS": "rules ,nope,"]) { $1 })
+        #expect(routing.viaCore == [.rules])
+        #expect(routing.usesCore(.rules))
     }
 
-    @Test("a screen that has cut over (activity, limits, loadout) is not a routing choice any more: its name is ignored")
+    @Test("a screen that has cut over (activity, limits, loadout, loadoutWrites) is not a routing choice any more: its name is ignored")
     func cutOverScreens() {
-        let routing = CoreRouting(environment: Self.allowed.merging(["SPACEVIBE_CORE_SCREENS": "activity,limits,loadout,rules"]) { $1 })
+        let routing = CoreRouting(environment: Self.allowed.merging(["SPACEVIBE_CORE_SCREENS": "activity,limits,loadout,loadoutWrites,rules"]) { $1 })
         #expect(routing.viaCore == [.rules])
-        #expect(CoreScreen(rawValue: "activity") == nil && CoreScreen(rawValue: "limits") == nil && CoreScreen(rawValue: "loadout") == nil)
+        #expect(CoreScreen(rawValue: "activity") == nil && CoreScreen(rawValue: "limits") == nil && CoreScreen(rawValue: "loadout") == nil && CoreScreen(rawValue: "loadoutWrites") == nil)
     }
 
     @Test("with no variable, or an empty one, every screen stays in process")
@@ -31,12 +30,11 @@ struct CoreRoutingTests {
     @Test("the core is built only for a screen that routes to it")
     func lazyCore() async throws {
         let inProcess = InProcessCore(roots: nil)
-        let routing = CoreRouting(viaCore: [.loadoutWrites])
         var built = 0
-        let other = routing.service(for: .rules, inProcess: inProcess) { built += 1; return CoreClient() }
+        let other = CoreRouting(viaCore: []).service(for: .rules, inProcess: inProcess) { built += 1; return CoreClient() }
         #expect(other is InProcessCore)
         #expect(built == 0)
-        let routed = routing.service(for: .loadoutWrites, inProcess: inProcess) { built += 1; return CoreClient(binary: URL(fileURLWithPath: "/nonexistent")) }
+        let routed = CoreRouting(viaCore: [.rules]).service(for: .rules, inProcess: inProcess) { built += 1; return CoreClient(binary: URL(fileURLWithPath: "/nonexistent")) }
         #expect(routed is CoreClient)
         #expect(built == 1)
     }

@@ -153,12 +153,11 @@ struct LoadoutModelTests {
         )
     }
 
-    /// The reads and the scan go to the Go core (`reads`); the writes still go to the in-process core (`writes`, or `reads` when
-    /// one fake serves both) until they cut over.
-    private func model(_ reads: FakeLoadoutCore, writes: FakeLoadoutCore? = nil) -> LoadoutModel {
+    /// Every call goes to the Go core (`core`); the in-process core refuses everything, so a call that strays to it fails loudly.
+    private func model(_ core: FakeLoadoutCore) -> LoadoutModel {
         let env = AppEnvironment(
-            roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false), core: writes ?? reads,
-            makeCoreClient: { reads }
+            roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false), core: UnservedCore(),
+            makeCoreClient: { core }
         )
         return LoadoutModel(env: env)
     }
@@ -169,8 +168,8 @@ struct LoadoutModelTests {
         #expect(done(), "\(what) did not happen")
     }
 
-    private func started(_ core: FakeLoadoutCore, writes: FakeLoadoutCore? = nil) async throws -> LoadoutModel {
-        let model = model(core, writes: writes)
+    private func started(_ core: FakeLoadoutCore) async throws -> LoadoutModel {
+        let model = model(core)
         model.start()
         try await settle("the first read and scan") { model.isSettled }
         return model
@@ -186,8 +185,10 @@ struct LoadoutModelTests {
     func readScanRead() async throws {
         let core = FakeLoadoutCore(rows: Self.rows())
         let model = try await started(core)
-        #expect(core.calls.first == "rows" && core.calls.contains("scan") && core.calls.last == "rows")
-        #expect(core.rowsReads == 2)
+        // The first read and the scan start together, so their order is not promised; the read that carries the counts follows the scan.
+        let calls = core.calls
+        #expect(core.rowsReads == 2 && calls.filter { $0 == "rows" }.count == 2)
+        #expect(calls.firstIndex(of: "scan").map { scan in calls.lastIndex(of: "rows").map { $0 > scan } ?? false } == true)
         #expect(model.usageNote == "Counted from 1,234 Claude Code and 56 Codex sessions since 2026-10-01")
         #expect(model.scanProgress == nil && model.scanFailure == nil)
         #expect(model.badge == 6)
@@ -353,17 +354,16 @@ struct LoadoutModelTests {
 
     // MARK: Routing
 
-    @Test("reads and the scan use the Go core; writes and Undo use the loadoutWrites core")
+    @Test("reads, the scan, writes and Undo all use the Go core; the in-process core is never asked")
     func routing() async throws {
-        let reads = FakeLoadoutCore(rows: Self.rows())
-        let writes = FakeLoadoutCore(rows: Self.rows())
-        let model = try await started(reads, writes: writes)
+        let core = FakeLoadoutCore(rows: Self.rows())
+        let model = try await started(core)
         model.remove(try row(model, "one"), member: try #require(try row(model, "one").members[.claude]))
         try await settle("the toast") { model.env.toasts.current?.action != nil }
+        #expect(model.env.toasts.current?.tone == .info)
         model.env.toasts.runCurrentAction()
         try await settle("the Undo toast") { model.env.toasts.current?.message.hasPrefix("Undid") == true }
-        #expect(writes.calls == ["remove claude:skill:global:one", "undo entry-1"])
-        #expect(!reads.calls.contains { $0.hasPrefix("remove") || $0.hasPrefix("undo") })
-        #expect(reads.calls.contains("scan") && !writes.calls.contains("scan"))
+        #expect(core.calls.contains("scan") && core.calls.contains("remove claude:skill:global:one") && core.calls.contains("undo entry-1"))
+        #expect(model.env.toasts.current?.tone != .danger)
     }
 }

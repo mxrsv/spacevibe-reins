@@ -12,8 +12,7 @@ struct LoadoutView {
 
 /// The Loadout screen's state: the inventory, the usage scan, the chip and scope choice, and every write.
 ///
-/// Everything goes through the core: reads and the scan through the Go core (`env.goCore`), writes through
-/// `env.core(for: .loadoutWrites)` (in process until the writes cut over). The rows are read first and shown with pending cells; the scan then runs and the rows are read
+/// Everything goes through the Go core (`env.goCore`): reads, the scan, writes and Undo. The rows are read first and shown with pending cells; the scan then runs and the rows are read
 /// again with its counts attached. After every write (and every Undo) the rows are read again; the core keeps the usage totals,
 /// because a write cannot change what the logs say. A newer read or build replaces an older one, so a slow one never
 /// overwrites a fresh one.
@@ -72,8 +71,7 @@ final class LoadoutModel {
 
     var badge: Int? { data?.globalCount }
 
-    private var reads: any CoreService { env.goCore }
-    private var writes: any CoreService { env.core(for: .loadoutWrites) }
+    private var core: any CoreService { env.goCore }
 
     // MARK: Reading
 
@@ -114,7 +112,7 @@ final class LoadoutModel {
     /// the failure shown.
     private func fetch(_ generation: Int) async {
         do {
-            let rows = try await reads.loadoutRows()
+            let rows = try await core.loadoutRows()
             readsInFlight -= 1
             guard generation == readGeneration else { return }
             raw = rows
@@ -132,7 +130,7 @@ final class LoadoutModel {
         scanRunning = true
         Task {
             do {
-                let result = try await reads.usageScan(progress: { [weak self] progress in
+                let result = try await core.usageScan(progress: { [weak self] progress in
                     Task { @MainActor in self?.scanProgress = progress }
                 })
                 usageResult = result
@@ -232,7 +230,7 @@ final class LoadoutModel {
         let started = ContinuousClock.now
         env.performWithUndo(
             label: label,
-            via: writes,
+            via: core,
             afterChange: { [weak self] in
                 self?.release(guardKey, ticket: ticket, since: started)
                 self?.reload()

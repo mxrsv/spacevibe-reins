@@ -9,6 +9,7 @@ struct InProcessCoreTests {
     /// A copy of `core/testdata/fixtures/home` under a temporary folder, with `$HOME` replaced by that folder.
     private struct Fixture {
         let home: URL
+        let roots: Roots
         let core: InProcessCore
 
         init() throws {
@@ -31,7 +32,8 @@ struct InProcessCoreTests {
                 "CODEX_HOME": home.appendingPathComponent(".codex").path, "SPACEVIBE_HOME": home.appendingPathComponent(".spacevibe").path,
                 "SPACEVIBE_TEST": "1",
             ]
-            core = InProcessCore(roots: try Roots.resolve(env: env))
+            roots = try Roots.resolve(env: env)
+            core = InProcessCore(roots: roots)
         }
 
         func remove() { try? FileManager.default.removeItem(at: home) }
@@ -64,13 +66,14 @@ struct InProcessCoreTests {
         let removed = try await core.rulesRemove(scope: .global, dir: nil, verdict: .deny, rule: "Bash(echo core-test)")
         #expect(removed.entry.label.hasPrefix("Removed deny rule"))
 
-        let history = try await core.journalHistory()
-        #expect(history.entries.map(\.id) == [removed.entry.id, moved.entry.id, added.entry.id])
-        let undone = try await core.journalUndo(id: removed.entry.id)
-        #expect(undone.label == removed.entry.label)
+        // Undo is the Go core's (S.6); the journal file is the engine's, so the engine reads it here.
+        let history = Journal.history(fixture.roots)
+        #expect(history.map(\.id) == [removed.entry.id, moved.entry.id, added.entry.id])
+        let undone = try Journal.undo(fixture.roots, id: removed.entry.id)
+        #expect(undone == removed.entry.label)
         snapshot = try await core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false)
         #expect(snapshot.rules.contains { $0.rule == "Bash(echo core-test)" && $0.verdict == .deny })
-        #expect(try await core.journalHistory().entries.first?.undone == true)
+        #expect(Journal.history(fixture.roots).first?.undone == true)
     }
 
     @Test("a capability preview and write go through, and a repeat write answers a null entry instead of failing")
@@ -183,7 +186,7 @@ struct InProcessCoreTests {
         let expected = CoreError("SPACEVIBE_TEST must be 1 or 0, got \"banana\"", status: 500)
         await expectFailure(expected) { _ = try await core.rulesCheck(rule: "Bash") }
         await expectFailure(expected) { _ = try await core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false) }
-        await expectFailure(expected) { _ = try await core.loadoutRemoveItem(id: "x") }
+        await expectFailure(expected) { _ = try await core.rulesPreview(scope: .global, dir: nil, capability: .run, verdict: .ask) }
     }
 
     @Test("a call cancelled before it starts throws CancellationError and does nothing")
@@ -197,7 +200,7 @@ struct InProcessCoreTests {
         }
         task.cancel()
         await #expect(throws: CancellationError.self) { _ = try await task.value }
-        #expect(try await core.journalHistory().entries.isEmpty)
+        #expect(Journal.history(fixture.roots).isEmpty)
     }
 
     @MainActor

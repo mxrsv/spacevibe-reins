@@ -9,7 +9,8 @@ import ReinsCore
 /// Not an actor: a blocking engine call must not queue behind another. The state the core owns in a process (the discovered
 /// projects) sits behind a lock.
 ///
-/// Activity, Stop (S.3), Limits (S.4) and the Loadout reads (S.5) have cut over: they live in the Go core only and this adapter no longer serves them.
+/// Activity, Stop (S.3), Limits (S.4) and Loadout (reads S.5, writes and the journal S.6) have cut over: they live in the Go core only and this adapter no longer serves them. The Rules writes still record journal
+/// entries here; their Undo runs on the Go core (`AppEnvironment.performWithUndo`), which reads the same journal.
 ///
 /// Two things differ from the Go core, none a behavior change for today's screens:
 /// - `rulesSnapshot` with `refreshProjects` discovers the projects again, and every other rules call discovers once when the
@@ -21,8 +22,8 @@ final class InProcessCore: CoreService, @unchecked Sendable {
     static let version = "in-process"
     /// Every method this adapter still serves; the Go core serves these and the ones that cut over.
     static let methods = [
-        "initialize", "journal.history", "journal.undo", "loadout.copyToOther", "loadout.removeDeadHooks", "loadout.removeItem",
-        "rules.add", "rules.changeVerdict", "rules.check", "rules.preview", "rules.remove", "rules.setCapability", "rules.snapshot",
+        "initialize", "rules.add", "rules.changeVerdict", "rules.check", "rules.preview", "rules.remove", "rules.setCapability",
+        "rules.snapshot",
     ]
 
     private final class State: @unchecked Sendable {
@@ -103,7 +104,7 @@ final class InProcessCore: CoreService, @unchecked Sendable {
         )
     }
 
-    // MARK: Served by the Go core only (S.3 Activity and Stop, S.4 Limits, S.5 Loadout reads)
+    // MARK: Served by the Go core only (S.3 Activity and Stop, S.4 Limits, S.5 and S.6 Loadout)
 
     /// The screens that cut over have no path here: `AppEnvironment.goCore` is their only service. These exist because
     /// `CoreService` lists them; S.8 deletes this file.
@@ -114,34 +115,13 @@ final class InProcessCore: CoreService, @unchecked Sendable {
     func inventoryRead() async throws -> CoreInventorySnapshot { throw Self.goCoreOnly }
     func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult { throw Self.goCoreOnly }
     func loadoutRows() async throws -> CoreLoadoutRows { throw Self.goCoreOnly }
+    func loadoutCopyToOther(id: String) async throws -> CoreEntryResult { throw Self.goCoreOnly }
+    func loadoutRemoveItem(id: String) async throws -> CoreEntryResult { throw Self.goCoreOnly }
+    func loadoutRemoveDeadHooks(cli: CoreCLI) async throws -> CoreEntryResult { throw Self.goCoreOnly }
+    func journalUndo(id: String) async throws -> CoreUndoResult { throw Self.goCoreOnly }
+    func journalHistory() async throws -> CoreJournalHistory { throw Self.goCoreOnly }
 
     private static let goCoreOnly = CoreError("This is served by the Go core only.", status: 500)
-
-    // MARK: Loadout writes and the journal
-
-    func loadoutCopyToOther(id: String) async throws -> CoreEntryResult {
-        try await run { roots in CoreEntryResult(entry: Self.entry(try Mutate.copyToOther(roots: roots, id: id))) }
-    }
-
-    func loadoutRemoveItem(id: String) async throws -> CoreEntryResult {
-        try await run { roots in CoreEntryResult(entry: Self.entry(try Mutate.removeItem(roots: roots, id: id))) }
-    }
-
-    func loadoutRemoveDeadHooks(cli: CoreCLI) async throws -> CoreEntryResult {
-        return try await run { roots in CoreEntryResult(entry: Self.entry(try Mutate.removeDeadHooks(roots: roots, cli: Self.engineCLI(cli)))) }
-    }
-
-    func journalUndo(id: String) async throws -> CoreUndoResult {
-        try await run { roots in CoreUndoResult(label: try Journal.undo(roots, id: id)) }
-    }
-
-    func journalHistory() async throws -> CoreJournalHistory {
-        try await run { roots in
-            CoreJournalHistory(entries: Journal.history(roots).map {
-                CoreJournalEntry(id: $0.id, at: $0.at, label: $0.label, undone: $0.undone, count: $0.count)
-            })
-        }
-    }
 
     // MARK: Rules
 
@@ -286,13 +266,6 @@ final class InProcessCore: CoreService, @unchecked Sendable {
     }
 
     // MARK: Engine type to DTO
-
-    /// The engine's own CLI type, named by the call it is passed to: the app's `InventoryCLI` is the DTO's, so this file cannot
-    /// spell the engine's (and `ReinsCore.InventoryCLI` does not parse: the module has a type of its own name).
-    private static func engineCLI<Engine: RawRepresentable>(_ cli: CoreCLI) -> Engine where Engine.RawValue == String {
-        guard let converted = Engine(rawValue: cli.rawValue) else { preconditionFailure("\(Engine.self) has no case \(cli.rawValue)") }
-        return converted
-    }
 
     private static func rule(_ item: RuleItem) -> CoreRule {
         CoreRule(

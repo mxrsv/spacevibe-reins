@@ -9,14 +9,14 @@ import SwiftUI
 ///
 /// The "added" and "removed" shots make the real write in the synthetic HOME, draw the toast, then undo it through the journal
 /// and check the row is back, so one run also exercises Add to, Remove and Undo against real files. The writes go through the
-/// core `env.core(for: .loadoutWrites)` picks, as the screen's do. Nothing outside the synthetic HOME is touched:
+/// Go core (`env.goCore`), as the screen's do. Nothing outside the synthetic HOME is touched:
 /// `Roots.resolve` refuses a root under the real home when `SPACEVIBE_TEST=1`.
 @MainActor
 enum LoadoutShots {
     static func run(into directory: URL) throws {
         let env = AppEnvironment.live(toasts: ToastCenter(announce: false))
         if let problem = env.startupProblem { throw ShotHarness.Failure(problem) }
-        let writes = env.core(for: .loadoutWrites)
+        let writes = env.goCore
         let model = LoadoutModel(env: env)
         model.start()
         try settle(model)

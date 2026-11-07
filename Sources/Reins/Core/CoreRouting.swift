@@ -1,10 +1,10 @@
 import Foundation
 
 /// The screens that still have an in-process path, and move to the Go core one at a time (plan S.2, "Cut-over order").
-/// A screen that has cut over leaves this list for good: Activity and Stop (S.3), Limits (S.4) and the Loadout reads (S.5)
+/// A screen that has cut over leaves this list for good: Activity and Stop (S.3), Limits (S.4) and Loadout (S.5, S.6)
 /// always use the core, so their names are no longer accepted in `SPACEVIBE_CORE_SCREENS`.
 enum CoreScreen: String, CaseIterable, Sendable {
-    case loadoutWrites, rules
+    case rules
 }
 
 /// Which `CoreService` each screen uses while both engines exist. `SPACEVIBE_CORE_SCREENS` is a comma list of screen

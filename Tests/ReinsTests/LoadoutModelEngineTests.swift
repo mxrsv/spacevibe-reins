@@ -2,21 +2,17 @@ import Foundation
 import Testing
 @testable import Reins
 
-/// The Loadout screen reads through the Go core (plan S.5); its writes still run in process or through the core until S.6. Every
-/// test runs on a private copy of the synthetic fixture home (S-R1: never the real one); a write test uses a fresh copy per
-/// route, so the byte comparison is the whole home outside Reins' own folder.
+/// The Loadout screen runs on the Go core (plan S.5 and S.6). Every test runs on a private copy of the synthetic fixture home
+/// (S-R1: never the real one), so a write test's byte comparison is the whole home outside Reins' own folder.
 @Suite("Loadout, Go core")
 @MainActor
 struct LoadoutModelEngineTests {
     /// The home a claude-only skill and a plugin skill live in, and a skill present in both CLIs.
     private static let removable = "claude:agent:local:architect.md"
 
-    private func model(_ fixture: CoreFixtureHome, screens: Set<CoreScreen> = []) throws -> (LoadoutModel, CoreClient) {
+    private func model(_ fixture: CoreFixtureHome) throws -> (LoadoutModel, CoreClient) {
         let client = try fixture.client()
-        let env = AppEnvironment(
-            roots: try fixture.roots(), toasts: ToastCenter(announce: false),
-            routing: CoreRouting(viaCore: screens), makeCoreClient: { client }
-        )
+        let env = AppEnvironment(roots: try fixture.roots(), toasts: ToastCenter(announce: false), makeCoreClient: { client })
         return (LoadoutModel(env: env), client)
     }
 
@@ -91,81 +87,62 @@ struct LoadoutModelEngineTests {
 
     // MARK: Writes
 
-    @Test("Remove then Undo from the screen puts the home back, byte for byte, with the writes in process and through the core")
+    @Test("Remove then Undo from the screen puts the home back, byte for byte")
     func removeAndUndoFromTheScreen() async throws {
-        // Reads are always the Go core's; the writes run in process, then through the core.
-        let routes: [Set<CoreScreen>] = [[], [.loadoutWrites]]
-        for screens in routes {
-            let fixture = try CoreFixtureHome()
-            defer { fixture.remove() }
-            let (model, client) = try model(fixture, screens: screens)
-            defer { client.shutdown() }
-            try await settled(model)
-            let before = try fixture.tree()
+        let fixture = try CoreFixtureHome()
+        defer { fixture.remove() }
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
+        try await settled(model)
+        let before = try fixture.tree()
 
-            let row = try #require(model.data?.rows.first { $0.name == "architect" && $0.kind == .agent })
-            let member = try #require(row.members[.claude])
-            #expect(member.id == Self.removable)
-            model.remove(row, member: member)
-            try await wait("the toast") { model.env.toasts.current != nil }
-            #expect(model.env.toasts.current?.message == "Removed agent architect from Claude Code", "routing: \(screens.map(\.rawValue).sorted())")
-            #expect(try fixture.tree()[".claude/agents/architect.md"] == nil)
-            try await wait("the re-read") { model.isSettled && model.data?.rows.contains { $0.name == "architect" } == false }
+        let row = try #require(model.data?.rows.first { $0.name == "architect" && $0.kind == .agent })
+        let member = try #require(row.members[.claude])
+        #expect(member.id == Self.removable)
+        model.remove(row, member: member)
+        try await wait("the toast") { model.env.toasts.current != nil }
+        #expect(model.env.toasts.current?.message == "Removed agent architect from Claude Code")
+        #expect(try fixture.tree()[".claude/agents/architect.md"] == nil)
+        try await wait("the re-read") { model.isSettled && model.data?.rows.contains { $0.name == "architect" } == false }
 
-            model.env.toasts.runCurrentAction()
-            try await wait("the Undo toast") { model.env.toasts.current?.message.hasPrefix("Undid") == true }
-            #expect(model.env.toasts.current?.message == "Undid Removed agent architect from Claude Code", "routing: \(screens.map(\.rawValue).sorted())")
-            let changed = try fixture.tree().difference(from: before)
-            #expect(changed.isEmpty, "differs from the original (routing \(screens.map(\.rawValue).sorted())): \(changed)")
-            try await wait("the row back") { model.isSettled && model.data?.rows.contains { $0.name == "architect" } == true }
-        }
+        model.env.toasts.runCurrentAction()
+        try await wait("the Undo toast") { model.env.toasts.current?.message.hasPrefix("Undid") == true }
+        #expect(model.env.toasts.current?.message == "Undid Removed agent architect from Claude Code")
+        let changed = try fixture.tree().difference(from: before)
+        #expect(changed.isEmpty, "differs from the original: \(changed)")
+        try await wait("the row back") { model.isSettled && model.data?.rows.contains { $0.name == "architect" } == true }
     }
 
-    @Test("copy to the other CLI, remove and remove dead hooks each write one journal entry that Undo restores, through both engines")
+    @Test("copy to the other CLI, remove and remove dead hooks each write one journal entry that Undo restores")
     func writesAndUndo() async throws {
-        var allLabels: [[String]] = []
-        for viaCore in [false, true] {
-            let fixture = try CoreFixtureHome()
-            defer { fixture.remove() }
-            let client = try fixture.client()
-            defer { client.shutdown() }
-            let inProcess = InProcessCore(roots: try fixture.roots())
-            let service: any CoreService = viaCore ? client : inProcess
-            let before = try fixture.tree()
-            let rows = try await client.loadoutRows()
-            let copy = try #require(rows.items.first { $0.cli == .claude && $0.kind == .skill && !$0.inOther && $0.scope == .global && $0.removable })
-            let dead = rows.hooks.filter { $0.cli == .claude && $0.dead && $0.removable }
-            #expect(!dead.isEmpty)
+        let fixture = try CoreFixtureHome()
+        defer { fixture.remove() }
+        let client = try fixture.client()
+        defer { client.shutdown() }
+        let before = try fixture.tree()
+        let rows = try await client.loadoutRows()
+        let copy = try #require(rows.items.first { $0.cli == .claude && $0.kind == .skill && !$0.inOther && $0.scope == .global && $0.removable })
+        let dead = rows.hooks.filter { $0.cli == .claude && $0.dead && $0.removable }
+        #expect(!dead.isEmpty)
 
-            var ids: [String] = []
-            var labels: [String] = []
-            let copied = try await service.loadoutCopyToOther(id: copy.id).entry
-            ids.append(copied.id)
-            labels.append(copied.label)
-            let afterCopy = try fixture.tree()
-            #expect(afterCopy != before)
-            let removed = try await service.loadoutRemoveItem(id: copy.id).entry
-            ids.append(removed.id)
-            labels.append(removed.label)
-            let deadEntry = try await service.loadoutRemoveDeadHooks(cli: .claude).entry
-            #expect(deadEntry.label.hasPrefix("Removed \(dead.count) dead hook"), "viaCore \(viaCore): \(deadEntry.label)")
-            ids.append(deadEntry.id)
-            labels.append(deadEntry.label)
-            allLabels.append(labels)
-            let history = try await service.journalHistory().entries.map(\.id)
-            #expect(Array(history.reversed()) == ids)
-            for id in ids.reversed() { _ = try await service.journalUndo(id: id) }
-            let changed = try fixture.tree().difference(from: before)
-            #expect(changed.isEmpty, "differs from the original (viaCore \(viaCore)): \(changed)")
-        }
-        // The Undo toast shows the journal's label, so a different sentence here is a different toast.
-        #expect(allLabels.count == 2 && allLabels[0].count == 3)
-        #expect(allLabels[1] == allLabels[0])
+        var ids: [String] = []
+        let copied = try await client.loadoutCopyToOther(id: copy.id).entry
+        ids.append(copied.id)
+        #expect(try fixture.tree() != before)
+        ids.append(try await client.loadoutRemoveItem(id: copy.id).entry.id)
+        let deadEntry = try await client.loadoutRemoveDeadHooks(cli: .claude).entry
+        #expect(deadEntry.label.hasPrefix("Removed \(dead.count) dead hook"), "\(deadEntry.label)")
+        ids.append(deadEntry.id)
+        let history = try await client.journalHistory().entries.map(\.id)
+        #expect(Array(history.reversed()) == ids)
+        for id in ids.reversed() { _ = try await client.journalUndo(id: id) }
+        let changed = try fixture.tree().difference(from: before)
+        #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
     // MARK: Refusals
 
-    /// Status and sentence of each refusal, per engine.
+    /// Status and sentence of each refusal.
     private func refusals(_ service: any CoreService, rows: CoreLoadoutRows) async -> [String] {
         func run(_ what: String, _ work: () async throws -> Void) async -> String {
             do { try await work(); return "\(what): accepted" } catch let error as CoreError { return "\(what): \(error.status) \(error.message)" } catch { return "\(what): \(error)" }
@@ -184,17 +161,22 @@ struct LoadoutModelEngineTests {
         return out
     }
 
-    @Test("the refusals (copy over an existing name, unknown id, plugin and project items, no dead hooks, unknown Undo) have the same status and sentence through both engines")
-    func sameRefusals() async throws {
+    @Test("the refusals (copy over an existing name, unknown id, plugin and project items, no dead hooks, unknown Undo) have the core's status and sentence")
+    func refusals() async throws {
         let fixture = try CoreFixtureHome()
         defer { fixture.remove() }
-        let inProcess = InProcessCore(roots: try fixture.roots())
         let client = try fixture.client()
         defer { client.shutdown() }
         let rows = try await client.loadoutRows()
-        let swift = await refusals(inProcess, rows: rows)
-        let go = await refusals(client, rows: rows)
-        #expect(swift.count == 7 && swift.allSatisfy { !$0.hasSuffix("accepted") })
-        #expect(go == swift)
+        let seen = await refusals(client, rows: rows)
+        #expect(seen == [
+            "copy a skill the other CLI has: 409 Codex already has a skill named explain.",
+            "copy an unknown id: 404 This item no longer exists. Refresh the list.",
+            "remove an unknown id: 404 This item no longer exists. Refresh the list.",
+            "remove a plugin item: 403 This one belongs to a plugin. Remove the plugin instead.",
+            "remove a project item: 403 This one belongs to a project folder, so Reins only shows it. Change it in the project.",
+            "remove dead hooks from Codex: 409 No dead hooks to remove.",
+            "undo an unknown entry: 404 That history entry is gone.",
+        ])
     }
 }
