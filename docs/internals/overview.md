@@ -18,7 +18,7 @@ Requirements: [spec](../specs/2026-11-02-reins.md) and [decision ledger](../spec
 3. Usage is the slow read. `usage.scan` streams `usage/progress`, and the core keeps its result so `loadout.rows` can attach counts without the shell sending them back.
 4. Activity is a subscription: one full report, then a full report only when it changed (resync, never deltas).
 5. A write (`loadout.*`, `rules.*`) takes the write lock, edits through the atomic-write path, records one journal entry and returns its reference. Undo is `journal.undo` on that id. Stopping a session is not a journal write and cannot be undone.
-6. On stdin EOF the core drains for at most 5 s and exits 0.
+6. On stdin EOF the core cancels every in-flight request, waits at most 5 s (a write inside the lock finishes regardless) and exits 0.
 
 ## Where the fixtures and goldens live
 
@@ -27,7 +27,7 @@ Requirements: [spec](../specs/2026-11-02-reins.md) and [decision ledger](../spec
 | Frozen goldens | [`core/testdata/fixtures/golden/`](../../core/testdata/fixtures/golden), listed with their hashes in [`SHA256SUMS`](../../core/testdata/fixtures/SHA256SUMS) |
 | Synthetic homes the goldens ran on | [`core/testdata/fixtures/`](../../core/testdata/fixtures): `home`, `activity-home`, `rules-home`, `zst` |
 | Materializer, canonical writer, diff, leak guard, freeze check | [`core/internal/goldentest`](../../core/internal/goldentest); rules in [core-protocol.md](core-protocol.md#canonical-golden-writer) |
-| Recorded request and response transcripts | `core/testdata/rpc/*.jsonl` (added with PR.2); the Swift `CoreClient` tests decode them |
+| Recorded request and response transcripts | [`core/testdata/rpc/*.jsonl`](../../core/testdata/rpc), recorded and compared by the contract tests in `core/cmd/spacevibe`; the Swift `CoreClient` tests are meant to decode them (unverified: no Swift test reads them yet) |
 | Port source and its tests | `Sources/ReinsCore`, `Tests/ReinsCoreTests`, deleted at S.8 |
 
 The materialized home sits at the fixed path `/private/tmp/reins-fixture-home`, and the fixture keeps its own `.reins` folder. Hook and project ids in the goldens are hashes of absolute paths under that root, and nothing can regenerate them now that the Node generator is gone. Renaming the root or the folder breaks the goldens; the rename report lists them as skipped sites (C3). Parity means canonical bytes of a named projection, not the Node bytes; the plan's "Parity method" lists the projections.

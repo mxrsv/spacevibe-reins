@@ -2,18 +2,18 @@
 
 The contract between the Go core (`spacevibe`) and the SwiftUI shell: how they talk over stdio, which methods exist, the exact JSON each one carries, and the rules that keep stdout, errors and goldens safe. The Swift `CoreClient` decodes these shapes into Codable types, so a change here is a change to both sides. Architecture: [overview.md](overview.md). Decisions: [ledger](../specs/2026-11-07-core-port-and-spacevibe-identity-decisions.md) SV3, SV4, SV12. Execution: [plan](../plans/2026-11-07-go-core-and-spacevibe-identity.md) PR.1 to PR.3.
 
-**Status.** This page is the contract the code is built to. `core/internal/rpc` does not exist yet (PR.2), so nothing below is observable behavior until that task lands; `TestDocMethodTable` then fails when the table and the registered methods differ. Each shape is tagged by origin:
+**Status.** This page is the contract the code is built to. Implemented: the transport in [`core/internal/rpc`](../../core/internal/rpc) (framing, handshake, errors, strict params, cancellation, drain, size caps) and the entry point [`core/cmd/spacevibe`](../../core/cmd/spacevibe) (`rpc`, `--version`, the stdout guard, the startup problem), with the transcripts in [`core/testdata/rpc`](../../core/testdata/rpc). The engines the methods will call are ported and tested in `core/internal` (`inventory`, `usage`, `activity`, `limits`, `proc`), but not yet wired: the shipped binary registers only `initialize`, so every other method in the table answers -32601 today. Still to wire: every other method, the one-shot `--json` commands, the scrubbing of settings-file paths, and the `fsx.InstallWriteGuard(cfg)` call (see "Output discipline"). `TestDocMethodTable` fails when the table and `AllMethods` differ, and asserts that a fresh server registers only `initialize`; each wiring task changes that assertion. Each shape is tagged by origin:
 
 - no tag: copied from an existing Swift `Codable` type, field for field.
 - `(new)`: Swift has no encoding for it (the type is not `Codable`, or the function is new), so the shape is defined here from the Swift fields. Change it only together with its Go test and its Swift DTO.
 
 ## Framing and lifecycle
 
-- **NDJSON, JSON-RPC 2.0.** One object per line, UTF-8, no raw newline inside a message. Request lines are capped at 1 MiB and response lines at 64 MiB. Batches (a JSON array) are refused with -32600. Ids are integers or strings, echoed verbatim. Responses may arrive in any order: requests run concurrently, writes serialize on the write lock.
+- **NDJSON, JSON-RPC 2.0.** One object per line, UTF-8, no raw newline inside a message. Request lines are capped at 1 MiB and response lines at 64 MiB. Batches (a JSON array) are refused with -32600. Ids are integers or strings, echoed verbatim; a `null`, fractional, exponent or other non-integer id is -32600 with id `null`. A blank line is ignored. A request whose id is still in flight is refused with -32600 (the first keeps running). Params may be absent or `null` (read as `{}`); any other non-object is -32602. Responses may arrive in any order: requests run concurrently, writes serialize on the write lock.
 - **Spawn.** The shell starts `Contents/Helpers/spacevibe` with the argv array `["rpc"]` (no shell) and inherits the environment. The binary lives in `Helpers`, not `MacOS`, because `SpaceVibe` and `spacevibe` collide on a case-insensitive volume.
-- **Handshake.** The first request must be `initialize`. Any other request before it gets -32002; notifications before it are dropped. A second `initialize` gets -32600. `protocolVersion` is the integer `1`; any other value gets -32001 with `data: {protocolVersion: 1}`. The shell takes the core's name, version, env prefix and data folder from the result and hard-codes only the helper's path (SV12).
-- **Startup problem** `(new)`. If the environment is refused (`internal/config`, or the real-home guard under `SPACEVIBE_TEST=1`), `initialize` still succeeds, so the shell learns the identity, and every other method fails with -32000, status 500 and the startup sentence. This mirrors `AppEnvironment.startupProblem`: a screen shows the sentence instead of reading anything.
-- **Shutdown.** On stdin EOF the core stops reading, cancels reads, lets in-flight writes finish for at most 5 s, then exits 0. A write that outlives the drain is abandoned at exit. Every write ends in one atomic rename, so a file is old or new, never half; the rare leftover is a `.spacevibe-*.tmp` file.
+- **Handshake.** The first request must be `initialize`; its params must be an object, but `client` may be missing (a given `client` is `{name, version}`, unknown members are -32602). Any other request before it gets -32002; notifications before it are dropped. A second `initialize` gets -32600. `protocolVersion` is the integer `1`; any other value gets -32001 with `data: {protocolVersion: 1}`. The shell takes the core's name, version, env prefix and data folder from the result and hard-codes only the helper's path (SV12).
+- **Startup problem** `(new)`. If the environment is refused (`internal/config`, or the real-home guard under `SPACEVIBE_TEST=1`), `initialize` still succeeds, so the shell learns the identity, and every other registered method fails with -32000, status 500 and the startup sentence. An unknown method is -32601 first, and a request before `initialize` is -32002 first. The sentence is the error text of `config.Load`, `roots.RealHome` or `roots.Resolve`: it may name an environment variable (and the offending `SPACEVIBE_TEST` value) or a root path, never file content. This mirrors `AppEnvironment.startupProblem`: a screen shows the sentence instead of reading anything.
+- **Shutdown.** On stdin EOF the core stops reading and cancels the context of every in-flight request. A handler stops on cancel, except one inside the write lock, which ignores the context and finishes its write. The core waits at most 5 s for them, then exits 0. A write that outlives the drain is abandoned at exit. A read error other than EOF exits 1. Every write ends in one atomic rename, so a file is old or new, never half; the rare leftover is a `.spacevibe-*.tmp` file.
 - **Size overflow** `(new)`. A request line over the cap is discarded through its newline and answered with -32600 and id `null`; the stream stays usable. A result that would pass 64 MiB is replaced by -32000, status 413, "The result is too large."
 
 ## Errors
@@ -21,9 +21,9 @@ The contract between the Go core (`spacevibe`) and the SwiftUI shell: how they t
 | Code | Meaning | `data` |
 | --- | --- | --- |
 | -32700 | Line is not valid UTF-8 JSON. The stream continues. | none |
-| -32600 | Not a valid request: batch, oversized line, repeated `initialize`. | none |
+| -32600 | Not a valid request: batch, oversized line, repeated `initialize`, a `null` or non-integer id, or an id that is still in flight. | none |
 | -32601 | Unknown method. | none |
-| -32602 | Params have a wrong type or an unknown member. The message names the member, never its value. | none |
+| -32602 | Params are not an object, or have a wrong type or an unknown member. The message names the member, never its value. | none |
 | -32603 | A panic inside a handler. Fixed message; the reason goes to stderr only. | none |
 | -32000 | The engine refused or failed. The message is a `coreerr` sentence. | `{status, message}` |
 | -32001 | `initialize` protocol version mismatch. | `{protocolVersion}` |
@@ -55,11 +55,12 @@ A cancelled read answers -32800. A write is cancellable only before it takes the
 
 ## Output discipline and security boundaries
 
-- **stdout carries the protocol and nothing else.** One writer goroutine owns it. At start the core duplicates fd 1 for the protocol and points `os.Stdout` at stderr, so a stray `fmt.Println` lands in the log, not in the stream. The contract case `stray_print_on_stderr` holds this.
+- **stdout carries the protocol and nothing else.** One writer goroutine owns it. On darwin the core duplicates fd 1 for the protocol and points fd 1 itself and `os.Stdout` at stderr (`dup`, `dup2`), so a stray `fmt.Println`, a cgo write or a child process lands in the log, not in the stream. Other OSes only repoint `os.Stdout` at the Go level: a write to fd 1 by anything but Go code still reaches the protocol. The contract case `stray_print_on_stderr` holds this.
 - **stderr is the log.** Fixed reasons only, no file content, no request params. The shell forwards it to `os.Logger` at debug level.
 - **No listener, no network.** The core opens no socket and `go list -deps ./cmd/spacevibe` shows no `net`, `net/http` or `crypto/tls` (S-R5).
 - **No recorded command runs.** The only processes are the fixed `ps`, `lsof` and SIGTERM of Activity, with the pid looked up again from the live system. `activity.stop` takes `{cli, id}` and never a pid (S-R4). `spacevibe statusline capture` is a command-line subcommand with no RPC route; the case `rpc_cannot_capture` holds that.
-- **Environment is read in one place**, [`internal/config`](../../core/internal/config/config.go), fail-closed (`SPACEVIBE_TEST` is `1` or `0`, `SPACEVIBE_HOME` is absolute). Under `SPACEVIBE_TEST=1` a root under the real home, taken from the password database and not `$HOME`, is refused (S-R1). The fixture process adapter exists only under that flag.
+- **Environment is read in one place**, [`internal/config`](../../core/internal/config/config.go), fail-closed (`SPACEVIBE_TEST` is `1` or `0`, `SPACEVIBE_HOME` is absolute). Under `SPACEVIBE_TEST=1` a root under the real home, taken from the password database and not `$HOME`, is refused (S-R1). The fixture process adapter exists only under that flag: `SPACEVIBE_PROC_FIXTURE` (`Config.ProcFixture`) names its process-list file, `proc.New` receives the path as an argument, and an unreadable file is an error sentence. Outside `SPACEVIBE_TEST=1` the variable is ignored.
+- **The write guard is a startup requirement.** The entry point must call `fsx.InstallWriteGuard(cfg)` right after `config.Load`, before any method runs. Without it the primitives of [`fsx`](../../core/internal/fsx/write-guard.go) write freely and the real-home refusal (S-R1) is void for writes. `cmd/spacevibe` does not call it yet (only tests do); the wiring task must add it, with a case that a misdirected root cannot write under the real home.
 - **Params are strict** `(new)`. A misspelled `verdict` must not fall back to a default and write something else, so unknown members are -32602.
 - **A project folder must be one project discovery found.** The core keeps the discovered list per process: `inventory.read` and `rules.snapshot` with `refreshProjects: true` refresh it, every other `rules.*` call reuses it, and discovery runs once if it is empty. An unknown folder is 404, so no caller can make the core create `<any folder>/.claude/settings.json`.
 
@@ -73,14 +74,14 @@ Params and results use the types defined under "Wire types". "Journal entry" is 
 
 | Method | Params | Result | Errors (status) | Side effects | Journal entry |
 | --- | --- | --- | --- | --- | --- |
-| `initialize` | `{protocolVersion, client:{name, version}}` | `{protocolVersion, core:{name, version}, identity:{envPrefix, dataDir}, methods:string[]}` | -32001, -32600 | Starts the session | none |
+| `initialize` | `{protocolVersion, client?:{name, version}}` | `{protocolVersion, core:{name, version}, identity:{envPrefix, dataDir}, methods:string[]}` | -32001, -32600 | Starts the session | none |
 | `inventory.read` | `{}` | `InventorySnapshot`, no `cells`, hook `usage` null | none: unreadable files become `problems` | Refreshes the discovered-project list | none |
 | `usage.scan` | `{}` | `UsageResult`; sends `usage/progress`; stores the result as the process's usage state | 409 a scan is already running; -32800 | Reads logs; writes `<data>/usage-cache.json` | none |
-| `loadout.rows` | `{}` | `LoadoutRows` | none | Reads inventory; attaches the stored usage state | none |
+| `loadout.rows` | `{}` | `LoadoutRows`; `problems` are the raw sentences | none | Reads inventory; attaches the stored usage state | none |
 | `activity.read` | `{}` | `ActivityReport` | none: the engine reports what it could not read inside the report | none | none |
 | `activity.subscribe` | `{}` | `ActivityReport`; later `activity/report` | none | Starts a 3 s poll | none |
 | `activity.unsubscribe` | `{}` | `{}` | none | Stops the poll | none |
-| `activity.stop` | `{cli, id}` | `{exited:boolean}` | 404 not running; 403 other user; 500 | SIGTERM to the pid found now; waits up to 3 s | none: not undoable, the shell confirms first |
+| `activity.stop` | `{cli, id}` | `{exited:boolean}` | 404 not running; 409 could not be verified (ps, lsof or the sessions folder unreadable, or the start time unknown: nothing is sent); 403 other user; 500 | SIGTERM to the pid found now; waits up to 3 s | none: not undoable, the shell confirms first |
 | `loadout.copyToOther` | `{id}` | `{entry:JournalEntryRef}` | 400, 403, 404, 409, 413, 500 | Creates the skill folder, agent file or Claude hook in the other CLI | label `Copied skill\|agent <name> to <CLI>` or `Added <event> hook to Claude Code`; ops `created`, `hook-added` |
 | `loadout.removeItem` | `{id}` | `{entry:JournalEntryRef}` | 403 plugin or project item; 404; 409; 500 | Moves the item to the data-folder trash; a link keeps its target text | label `Removed skill\|agent <name> from <CLI>` or `Removed <event> hook from <CLI>`; ops `moved`, `link-removed`, `hook-removed` |
 | `loadout.removeDeadHooks` | `{cli}` | `{entry:JournalEntryRef}` | 409 none dead; 500 | One write to the CLI's hook file | label `Removed N dead hooks from <CLI>`; ops `hook-removed` |
@@ -98,7 +99,7 @@ Params and results use the types defined under "Wire types". "Journal entry" is 
 Behavior the table cannot say:
 
 - **`usage.scan` owns the usage state.** The core keeps the last `UsageResult` of the process. `loadout.rows` attaches it, or reports `usage: "scanning"` and `pending` cells when no scan has finished in this process. The shell does not send totals back. A core restart forgets the state; `usage-cache.json` makes the next scan fast.
-- **`loadout.rows` replaces three Swift calls** `(new)`: `Inventory.read`, `attachUsage` and `filterCounts` (per scope and per row key). Grouping rows by `key`, sorting and labels stay in Swift.
+- **`loadout.rows` replaces three Swift calls** `(new)`: `Inventory.read`, `attachUsage` and `filterCounts` (per scope and per row key). Grouping rows by `key`, sorting and labels stay in Swift. Problems come back unshortened, with absolute paths; the shell applies the existing rule that shortens the home folder before showing them.
 - **`rules.setCapability` returning null is not an error.** The core reports it; the app turns it into the 409 sentence "Nothing to change: the file already holds that." (`RulesModel.write` keeps that today). `rules.add`, `remove` and `changeVerdict` never return null: the engine throws that 409 itself.
 - **`rules.check`** is the live check of `RulesScopes.shapeError`, built on `Rules.checkedRule`: empty text, over 1000 UTF-16 units, a newline, or no `Tool` or `Tool(pattern)` shape. `message` is the same sentence the write would refuse with. The write path checks again; this method is advice.
 - **Journal ops are not exposed.** `JournalEntryRef` carries `count` only: ops hold absolute paths and trash names, and no Swift caller reads them (`AppEnvironment` uses the id and the label). The journal file format is unchanged and shared with the Swift engine while both exist: `<data>/journal.json`, newest first, 200 entries, and a journal that exists but is not a JSON array makes every write 409.
@@ -135,7 +136,7 @@ type InventoryItem = {                            // a skill or a subagent
   owner: string,                                  // "user", "link", or a plugin name
   path: string, file: string, removable: boolean, scope: "global" | "project", project: string | null,
   inOther: boolean, key: string,                  // key = "<kind>:<project or empty>:<bare name>"
-  override?: string | null,                       // omitted unless a Claude global skill has skillOverrides; null = present but empty
+  override?: string | null,                       // written on every Claude global skill (null when settings hold no value); omitted on all other items
   cells?: Cells                                   // omitted until usage is attached
 }
 type HookUsage = { runs: number, avgMs: number | null, totalMs: number, errors: number, last: string | null }
@@ -178,7 +179,7 @@ type ActivityReport = {
   sessions: {
     cli: Cli, id: string, title: string, project: string | null, pid: number,
     state: "running" | "waiting" | "idle" | "ended" | "unmeasurable", stateReason: string,
-    reasonCode: "codex-no-rollout" | "codex-tool-silent" | "claude-prompt-vs-busy" | "claude-unknown-status" | "codex-hook-runs" | null,
+    reasonCode: string | null,                    // open: known values below under unmeasurable
     currentTool: { name: string, target: string } | null,
     ageMs: number | null, lastWriteAgoMs: number | null,
     cost: { usd: number, estimated: true } | null, costNote: string | null
@@ -190,9 +191,12 @@ type ActivityReport = {
   }[],
   files: { path: string, label: string, edits: number, sessions: number, last: string | null, clis: Cli[], projects: string[] }[],
   unmeasurable: { cli: Cli, code: string, text: string }[],     // code: same values as reasonCode
+  // known codes: codex-no-rollout, codex-tool-silent, claude-prompt-vs-busy, claude-unknown-status, codex-hook-runs, codex-process-unknown
   stats: { logs: number, truncated: number }
 }
 ```
+
+`reasonCode` and `unmeasurable[].code` are open strings: a Swift DTO must decode an unknown value without failing and show `stateReason` or `text`. `codex-process-unknown` is new in Go: "The system process check failed just now, so Codex sessions cannot be matched to their logs. This is not a log that is missing." It appears on a Codex row, or as one extra `unmeasurable` entry, only while `ps` or `lsof` keeps failing; it is not in the fixed entries.
 
 Rules (the golden's `ruleObject` and preview shapes from `RulesGoldenTests.swift`; the snapshot and Codex shapes are `(new)`):
 
@@ -230,6 +234,7 @@ type RulesSnapshot = {                            // (new) from RulesSnapshot / 
 Limits `(new)`. `Limits`, `CLILimits` and `LimitWindow` are not `Codable`, so the shape follows the projection the Swift-recorded [`limits.json`](../../core/testdata/fixtures/golden/limits.json) golden uses (plan G0.1), which the Go test compares against. The two timestamps are seconds since 1970 as numbers (fractions allowed), the one place this protocol does not use ISO text; do not convert them. If G2.5 changes the golden projection it edits this page in the same change.
 
 ```ts
+// every nullable member (plan, source, at, minutes, scope) is always present, null when unknown
 type LimitsEntry = {
   cli: "claude" | "codex" | "gemini",
   state: "measured" | "notRecorded" | "unreadable" | "notMeasurable" | "notInstalled",
@@ -237,9 +242,9 @@ type LimitsEntry = {
   at: number | null,                              // when the record was taken; set only when measured
   windows: {
     id: string, minutes: number | null, scope: string | null, usedPercent: number,
-    resetsAt: number, active: boolean,
+    resetsAt: number, active: boolean,            // active: false when the CLI marks it as not applying now
     current: boolean                              // resetsAt is after the core's now
-  }[]                                             // [] unless measured
+  }[]                                             // [] unless measured, never null
 }
 ```
 
