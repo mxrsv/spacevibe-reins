@@ -8,7 +8,7 @@ Always: [PRODUCT.md](PRODUCT.md) (purpose, jobs in priority order, colour meanin
 
 - UI of any page: [design language](docs/DESIGN-LANGUAGE.md), then the spec and plan of that page.
 - A decision or its wording: the [identity decisions](docs/specs/2026-11-06-reins-linear-identity-decisions.md). Cite the D-id; never narrow one (W20).
-- A `ReinsCore` subsystem: its page under `docs/internals/` once it exists ([plan](docs/plans/2026-11-07-reins-internals-docs.md)); until then the spec and "Known traps" below.
+- A `ReinsCore` subsystem: its page in the [internals index](docs/internals/README.md); where no page exists yet ([plan](docs/plans/2026-11-07-reins-internals-docs.md)), the spec and "Known traps" below.
 
 A change to a documented responsibility, interface, state transition, path or failure behavior updates the owning page in the same PR. A refactor that keeps the contract needs no prose change. Each fact lives in one page; link to it, do not copy it.
 

@@ -2,11 +2,11 @@
 
 Requirements: agreed in chat on 2026-11-07, no spec. Scope: one reference page per `ReinsCore` subsystem, so an agent reads only the page for the code it touches. Model: magpie's `docs/subsystems/` (a page per subsystem with a responsibilities and sources-of-truth table, an index, "update the page in the same PR") and orca's "read only when the task touches it" index.
 Checkout: `spacevibe-reins` on `main`. Commit with `git commit -- <paths>` only.
-Status: not started. Approved so far: the model above and the `AGENTS.md` read-when list (done 2026-11-07).
+Status: T1 and T2 done 2026-11-07. Approved so far: the model above and the `AGENTS.md` read-when list (done 2026-11-07).
 
-## Decision needed before T1 (D3)
+## Directory (D3)
 
-`docs/internals/` is a valid directory but does not exist yet. D3 and F2 require the owner's yes before a new directory. The owner said "ok" to this plan in chat on 2026-11-07; treat T1 as cleared only if that covers the directory, otherwise ask once.
+`docs/internals/` was approved by the owner on 2026-11-07 (D64).
 
 ## Page shape
 
@@ -50,6 +50,6 @@ Each of T2 to T7 is one commit. Write from the code and the Node oracle's behavi
 
 ## Handoff
 
-2026-11-07: plan written. Next: T1 after the directory is cleared.
+2026-11-07: plan written. T1 (`README.md`) and T2 (`inventory.md`) written and committed. Next: T3, `usage.md`.
 
 /goal Write the Reins internals reference per docs/plans/2026-11-07-reins-internals-docs.md: tasks T1 to T8 in order, one commit each. Done means every ReinsCore file is covered by one docs/internals page, the docs-compliance and docs-anchors scripts print no new warning, every source link resolves, and the AGENTS.md "Known traps" live only in their pages.
