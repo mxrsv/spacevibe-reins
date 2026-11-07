@@ -347,7 +347,7 @@ Evidence: `/tmp/reins-v5/U3/` (`pkg/` the packed sets, `lic/` the upstream licen
 ## Handoff
 
 - Date: 2026-11-07
-- Progress (task, commit): U0 closed (6fd9f45); U1 done (af3f28b, 0f8c9f3); U2 done (89181d4 and earlier); U3 done (this commit).
+- Progress (task, commit): U0 closed (6fd9f45); U1 done (af3f28b, 0f8c9f3); U2 done (89181d4 and earlier); U3 done (407cb5f).
 - Checkout, branch, PR: `spacevibe-reins` on `main`, shared with the go-core session (uncommitted `core/` work); no PR.
 - Observed verification (N tests before and after, shot folders, trace tables): baseline N = 416 (Swift half; see "Baseline"); after U1 N = 426 (`scripts/test.sh`, full); after U2 N = 434 (full, with the follow-up); after U3 N = 438 for the Swift tests of this track, 528 in the shared checkout at commit time (full). U2 shots: `/tmp/reins-v5/U2/`; U3: `/tmp/reins-v5/U3/`.
 - Remaining work: U4 to U13, then U14.
@@ -355,9 +355,10 @@ Evidence: `/tmp/reins-v5/U3/` (`pkg/` the packed sets, `lic/` the upstream licen
 - For U4 and U5 (from U2): band hover is not a token yet; a band-hover fill must keep `fg3` at 4.5:1 (`ContrastTests` has no band-hover ground). A v5 row that is both current and focused must not stack two `sel` fills (`fg3` 3.81:1). v5 text at 12 and 14 uses `meta`, `metaLabel` and `field`, not `caption`, `label` and `body`.
 - For U4 onward (from U3): a gallery image over 16384 px renders blank (the shot harness now refuses it); keep each half of the gallery under it. Glyphs: `ReinsIcon(category:)`, `ReinsIcon(content:)`, `VerdictGlyph`; a block that takes an icon takes `any GlyphSource` (or `ContentGlyph`), never `ReinsGlyph`; `IconPolicyTests` fails if a v5 screen folder names a Solar glyph.
 - For U14 (from U3): departures `stop`, `bug`, `rank` (nearest Phosphor icon where the mock hand-drew its own); Phosphor's light layer at the mock's 25%, with the mock's thin outline reproduced.
-- Blockers: 2026-11-07: go-core S.1a, S.2, S.1b, S.1c committed (c6079c2, 14a3064, 9542400, a34c8bc) while this track ran, against G-0; track paused after U3 for the owner. `scripts/test.sh` was green at U1 (the go-core WIP vetted); if it goes red again from `core/internal/`, use the TEST fallback.
+- Blockers: 2026-11-07: go-core S.1a, S.2, S.1b, S.1c committed (c6079c2, 14a3064, 9542400, a34c8bc) while this track ran, against G-0; track paused after U3 for the owner. Resumed at U4 after the owner's answer (below): S.1 finished at 88e6e59 (S.1e; `git grep -l 'import ReinsCore' -- Sources/Reins` → only `Sources/Reins/Core/InProcessCore.swift`; the go-core plan's S.1 box is not ticked), and go-core S.3 landed at 9c97706. Before each task the orchestrator checks that the go-core session's uncommitted files do not overlap the task's files. `scripts/test.sh` was green at U1 (the go-core WIP vetted); if it goes red again from `core/internal/`, use the TEST fallback.
 - Owner decisions recorded (G-0, G-1, G-2, OQ1 to OQ9, per-surface approval):
   - G-0 (2026-11-07): "G-0 làm UI trước go-core S.1 hoặc sau S.8, không chạy song song". S.1 had not started, so this track runs now and go-core S.1 waits until it ends.
+  - G-0 follow-up (2026-11-07), after go-core S.1 started while U3 ran: the owner chose "Chờ S.1 xong" (resume U4 once go-core has committed S.1 for every screen; S.2 to S.7 touch models and `AppEnvironment`, v5 views only read models; overlap checked before each task).
   - G-1 (2026-11-07): "G-1 đã xem bảng truy vết".
   - G-2 (2026-11-07): "G-2 duyệt track (mỗi thay đổi nhỏ đã kiểm chứng được push và merge không cần hỏi)". The owner also said: "Hỏi trước khi làm X1, release, deploy".
   - U3 licence (2026-11-07): MingCute's Apache-2.0 section 4(a) asks for a copy of the licence; the owner chose option D, "File trong bundle": the verbatim text as `Resources/Licenses/MingCute-Apache-2.0.txt`, copied into `Contents/Resources/Licenses/` by `build-app.sh`, a one-line credit in `Credits.swift` naming it, and the Phosphor MIT notice in `Credits.swift`.
