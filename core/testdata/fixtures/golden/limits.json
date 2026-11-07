@@ -1,0 +1,1460 @@
+{
+  "cases": [
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "empty-home",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude/.claude.json",
+            "text": "{\"numStartups\": 3, \"cachedUsageUtilization\": {\"fetchedAtMs\": 1793500000250, \"accountUuid\": \"synthetic\",\n  \"utilization\": {\"five_hour\": null, \"seven_day\": {\"utilization\": 8}, \"limits\": [{\"kind\": \"weekly_all\", \"group\": \"weekly\", \"percent\": 8, \"severity\": \"normal\",\n  \"resets_at\": \"2026-11-06T16:00:00.803412+00:00\", \"scope\": null, \"is_active\": true},\n {\"kind\": \"weekly_scoped\", \"group\": \"weekly\", \"percent\": 0, \"severity\": \"normal\",\n  \"resets_at\": \"2026-11-06T15:59:59.803620+00:00\",\n  \"scope\": {\"model\": {\"id\": null, \"display_name\": \"Fable\"}, \"surface\": null}, \"is_active\": false}]}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "claude-cache-measured",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": 1793500000.25,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeCache",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1793980800.803,
+              "scope": null,
+              "usedPercent": 8
+            },
+            {
+              "active": false,
+              "current": true,
+              "id": "weekly_scoped:Fable",
+              "minutes": 10080,
+              "resetsAt": 1793980799.803,
+              "scope": "Fable",
+              "usedPercent": 0
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude/.claude.json",
+            "text": "{\"numStartups\": 3, \"cachedUsageUtilization\": {\"fetchedAtMs\": 1793500000250, \"accountUuid\": \"synthetic\",\n  \"utilization\": {\"five_hour\": null, \"seven_day\": {\"utilization\": 8}, \"limits\": [{\"kind\": \"weekly_all\", \"group\": \"weekly\", \"percent\": 8, \"resets_at\": \"2026-11-06T16:00:00Z\"},\n {\"kind\": \"five_hour\", \"percent\": 30.5, \"resets_at\": \"2026-11-05T20:00:00Z\"},\n {\"kind\": \"session\", \"group\": \"session\", \"percent\": 1, \"resets_at\": \"2026-11-05T21:00:00Z\"},\n {\"kind\": \"monthly_all\", \"group\": \"monthly\", \"percent\": 4, \"resets_at\": \"2026-12-01T00:00:00Z\"}]}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "claude-cache-window-minutes",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": 1793500000.25,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeCache",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1793980800,
+              "scope": null,
+              "usedPercent": 8
+            },
+            {
+              "active": true,
+              "current": true,
+              "id": "five_hour",
+              "minutes": 300,
+              "resetsAt": 1793908800,
+              "scope": null,
+              "usedPercent": 30.5
+            },
+            {
+              "active": true,
+              "current": true,
+              "id": "session",
+              "minutes": 300,
+              "resetsAt": 1793912400,
+              "scope": null,
+              "usedPercent": 1
+            },
+            {
+              "active": true,
+              "current": true,
+              "id": "monthly_all",
+              "minutes": null,
+              "resetsAt": 1796083200,
+              "scope": null,
+              "usedPercent": 4
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [
+          ".claude"
+        ],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude.json",
+            "text": "{\"numStartups\": 3, \"cachedUsageUtilization\": {\"fetchedAtMs\": 1793500000250, \"accountUuid\": \"synthetic\",\n  \"utilization\": {\"five_hour\": null, \"seven_day\": {\"utilization\": 8}, \"limits\": [{\"kind\": \"weekly_all\", \"group\": \"weekly\", \"percent\": 8, \"severity\": \"normal\",\n  \"resets_at\": \"2026-11-06T16:00:00.803412+00:00\", \"scope\": null, \"is_active\": true},\n {\"kind\": \"weekly_scoped\", \"group\": \"weekly\", \"percent\": 0, \"severity\": \"normal\",\n  \"resets_at\": \"2026-11-06T15:59:59.803620+00:00\",\n  \"scope\": {\"model\": {\"id\": null, \"display_name\": \"Fable\"}, \"surface\": null}, \"is_active\": false}]}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": true
+      },
+      "name": "claude-state-in-home",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": 1793500000.25,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeCache",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1793980800.803,
+              "scope": null,
+              "usedPercent": 8
+            },
+            {
+              "active": false,
+              "current": true,
+              "id": "weekly_scoped:Fable",
+              "minutes": 10080,
+              "resetsAt": 1793980799.803,
+              "scope": "Fable",
+              "usedPercent": 0
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [
+          ".claude"
+        ],
+        "fifos": [],
+        "files": [],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "claude-not-recorded-no-state-file",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "notRecorded",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude/.claude.json",
+            "text": "{\"numStartups\": 3}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "claude-not-recorded-no-cache-key",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "notRecorded",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude/.claude.json",
+            "text": "{\"numStartups\": 3, \"cachedUsageUtilization\": {\"fetchedAtMs\": 1793500000250, \"accountUuid\": \"synthetic\",\n  \"utilization\": {\"five_hour\": null, \"seven_day\": {\"utilization\": 8}, \"limits\": []}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "claude-not-recorded-empty-limits",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeCache",
+          "state": "notRecorded",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude/.claude.json",
+            "text": "{not json"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "claude-unreadable-broken-json",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "unreadable",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude/.claude.json",
+            "text": "{\"numStartups\": 3, \"cachedUsageUtilization\": {\"fetchedAtMs\": 1793500000250, \"accountUuid\": \"synthetic\",\n  \"utilization\": {\"five_hour\": null, \"seven_day\": {\"utilization\": 8}, \"limits\": [{\"kind\": \"weekly_all\", \"group\": \"weekly\", \"percent\": 8, \"resets_at\": \"2026-11-06T16:00:00Z\"},\n {\"kind\": \"five_hour\", \"percent\": \"93%\", \"resets_at\": \"2026-11-03T20:00:00Z\"}]}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "claude-unreadable-one-bad-entry",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeCache",
+          "state": "unreadable",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude/.claude.json",
+            "text": "{\"numStartups\": 3, \"cachedUsageUtilization\": {\"fetchedAtMs\": \"yesterday\", \"accountUuid\": \"synthetic\",\n  \"utilization\": {\"five_hour\": null, \"seven_day\": {\"utilization\": 8}, \"limits\": [{\"kind\": \"weekly_all\", \"group\": \"weekly\", \"percent\": 8, \"severity\": \"normal\",\n  \"resets_at\": \"2026-11-06T16:00:00.803412+00:00\", \"scope\": null, \"is_active\": true},\n {\"kind\": \"weekly_scoped\", \"group\": \"weekly\", \"percent\": 0, \"severity\": \"normal\",\n  \"resets_at\": \"2026-11-06T15:59:59.803620+00:00\",\n  \"scope\": {\"model\": {\"id\": null, \"display_name\": \"Fable\"}, \"surface\": null}, \"is_active\": false}]}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "claude-unreadable-bad-fetched-at",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeCache",
+          "state": "unreadable",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude/.claude.json",
+            "text": "{\"numStartups\": 3, \"cachedUsageUtilization\": {\"fetchedAtMs\": 1793500000250, \"accountUuid\": \"synthetic\",\n  \"utilization\": {\"five_hour\": null, \"seven_day\": {\"utilization\": 8}, \"limits\": [{\"kind\": \"weekly_all\", \"percent\": 8, \"resets_at\": \"next week\"}]}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "claude-unreadable-bad-reset",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeCache",
+          "state": "unreadable",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".codex/sessions/2026/11/03/rollout-a.jsonl",
+            "text": "{\"timestamp\":\"2026-11-03T10:00:00.000Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"a\"}}\n{\"timestamp\":\"2026-11-03T10:01:00.000Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":null,\"rate_limits\":{\"primary\":{\"used_percent\":40.5,\"window_minutes\":300,\"resets_at\":1794200000},\"secondary\":{\"used_percent\":1,\"window_minutes\":10080,\"resets_at\":1794300000},\"plan_type\":\"plus\"}}}\n{\"timestamp\":\"2026-11-03T10:46:28.500Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":null,\"rate_limits\":{\"limit_id\":\"codex\",\"limit_name\":null,\"primary\":{\"used_percent\":2.0,\"window_minutes\":10080,\"resets_at\":1794300000},\"secondary\":null,\"credits\":{\"has_credits\":false},\"plan_type\":\"pro\"}}}\n{\"timestamp\":\"2026-11-03T10:47:00.000Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":null,\"rate_limits\":null}}\n"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "codex-token-count-measured",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": 1793702788.5,
+          "cli": "codex",
+          "plan": "pro",
+          "source": null,
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "primary",
+              "minutes": 10080,
+              "resetsAt": 1794300000,
+              "scope": null,
+              "usedPercent": 2
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793896400,
+            "path": ".codex/sessions/2026/11/03/rollout-z-new-path.jsonl",
+            "text": "{\"timestamp\":\"2026-11-03T09:00:00Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":null,\"rate_limits\":{\"limit_id\":\"codex\",\"limit_name\":null,\"primary\":{\"used_percent\":2.0,\"window_minutes\":10080,\"resets_at\":1794300000},\"secondary\":null,\"credits\":{\"has_credits\":false},\"plan_type\":\"pro\"}}}\n"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".codex/sessions/2026/11/03/rollout-a-resumed.jsonl",
+            "text": "{\"timestamp\":\"2026-11-03T11:00:00Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":null,\"rate_limits\":{\"primary\":{\"used_percent\":70,\"window_minutes\":300,\"resets_at\":1794200000}}}}\n"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "codex-newest-log-by-modification",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": 1793703600,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "primary",
+              "minutes": 300,
+              "resetsAt": 1794200000,
+              "scope": null,
+              "usedPercent": 70
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".codex/sessions/2026/11/03/rollout-a.jsonl",
+            "text": "{\"timestamp\":\"2026-11-03T10:00:00Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":null,\"rate_limits\":{\"primary\":{\"used_percent\":12,\"window_minutes\":300,\"resets_in_seconds\":600}}}}\n"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "codex-relative-reset",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": 1793700000,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": false,
+              "id": "primary",
+              "minutes": 300,
+              "resetsAt": 1793700600,
+              "scope": null,
+              "usedPercent": 12
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".codex/sessions/2026/11/03/rollout-a.jsonl",
+            "text": "{\"timestamp\":\"2026-11-03T10:00:00.000Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"a\"}}\n"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "codex-not-recorded-no-event",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notRecorded",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793899940,
+            "path": ".codex/sessions/2026/11/03/rollout-a.jsonl",
+            "text": "{\"timestamp\":\"2026-11-03T10:00:00.000Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"a\"}}\n"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".codex/sessions/2026/11/03/rollout-b.jsonl",
+            "text": "{\"timestamp\":\"2026-11-03T10:00:00Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":null,\"rate_limits\":{\"primary\":{\"used_percent\":12,\"window_minutes\":300}}}}\n"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "codex-unreadable-window-without-reset",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "unreadable",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".codex/sessions/2026/11/03/rollout-a.jsonl",
+            "text": "{\"timestamp\":\"2026-11-03T10:00:00Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":null,\"rate_limits\":{\"primary\":{\"used_percent\":90,\"window_minutes\":300,\"resets_at\":1793899999},\"secondary\":{\"used_percent\":10,\"window_minutes\":10080,\"resets_at\":1793900000},\"plan_type\":\"pro\"}}}\n"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "codex-passed-reset",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": 1793700000,
+          "cli": "codex",
+          "plan": "pro",
+          "source": null,
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": false,
+              "id": "primary",
+              "minutes": 300,
+              "resetsAt": 1793899999,
+              "scope": null,
+              "usedPercent": 90
+            },
+            {
+              "active": true,
+              "current": false,
+              "id": "secondary",
+              "minutes": 10080,
+              "resetsAt": 1793900000,
+              "scope": null,
+              "usedPercent": 10
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [
+          ".gemini"
+        ],
+        "fifos": [],
+        "files": [],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "gemini-not-measurable",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": null,
+          "cli": "claude",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notMeasurable",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude/.claude.json",
+            "text": "{\"oauthAccount\":{\"accountUuid\":\"synthetic-account\",\"organizationUuid\":\"synthetic-org\"},\n \"cachedUsageUtilization\":{\"fetchedAtMs\":1793800000000,\"utilization\":{\"limits\":[\n {\"kind\":\"weekly_all\",\"group\":\"weekly\",\"percent\":62,\"resets_at\":\"2026-11-06T16:00:00Z\"}]}}}"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".spacevibe/claude-limits/test-session.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900000.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":76,\"resets_at\":1794000000}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "statusline-supersedes-cache",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": 1793900000,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeStatusline",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1794000000,
+              "scope": null,
+              "usedPercent": 76
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900002,
+            "path": ".claude/.claude.json",
+            "text": "{\"oauthAccount\":{\"accountUuid\":\"synthetic-account\",\"organizationUuid\":\"synthetic-org\"},\n \"cachedUsageUtilization\":{\"fetchedAtMs\":1793800000000,\"utilization\":{\"limits\":[\n {\"kind\":\"weekly_all\",\"group\":\"weekly\",\"percent\":62,\"resets_at\":\"2026-11-06T16:00:00Z\"}]}}}"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".spacevibe/claude-limits/active.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900000.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":76,\"resets_at\":1794000000}}}"
+          },
+          {
+            "mtime": 1793900001,
+            "path": ".spacevibe/claude-limits/idle.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900001.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":62,\"resets_at\":1794000000}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "statusline-idle-session-keeps-highest",
+      "now": 1793900002,
+      "result": [
+        {
+          "at": 1793900001,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeStatusline",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1794000000,
+              "scope": null,
+              "usedPercent": 76
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900004,
+            "path": ".claude/.claude.json",
+            "text": "{\"oauthAccount\":{\"accountUuid\":\"synthetic-account\",\"organizationUuid\":\"synthetic-org\"},\n \"cachedUsageUtilization\":{\"fetchedAtMs\":1793800000000,\"utilization\":{\"limits\":[\n {\"kind\":\"weekly_all\",\"group\":\"weekly\",\"percent\":62,\"resets_at\":\"2026-11-06T16:00:00Z\"}]}}}"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".spacevibe/claude-limits/active.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900000.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":76,\"resets_at\":1794000000}}}"
+          },
+          {
+            "mtime": 1793900001,
+            "path": ".spacevibe/claude-limits/idle.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900001.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":62,\"resets_at\":1794000000}}}"
+          },
+          {
+            "mtime": 1793900003,
+            "path": ".spacevibe/claude-limits/new-window.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900003.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":1,\"resets_at\":1794604800}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "statusline-new-reset-window",
+      "now": 1793900004,
+      "result": [
+        {
+          "at": 1793900003,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeStatusline",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1794604800,
+              "scope": null,
+              "usedPercent": 1
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900002,
+            "path": ".claude/.claude.json",
+            "text": "{\"oauthAccount\":{\"accountUuid\":\"synthetic-account\",\"organizationUuid\":\"synthetic-org\"},\n \"cachedUsageUtilization\":{\"fetchedAtMs\":1793800000000,\"utilization\":{\"limits\":[\n {\"kind\":\"weekly_all\",\"group\":\"weekly\",\"percent\":62,\"resets_at\":\"2026-11-06T16:00:00Z\"}]}}}"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".spacevibe/claude-limits/both.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900000.0,\"rate_limits\":{\"five_hour\":{\"used_percentage\":95.5,\"resets_at\":1793999000},\"seven_day\":{\"used_percentage\":76.25,\"resets_at\":1794000000}}}"
+          },
+          {
+            "mtime": 1793900001,
+            "path": ".spacevibe/claude-limits/partial.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900001.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":62,\"resets_at\":1794000000}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "statusline-both-windows-merge",
+      "now": 1793900002,
+      "result": [
+        {
+          "at": 1793900001,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeStatusline",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "five_hour",
+              "minutes": 300,
+              "resetsAt": 1793999000,
+              "scope": null,
+              "usedPercent": 95.5
+            },
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1794000000,
+              "scope": null,
+              "usedPercent": 76.25
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900001,
+            "path": ".claude/.claude.json",
+            "text": "{\"oauthAccount\":{\"accountUuid\":\"synthetic-account\",\"organizationUuid\":\"synthetic-org\"},\n \"cachedUsageUtilization\":{\"fetchedAtMs\":1793800000000,\"utilization\":{\"limits\":[\n {\"kind\":\"weekly_all\",\"group\":\"weekly\",\"percent\":62,\"resets_at\":\"2026-11-06T16:00:00Z\"}]}}}"
+          },
+          {
+            "mtime": 1793896000,
+            "path": ".spacevibe/claude-limits/older.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793896000.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":90,\"resets_at\":1794000000}}}"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".spacevibe/claude-limits/newer.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900000.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":50,\"resets_at\":1794000000}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "statusline-stale-session-outside-merge-age",
+      "now": 1793900001,
+      "result": [
+        {
+          "at": 1793900000,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeStatusline",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1794000000,
+              "scope": null,
+              "usedPercent": 50
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900020,
+            "path": ".claude/.claude.json",
+            "text": "{\"oauthAccount\":{\"accountUuid\":\"synthetic-account\",\"organizationUuid\":\"synthetic-org\"},\n \"cachedUsageUtilization\":{\"fetchedAtMs\":1793900010000.0,\"utilization\":{\"limits\":[\n {\"kind\":\"weekly_all\",\"group\":\"weekly\",\"percent\":62,\"resets_at\":\"2026-11-06T16:00:00Z\"}]}}}"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".spacevibe/claude-limits/test-session.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900000.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":76,\"resets_at\":1794000000}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "statusline-newer-cache-supersedes",
+      "now": 1793900020,
+      "result": [
+        {
+          "at": 1793900010,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeCache",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1793980800,
+              "scope": null,
+              "usedPercent": 62
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900002,
+            "path": ".claude/.claude.json",
+            "text": "{\"oauthAccount\":{\"accountUuid\":\"another-account\",\"organizationUuid\":\"synthetic-org\"},\n \"cachedUsageUtilization\":{\"fetchedAtMs\":1793800000000,\"utilization\":{\"limits\":[\n {\"kind\":\"weekly_all\",\"group\":\"weekly\",\"percent\":62,\"resets_at\":\"2026-11-06T16:00:00Z\"}]}}}"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".spacevibe/claude-limits/test-session.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900000.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":76,\"resets_at\":1794000000}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "statusline-account-change-keeps-cache",
+      "now": 1793900002,
+      "result": [
+        {
+          "at": 1793800000,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeCache",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1793980800,
+              "scope": null,
+              "usedPercent": 62
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [],
+        "files": [
+          {
+            "mtime": 1793900004,
+            "path": ".claude/.claude.json",
+            "text": "{\"oauthAccount\":{\"accountUuid\":\"another-account\",\"organizationUuid\":\"synthetic-org\"},\n \"cachedUsageUtilization\":{\"fetchedAtMs\":1793800000000,\"utilization\":{\"limits\":[\n {\"kind\":\"weekly_all\",\"group\":\"weekly\",\"percent\":62,\"resets_at\":\"2026-11-06T16:00:00Z\"}]}}}"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".spacevibe/claude-limits/test-session.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900000.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":76,\"resets_at\":1794000000}}}"
+          },
+          {
+            "mtime": 1793900003,
+            "path": ".spacevibe/claude-limits/new-login.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(another-account,synthetic-org)\",\"observedAt\":1793900003.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":5,\"resets_at\":1794000000}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "statusline-account-change-new-login",
+      "now": 1793900004,
+      "result": [
+        {
+          "at": 1793900003,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeStatusline",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1794000000,
+              "scope": null,
+              "usedPercent": 5
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    },
+    {
+      "input": {
+        "dirs": [],
+        "fifos": [
+          ".spacevibe/claude-limits/fifo.json"
+        ],
+        "files": [
+          {
+            "mtime": 1793900000,
+            "path": ".claude/.claude.json",
+            "text": "{\"oauthAccount\":{\"accountUuid\":\"synthetic-account\",\"organizationUuid\":\"synthetic-org\"},\n \"cachedUsageUtilization\":{\"fetchedAtMs\":1793800000000,\"utilization\":{\"limits\":[\n {\"kind\":\"weekly_all\",\"group\":\"weekly\",\"percent\":62,\"resets_at\":\"2026-11-06T16:00:00Z\"}]}}}"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".spacevibe/claude-limits/invalid.json",
+            "text": "{bad"
+          },
+          {
+            "mtime": 1793900000,
+            "path": ".spacevibe/claude-limits/large.json",
+            "repeat": {
+              "count": 5000,
+              "text": " "
+            }
+          },
+          {
+            "mtime": 1793900060,
+            "path": ".spacevibe/claude-limits/test-session.json",
+            "text": "{\"account\":\"$ACCOUNT_KEY(synthetic-account,synthetic-org)\",\"observedAt\":1793900060.0,\"rate_limits\":{\"seven_day\":{\"used_percentage\":76,\"resets_at\":1794000000}}}"
+          }
+        ],
+        "unsetClaudeConfigDir": false
+      },
+      "name": "statusline-invalid-files-fall-back",
+      "now": 1793900000,
+      "result": [
+        {
+          "at": 1793800000,
+          "cli": "claude",
+          "plan": null,
+          "source": "claudeCache",
+          "state": "measured",
+          "windows": [
+            {
+              "active": true,
+              "current": true,
+              "id": "weekly_all",
+              "minutes": 10080,
+              "resetsAt": 1793980800,
+              "scope": null,
+              "usedPercent": 62
+            }
+          ]
+        },
+        {
+          "at": null,
+          "cli": "codex",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        },
+        {
+          "at": null,
+          "cli": "gemini",
+          "plan": null,
+          "source": null,
+          "state": "notInstalled",
+          "windows": []
+        }
+      ]
+    }
+  ],
+  "environment": {
+    "CLAUDE_CONFIG_DIR": "<home>/.claude (unset when unsetClaudeConfigDir)",
+    "CODEX_HOME": "<home>/.codex",
+    "HOME": "<home>",
+    "SPACEVIBE_HOME": "<home>/.spacevibe",
+    "SPACEVIBE_TEST": "1"
+  },
+  "format": "limits-golden/1",
+  "tokens": {
+    "$ACCOUNT_KEY(<accountUuid>,<organizationUuid>)": "in a file text: sha256 hex of \"<claude root>\\n<accountUuid>\\n<organizationUuid>\", the key the status line snapshots carry"
+  }
+}
