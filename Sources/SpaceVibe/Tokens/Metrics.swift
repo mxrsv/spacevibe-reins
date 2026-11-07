@@ -224,9 +224,9 @@ extension Metrics {
         /// The panel's margin from the window on top, right and bottom.
         static let inset: CGFloat = 12
         static let tabHeadHeight: CGFloat = 60
-        /// The panel's width in a 1440 pt window (the window less the sidebar and the right inset); the gallery draws its
-        /// tab heads at it so crops line up with the mock's.
-        static let widthAt1440: CGFloat = 1440 - AppSidebar.width - inset
+        /// The panel's content width in a 1440 pt window (the window less the sidebar, the right inset and the panel's two
+        /// edges); the gallery draws its tab heads at it so crops line up with the mock's.
+        static let widthAt1440: CGFloat = 1440 - AppSidebar.width - inset - 2 * Radius.edge
         /// A menu opens this far below the tab head's top.
         static let menuOffset: CGFloat = 52
         static let statusBarHeight: CGFloat = 32

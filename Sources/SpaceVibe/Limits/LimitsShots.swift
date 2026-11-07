@@ -50,11 +50,14 @@ enum LimitsShots {
 
     // MARK: v5
 
-    /// A window narrow enough that the canvas (inside its 32 edge) is under 700 pt, so the halves stack (V5-R52).
-    private static var narrow: CGSize { CGSize(width: 900, height: ShotRenderer.size.height) }
+    /// The smallest window (`SpaceVibeApp`'s minimum): the canvas, inside its 32 edge, is under 700 pt, so the halves stack
+    /// (V5-R52).
+    private static var narrow: CGSize { CGSize(width: 960, height: 600) }
+    private static var narrowTall: CGSize { CGSize(width: 960, height: 1600) }
+    /// A window that keeps the halves side by side but is short: the small cards share its height (`SplitCanvas`).
+    private static var short: CGSize { CGSize(width: 1062, height: 685) }
     /// Tall enough that nothing scrolls: where each card ends, for the fit at 1440 x 900 (V5-A22).
     private static var tall: CGSize { CGSize(width: ShotRenderer.size.width, height: 1400) }
-    private static var narrowTall: CGSize { CGSize(width: 900, height: 1600) }
 
     /// The v5 window on its Limits page, read from the synthetic home: the V5-A20 trace printed and checked against the
     /// engine's DTOs, then the page, Show unused, a tall and a narrow window, and the V5-R62 states the fixture cannot hold,
@@ -83,6 +86,7 @@ enum LimitsShots {
             try write(env.limits, "limits-tall", size: tall)
             try write(env.limits, "limits-narrow", size: narrow)
             try write(env.limits, "limits-narrow-tall", size: narrowTall)
+            try write(env.limits, "limits-short", size: short)
             env.limits.showInactive = true
             try write(env.limits, "limits-unused")
             env.limits.showInactive = false

@@ -89,18 +89,39 @@ private struct SplitCanvasLayout: Layout {
         return frames
     }
 
-    /// Each card's own height when they all fit `room`; otherwise the room shared out evenly, the shortest cards first, each
-    /// taking no more than its own height and no less than its least (a card that cannot shrink keeps its height).
+    /// The small cards' heights at `width` in `room` (`SplitCanvasShare`); a card's least is its height when offered none.
     private static func share(_ cards: [LayoutSubview], width: CGFloat, room: CGFloat) -> [CGFloat] {
         let own = cards.map { $0.sizeThatFits(ProposedViewSize(width: width, height: nil)).height }
         guard own.reduce(0, +) > room else { return own }
         let least = cards.map { $0.sizeThatFits(ProposedViewSize(width: width, height: 0)).height }
+        return SplitCanvasShare.heights(own: own, least: least, room: room)
+    }
+}
+
+/// How `SplitCanvas` shares a window's height among the small cards (the kit's grid track sizing, simplified): each card's own
+/// height when they all fit; otherwise the room shared out evenly, where a card that cannot come down to the even share
+/// (its least is above it) keeps its least and a card that needs less than the share keeps its own, and the rest split what
+/// is left. When even the leasts do not fit, every card takes its least and the canvas scrolls.
+enum SplitCanvasShare {
+    static func heights(own: [CGFloat], least: [CGFloat], room: CGFloat) -> [CGFloat] {
+        guard own.reduce(0, +) > room else { return own }
+        let floor = zip(own, least).map { min($0, $1) }
+        guard floor.reduce(0, +) < room else { return floor }
         var heights = own
+        var open = Set(own.indices)
         var left = room
-        let order = own.indices.sorted { own[$0] < own[$1] }
-        for (served, index) in order.enumerated() {
-            heights[index] = max(least[index], min(own[index], left / CGFloat(order.count - served)))
-            left -= heights[index]
+        while !open.isEmpty {
+            let even = left / CGFloat(open.count)
+            let held = open.filter { floor[$0] >= even }
+            let settled = held.isEmpty ? open.filter { own[$0] <= even } : []
+            guard !held.isEmpty || !settled.isEmpty else {
+                for index in open { heights[index] = even }
+                break
+            }
+            for index in held { heights[index] = floor[index] }
+            for index in settled { heights[index] = own[index] }
+            left -= held.map { floor[$0] }.reduce(0, +) + settled.map { own[$0] }.reduce(0, +)
+            open.subtract(held.union(settled))
         }
         return heights
     }
