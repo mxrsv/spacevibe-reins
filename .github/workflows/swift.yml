@@ -62,12 +62,11 @@ jobs:
           if [ -d Sources/SpaceVibe/TokenUsage ]; then
             SPACEVIBE_SHOT_SCREEN=tokens scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/tokens"
           fi
-          # Agents plan A10: one fixture home per Codex permission model, behind the development switch.
-          if [ -d Sources/SpaceVibe/Agents ]; then
-            for variant in legacy profiles both; do
-              SPACEVIBE_AGENTS=1 SPACEVIBE_FIXTURE_AGENTS=$variant SPACEVIBE_SHOT_SCREEN=agents scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/agents-$variant"
-            done
-          fi
+          # UI v5 (docs/plans/2026-11-07-reins-ui-v5-build.md): the surfaces behind the development switch. `swift build` makes a
+          # debug build, which honours SPACEVIBE_UI_V5; the shell key also shoots the gallery.
+          for screen in shell skills subagents hooks; do
+            SPACEVIBE_UI_V5=1 SPACEVIBE_SHOT_SCREEN=$screen scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/v5-$screen"
+          done
 
       - uses: actions/upload-artifact@v4
         if: always()

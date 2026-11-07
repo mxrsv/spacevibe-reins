@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The window: sidebar, top bar, the active tab (or the Limits page in its place), hint bar, and the overlays (palette,
+/// The window (the old shell; `AppShell` is the v5 one, picked by `ShellModel.isV5`): sidebar, top bar, the active tab (or the Limits page in its place), hint bar, and the overlays (palette,
 /// toast). Every tab's content stays mounted so a hidden tab keeps its filters and scroll position; only the active
 /// one is visible, hit-testable, focusable and read by VoiceOver, and none is while the Limits page shows. Settings
 /// covers all of it, sidebar included, and leaves it mounted under itself.
@@ -8,6 +8,10 @@ struct ShellView: View {
     @Environment(ShellModel.self) private var shell
 
     var body: some View {
+        if shell.isV5 { AppShell() } else { classic }
+    }
+
+    private var classic: some View {
         ZStack {
             HStack(spacing: 0) {
                 SidebarView()

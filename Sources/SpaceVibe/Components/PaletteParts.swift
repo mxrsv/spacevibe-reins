@@ -217,6 +217,26 @@ struct PaletteCommandRow: View {
     }
 }
 
+/// Where the v5 palette stands: its card on the scrim, 112 below the window's top. A click on the scrim runs `onDismiss`.
+struct PaletteStage<Content: View>: View {
+    let onDismiss: () -> Void
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Scrim(onTap: onDismiss)
+            content.padding(.top, Metrics.CommandPalette.topInset)
+        }
+    }
+}
+
+extension View {
+    /// The scrolling list of the v5 palette takes what the card has left, at most (480 less the field and the footer).
+    func paletteListHeight() -> some View {
+        frame(maxHeight: Metrics.CommandPalette.listMaxHeight)
+    }
+}
+
 /// The v5 palette's list: 4 inside the card's edge.
 struct PaletteCommandList<Content: View>: View {
     @ViewBuilder var content: Content

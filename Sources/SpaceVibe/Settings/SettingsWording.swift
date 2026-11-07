@@ -50,7 +50,7 @@ enum SettingsWording {
         case .notChecked, .unavailable: nil
         case .checking: StatusTag(text: "Checking\u{2026}", tone: .neutral, icon: .refresh)
         case .upToDate: StatusTag(text: "Up to date", tone: .success, icon: nil)
-        case .available(let version): StatusTag(text: "SpaceVibe \(version) is available", tone: .neutral, icon: .download)
+        case .available(let version): StatusTag(text: "\(SpaceVibeMark.productName) \(version) is available", tone: .neutral, icon: .download)
         case .failed: StatusTag(text: "Check failed", tone: .warn, icon: nil)
         }
     }
@@ -74,7 +74,7 @@ enum SettingsWording {
 
     /// "SpaceVibe 0.1.0", or "SpaceVibe" outside an app bundle.
     static func appName(version: String?) -> String {
-        version.map { "SpaceVibe \($0)" } ?? "SpaceVibe"
+        version.map { "\(SpaceVibeMark.productName) \($0)" } ?? SpaceVibeMark.productName
     }
 
     private static func formatted(_ date: Date, _ format: String, locale: String) -> String {

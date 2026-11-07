@@ -170,7 +170,7 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
         let wantsToast = !state.userInitiated && !showingInFocus
         logger.notice("Update \(update.versionString, privacy: .public) found, by user: \(state.userInitiated, privacy: .public), toast: \(wantsToast, privacy: .public)")
         guard wantsToast else { return }
-        reminder = toasts.show("SpaceVibe \(update.displayVersionString) is available", action: Self.viewAction { [weak self] in
+        reminder = toasts.show("\(SpaceVibeMark.productName) \(update.displayVersionString) is available", action: Self.viewAction { [weak self] in
             self?.checkForUpdates()
         })
     }

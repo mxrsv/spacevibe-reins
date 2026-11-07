@@ -85,6 +85,7 @@ struct ComponentGalleryContent: View {
             }
             if (part == .all || part == .fourth) && LaunchMode.uiV5Enabled() {
                 section("Controls and overlays of the v5 screens, on the content panel's ground") { ControlSpecimens() }
+                section("The v5 shell: sidebar and content panel, on the window's ground") { ShellSpecimens() }
             }
             if part == .all || part == .second {
                 section("Cards, rows and the five usage states") { DemoLoadoutList() }

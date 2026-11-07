@@ -199,6 +199,14 @@ extension Metrics {
         static let itemHeight: CGFloat = 40
         static let itemPadding: CGFloat = 12
         static let itemSpacing: CGFloat = 4
+        /// Inside a row: between the glyph and the label.
+        static let itemGap: CGFloat = 8
+        /// The product mark's tile, and a page item's glyph at rest (80%, 100% on hover and when current).
+        static let markSize: CGFloat = 20
+        static let restGlyphOpacity: Double = 0.8
+        /// A CLI status row's dot and the gap after it.
+        static let statusDot: CGFloat = 6
+        static let statusDotGap: CGFloat = 6
         static let searchAbove: CGFloat = 8
         static let searchBelow: CGFloat = 20
         /// A group label (`small` type): 24 above, 12 at the sides, 8 below.
@@ -530,6 +538,8 @@ extension Metrics {
         static let footerHeight: CGFloat = 32
         static let topInset: CGFloat = 112
         static let maxHeight: CGFloat = 480
+        /// What the list may take: the card less the field and the footer.
+        static let listMaxHeight: CGFloat = maxHeight - fieldHeight - footerHeight
         /// The field: 16 at the sides, 12 after the search glyph.
         static let fieldPadding: CGFloat = 16
         static let fieldSpacing: CGFloat = 12
@@ -551,6 +561,8 @@ extension Metrics {
         /// Hover, press and the popover's rise.
         static let quick: TimeInterval = 0.12
         static let logoPop: TimeInterval = 0.18
+        /// A toast slides in and out.
+        static let toast: TimeInterval = 0.2
         static let barWidth: TimeInterval = 0.15
     }
 

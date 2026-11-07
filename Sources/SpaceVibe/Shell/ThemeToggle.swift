@@ -10,11 +10,17 @@ struct ThemeToggle: View {
         // What shows now, also under System, where only the environment knows it live.
         let target: AppearanceChoice = scheme == .dark ? .light : .dark
         let label = "Switch to \(target.rawValue) theme"
-        Button { appearance.theme = ThemeSetting(target) } label: {
-            SpaceVibeIcon(target == .light ? .sun : .moon)
+        if shell.isV5 {
+            SidebarIconButton(glyph: target == .light ? ContentGlyph.sun : ContentGlyph.moon, label: label) {
+                appearance.theme = ThemeSetting(target)
+            }
+        } else {
+            Button { appearance.theme = ThemeSetting(target) } label: {
+                SpaceVibeIcon(target == .light ? .sun : .moon)
+            }
+            .buttonStyle(.spaceVibe(.plainIcon))
+            .help(label)
+            .accessibilityLabel(label)
         }
-        .buttonStyle(.spaceVibe(.plainIcon))
-        .help(label)
-        .accessibilityLabel(label)
     }
 }

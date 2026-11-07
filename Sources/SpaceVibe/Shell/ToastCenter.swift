@@ -11,8 +11,11 @@ struct ToastAction {
     var keyCap: String?
     let run: @MainActor () -> Void
 
+    /// The key cap Undo carries; the v5 toast host binds the same key (lowercased) while the toast shows.
+    static let undoKeyCap = "Z"
+
     static func undo(_ run: @escaping @MainActor () -> Void) -> ToastAction {
-        ToastAction(title: "Undo", icon: .undo, keyCap: "Z", run: run)
+        ToastAction(title: "Undo", icon: .undo, keyCap: undoKeyCap, run: run)
     }
 }
 

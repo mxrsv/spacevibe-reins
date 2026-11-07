@@ -7,12 +7,14 @@ struct SpaceVibeApp: App {
 
     init() {
         // The app's own store applies the theme to `NSApp.appearance` and the font size to every text role.
-        _shell = State(initialValue: ShellModel(tabs: TabRegistry.makeTabs(), appearance: AppearanceStore(live: true)))
+        // The v5 switch is read here, once; the model carries it to the window, the commands and the palette.
+        let isV5 = LaunchMode.uiV5Enabled()
+        _shell = State(initialValue: ShellModel(tabs: TabRegistry.makeTabs(isV5: isV5), appearance: AppearanceStore(live: true), isV5: isV5))
         AppEnvironment.shared.updates.start(mode: mode)
     }
 
     var body: some Scene {
-        Window("SpaceVibe", id: "main") {
+        Window(SpaceVibeMark.productName, id: "main") {
             Group {
                 if case .gallery = mode {
                     ComponentGalleryWindow()
@@ -30,7 +32,7 @@ struct SpaceVibeApp: App {
             ShellCommands(shell: shell)
             // The standard About panel, with the licences the app must show (Credits).
             CommandGroup(replacing: .appInfo) {
-                Button("About SpaceVibe") { Credits.showAboutPanel() }
+                Button("About \(SpaceVibeMark.productName)") { Credits.showAboutPanel() }
                 Button("Check for Updates\u{2026}") { env.updates.checkForUpdates() }
             }
         }

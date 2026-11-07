@@ -3,6 +3,10 @@ import SwiftUI
 /// The SpaceVibe mark from `Resources/AppIcon.svg`, drawn as shapes (only the CLI marks are images, `IconPolicyTests`): a dark
 /// rounded square with two bars and an open ring, turned 45 degrees. It leads the Settings > Update card.
 struct SpaceVibeMark: View {
+    /// The product's name, the one place it is written for the interface (the sidebar's product row, the window title, About and
+    /// the update lines). The go-core identity work renames the product by editing this line.
+    static let productName = "SpaceVibe"
+
     var size: CGFloat = Metrics.spaceVibeMarkSize
 
     var body: some View {

@@ -22,6 +22,8 @@ struct PaletteEntry: Identifiable {
     var title: String
     var subtitle: String?
     var icon: SpaceVibeGlyph?
+    /// The v5 shell draws this instead of `icon` (a Phosphor or MingCute glyph).
+    var glyph: (any GlyphSource)?
     /// Right-aligned hint such as a shortcut.
     var trailing: String?
     /// Extra words the search matches besides the title.
@@ -48,8 +50,12 @@ protocol SpaceVibeTab: AnyObject {
     /// Stable, lowercase. Position in `TabRegistry` decides the `⌘1`, `⌘2`, `⌘3` shortcut.
     var id: String { get }
     var title: String { get }
-    /// An SF Symbol name; one weight across the app.
+    /// The old sidebar's glyph (Solar). A v5 tab sets `glyph` and leaves this at its default.
     var icon: SpaceVibeGlyph { get }
+    /// The glyph the v5 sidebar and palette draw: a Phosphor, MingCute or verdict glyph (`GlyphSource`).
+    var glyph: any GlyphSource { get }
+    /// The data source named at the right of the v5 status bar ("Counted from local logs"). Nil names none.
+    var source: String? { get }
     var badge: TabBadge? { get }
     /// Shown after the always-present `⌘K Search or run` and before `Esc Close`.
     var hints: [KeyHint] { get }
@@ -61,6 +67,10 @@ protocol SpaceVibeTab: AnyObject {
 }
 
 extension SpaceVibeTab {
+    /// Until the cut-over (X1) removes `icon`, a tab with no Solar glyph of its own takes this one and draws `glyph`.
+    var icon: SpaceVibeGlyph { .loadout }
+    var glyph: any GlyphSource { icon }
+    var source: String? { nil }
     var badge: TabBadge? { nil }
     var hints: [KeyHint] { [] }
     var paletteActions: [PaletteEntry] { [] }

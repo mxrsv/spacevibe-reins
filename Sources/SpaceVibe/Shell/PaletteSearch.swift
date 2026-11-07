@@ -22,6 +22,7 @@ enum PaletteSearch {
                 id: "goto.\(tab.id)",
                 title: tab.title,
                 icon: tab.icon,
+                glyph: tab.glyph,
                 trailing: "\u{2318}\(index + 1)",
                 keywords: ["go to"]
             ) { shell.select(tab.id) }
@@ -32,12 +33,14 @@ enum PaletteSearch {
             id: "shell.theme",
             title: "Switch to \(theme.rawValue) theme",
             icon: theme == .light ? .sun : .moon,
+            glyph: theme == .light ? ContentGlyph.sun : ContentGlyph.moon,
             keywords: ["appearance", "dark", "light", "mode"]
         ) { shell.appearance.toggle() }
         let settings = PaletteEntry(
             id: "shell.settings",
             title: "Settings",
             icon: .settings,
+            glyph: ContentGlyph.sliders,
             trailing: "\u{2318},",
             keywords: ["preferences", "appearance", "theme", "font size", "update"]
         ) { shell.openSettings() }
