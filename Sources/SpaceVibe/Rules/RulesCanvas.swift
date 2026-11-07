@@ -133,13 +133,13 @@ struct RulesCanvas: View {
                     }
                 }
             }
-        } else if answer.showsRetry {
+        } else if answer.showsRetry || answer.detail != nil {
             AnswerCard(sentence: answer.sentence, isOpen: open("answer")) {
                 VStack(alignment: .leading, spacing: Metrics.Tile.contentSpacing) {
                     if let detail = answer.detail {
                         Text(detail).spaceVibeText(.prose, tone: .secondary).fixedSize(horizontal: false, vertical: true).lineBox(.prose)
                     }
-                    Button { model.retry() } label: { ActionLabel("Retry") }.buttonStyle(ActionButtonStyle())
+                    if answer.showsRetry { Button { model.retry() } label: { ActionLabel("Retry") }.buttonStyle(ActionButtonStyle()) }
                 }
             }
         } else {

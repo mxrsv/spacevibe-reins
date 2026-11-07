@@ -241,7 +241,7 @@ enum RulesTabShots {
         print("trace: Answer \"\(page.answer.sentence ?? "nil")\", family \(page.answer.family?.family.title ?? "none"), Codex note \"\(page.reading.note ?? "none")\"")
         switch variant {
         case .standard:
-            try ShotHarness.check(page.answer.sentence == "Nothing to compare: no Codex setting says whether these tools are open or off." && !page.layout.hasComparison && page.layout.redundant.isEmpty,
+            try ShotHarness.check(page.answer.sentence == "Codex's sandbox is workspace-write, so it opens or closes no tool outright." && !page.layout.hasComparison && page.layout.redundant.isEmpty,
                                   "the default fixture's workspace sandbox is neither open nor off for any family, so nothing is compared")
             try ShotHarness.check(page.reading.note == "Codex is read only here. Approval policy on-request, from ~/.codex/config.toml.", "the note reads approval_policy")
         case .unrestricted:

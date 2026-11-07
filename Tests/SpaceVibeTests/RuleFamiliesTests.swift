@@ -220,10 +220,18 @@ struct RuleFamiliesTests {
         // A workspace sandbox says neither open nor off for any family: nothing was compared, so no clean result is claimed.
         let workspace = Self.page(RulesSynthetic.sample)
         #expect(!workspace.layout.hasComparison && workspace.layout.mismatches.isEmpty)
-        #expect(workspace.answer.sentence == "Nothing to compare: no Codex setting says whether these tools are open or off." && workspace.answer.family == nil)
+        #expect(workspace.answer.sentence == "Codex's sandbox is workspace-write, so it opens or closes no tool outright." && workspace.answer.family == nil)
+        #expect(workspace.answer.detail == "Edit/Write would show as open under danger-full-access, or as off under read-only with approvals never." && !workspace.answer.showsRetry)
+        // The sandbox value is the one the core read, not a typed one; a value that is not a plain word stays hidden.
+        #expect(Self.page(RulesSynthetic.sample, codex: RulesSynthetic.codex(sandbox: "Some Secret 12345")).answer.sentence?.contains(CodexWording.hiddenText) == true)
+        // Read only with approvals on can be stepped past: neither open nor off, so the same sentence names read-only.
+        #expect(Self.page(RulesSynthetic.sample, codex: RulesSynthetic.codex(sandbox: "read-only", approval: "on-request")).answer.sentence
+                == "Codex's sandbox is read-only, so it opens or closes no tool outright.")
         #expect(workspace.layout.redundant.count == 1, "a redundant rule is not a problem for the Answer")
         // Full access with no Edit/Write rule: no family with rules has a comparable fact.
-        #expect(!Self.page([Self.rule("Bash(ls:*)", .allow)], codex: RulesSynthetic.codex(sandbox: "danger-full-access")).layout.hasComparison)
+        let noEdit = Self.page([Self.rule("Bash(ls:*)", .allow)], codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
+        #expect(!noEdit.layout.hasComparison)
+        #expect(noEdit.answer.sentence == "Codex's sandbox is danger-full-access, and Claude Code has no Edit/Write rule to compare with it." && noEdit.answer.detail == nil)
     }
 
     @Test("no data: loading has no sentence; no rules, Codex not installed and an unreadable file each say so")

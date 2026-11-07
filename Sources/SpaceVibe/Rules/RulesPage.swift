@@ -47,7 +47,7 @@ struct RulesPage: Equatable, Sendable {
 struct RulesAnswer: Equatable, Sendable {
     /// Nil while loading.
     var sentence: String?
-    /// The line under the sentence of an unreadable file: the core's own sentence.
+    /// The line under the sentence: an unreadable file's own sentence, or what the sandbox would have to be for a family to be flagged.
     var detail: String?
     var showsRetry = false
     /// The first family that disagrees; the two CLI rows are about it.
@@ -74,7 +74,7 @@ struct RulesAnswer: Equatable, Sendable {
         case .unknown(let reason): return RulesAnswer(sentence: "Nothing to compare: \(reason.sentence)")
         case .known: break
         }
-        guard layout.hasComparison else { return RulesAnswer(sentence: "Nothing to compare: no Codex setting says whether these tools are open or off.") }
+        guard layout.hasComparison else { return notCompared(reading) }
         guard let first = layout.mismatches.first, let open = first.fact?.isOpen else {
             return RulesAnswer(sentence: "No tool is open in one CLI and denied in the other.")
         }
@@ -82,6 +82,22 @@ struct RulesAnswer: Equatable, Sendable {
         return RulesAnswer(
             sentence: "\(first.family.title): \(open ? "open" : "off") in Codex, \(partly)\(open ? "denied" : "allowed") in Claude Code.",
             family: first, also: layout.mismatches.dropFirst().map(\.family)
+        )
+    }
+}
+
+extension RulesAnswer {
+    /// Codex's settings were read but no family with rules has a fact that says on or off. The spine shows `Sandbox: <mode>` beside Bash
+    /// and Edit/Write, so the sentence names that sandbox and says what it does and does not decide, from the value the core read.
+    static func notCompared(_ reading: CodexReading) -> RulesAnswer {
+        let mode = reading.codex?.sandboxMode.map(CodexWording.word) ?? ""
+        if CodexFact.of(.edit, reading)?.isOpen != nil {
+            // The sandbox is open or off for editing, and Claude Code has no Edit/Write rule that could disagree.
+            return RulesAnswer(sentence: "Codex's sandbox is \(mode), and Claude Code has no Edit/Write rule to compare with it.")
+        }
+        return RulesAnswer(
+            sentence: "Codex's sandbox is \(mode), so it opens or closes no tool outright.",
+            detail: "Edit/Write would show as open under danger-full-access, or as off under read-only with approvals never."
         )
     }
 }
