@@ -22,7 +22,8 @@ enum SkillsWording {
 
     static func warning(for row: LoadoutRow) -> Warning? {
         let usage = row.skillUsage
-        let clis = cliPhrase(usage.present, either: true)
+        // "Never ran in …" names the CLIs whose logs were counted, not every CLI that has the file.
+        let clis = cliPhrase(usage.measured, either: true)
         switch usage.state {
         case .ran, .loading:
             return nil
@@ -64,6 +65,7 @@ enum SkillsWording {
     static func verdict(for row: LoadoutRow, status: SkillStatus, detected: [CoreCLI]) -> Verdict? {
         let usage = row.skillUsage
         let present = usage.present
+        let ranIn = usage.ranIn
         let oneOnly = present.count == 1
         let lock = row.plugin.map { "Owned by the \($0) plugin, so SpaceVibe can read it but not change it." }
         let other = present.first.map(\.other)
@@ -73,24 +75,49 @@ enum SkillsWording {
         case .loading:
             return nil
         case .heavy:
-            let where_ = oneOnly ? ", all in \(present[0].label)" : " across both CLIs"
+            // Where the sessions happened, not where the file is: 142 in Claude Code and none in Codex is "all in Claude Code".
+            let where_ = ranIn.count == 1 ? ", all in \(ranIn[0].label)" : " across both CLIs"
             return Verdict(status: status, title: status.title, text: "Ran in \(sessions(total))\(where_). One of the busiest skills you have.",
-                           small: lock ?? (missingElsewhere ? "\(other?.label ?? "") does not have it yet." : nil))
+                           small: lock ?? (missingElsewhere ? "\(other?.label ?? "") does not have it yet." : idleNote(usage)))
         case .ran:
             if oneOnly {
                 let text = "Used in \(sessions(total)), but only in \(present[0].label)." + (missingElsewhere ? " \(other?.label ?? "") does not have it." : "")
                 return Verdict(status: status, title: status.title, text: text,
                                small: lock ?? (missingElsewhere ? "Adding it gives \(other?.label ?? "") the same skill with a fresh count." : nil))
             }
+            if ranIn.count == 1 {
+                return Verdict(status: status, title: status.title, text: "Used in \(sessions(total)), all in \(ranIn[0].label).", small: lock ?? idleNote(usage))
+            }
             let claude = usage.sessions(in: .claude) ?? 0, codex = usage.sessions(in: .codex) ?? 0
             return Verdict(status: status, title: status.title, text: "Used in both CLIs: \(sessions(claude)) in Claude Code and \(codex) in Codex.", small: lock)
         case .neverRan:
-            let text = oneOnly ? "Installed in \(present[0].label). Nothing in the local logs shows a session."
-                : "Installed in both CLIs. Nothing in the local logs shows a session in either."
+            let measured = usage.measured
+            let text: String
+            if oneOnly {
+                text = "Installed in \(present[0].label). Nothing in the local logs shows a session."
+            } else if measured.count == 2 {
+                text = "Installed in both CLIs. Nothing in the local logs shows a session in either."
+            } else {
+                let unlogged = usage.withoutLogs.map(\.label).joined(separator: " or ")
+                text = "Installed in both CLIs. Nothing in the local logs shows a session in \(measured.first?.label ?? "either"), and SpaceVibe found no \(unlogged) logs."
+            }
             let small = lock ?? (usage.added.map { "\(addedPhrase($0)), so it is not a candidate to remove yet." } ?? "A good candidate to remove.")
             return Verdict(status: status, title: status.title, text: text, small: small)
         case .unmeasurable:
             return Verdict(status: status, title: status.title, text: noLogsSentence(usage), small: "It shows a count once that CLI has logs.")
+        }
+    }
+
+    /// A true quiet line about the CLI that has the skill but where no session used it, when another CLI's sessions did.
+    private static func idleNote(_ usage: SkillUsage) -> String? {
+        guard let idle = usage.present.first(where: { !usage.ranIn.contains($0) }) else { return nil }
+        switch usage.cells[idle] {
+        case .sessions: return "It has not run in \(idle.label)."
+        case .added(let added):
+            let when = added == .lastDay ? "in the last 24 hours" : "after the newest log SpaceVibe counted"
+            return "It has not run in \(idle.label): that copy was added \(when)."
+        case .noLogs: return "SpaceVibe found no \(idle.label) logs, so it cannot count sessions there."
+        default: return nil
         }
     }
 

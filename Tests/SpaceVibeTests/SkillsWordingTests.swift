@@ -74,6 +74,40 @@ struct SkillsWordingTests {
         #expect(SkillsWording.verdict(for: F.row("g", claude: F.scanning), status: .loading, detected: [.claude]) == nil)
     }
 
+    @Test("a sentence says where the sessions happened, not where the file is: 142 in Claude Code and 0 in Codex is all in Claude Code")
+    func verdictFollowsTheSessions() throws {
+        func verdict(_ row: LoadoutRow, _ status: SkillStatus) throws -> SkillsWording.Verdict {
+            try #require(SkillsWording.verdict(for: row, status: status, detected: [.claude, .codex]))
+        }
+        // In both CLIs, sessions in one only.
+        let heavy = try verdict(F.row("a", claude: F.counted(142), codex: F.counted(0)), .heavy)
+        #expect(heavy.text == "Ran in 142 sessions, all in Claude Code. One of the busiest skills you have." && heavy.small == "It has not run in Codex.")
+        let fresh = try verdict(F.row("b", claude: F.counted(142), codex: F.addedToday), .heavy)
+        #expect(fresh.text == "Ran in 142 sessions, all in Claude Code. One of the busiest skills you have.")
+        #expect(fresh.small == "It has not run in Codex: that copy was added in the last 24 hours.")
+        let ran = try verdict(F.row("c", claude: F.counted(0), codex: F.counted(7)), .ran)
+        #expect(ran.text == "Used in 7 sessions, all in Codex." && ran.small == "It has not run in Claude Code.")
+        let unlogged = try verdict(F.row("d", claude: F.counted(7), codex: F.noLogs), .ran)
+        #expect(unlogged.text == "Used in 7 sessions, all in Claude Code." && unlogged.small == "SpaceVibe found no Codex logs, so it cannot count sessions there.")
+        // Sessions in both: both are named.
+        #expect(try verdict(F.row("e", claude: F.counted(20), codex: F.counted(5)), .ran).text == "Used in both CLIs: 20 sessions in Claude Code and 5 in Codex.")
+        #expect(try verdict(F.row("f", claude: F.counted(80), codex: F.counted(30)), .heavy).text == "Ran in 110 sessions across both CLIs. One of the busiest skills you have.")
+        // The skill is in one CLI only: the CLI that has it is the CLI that ran it.
+        #expect(try verdict(F.row("g", claude: F.counted(9)), .ran).text == "Used in 9 sessions, but only in Claude Code. Codex does not have it.")
+        // Never ran names the CLIs whose logs were counted.
+        let neverBoth = try verdict(F.row("h", claude: F.counted(0), codex: F.counted(0)), .neverRan)
+        #expect(neverBoth.text == "Installed in both CLIs. Nothing in the local logs shows a session in either.")
+        let neverOne = try verdict(F.row("i", claude: F.counted(0), codex: F.noLogs), .neverRan)
+        #expect(neverOne.text == "Installed in both CLIs. Nothing in the local logs shows a session in Claude Code, and SpaceVibe found no Codex logs.")
+        let warning = try #require(SkillsWording.warning(for: F.row("j", claude: F.counted(0), codex: F.noLogs)))
+        #expect(warning.sentence == "Never ran in Claude Code. Nothing in the local logs shows a session.")
+        #expect(SkillsWording.warning(for: F.row("k", claude: F.counted(0), codex: F.counted(0)))?.sentence == "Never ran in either CLI. Nothing in the local logs shows a session.")
+        // No sentence about a skill that ran claims both CLIs ran it unless both did.
+        for row in [F.row("l", claude: F.counted(5), codex: F.counted(0)), F.row("m", claude: F.counted(5), codex: F.addedToday)] {
+            for status in [SkillStatus.heavy, .ran] { #expect(try !verdict(row, status).text.contains("both CLIs")) }
+        }
+    }
+
     @Test("a meter shows the count and the last day; a CLI without the skill shows a dash, never a zero; an unknown count is a dash too")
     func meters() {
         let row = F.row("a", claude: F.counted(50, last: "2026-11-05"))

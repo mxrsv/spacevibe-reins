@@ -246,6 +246,21 @@ struct SkillUsage: Equatable, Sendable {
         }.first
     }
 
+    /// The CLIs where at least one session used the skill. Presence is `present`; a sentence about where the skill ran uses this.
+    var ranIn: [CoreCLI] {
+        present.filter { cli in if case .sessions(let n, _) = cells[cli] { n > 0 } else { false } }
+    }
+
+    /// The CLIs whose logs were counted (a counted cell, zero or not, or a new file): where "never ran" can be said at all.
+    var measured: [CoreCLI] {
+        present.filter { cli in
+            switch cells[cli] {
+            case .sessions, .added: true
+            default: false
+            }
+        }
+    }
+
     /// The CLIs whose cell has no logs behind it.
     var withoutLogs: [CoreCLI] { present.filter { cells[$0] == .noLogs } }
 }

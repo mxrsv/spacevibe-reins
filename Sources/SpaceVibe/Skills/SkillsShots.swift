@@ -113,6 +113,12 @@ enum SkillsShots {
         try ShotHarness.check(env.toasts.current?.message == "Added 2 skills to Codex", "the toast says \(env.toasts.current?.message ?? "nothing")")
         try ShotHarness.wait("the re-read after the add") { page.loadout.isSettled && model.isLit(model.pickedRows, cli: .codex) }
         try ShotHarness.check(env.toasts.current?.action != nil, "the toast carries Undo")
+        if let ponytail = model.rows.first(where: { $0.name == "ponytail" }) {
+            let verdict = SkillsWording.verdict(for: ponytail, status: model.status(of: ponytail, among: model.rows), detected: model.detected)
+            print("trace: ponytail in Claude Code and Codex, sessions \(ponytail.skillUsage.sessions(in: .claude) ?? -1) and \(ponytail.skillUsage.sessions(in: .codex) ?? -1): \(verdict?.text ?? "none"); \(verdict?.small ?? "")")
+            try ShotHarness.check(verdict?.text == "Ran in 142 sessions, all in Claude Code. One of the busiest skills you have.",
+                                  "a skill in both CLIs with sessions in one is \"all in Claude Code\", not \"across both CLIs\"")
+        }
         env.toasts.isOverBottomBar = true
         for choice in [AppearanceChoice.dark, .light] { try shoot("skills-multi-added", choice, toasts: env.toasts) }
         env.toasts.runCurrentAction()
