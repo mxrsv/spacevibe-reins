@@ -42,6 +42,25 @@ The 2026-11-02 spec made the engine a Swift library (`ReinsCore`). Owner on that
 - Windows tests run on a real Windows machine, not only compiled in CI (lesson from the magpie repo).
 - Fate of the Hub `/vote` route (Postgres and Neon Auth), the marketing strategy and the workspace `AGENTS.md` map. These belong to a workspace session.
 
+## Owner answers at plan execution (2026-11-07)
+
+Owner, after seeing the W20 table and the open decisions with recommendations: "tiếp tục hết tất các phase". Read as: take the plan's recommendation for every open item below. Each is reversible until the gate that publishes it.
+
+| Item | Taken | Note |
+| --- | --- | --- |
+| D-2 port order | the plan's order | |
+| D-7 directory and module | `core/`, `spacevibe.dev/core` | |
+| C1/Q1 "byte for byte" | canonical bytes of the named projections, case counts asserted | narrows SV5 as the plan proposes |
+| C3/Q2 fixtures | kept as named skipped sites in the rename report | |
+| C2/Q8 | after the Swift tests are deleted, "with its Go test" | |
+| D-3 statusline | `spacevibe statusline install\|undo\|capture` in the Go core | |
+| D-4 `--version` of the CLIs | the core does not run them | |
+| D-5 new UI work | UI-only work continues; engine tasks of the Agents and Tokens plans move to Go after G1 | |
+| D-6 Windows hardware | yes, X2 needs real hardware | |
+| D-1 repo name | working value `mxrsv/spacevibe`, kept in one constant | NOT decided by the owner; GH1 still needs explicit approval and the owner may pick `spacevibe-app` |
+
+Still the owner's alone: every outward-facing gate (GH1, REL1, GH2, WEB1 to WEB3), the Sparkle key creation in R2, the runtime checks A1 to A5, X2, F1.
+
 ## Out of scope for this ledger
 
 Building the Windows or Linux shell, the visual design of the `spacevibe.dev` landing, and any edit outside this repository.
