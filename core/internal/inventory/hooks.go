@@ -12,7 +12,7 @@ import (
 
 // Hooks.
 
-func parseHooks(config ojson.Value, cli CLI, owner *string, sourceFile string, project *string, problems *[]string) []Hook {
+func parseHooks(config ojson.Value, cli CLI, owner *string, sourceFile string, project *string, problems *[]string, otherTypes *int) []Hook {
 	var out []Hook
 	hooksValue, ok := config.Member("hooks")
 	if !ok {
@@ -46,6 +46,9 @@ func parseHooks(config ojson.Value, cli CLI, owner *string, sourceFile string, p
 			for _, hook := range list {
 				cv, ok := hook.Member("command")
 				if !ok {
+					if isOtherHookType(hook) {
+						*otherTypes++
+					}
 					continue
 				}
 				command, ok := cv.StringValue()
@@ -97,6 +100,17 @@ func parseHooks(config ojson.Value, cli CLI, owner *string, sourceFile string, p
 	return out
 }
 
+// isOtherHookType: a hook that names a handler type other than command (http, mcp_tool, prompt, agent). Such a hook
+// has no command, so it is not listed; it is counted so the screen can say that some hooks are not shown.
+func isOtherHookType(hook ojson.Value) bool {
+	t, ok := hook.Member("type")
+	if !ok {
+		return false
+	}
+	name, ok := t.StringValue()
+	return ok && name != "command"
+}
+
 // timeoutOf is Double(numberText). A number outside the float range reads as absent here, where Swift's
 // Double(String) gives infinity (which its own JSON encoder then cannot write).
 func timeoutOf(hook ojson.Value) *float64 {
@@ -121,9 +135,13 @@ type plugin struct{ name, path string }
 
 // plugins are the enabled Claude plugins whose install folder still exists. Read-only: SpaceVibe never changes a
 // plugin.
-func plugins(r roots.Roots, settings ojson.Value, haveSettings bool) []plugin {
-	installed, status := readJSON(join(r.Claude.Root, "plugins", "installed_plugins.json"))
+func plugins(r roots.Roots, settings ojson.Value, haveSettings bool, problems *[]string) []plugin {
+	file := join(r.Claude.Root, "plugins", "installed_plugins.json")
+	installed, status := readJSON(file)
 	if status != jsonValue {
+		if reason := unusableReason(status); reason != "" {
+			*problems = append(*problems, file+" "+reason+", so plugin skills, agents and hooks are not shown.")
+		}
 		return nil
 	}
 	pluginsValue, ok := installed.Member("plugins")
@@ -170,9 +188,4 @@ func plugins(r roots.Roots, settings ojson.Value, haveSettings bool) []plugin {
 		out = append(out, plugin{name, path})
 	}
 	return out
-}
-
-func settingsValue(file string) (ojson.Value, bool) {
-	v, status := readJSON(file)
-	return v, status == jsonValue
 }

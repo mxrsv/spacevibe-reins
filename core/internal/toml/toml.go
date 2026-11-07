@@ -7,12 +7,9 @@
 package toml
 
 import (
-	"errors"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 )
 
 // Kind tells which field of a Value is meaningful.
@@ -179,25 +176,9 @@ func pathKey(path []string) string {
 	return b.String()
 }
 
-// ErrUnreadable is returned by ReadFile when the file is missing, unreadable or not UTF-8.
-var ErrUnreadable = errors.New("TOML file is missing or is not UTF-8 text")
-
 // Read parses text. It never fails.
 func Read(text string) Document {
 	p := parser{b: []byte(text)}
 	p.indexLines()
 	return p.run()
-}
-
-// ReadFile reads the document at path. A leading UTF-8 byte order mark is dropped, as
-// Foundation's String(data:encoding:) does. The error is fixed text and never quotes the file.
-func ReadFile(path string) (Document, error) {
-	data, err := os.ReadFile(path)
-	if err != nil || !utf8.Valid(data) {
-		return Document{}, ErrUnreadable
-	}
-	if len(data) >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF {
-		data = data[3:]
-	}
-	return Read(string(data)), nil
 }

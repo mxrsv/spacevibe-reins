@@ -42,12 +42,15 @@ func summarizeRules(folder string) RulesSummary {
 		if !strings.HasSuffix(name, ".rules") {
 			continue
 		}
-		data, err := readCapped(join(folder, name), maxRulesFileBytes)
+		data, truncated, err := readCapped(join(folder, name), maxRulesFileBytes)
 		if err != nil {
 			out.Unreadable++
 			continue
 		}
 		out.Files++
+		if truncated {
+			out.tooLarge++
+		}
 		// Whole-line comments are dropped; a "#" after code is left alone, as in Node.
 		var kept []string
 		for _, line := range strings.Split(textjs.Repair(string(data)), "\n") {

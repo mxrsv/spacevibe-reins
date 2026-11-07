@@ -34,7 +34,10 @@ const (
 	// last capture failed (G-fix.19). It has no ".json" suffix, so SnapshotFiles never lists it as a session.
 	LastErrorFile = "last-error"
 
-	maxStateBytes = 16 << 20 // InventoryFileIO.maxJSONBytes: the state file read for the account key
+	// maxStateBytes is the one cap on Claude's global state file, for the usage cache and the account key alike: a
+	// file past it is unreadable for both, never read by one and skipped by the other (the status line merge needs
+	// the account key). The owner's file is about 0.4 MB.
+	maxStateBytes = 64 << 20
 )
 
 // StatuslineWindow maps a status line `rate_limits` key to the window id and length it reads as.

@@ -16,8 +16,6 @@ import (
 // hide the window that is nearly used up.
 
 const (
-	// maxCacheBytes: a state file past this is not parsed. The owner's is about 0.4 MB.
-	maxCacheBytes  = 64 << 20
 	weekMinutes    = 7 * 24 * 60
 	sessionMinutes = 5 * 60
 )
@@ -29,7 +27,7 @@ func readClaudeCache(r roots.Roots) Entry {
 	case fsx.Unknown:
 		return Entry{CLI: Claude, State: Unreadable}
 	}
-	data, err := fsx.ReadRegular(r.ClaudeState, maxCacheBytes)
+	data, err := fsx.ReadRegular(r.ClaudeState, maxStateBytes)
 	if err != nil {
 		return Entry{CLI: Claude, State: Unreadable}
 	}

@@ -20,7 +20,8 @@ import (
 // create <any folder>/.claude/settings.json. Every message and problem has the settings file's absolute path replaced
 // by the scope's label (RulesScopes.scrub), because the shell must not see paths.
 //
-// A write is short and ends in a journal entry, so ctx is looked at once, before the write lock is taken.
+// A write is short and ends in a journal entry, so ctx is looked at twice and never in between: before the write lock
+// is taken and again as the first step inside it (Store.edit), so a request cancelled while it queued changes nothing.
 type Service struct {
 	roots roots.Roots
 
@@ -69,7 +70,9 @@ func (s *Service) store(ctx context.Context) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewStore(s.roots, func() []string { return dirs }), nil
+	store := NewStore(s.roots, func() []string { return dirs })
+	store.ctx = ctx
+	return store, nil
 }
 
 // Params of the methods. Enum members arrive as text; each is checked here, never defaulted.

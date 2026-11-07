@@ -220,7 +220,9 @@ func TestInvalidJSON(t *testing.T) {
 	if len(inv.Hooks) != 1 || inv.Hooks[0].CLI != Codex {
 		t.Errorf("hooks = %+v", inv.Hooks)
 	}
-	if len(inv.Problems) != 1 || !strings.Contains(inv.Problems[0], "settings.json") || !strings.Contains(inv.Problems[0], "not valid JSON") {
+	// Two lines since G-fix.13 (Swift has one): the hooks line, and what else hangs on the file (plugins, overrides).
+	if len(inv.Problems) != 2 || !strings.Contains(inv.Problems[0], "settings.json") || !strings.Contains(inv.Problems[0], "not valid JSON") ||
+		!strings.Contains(inv.Problems[1], "settings.json is not valid JSON, so enabled plugins and skill overrides are not known.") {
 		t.Errorf("problems = %q", inv.Problems)
 	}
 }

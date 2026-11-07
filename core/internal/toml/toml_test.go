@@ -1,6 +1,7 @@
 package toml
 
 import (
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -239,18 +240,22 @@ func TestLines(t *testing.T) {
 
 // Swift: TOMLReaderTests.swift "reads the Codex config of the synthetic fixture"
 func TestFixture(t *testing.T) {
-	doc, err := ReadFile("../../testdata/fixtures/home/.codex/config.toml")
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := readFixture(t, "../../testdata/fixtures/home/.codex/config.toml")
 	wantValue(t, doc, []string{}, "approval_policy", str("on-request"))
 	wantValue(t, doc, []string{}, "sandbox_mode", str("workspace-write"))
 	wantValue(t, doc, []string{"sandbox_workspace_write"}, "network_access", boolean(false))
 	wantEqual(t, "projects", len(doc.TablePaths([]string{"projects"})), 3)
 	wantEqual(t, "skippedLines", doc.SkippedLines, 0)
-	if _, err := ReadFile("../../testdata/fixtures/home/.codex/missing.toml"); err == nil {
-		t.Error("a missing file must be an error")
+}
+
+// readFixture parses a fixture file; the package parses text only.
+func readFixture(t *testing.T, path string) Document {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
 	}
+	return Read(string(data))
 }
 
 // nested builds "a = " followed by levels of [ and levels of ].

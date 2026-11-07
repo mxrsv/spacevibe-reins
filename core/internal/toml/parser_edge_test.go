@@ -3,8 +3,6 @@ package toml
 import (
 	"fmt"
 	"math"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -173,38 +171,15 @@ func TestEmptyAndTriviaOnly(t *testing.T) {
 	}
 }
 
-func TestReadFileBOMAndEncoding(t *testing.T) {
-	dir := t.TempDir()
-	write := func(name string, data []byte) string {
-		p := filepath.Join(dir, name)
-		if err := os.WriteFile(p, data, 0o600); err != nil {
-			t.Fatal(err)
-		}
-		return p
-	}
-	// Foundation's String(data:encoding:) drops a leading BOM, so the first key still reads
-	doc, err := ReadFile(write("bom.toml", []byte("\xef\xbb\xbfa = 1\n")))
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantValue(t, doc, []string{}, "a", num(1))
-	wantEqual(t, "skipped", doc.SkippedLines, 0)
-	if _, err := ReadFile(write("bad.toml", []byte("a = \"\xff\"\n"))); err != ErrUnreadable {
-		t.Errorf("invalid UTF-8: err = %v, want ErrUnreadable", err)
-	}
-	if _, err := ReadFile(dir); err != ErrUnreadable {
-		t.Errorf("a directory: err = %v, want ErrUnreadable", err)
-	}
-	// the BOM as text (Read, not ReadFile) is not a key character: the line is skipped
+func TestBOMIsNotAKeyCharacter(t *testing.T) {
+	// Read takes text; the callers (rules, inventory) repair and decode the bytes. A BOM left in the text is not a key
+	// character: the line is skipped.
 	wantEqual(t, "BOM via Read", Read("\xef\xbb\xbfa = 1\n").SkippedLines, 1)
 }
 
 func TestCodexQuirksFixture(t *testing.T) {
 	// the fixture go-toml/v2 rejects (duplicate keys and tables) reads here, last assignment winning
-	doc, err := ReadFile("../../testdata/fixtures/rules-home/codex-quirks/.codex/config.toml")
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := readFixture(t, "../../testdata/fixtures/rules-home/codex-quirks/.codex/config.toml")
 	wantValue(t, doc, []string{}, "approval_policy", str("never"))
 	wantValue(t, doc, []string{"projects", "/work/one"}, "trust_level", str("untrusted"))
 	wantValue(t, doc, []string{"permissions", "noisy", "network"}, "bad key", boolean(true))

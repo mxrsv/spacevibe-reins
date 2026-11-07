@@ -89,6 +89,10 @@ type RulesSummary struct {
 	Unreadable int `json:"unreadable"`
 	// FolderNotReadable is true when the rules folder could not be listed (G-fix.18).
 	FolderNotReadable bool `json:"folderNotReadable"`
+
+	// tooLarge counts .rules files longer than the read cap, whose later rules are not in the counts. Not on the
+	// wire; a warning says it.
+	tooLarge int
 }
 
 // CodexPermissions are the permission keys of Codex config.toml.
@@ -113,6 +117,10 @@ type CodexPermissions struct {
 	NotReadable bool `json:"notReadable"`
 	// SkippedLines counts config.toml lines the reader could not make sense of (G-fix.18). Outside the golden projection.
 	SkippedLines int `json:"skippedLines"`
+
+	// configTruncated: config.toml is longer than the read cap, so the settings above come from its first part only.
+	// Not on the wire; a warning says it.
+	configTruncated bool
 }
 
 // ReadCodexPermissions reads the Codex permission keys. Same fields as readCodexPermissions in Node rules
@@ -124,11 +132,12 @@ func ReadCodexPermissions(r roots.Roots) CodexPermissions {
 	switch fsx.PathPresence(config) {
 	case fsx.Present:
 		out.Present = true
-		data, err := readCapped(config, maxJSONBytes)
+		data, truncated, err := readCapped(config, maxJSONBytes)
 		if err != nil {
 			out.NotReadable = true
 			break
 		}
+		out.configTruncated = truncated
 		doc := toml.Read(textjs.Repair(string(data)))
 		out.SkippedLines = doc.SkippedLines
 		out.fill(doc)
@@ -160,12 +169,18 @@ func (c CodexPermissions) unknownWarnings() []string {
 	if c.NotReadable {
 		out = append(out, "Codex config.toml could not be read, so the settings below are not known.")
 	}
+	if c.configTruncated {
+		out = append(out, "Codex config.toml is too large to read completely, so some settings may be missing.")
+	}
 	if c.SkippedLines > 0 {
 		out = append(out, strconv.Itoa(c.SkippedLines)+" "+plural(c.SkippedLines, "line", "lines")+" of Codex config.toml could not be understood and "+
 			plural(c.SkippedLines, "was", "were")+" skipped, so some settings may be missing.")
 	}
 	if c.Rules.FolderNotReadable {
 		out = append(out, "The Codex rules folder could not be read, so its rules are not counted.")
+	}
+	if n := c.Rules.tooLarge; n > 0 {
+		out = append(out, strconv.Itoa(n)+" Codex .rules "+plural(n, "file", "files")+" "+plural(n, "is", "are")+" too large to read completely, so some rules are not counted.")
 	}
 	if n := c.Rules.Unreadable; n > 0 {
 		out = append(out, strconv.Itoa(n)+" Codex .rules "+plural(n, "file", "files")+" could not be read and "+plural(n, "is", "are")+" not counted.")

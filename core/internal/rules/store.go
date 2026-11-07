@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -42,6 +43,13 @@ const (
 type Store struct {
 	roots    roots.Roots
 	discover func() []string
+
+	// ctx is the request's context; a write looks at it again as the first step inside the write lock, so a request
+	// that was cancelled while it waited for the lock changes nothing. Nil means never cancelled.
+	ctx context.Context
+	// beforeLockedRead runs inside the write lock before the file is read. Tests only: it stands in for a writer that
+	// never takes our lock.
+	beforeLockedRead func()
 }
 
 // NewStore returns a store over the roots. projects lists the folders a project scope may name; nil means
@@ -297,12 +305,20 @@ func requireRule(rule string, verdict Verdict, doc *ojson.Document, file string)
 func (s *Store) edit(scope Scope, label string, change func(file string, doc *ojson.Document) (*ojson.Document, error)) (*mutate.Entry, error) {
 	var entry *mutate.Entry
 	err := mutate.WithLock(s.roots, func(tx *mutate.Tx) error {
+		if s.ctx != nil {
+			if err := s.ctx.Err(); err != nil {
+				return err
+			}
+		}
 		file, err := s.File(scope)
 		if err != nil {
 			return err
 		}
 		if err := requireInsideProject(file, scope); err != nil {
 			return err
+		}
+		if s.beforeLockedRead != nil {
+			s.beforeLockedRead()
 		}
 		entry, err = tx.EditJSON(file, label, nil, func(doc *ojson.Document) (*ojson.Document, error) { return change(file, doc) })
 		return err
@@ -324,15 +340,22 @@ func (s *Store) required(entry *mutate.Entry, err error) (mutate.Entry, error) {
 // isBlank is Swift's text.allSatisfy(\.isWhitespace): nothing but spaces and line breaks (and the empty text).
 func isBlank(text string) bool { return strings.TrimFunc(text, unicode.IsSpace) == "" }
 
-// readCapped reads at most max bytes of a regular file, without blocking on a FIFO. A longer file is cut silently,
-// as InventoryFileIO.readData does.
-func readCapped(path string, max int64) ([]byte, error) {
+// readCapped reads at most max bytes of a regular file, without blocking on a FIFO. A longer file is cut and
+// truncated is true, so the caller can say the result is partial instead of reporting it as complete.
+func readCapped(path string, max int64) (data []byte, truncated bool, err error) {
 	f, err := fsx.OpenRegular(path)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	defer f.Close()
-	return io.ReadAll(io.LimitReader(f, max))
+	data, err = io.ReadAll(io.LimitReader(f, max+1))
+	if err != nil {
+		return nil, false, err
+	}
+	if int64(len(data)) > max {
+		return data[:max], true, nil
+	}
+	return data, false, nil
 }
 
 // join is NSString's appendingPathComponent: single slashes, nothing cleaned.

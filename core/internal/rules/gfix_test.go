@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"slices"
 	"strings"
 	"testing"
 )
@@ -29,5 +30,40 @@ func TestSkippedConfigLinesAreWarned(t *testing.T) {
 	clean := "sandbox_mode = \"read-only\"\n"
 	if c := codexOf(t, &clean, nil); c.SkippedLines != 0 || len(c.Warnings) != 0 || c.NotReadable {
 		t.Errorf("a clean file warns: %+v", c)
+	}
+}
+
+// A config.toml or .rules file longer than its read cap is not reported as complete.
+func TestTooLargeCodexFilesAreWarned(t *testing.T) {
+	const configWarning = "Codex config.toml is too large to read completely, so some settings may be missing."
+	pad := func(head string, size int) string { return head + "# " + strings.Repeat("x", size-len(head)-3) + "\n" }
+
+	config := pad("sandbox_mode = \"read-only\"\n", maxJSONBytes+1)
+	c := codexOf(t, &config, nil)
+	if !slices.Contains(c.Warnings, configWarning) || c.NotReadable {
+		t.Errorf("a config past the cap: %v notReadable %v", c.Warnings, c.NotReadable)
+	}
+	if c.SandboxMode == nil || *c.SandboxMode != "read-only" {
+		t.Errorf("the part that was read is still used: %+v", c.SandboxMode)
+	}
+	exact := pad("sandbox_mode = \"read-only\"\n", maxJSONBytes)
+	if c := codexOf(t, &exact, nil); slices.Contains(c.Warnings, configWarning) || len(c.Warnings) != 0 {
+		t.Errorf("a config exactly at the cap warns: %v", c.Warnings)
+	}
+
+	rule := "prefix_rule(pattern=[\"ls\"], decision=\"allow\")\n"
+	over := map[string]string{"big.rules": pad(rule, maxRulesFileBytes+1), "small.rules": rule}
+	c = codexOf(t, nil, over)
+	want := "1 Codex .rules file is too large to read completely, so some rules are not counted."
+	if !slices.Contains(c.Warnings, want) || c.Rules.Files != 2 || c.Rules.Allow != 2 {
+		t.Errorf("a rules file past the cap: %v %+v", c.Warnings, c.Rules)
+	}
+	two := map[string]string{"a.rules": pad(rule, maxRulesFileBytes+1), "b.rules": pad(rule, maxRulesFileBytes+5)}
+	if c := codexOf(t, nil, two); !slices.Contains(c.Warnings, "2 Codex .rules files are too large to read completely, so some rules are not counted.") {
+		t.Errorf("two rules files past the cap: %v", c.Warnings)
+	}
+	atCap := map[string]string{"a.rules": pad(rule, maxRulesFileBytes)}
+	if c := codexOf(t, nil, atCap); len(c.Warnings) != 0 {
+		t.Errorf("a rules file exactly at the cap warns: %v", c.Warnings)
 	}
 }

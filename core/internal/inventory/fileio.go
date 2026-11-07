@@ -126,6 +126,20 @@ func readJSON(path string) (ojson.Value, jsonStatus) {
 	return doc.Root(), jsonValue
 }
 
+// unusableReason finishes the sentence about a JSON file that was there but gave nothing; "" when the file is
+// missing or fine.
+func unusableReason(status jsonStatus) string {
+	switch status {
+	case jsonInvalid:
+		return "is not valid JSON"
+	case jsonTooLarge:
+		return "is too large to read"
+	case jsonUnreadable:
+		return "cannot be read"
+	}
+	return ""
+}
+
 // listDir is the entry names of a folder, sorted. Empty when the folder is missing or cannot be read.
 func listDir(path string) []string {
 	entries, err := os.ReadDir(path)

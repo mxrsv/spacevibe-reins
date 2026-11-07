@@ -47,25 +47,25 @@ func TestClaudeStateFIFOIsUnreadable(t *testing.T) {
 func TestClaudeStateSizeCap(t *testing.T) {
 	h := newTempHome(t)
 	path := h.write(".claude/.claude.json", "{}")
-	if err := os.Truncate(path, maxCacheBytes+1); err != nil { // sparse: no disk used
+	if err := os.Truncate(path, maxStateBytes+1); err != nil { // sparse: no disk used
 		t.Fatal(err)
 	}
 	if e := h.claude(testNow); e.State != Unreadable {
 		t.Errorf("a state file past the cap: %s", e.State)
 	}
 	// Exactly the cap is read (and is not JSON: zeros), still unreadable but by the parser, not the cap.
-	if err := os.Truncate(path, maxCacheBytes); err != nil {
+	if err := os.Truncate(path, maxStateBytes); err != nil {
 		t.Fatal(err)
 	}
 	if e := h.claude(testNow); e.State != Unreadable {
 		t.Errorf("a zero-filled state file: %s", e.State)
 	}
-	// The account key reads at most 16 MiB.
+	// The account key has the same cap.
 	if err := os.WriteFile(path, []byte(`{"oauthAccount":{"accountUuid":"a"},"pad":"`+strings.Repeat("x", maxStateBytes)+`"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := AccountKey(h.roots()); ok {
-		t.Error("a state file past 16 MiB gave an account key")
+		t.Error("a state file past the cap gave an account key")
 	}
 }
 
@@ -184,5 +184,31 @@ func TestResultJSONShape(t *testing.T) {
 		`{"id":"weekly_scoped:Fable","minutes":10080,"scope":"Fable","usedPercent":0,"resetsAt":1793980799.803,"active":false,"current":true}]}`
 	if string(data) != wantMeasured {
 		t.Fatalf("got  %s\nwant %s", data, wantMeasured)
+	}
+}
+
+// One cap for the state file: the usage cache and the account key agree on a file between the old caps (16 and
+// 64 MiB), so a big state file never drops the status line merge silently. Past the cap it is Unreadable.
+func TestClaudeStateCapIsSharedByCacheAndAccountKey(t *testing.T) {
+	h := newTempHome(t)
+	pad := `,"pad":"` + strings.Repeat("x", 17<<20) + `"}`
+	state := strings.TrimSuffix(accountState(defaultAcc), "}") + pad
+	h.write(".claude/.claude.json", state)
+	h.weekly("session-a", "71", 1_793_850_000)
+	if _, ok := AccountKey(h.roots()); !ok {
+		t.Fatal("a 17 MiB state file gave no account key")
+	}
+	e := h.claude(testNow)
+	if e.State != Measured || e.Source == nil || *e.Source != ClaudeStatusline {
+		t.Errorf("a 17 MiB state file: state %s source %v, want the status line merge", e.State, e.Source)
+	}
+
+	over := strings.TrimSuffix(accountState(defaultAcc), "}") + `,"pad":"` + strings.Repeat("x", maxStateBytes) + `"}`
+	h.write(".claude/.claude.json", over)
+	if _, ok := AccountKey(h.roots()); ok {
+		t.Error("a state file past the cap gave an account key")
+	}
+	if e := h.claude(testNow); e.State != Unreadable {
+		t.Errorf("a state file past the cap: %s, want unreadable", e.State)
 	}
 }

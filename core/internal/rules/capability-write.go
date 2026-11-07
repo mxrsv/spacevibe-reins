@@ -53,11 +53,10 @@ type plan struct {
 	replaces, writes   []VerdictRule
 }
 
+// plan is the preview: validate, list the scope, plan on the listing. It reads without the write lock, so it only
+// answers a question; SetCapability plans again from the locked document.
 func (s *Store) plan(scope Scope, capability Capability, verdict Verdict) (plan, error) {
-	if !capability.Valid() {
-		return plan{}, coreerr.New("That capability is not known.")
-	}
-	if err := checkVerdict(verdict); err != nil {
+	if err := checkCapabilityWrite(capability, verdict); err != nil {
 		return plan{}, err
 	}
 	listing, err := s.ListRules(scope)
@@ -72,14 +71,26 @@ func (s *Store) plan(scope Scope, capability Capability, verdict Verdict) (plan,
 		}
 		return plan{}, coreerr.NewStatus(problem+notNothingChanged, coreerr.StatusConflict)
 	}
-	cell := cellOf(CapabilityGrid(listing.Rules), capability)
+	return planOn(listing.Rules, capability, verdict)
+}
+
+func checkCapabilityWrite(capability Capability, verdict Verdict) error {
+	if !capability.Valid() {
+		return coreerr.New("That capability is not known.")
+	}
+	return checkVerdict(verdict)
+}
+
+// planOn is the pure part of a plan: what writing the cell would remove and write, given the rules of the one file.
+func planOn(rules []Rule, capability Capability, verdict Verdict) (plan, error) {
+	cell := cellOf(CapabilityGrid(rules), capability)
 	if cell.State == StateMixed {
 		return plan{}, coreerr.NewStatus(capability.Label()+" has rules for specific paths or commands here, so it has no single value. Edit the individual rules instead.", coreerr.StatusConflict)
 	}
 	want := replacedRole(capability)
 	var replaces []VerdictRule
 	var kept []Rule
-	for _, item := range listing.Rules {
+	for _, item := range rules {
 		if replaced(item, capability, want) {
 			replaces = append(replaces, item.entry())
 		} else {
@@ -96,6 +107,21 @@ func (s *Store) plan(scope Scope, capability Capability, verdict Verdict) (plan,
 		replaces = []VerdictRule{}
 	}
 	return plan{current: cell.State, resulting: resulting, replaces: replaces, writes: writes}, nil
+}
+
+// docRules are the rules of the document, in listing order (allow, ask, deny). Only string items count, as in ListRules.
+func docRules(scope Scope, file string, doc *ojson.Document) ([]Rule, error) {
+	permissions, present, err := permissionsOf(doc.Root(), file)
+	if err != nil {
+		return nil, err
+	}
+	var out []Rule
+	for _, verdict := range Verdicts {
+		for _, rule := range rulesOf(permissions, present, verdict) {
+			out = append(out, newRule(scope, file, verdict, rule))
+		}
+	}
+	return out, nil
 }
 
 // replaced: the rule is in the cell with the role a write replaces.
@@ -126,14 +152,23 @@ func (s *Store) PreviewSetCapability(scope Scope, capability Capability, verdict
 }
 
 // SetCapability replaces the cell's rules and records a journal entry. The entry is nil when the file already holds
-// exactly that.
+// exactly that. The plan is made inside the write lock from the document the edit is going to change, so a writer that
+// never takes our lock (Claude Code) cannot make the written cell differ from what was planned, and a cell that became
+// mixed in the meantime is refused (409) like one that was mixed before.
 func (s *Store) SetCapability(scope Scope, capability Capability, verdict Verdict) (*mutate.Entry, error) {
-	p, err := s.plan(scope, capability, verdict)
-	if err != nil {
+	if err := checkCapabilityWrite(capability, verdict); err != nil {
 		return nil, err
 	}
 	label := "Set " + capability.Label() + " to " + verdict.title() + " (" + scope.journalLabel() + ")"
 	return s.edit(scope, label, func(file string, doc *ojson.Document) (*ojson.Document, error) {
+		rules, err := docRules(scope, file, doc)
+		if err != nil {
+			return nil, err
+		}
+		p, err := planOn(rules, capability, verdict)
+		if err != nil {
+			return nil, err
+		}
 		return editRules(doc, file, p.replaces, p.writes)
 	})
 }

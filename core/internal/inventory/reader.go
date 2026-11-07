@@ -3,6 +3,7 @@ package inventory
 import (
 	"context"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"spacevibe.dev/core/internal/hashes"
@@ -26,6 +27,8 @@ func read(ctx context.Context, r roots.Roots) (Snapshot, []string, error) {
 		items    []Item
 		hooks    []Hook
 		problems []string
+		// otherHooks counts hooks of a type other than command (http, mcp_tool, prompt, agent), which are not listed.
+		otherHooks int
 	)
 	clis := []struct {
 		cli CLI
@@ -47,7 +50,7 @@ func read(ctx context.Context, r roots.Roots) (Snapshot, []string, error) {
 		config, status := readJSON(c.r.HookFile)
 		switch status {
 		case jsonValue:
-			hooks = append(hooks, parseHooks(config, c.cli, nil, c.r.HookFile, nil, &problems)...)
+			hooks = append(hooks, parseHooks(config, c.cli, nil, c.r.HookFile, nil, &problems, &otherHooks)...)
 		case jsonInvalid:
 			problems = append(problems, c.r.HookFile+" is not valid JSON, so its hooks cannot be shown or changed.")
 		case jsonTooLarge:
@@ -57,8 +60,13 @@ func read(ctx context.Context, r roots.Roots) (Snapshot, []string, error) {
 		}
 	}
 
-	claudeSettings, haveSettings := settingsValue(r.Claude.HookFile)
-	for _, plugin := range plugins(r, claudeSettings, haveSettings) {
+	claudeSettings, settingsStatus := readJSON(r.Claude.HookFile)
+	haveSettings := settingsStatus == jsonValue
+	if reason := unusableReason(settingsStatus); reason != "" {
+		// The hooks loop above already says the file cannot be used for hooks; this is what else depends on it.
+		problems = append(problems, r.Claude.HookFile+" "+reason+", so enabled plugins and skill overrides are not known.")
+	}
+	for _, plugin := range plugins(r, claudeSettings, haveSettings, &problems) {
 		if err := ctx.Err(); err != nil {
 			return Snapshot{}, nil, err
 		}
@@ -67,8 +75,11 @@ func read(ctx context.Context, r roots.Roots) (Snapshot, []string, error) {
 		items = append(items, readSkills(join(base, "skills"), Claude, &owner, nil, &problems)...)
 		items = append(items, readAgents(join(base, "agents"), Claude, &owner, nil, &problems)...)
 		hookFile := join(base, "hooks", "hooks.json")
-		if config, status := readJSON(hookFile); status == jsonValue {
-			hooks = append(hooks, parseHooks(config, Claude, &owner, hookFile, nil, &problems)...)
+		config, status := readJSON(hookFile)
+		if status == jsonValue {
+			hooks = append(hooks, parseHooks(config, Claude, &owner, hookFile, nil, &problems, &otherHooks)...)
+		} else if reason := unusableReason(status); reason != "" {
+			problems = append(problems, hookFile+" "+reason+", so the hooks of the plugin "+owner+" are not shown.")
 		}
 	}
 
@@ -90,7 +101,7 @@ func read(ctx context.Context, r roots.Roots) (Snapshot, []string, error) {
 			config, status := readJSON(file)
 			switch status {
 			case jsonValue:
-				hooks = append(hooks, parseHooks(config, Claude, nil, file, &project, &problems)...)
+				hooks = append(hooks, parseHooks(config, Claude, nil, file, &project, &problems, &otherHooks)...)
 			case jsonInvalid:
 				problems = append(problems, file+" is not valid JSON, so its hooks cannot be shown.")
 			case jsonTooLarge:
@@ -128,6 +139,12 @@ func read(ctx context.Context, r roots.Roots) (Snapshot, []string, error) {
 	}
 	for i := range items {
 		_, items[i].InOther = names[string(items[i].CLI.Other())+":"+items[i].Key()]
+	}
+
+	if otherHooks == 1 {
+		problems = append(problems, "1 hook of another type is not shown.")
+	} else if otherHooks > 1 {
+		problems = append(problems, strconv.Itoa(otherHooks)+" hooks of other types are not shown.")
 	}
 
 	if items == nil {
@@ -194,6 +211,9 @@ func readSkills(dir string, cli CLI, owner, project *string, problems *[]string)
 		file := join(path, "SKILL.md")
 		text, ok := readText(file, maxTextBytes)
 		if !ok {
+			if pathPresence(file) != missing {
+				*problems = append(*problems, file+" cannot be read, so this skill is not shown.")
+			}
 			continue
 		}
 		fm := ParseFrontmatter(text)
@@ -223,6 +243,7 @@ func readAgents(dir string, cli CLI, owner, project *string, problems *[]string)
 		path := join(dir, entry)
 		text, ok := readText(path, maxTextBytes)
 		if !ok {
+			*problems = append(*problems, path+" cannot be read, so this agent is not shown.")
 			continue
 		}
 		var fields map[string]string
