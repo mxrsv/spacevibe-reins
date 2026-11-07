@@ -10,7 +10,7 @@ extension Mutate {
         description: String,
         body: String = ""
     ) throws -> JournalEntry {
-        try WriteLock.run { try addSkillLocked(roots: roots, clis: clis, name: name, description: description, body: body) }
+        try WriteLock.run(roots) { try addSkillLocked(roots: roots, clis: clis, name: name, description: description, body: body) }
     }
 
     private static func addSkillLocked(
@@ -37,7 +37,7 @@ extension Mutate {
         description: String,
         instructions: String = ""
     ) throws -> JournalEntry {
-        try WriteLock.run { try addAgentLocked(roots: roots, clis: clis, name: name, description: description, instructions: instructions) }
+        try WriteLock.run(roots) { try addAgentLocked(roots: roots, clis: clis, name: name, description: description, instructions: instructions) }
     }
 
     private static func addAgentLocked(

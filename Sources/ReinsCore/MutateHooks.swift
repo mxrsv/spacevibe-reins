@@ -14,7 +14,7 @@ extension Mutate {
         command: String,
         timeout: Double? = nil
     ) throws -> JournalEntry {
-        try WriteLock.run { try addHookLocked(roots: roots, clis: clis, event: event, matcher: matcher, command: command, timeout: timeout) }
+        try WriteLock.run(roots) { try addHookLocked(roots: roots, clis: clis, event: event, matcher: matcher, command: command, timeout: timeout) }
     }
 
     private static func addHookLocked(
@@ -63,7 +63,7 @@ extension Mutate {
 
     /// Removes every dead, user-level hook of one CLI in one file write and one journal entry.
     public static func removeDeadHooks(roots: Roots, cli: InventoryCLI) throws -> JournalEntry {
-        try WriteLock.run { try removeDeadHooksLocked(roots: roots, cli: cli) }
+        try WriteLock.run(roots) { try removeDeadHooksLocked(roots: roots, cli: cli) }
     }
 
     private static func removeDeadHooksLocked(roots: Roots, cli: InventoryCLI) throws -> JournalEntry {

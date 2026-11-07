@@ -122,7 +122,7 @@ struct MutationTransactionTests {
         let roots = try seed(home)
         let codex = try home.write(".codex/config.toml", "model = \"before\"\n")
         let error = #expect(throws: ReinsError.self) {
-            try WriteLock.run {
+            try WriteLock.run(roots) {
                 try Journal.prepareMutation(roots)
                 let first = try #require(FileEdit.apply(roots, file: codex) { _ in "model = \"after\"\n" })
                 let op = try #require(FileEdit.apply(roots, file: roots.claude.hookFile) { _ in "{}\n" })

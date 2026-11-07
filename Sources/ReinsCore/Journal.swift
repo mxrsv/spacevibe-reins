@@ -125,7 +125,7 @@ public enum Journal {
     @discardableResult
     public static func record(_ roots: Roots, label: String, ops: [JournalOp]) throws -> JournalEntry {
         let entry = JournalEntry(id: UUID().uuidString.lowercased(), at: timestamp(), label: label, undone: false, ops: ops)
-        try WriteLock.run { try write(roots, [entry] + entriesForWriting(roots)) }
+        try WriteLock.run(roots) { try write(roots, [entry] + entriesForWriting(roots)) }
         return entry
     }
 
@@ -175,7 +175,7 @@ public enum Journal {
     /// Reverses an entry's ops, last first, and marks it undone; returns its label.
     /// All or nothing: if one op refuses or fails, the ones already reversed are put back and the entry stays undoable.
     public static func undo(_ roots: Roots, id: String) throws -> String {
-        try WriteLock.run { try undoLocked(roots, id: id) }
+        try WriteLock.run(roots) { try undoLocked(roots, id: id) }
     }
 
     private static func undoLocked(_ roots: Roots, id: String) throws -> String {

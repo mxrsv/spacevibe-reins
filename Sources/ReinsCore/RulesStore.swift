@@ -140,7 +140,7 @@ public struct RulesStore: Sendable {
     // MARK: Writing
 
     func edit(_ scope: RuleScope, label: String, change: (URL, OrderedJSON) throws -> OrderedJSON) throws -> JournalEntry? {
-        try WriteLock.run {
+        try WriteLock.run(roots) {
             let file = try file(for: scope)
             try requireInsideProject(file, scope: scope)
             return try FileEdit.editJSON(roots, file: file, label: label) { document in try change(file, document) }

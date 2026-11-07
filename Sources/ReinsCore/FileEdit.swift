@@ -22,7 +22,7 @@ public enum FileEdit {
         validate: ((String) throws -> Void)? = nil,
         change: (String?) throws -> String?
     ) throws -> JournalOp? {
-        try WriteLock.run { try applyLocked(roots, file: file, validate: validate, change: change) }
+        try WriteLock.run(roots) { try applyLocked(roots, file: file, validate: validate, change: change) }
     }
 
     private static func applyLocked(
@@ -99,7 +99,7 @@ public enum FileEdit {
         validate: ((String) throws -> Void)? = nil,
         change: (String?) throws -> String?
     ) throws -> JournalEntry? {
-        try WriteLock.run {
+        try WriteLock.run(roots) {
             try Journal.prepareMutation(roots)
             guard let op = try apply(roots, file: file, validate: validate, change: change) else { return nil }
             return try Journal.recordMutation(roots, label: label, ops: [op])
@@ -141,7 +141,7 @@ public enum FileEdit {
         validate: ((OrderedJSON) throws -> Void)? = nil,
         change: (OrderedJSON) throws -> OrderedJSON
     ) throws -> JournalEntry? {
-        try WriteLock.run {
+        try WriteLock.run(roots) {
             try Journal.prepareMutation(roots)
             guard let op = try applyJSON(roots, file: file, validate: validate, change: change) else { return nil }
             return try Journal.recordMutation(roots, label: label, ops: [op])
