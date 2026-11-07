@@ -39,4 +39,28 @@ struct InterFontTests {
         #expect(tags(.code) == ["ss02", "zero"])
         #expect(tags(.codeTitle) == ["ss02", "zero"])
     }
+
+    /// The v5 type table (spec, "Type"): size, weight, line box and the mock body's features on every new role.
+    @Test("v5 roles: 10 to 28 with the mock's weights, line boxes and features")
+    func v5Roles() {
+        let expected: [(ReinsType, CGFloat, InterFont.Weight, CGFloat)] = [
+            (.micro, 10, .medium, 12), (.small, 11, .regular, 16), (.smallLabel, 11, .medium, 16), (.meta, 12, .regular, 16),
+            (.metaLabel, 12, .medium, 16), (.prose, 13, .regular, 20), (.rowName, 13, .book, 20), (.control, 13, .medium, 20),
+            (.controlStrong, 13, .semibold, 20), (.field, 14, .regular, 20), (.cardTitle, 16, .semibold, 24),
+            (.heading, 20, .semibold, 28), (.answer, 28, .semibold, 32),
+        ]
+        for (role, size, weight, lineBox) in expected {
+            #expect(role.size == size && role.weight == weight && role.lineBox == lineBox, "\(size) pt role")
+            #expect(role.lineBox.truncatingRemainder(dividingBy: 4) == 0)
+            let settings = CTFontCopyFeatureSettings(role.ctFont) as? [[String: Any]] ?? []
+            #expect(Set(settings.compactMap { $0[kCTFontOpenTypeFeatureTag as String] as? String }) == ["tnum", "cv11", "ss03"])
+        }
+        #expect(ReinsType.cardTitle.trackingEm == -0.01 && ReinsType.heading.trackingEm == -0.01 && ReinsType.answer.trackingEm == -0.02)
+    }
+
+    @Test("the 450 row-name weight is the variable font moved on its weight axis")
+    func bookWeight() {
+        let variation = CTFontCopyVariation(InterFont.font(.book, size: 13)) as? [Int: Double] ?? [:]
+        #expect(variation[InterFont.weightAxis] == 450)
+    }
 }

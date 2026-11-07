@@ -43,20 +43,24 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
 - **Heights**: 20 key cap, 24 tag and segment, 28 every control, 32 section row and hint bar, 36 palette row, 48 every row,
   sidebar item and the top bar, 56 card header. **Radii**: 4 key cap, 6 tag and segment, 8 control, row block and sidebar
   item, 12 card; filter chips are capsules.
-- **Colour** values live in [`Palette`](../Sources/Reins/Tokens/Palette.swift). The sidebar and the content area share the
-  `well`, split by one 1 pt `divider` (the text colour at 8%); the top bar and hint bar have no line. Cards are `surface`
-  blocks on the well with no border, so the fill alone sets them off. CLI colours mark identity only; state uses the
-  success, warn and danger tones. Only overlays (palette, confirmations, toast) keep a border and a shadow.
-- **One tonal family, several hues.** The [shared palette](../Sources/Reins/Tokens/Palette.swift) balances clay, blue,
-  green, ochre and brick red at comparable perceptual lightness and chroma. Identity/state fills are restrained;
-  `Ink` variants are darker in light mode and lighter in dark mode, and tints use their fill at 15%. Selection and focus
-  use the same muted blue family. The [Limits state mapping](../Sources/Reins/Components/LimitFigure.swift) still
-  overrides identity with warning/danger; a shared tone does not mean a single hue or a changed quota threshold.
-  Codex's fill is pinned to Paradev's `#1596D6` in both appearances in the [palette](../Sources/Reins/Tokens/Palette.swift);
-  its tint uses the same RGB, while `codexInk` remains a readable text variant.
+- **Colour** values live in `PaletteValue` ([Palette.swift](../Sources/Reins/Tokens/Palette.swift)) under the v5 token
+  names and change app-wide at once (D53). Screens not yet rebuilt read them through their old names: `well` is `bgSide`,
+  `surface` `bgPanel`, `surfaceRaised` `bgRaise`, `divider` `hair`, `border` `hair2`, `selection` `sel`. The sidebar and
+  the content area share the `well`, split by one 1 pt `divider`; the top bar and hint bar have no line. Cards are
+  `surface` blocks on the well with no border, so the fill alone sets them off. Only overlays (palette, confirmations,
+  toast) keep a border and a shadow.
+- **Neutral surfaces; colour only where it means something.** Surfaces, lines, selection and focus are neutral. Green,
+  amber and red (`ok`, `warn`, `bad`) mark state only; the category colours, Claude's clay and the blue accent stay outside
+  their hue families ([`HuePolicyTests`](../Tests/ReinsTests/HuePolicyTests.swift)). Codex's colour is the text colour.
+  `Ink` twins carry text in a state or CLI colour, and tints use their fill at 15%. Every text and mark is checked on its
+  composited ground in both appearances ([`ContrastTests`](../Tests/ReinsTests/ContrastTests.swift)); a value raised to
+  pass says so, with the spec's value, beside it in the palette. The
+  [Limits state mapping](../Sources/Reins/Components/LimitFigure.swift) still overrides identity with warning/danger.
 - **Controls have no outline.** Button, search field, scope picker, segmented control, filter chip and key cap fill with
   the [`ControlGround`](../Sources/Reins/Components/ControlGround.swift): `surface` on the well, `surfaceRaised` inside a
-  card (a card, a dialog and the search field set it), and `selection` for the chosen segment or chip.
+  card (a card, a dialog and the search field set it), and `selection` for the chosen segment or chip. Focus is a fill,
+  never a ring (D57): [`focusFill`](../Sources/Reins/Components/FocusFill.swift) lays `sel` over the focused control,
+  except a selected row or tile, which already wears it.
 
 ## Icons
 
@@ -85,7 +89,7 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
 | --- | --- |
 | A group of rows | [`GroupedList`](../Sources/Reins/Components/GroupedList.swift) (a card: 8 pt under the last row, a `RowDivider` between two rows that hides beside a filled row) with a [`CardHeader`](../Sources/Reins/Components/CardHeader.swift) (56, no line under it) as its first line; `SectionRow` for a sub-group; `.pinnedCardTop()` with `GroupedList(edges: .belowPinnedHeader)` for a header that stays put while rows scroll |
 | One line | [`Row`](../Sources/Reins/Components/Row.swift) (48, `tall` for three lines or more; a block inset 8 from the card's edges that hover and selection fill at radius 8) with [`RowText`](../Sources/Reins/Components/RowText.swift), `EmptyRow`, `ShowMoreRow` |
-| Progress | `UsageBar` in [`UsageCell`](../Sources/Reins/Components/UsageCell.swift): one continuous 6 pt capsule on `track` for every usage count (Loadout, Activity). [`Ruler`](../Sources/Reins/Components/Ruler.swift) is for Limits only: ten square cells whose two outer ends round by a quarter of the height (2 and 8), 8 high in the window list and 32 (`rulerDetailHeight`) under the figure, each a tenth of the real track with a 3 pt gap, the last filled cell cut at the share, empty cells `surfaceRaised` (`trackOnSelection` on a selected tile), a dashed outline when the share is not known |
+| Progress | `UsageBar` in [`UsageCell`](../Sources/Reins/Components/UsageCell.swift): one continuous 6 pt capsule on `track` for every usage count (Loadout, Activity). [`Ruler`](../Sources/Reins/Components/Ruler.swift) is for Limits only: ten square cells whose two outer ends round by a quarter of the height (2 and 8), 8 high in the window list and 32 (`rulerDetailHeight`) under the figure, each a tenth of the real track with a 3 pt gap, the last filled cell cut at the share, empty cells `track` (`trackOnSelection` on a selected tile), a dashed outline when the share is not known |
 | Limits | Layout H of the Limits mock: a 340 pt list (`limitsListWidth`) of [`LimitWindowTile`](../Sources/Reins/Components/LimitWindowTile.swift)s on the well (each its own `surface` block: 28 pt `CLIMark`, name, "CLI · resets in" line, small `Ruler`, share; `selection` over `surface` when chosen), 8 apart, and the selected window in a [`ContentCard`](../Sources/Reins/Components/ContentCard.swift) (a card with free content, 24 inside): mark and "CLI · window" title, [`LimitFigure`](../Sources/Reins/Components/LimitFigure.swift) (the share in `display`, toned by `LimitTone`, then "left of this window"), the 32 pt ruler, three [`FactTile`](../Sources/Reins/Components/FactTile.swift)s (a raised block inside the card, the one nesting) and the reading's source under them; [`LimitSidebarTile`](../Sources/Reins/Components/LimitSidebarTile.swift) with [`CLIMark`](../Sources/Reins/Components/CLIMark.swift) above the sidebar footer; the page itself is a [`SidebarItem`](../Sources/Reins/Components/SidebarItem.swift) after the tabs, its `mark` slot holding the stale clock |
 | Cells | `UsageCell`, `NumberCell`, `StateCell`, `FixedCell`, `EmptyActionSlot`, `ReadOnlyMark`, `ColumnSpacer` ([Cells](../Sources/Reins/Components/Cells.swift)) |
 | Labels | `Tag` (24, radius 6, `surfaceRaised`, neutral text; the tone is a 6 pt dot, or tints the icon when it has one; warn and danger keep their ink), `CLITag`, `CLIDot`, `Count`, `Kbd`; [`CLIMark`](../Sources/Reins/Components/CLIMark.swift)`(size: .glyph)` is the bare 14 pt brand glyph a `SegmentOption` can lead with |

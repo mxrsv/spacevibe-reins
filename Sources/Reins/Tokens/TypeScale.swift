@@ -1,8 +1,8 @@
 import Foundation
 import Observation
 
-/// Settings > Appearance > Font size. Each step adds or removes 1 pt on every 12, 14 and 16 pt role; line boxes, spacing,
-/// icons, `figure` and `display` stay (spec `docs/specs/2026-11-04-reins-settings.md`, Decisions).
+/// Settings > Appearance > Font size. Each step adds or removes 1 pt on every 12, 14 and 16 pt role and every v5 role;
+/// line boxes, spacing, icons, `figure` and `display` stay (spec `docs/specs/2026-11-04-reins-settings.md`, Decisions).
 enum FontSizeChoice: String, CaseIterable {
     case small
     case standard = "default"

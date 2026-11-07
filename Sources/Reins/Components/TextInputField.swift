@@ -35,7 +35,7 @@ struct TextInputField: View {
         .frame(height: Metrics.controlHeight)
         .background(shape.fill(Palette.surface))
         .overlay(shape.strokeBorder(invalid ? Palette.danger : Palette.border, lineWidth: 1))
-        .focusRing(focused.wrappedValue, cornerRadius: Metrics.controlRadius)
+        .focusFill(focused.wrappedValue, cornerRadius: Metrics.controlRadius)
         .accessibilityLabel(label)
         .accessibilityValue(text)
     }

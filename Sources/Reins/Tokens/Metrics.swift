@@ -156,9 +156,216 @@ enum Metrics {
     /// Estimated height of a section title in the palette list (8 pt above, 4 pt below, one line); it only sizes the list.
     static let paletteSectionHeight: CGFloat = 28
 
-    /// Toast stays about this long unless the pointer rests on it.
-    static let toastDuration: Duration = .seconds(7)
+    /// Toast stays about this long unless the pointer rests on it (5 s, the kit's duration; app-wide, spec C10).
+    static let toastDuration: Duration = .seconds(5)
     static let toastBottomInset: CGFloat = 48
+}
+
+/// The v5 sizes (spec, "Rhythm and sizes (D66)"), one group per block. Only the v5 build behind `SPACEVIBE_UI_V5` uses
+/// them; the flat names above stay for the screens not yet rebuilt until the cut-over (X1). Spacing between blocks is in
+/// `Rhythm` (`edge`, `card`, `group`, `side`).
+extension Metrics {
+    enum Radius {
+        /// Key cap, checkbox, a chart bar's top.
+        static let small: CGFloat = 4
+        /// Controls, tab chips, sidebar items, a logo toggle, the warning slot, menu items.
+        static let control: CGFloat = 6
+        /// The content panel, cards, rows, bands, menus, popovers, the toast, dialogs.
+        static let block: CGFloat = 8
+        static let window: CGFloat = 12
+    }
+
+    enum AppSidebar {
+        static let width: CGFloat = 220
+        /// The window buttons' row at the top.
+        static let windowButtonsHeight: CGFloat = 48
+        /// The product row, the search row and each page item.
+        static let itemHeight: CGFloat = 40
+        static let itemPadding: CGFloat = 12
+        static let itemSpacing: CGFloat = 4
+        static let searchAbove: CGFloat = 8
+        static let searchBelow: CGFloat = 20
+        /// A group label (`small` type): 24 above, 12 at the sides, 8 below.
+        static let groupLabelTop: CGFloat = 24
+        static let groupLabelBottom: CGFloat = 8
+        static let statusRowHeight: CGFloat = 32
+        static let statusRowSpacing: CGFloat = 4
+        static let statusAbove: CGFloat = 12
+        static let statusBelow: CGFloat = 8
+        /// `Settings` in the footer, and the square appearance toggle beside it.
+        static let footerButtonHeight: CGFloat = 36
+    }
+
+    enum ContentPanel {
+        /// The panel's margin from the window on top, right and bottom.
+        static let inset: CGFloat = 12
+        static let tabHeadHeight: CGFloat = 60
+        /// A menu opens this far below the tab head's top.
+        static let menuOffset: CGFloat = 52
+        static let statusBarHeight: CGFloat = 32
+        static let statusBarPadding: CGFloat = 16
+        static let statusBarSpacing: CGFloat = 16
+    }
+
+    enum TabChip {
+        static let height: CGFloat = 36
+        static let padding: CGFloat = 14
+        static let spacing: CGFloat = 10
+        /// The count circle: at least this wide and high, 4 at the sides.
+        static let countSize: CGFloat = 16
+        static let countPadding: CGFloat = 4
+    }
+
+    enum ToolbarButton {
+        static let height: CGFloat = 32
+        static let padding: CGFloat = 12
+    }
+
+    enum FilterChipRow {
+        static let verticalPadding: CGFloat = 8
+        static let horizontalPadding: CGFloat = 12
+        static let spacing: CGFloat = 8
+        static let chipHeight: CGFloat = 24
+        static let closeWidth: CGFloat = 24
+    }
+
+    /// A row in a list or a card, and a band header.
+    enum ListRow {
+        static let height: CGFloat = 44
+    }
+
+    /// A card (the Tile, D56).
+    enum Tile {
+        static let headerHeight: CGFloat = 52
+        static let headerLeading: CGFloat = 16
+        static let headerTrailing: CGFloat = 12
+        /// Rows inside: 0 on top, 12 at the sides, 16 below.
+        static let rowsSide: CGFloat = 12
+        static let rowsBottom: CGFloat = 16
+        /// Free content (and the Answer card): 4 on top, 20 at the sides, 24 below, 20 between parts.
+        static let contentTop: CGFloat = 4
+        static let contentSide: CGFloat = 20
+        static let contentBottom: CGFloat = 24
+        static let contentSpacing: CGFloat = 20
+        /// Maximum heights by page layout.
+        static let limitsSmallMaxHeight: CGFloat = 380
+        static let spineMaxHeight: CGFloat = 680
+        static let rulesSmallMaxHeight: CGFloat = 304
+    }
+
+    enum Band {
+        static let headerHeight: CGFloat = 44
+        /// Between collapsed bands that follow each other; on Hooks they form a two-column grid, 8 apart.
+        static let collapsedSpacing: CGFloat = 10
+        static let gridSpacing: CGFloat = 8
+        static let gridColumns = 2
+    }
+
+    enum SkillsList {
+        /// The list's share of the panel width; the pane takes the rest.
+        static let widthFraction: CGFloat = 0.46
+        static let orderLineHeight: CGFloat = 32
+        static let orderLineInsets = EdgeInsets(top: 4, leading: 16, bottom: 0, trailing: 20)
+        static let listInsets = EdgeInsets(top: 0, leading: 8, bottom: 16, trailing: 8)
+    }
+
+    enum LogoToggle {
+        static let box: CGFloat = 24
+        static let logo: CGFloat = 20
+        static let badge: CGFloat = 10
+        static let badgeGlyph: CGFloat = 6
+        /// The ring in the ground colour around the badge.
+        static let badgeRing: CGFloat = 1.5
+    }
+
+    enum WarningSlot {
+        static let size: CGFloat = 24
+    }
+
+    enum Menu {
+        static let width: CGFloat = 208
+        static let submenuWidth: CGFloat = 232
+        static let padding: CGFloat = 4
+        static let itemHeight: CGFloat = 28
+    }
+
+    enum Popover {
+        static let width: CGFloat = 272
+        static let padding: CGFloat = 12
+        static let spacing: CGFloat = 12
+        /// Kept this far inside the window when it is clamped.
+        static let windowMargin: CGFloat = 8
+    }
+
+    /// The Skills detail pane.
+    enum DetailPane {
+        static let insets = EdgeInsets(top: 32, leading: 40, bottom: 40, trailing: 40)
+        static let maxWidth: CGFloat = 640
+        static let spacing: CGFloat = 24
+        static let headTile: CGFloat = 48
+        static let fileRowHeight: CGFloat = 32
+        static let meterPadding: CGFloat = 16
+        static let meterBarHeight: CGFloat = 8
+    }
+
+    enum BottomBar {
+        static let height: CGFloat = 44
+        static let bottomInset: CGFloat = 48
+    }
+
+    enum Toast {
+        static let height: CGFloat = 40
+        static let trailingInset: CGFloat = 24
+        static let bottomInset: CGFloat = 48
+        /// Above the bottom bar while one is shown.
+        static let bottomInsetOverBar: CGFloat = 104
+    }
+
+    /// Buttons: 32 in the pane and the Answer card, 28 in a popover, a card header, the bottom bar and a dialog.
+    enum ActionButton {
+        static let height: CGFloat = 32
+        static let compactHeight: CGFloat = 28
+        static let leading: CGFloat = 12
+        static let trailing: CGFloat = 8
+    }
+
+    enum Dialog {
+        static let width: CGFloat = 400
+        static let insets = EdgeInsets(top: 20, leading: 20, bottom: 16, trailing: 20)
+        static let spacing: CGFloat = 8
+        static let actionsAbove: CGFloat = 12
+    }
+
+    enum KeyCap {
+        static let height: CGFloat = 18
+        static let minWidth: CGFloat = 18
+        /// The thicker bottom edge.
+        static let bottomEdge: CGFloat = 2
+    }
+
+    enum CommandPalette {
+        static let width: CGFloat = 560
+        static let fieldHeight: CGFloat = 48
+        static let rowHeight: CGFloat = 32
+        static let footerHeight: CGFloat = 32
+        static let topInset: CGFloat = 112
+    }
+
+    /// Animation durations in seconds; reduced motion drops them (V5-R42).
+    enum Motion {
+        /// Hover, press and the popover's rise.
+        static let quick: TimeInterval = 0.12
+        static let logoPop: TimeInterval = 0.18
+        static let barWidth: TimeInterval = 0.15
+    }
+
+    /// Overlay shadows, with `Palette.shadowPop` and `Palette.shadowDialog`.
+    enum Shadow {
+        static let popRadius: CGFloat = 32
+        static let popOffset: CGFloat = 8
+        static let dialogRadius: CGFloat = 64
+        static let dialogOffset: CGFloat = 24
+    }
 }
 
 /// The spacing scale. 2 and 6 are used only inside one component; between components the steps are 4 to 32.

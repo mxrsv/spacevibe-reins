@@ -47,7 +47,8 @@ struct Row<Lead: View, Main: View, Cells: View, Actions: View>: View {
         .contentShape(block)
         .onHover { hovering = $0 }
         .modifier(RowActivation(onActivate: onActivate, focused: $focused))
-        .focusRing(focused, cornerRadius: Metrics.rowRadius, inset: true)
+        // A selected row already wears `selection`; a second fill would put tertiary text under 4.5:1 (ContrastTests).
+        .focusFill(focused && !selected, cornerRadius: Metrics.rowRadius)
         .padding(.horizontal, Metrics.rowInset)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(selected ? .isSelected : [])

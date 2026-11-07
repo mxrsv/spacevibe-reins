@@ -31,15 +31,15 @@ enum RulerLayout: Equatable {
 /// The Limits progress display, used nowhere else (Loadout and Activity keep the continuous `UsageBar`): ten square cells,
 /// 3 pt apart, as wide as the space it is given; 8 pt high in the window list, `rulerDetailHeight` under the figure. Only the
 /// two outer ends round (the first cell's leading corners, the last cell's trailing ones), by a quarter of the height.
-/// Filled cells take `fill` and the last filled one is cut at the share; empty cells are `surfaceRaised`, or
-/// `trackOnSelection` on a selected tile. An unknown share (`nil`) draws a dashed outline with the same ends instead ("not
+/// Filled cells take `fill` and the last filled one is cut at the share; empty cells are `track` (since the v5 values,
+/// `surfaceRaised` on a light card is too close to white to show them), or `trackOnSelection` on a selected tile. An unknown share (`nil`) draws a dashed outline with the same ends instead ("not
 /// counted yet", a window past its reset). Decorative: the number beside it carries the meaning.
 struct Ruler: View {
     /// 0 to 1, or nil when not known.
     let share: Double?
     let fill: Color
     var height: CGFloat = Metrics.rulerHeight
-    var emptyFill: Color = Palette.surfaceRaised
+    var emptyFill: Color = Palette.track
 
     var body: some View {
         let radius = height * Metrics.rulerEndRadiusFraction

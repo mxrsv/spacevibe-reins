@@ -57,7 +57,8 @@ struct LimitWindowTile<Tags: View>: View {
         .contentShape(shape)
         .onHover { hovering = $0 }
         .modifier(RowActivation(onActivate: onActivate, focused: $focused))
-        .focusRing(focused, cornerRadius: Metrics.rowRadius)
+        // A selected tile already wears `selection`; a second fill would put tertiary text under 4.5:1 (ContrastTests).
+        .focusFill(focused && !selected, cornerRadius: Metrics.rowRadius)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     }
@@ -71,7 +72,7 @@ struct LimitWindowTile<Tags: View>: View {
     private var ruler: some View {
         switch meter {
         case .share(let share, let fill):
-            Ruler(share: share, fill: fill, emptyFill: selected ? Palette.trackOnSelection : Palette.surfaceRaised)
+            Ruler(share: share, fill: fill, emptyFill: selected ? Palette.trackOnSelection : Palette.track)
         case .unknown:
             Ruler(share: nil, fill: cli.fill)
         case .none:

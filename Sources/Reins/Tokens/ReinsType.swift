@@ -2,8 +2,8 @@ import CoreText
 import Foundation
 import SwiftUI
 
-/// A text role: one Inter weight at one of the three sizes, its line box on the 4 pt grid, its tracking, and whether it is a
-/// machine string. Spec: `docs/specs/2026-11-03-reins-design-language.md` (Typography). A view takes a role with
+/// A text role: one Inter weight at one size, its line box on the 4 pt grid, its tracking, and whether it is a machine
+/// string. Spec: `docs/specs/2026-11-03-reins-design-language.md` (Typography). A view takes a role with
 /// `.reinsText(_:tone:)`; it never builds a font itself, so changing a role here restyles every screen.
 ///
 /// Hierarchy inside one size comes from weight and tone, not size: 12, 14 and 16 are only a step of 1.14 apart. The Font
@@ -19,16 +19,20 @@ struct ReinsType {
     let code: Bool
     /// Digits of one width, for numbers that line up down a column.
     let tabular: Bool
+    /// The v5 roles' `cv11` and `ss03` (`InterFont`).
+    let stylistic: Bool
     let ctFont: CTFont
 
-    init(size: CGFloat, weight: InterFont.Weight, lineBox: CGFloat, trackingEm: CGFloat = 0, code: Bool = false, tabular: Bool = false) {
+    init(size: CGFloat, weight: InterFont.Weight, lineBox: CGFloat, trackingEm: CGFloat = 0, code: Bool = false, tabular: Bool = false,
+         stylistic: Bool = false) {
         self.size = size
         self.weight = weight
         self.lineBox = lineBox
         self.trackingEm = trackingEm
         self.code = code
         self.tabular = tabular
-        ctFont = InterFont.font(weight, size: size, code: code, tabular: tabular)
+        self.stylistic = stylistic
+        ctFont = InterFont.font(weight, size: size, code: code, tabular: tabular, stylistic: stylistic)
     }
 
     var font: Font { Font(ctFont) }
@@ -39,19 +43,21 @@ struct ReinsType {
     var lineSpacing: CGFloat { max(0, lineBox - naturalLineHeight) }
 
     func weight(_ weight: InterFont.Weight) -> ReinsType {
-        ReinsType(size: size, weight: weight, lineBox: lineBox, trackingEm: trackingEm, code: code, tabular: tabular)
+        ReinsType(size: size, weight: weight, lineBox: lineBox, trackingEm: trackingEm, code: code, tabular: tabular, stylistic: stylistic)
     }
 
     /// One role at a Font size step, by default the current one (`TypeScale`): 12, 14 and 16 move by the step, `scales:
     /// false` keeps a size. Reading `TypeScale.shared.step` here ties the calling view body to the setting. Roles are cached
     /// per step, so a body never builds a CTFont. Tests pass `step` instead of changing the shared one.
     static func role(size: CGFloat, scales: Bool = true, step: CGFloat = TypeScale.shared.step, weight: InterFont.Weight, lineBox: CGFloat,
-                     trackingEm: CGFloat = 0, code: Bool = false, tabular: Bool = false) -> ReinsType {
-        let key = RoleKey(size: size + (scales ? step : 0), weight: weight, lineBox: lineBox, trackingEm: trackingEm, code: code, tabular: tabular)
+                     trackingEm: CGFloat = 0, code: Bool = false, tabular: Bool = false, stylistic: Bool = false) -> ReinsType {
+        let key = RoleKey(size: size + (scales ? step : 0), weight: weight, lineBox: lineBox, trackingEm: trackingEm, code: code, tabular: tabular,
+                          stylistic: stylistic)
         cacheLock.lock()
         defer { cacheLock.unlock() }
         if let cached = cache[key] { return cached }
-        let made = ReinsType(size: key.size, weight: weight, lineBox: lineBox, trackingEm: trackingEm, code: code, tabular: tabular)
+        let made = ReinsType(size: key.size, weight: weight, lineBox: lineBox, trackingEm: trackingEm, code: code, tabular: tabular,
+                             stylistic: stylistic)
         cache[key] = made
         return made
     }
@@ -63,6 +69,7 @@ struct ReinsType {
         let trackingEm: CGFloat
         let code: Bool
         let tabular: Bool
+        let stylistic: Bool
     }
 
     private static var cache: [RoleKey: ReinsType] = [:]
@@ -101,6 +108,42 @@ struct ReinsType {
     static var figure: ReinsType { role(size: 24, scales: false, weight: .semibold, lineBox: 32, trackingEm: -0.01, tabular: true) }
     /// The other exception (v3): the share left on the Limits page, one at a time. The line box is the face's own height at 72.
     static var display: ReinsType { role(size: 72, scales: false, weight: .semibold, lineBox: 88, trackingEm: -0.03, tabular: true) }
+
+    // v5 roles (spec, "Type"): only the v5 build behind `SPACEVIBE_UI_V5` uses them. Every one carries the mock body's
+    // features (`cv11`, `ss03`, tabular figures) and moves with the Font size setting. The spec's table maps 12 and 14 to
+    // `caption`, `label` and `body`; `meta`, `metaLabel` and `field` are those sizes with the v5 features, so a v5 page never
+    // mixes the two shapes of the a.
+    private static func v5(_ size: CGFloat, _ weight: InterFont.Weight, _ lineBox: CGFloat, trackingEm: CGFloat = 0) -> ReinsType {
+        role(size: size, weight: weight, lineBox: lineBox, trackingEm: trackingEm, tabular: true, stylistic: true)
+    }
+
+    /// A tab's count and a filter count, 10 pt in a 16 pt circle (the mock's 10/1; one line, so the box is the face's).
+    static var micro: ReinsType { v5(10, .medium, 12) }
+    /// Secondary meta, chart axis labels.
+    static var small: ReinsType { v5(11, .regular, 16) }
+    /// Section and sidebar group labels, key caps, menu headings.
+    static var smallLabel: ReinsType { v5(11, .medium, 16) }
+    /// Captions, a row's secondary text, CLI status rows, the status bar.
+    static var meta: ReinsType { v5(12, .regular, 16) }
+    /// Controls, menus and filter chips at 12.
+    static var metaLabel: ReinsType { v5(12, .medium, 16) }
+    /// Body text in sentences and a count in a row.
+    static var prose: ReinsType { v5(13, .regular, 20) }
+    /// A row's name (450).
+    static var rowName: ReinsType { v5(13, .book, 20) }
+    /// Buttons and inactive tab labels.
+    static var control: ReinsType { v5(13, .medium, 20) }
+    /// The active tab's label and a band's label.
+    static var controlStrong: ReinsType { v5(13, .semibold, 20) }
+    /// The command palette's field.
+    static var field: ReinsType { v5(14, .regular, 20) }
+    /// A card's title.
+    static var cardTitle: ReinsType { v5(16, .semibold, 24, trackingEm: -0.01) }
+    /// The Skills pane's heading, a share in a row, a stat figure.
+    static var heading: ReinsType { v5(20, .semibold, 28, trackingEm: -0.01) }
+    /// The Answer sentence and the pane's meter count: 28/32 as the mock renders it, pending open question 1. Inter's
+    /// own height at 28 is above 32, so lines of a wrapped sentence sit at the face's height (risk H4).
+    static var answer: ReinsType { v5(28, .semibold, 32, trackingEm: -0.02) }
 }
 
 /// Text colours by meaning. Views pick a tone, never a `Palette` colour, so the palette can change in one place.

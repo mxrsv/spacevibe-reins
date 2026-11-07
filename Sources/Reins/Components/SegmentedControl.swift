@@ -73,7 +73,7 @@ struct SegmentedControl<Value: Hashable>: View {
         .keyboardShortcut(option.shortcut)
         .focused($focused, equals: option.value)
         .focusEffectDisabled()
-        .focusRing(focused == option.value, cornerRadius: Metrics.segmentRadius)
+        .focusFill(focused == option.value, cornerRadius: Metrics.segmentRadius)
         .accessibilityAddTraits(isOn ? .isSelected : [])
         .accessibilityLabel(option.count.map { "\(option.title), \($0)" } ?? option.title)
     }

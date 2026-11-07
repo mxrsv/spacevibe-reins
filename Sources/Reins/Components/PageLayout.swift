@@ -83,4 +83,15 @@ enum Rhythm {
     static let tiles = Space.s8
     /// Between a list and the detail of its selected item (the Limits page).
     static let listDetail = Space.s16
+
+    // v5 (spec, "Rhythm and sizes (D66)"): two levels, small inside a group, large between groups. Only the v5 build uses
+    // them; the names above stay for the screens not yet rebuilt until the cut-over (X1).
+    /// The content edge: canvas padding and the tab head's side padding.
+    static let edge = Space.s32
+    /// Between cards, and between stacked small cards.
+    static let card = Space.s24
+    /// Above a band (none above the first).
+    static let group = Space.s32
+    /// The sidebar's padding at the sides and the bottom.
+    static let side = Space.s16
 }
