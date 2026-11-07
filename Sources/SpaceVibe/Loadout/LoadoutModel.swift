@@ -256,7 +256,7 @@ final class LoadoutModel {
             do {
                 for step in steps { entries.append(try await Self.run(step, on: core)) }
             } catch {
-                let reverted = await Self.undo(entries, on: core)
+                let reverted = await AppEnvironment.undoAll(entries, on: core)
                 guard let self else { return }
                 self.release(guardKey, ticket: ticket, since: started)
                 let message = AppEnvironment.message(error)
@@ -278,19 +278,10 @@ final class LoadoutModel {
         }
     }
 
-    /// Undoes `entries` newest first; false when one of them could not be undone.
-    private nonisolated static func undo(_ entries: [CoreJournalEntry], on core: any CoreService) async -> Bool {
-        var all = true
-        for entry in entries.reversed() {
-            do { _ = try await core.journalUndo(id: entry.id) } catch { all = false }
-        }
-        return all
-    }
-
     private func undoSkillWrites(_ entries: [CoreJournalEntry], label: String) {
         let core = self.core
         Task { [weak self] in
-            let done = await Self.undo(entries, on: core)
+            let done = await AppEnvironment.undoAll(entries, on: core)
             guard let self else { return }
             self.env.toasts.show(done ? "Undid \(label)" : "Could not undo all of \(label)", tone: done ? .info : .danger)
             self.reload()

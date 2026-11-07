@@ -60,6 +60,62 @@ final class AppEnvironment {
         }
     }
 
+    /// One change made of several journal writes (a whole family's verdicts): they run one after the other, a failing step undoes the
+    /// ones before it (all or nothing), and ONE toast carries the Undo that undoes every entry, newest first. `afterChange` runs after
+    /// the writes and after the Undo. `undone` is the sentence after a clean Undo (`Undid <label>` when nil).
+    func performBatchWithUndo(label: String, undone: String? = nil, via service: any CoreService, afterChange: (@MainActor () -> Void)? = nil,
+                              onFailure: (@MainActor (String) -> Void)? = nil,
+                              _ steps: [@Sendable (any CoreService) async throws -> CoreJournalEntry]) {
+        Task { [weak self] in
+            var entries: [CoreJournalEntry] = []
+            do {
+                for step in steps { entries.append(try await step(service)) }
+            } catch {
+                let reverted = await Self.undoAll(entries, on: service)
+                guard let self else { return }
+                let message = Self.message(error)
+                let shown = reverted ? message : "\(message) Some earlier changes could not be undone."
+                if let onFailure { onFailure(shown) } else { self.toasts.show(shown, tone: .danger) }
+                if !entries.isEmpty { afterChange?() }
+                return
+            }
+            guard let self else { return }
+            self.toasts.show(label, undo: { [weak self] in self?.undoBatch(entries, label: label, undone: undone, afterChange: afterChange) })
+            afterChange?()
+        }
+    }
+
+    /// Undoes `entries` newest first; false when one of them could not be undone.
+    nonisolated static func undoAll(_ entries: [CoreJournalEntry], on core: any CoreService) async -> Bool {
+        var all = true
+        for entry in entries.reversed() {
+            do { _ = try await core.journalUndo(id: entry.id) } catch { all = false }
+        }
+        return all
+    }
+
+    /// One entry reads as `performWithUndo` does (the core's own label, its own refusal); several read as one change.
+    private func undoBatch(_ entries: [CoreJournalEntry], label: String, undone: String?, afterChange: (@MainActor () -> Void)?) {
+        let core = goCore
+        Task { [weak self] in
+            var results: [CoreUndoResult] = []
+            var failure: Error?
+            for entry in entries.reversed() {
+                do { results.append(try await core.journalUndo(id: entry.id)) } catch { failure = failure ?? error }
+            }
+            guard let self else { return }
+            if let failure {
+                self.toasts.show(entries.count == 1 ? Self.message(failure) : "Could not undo all of \(label)", tone: .danger)
+            } else if let undone {
+                self.toasts.show(undone)
+            } else {
+                let named = entries.count == 1 ? results.first?.label : nil
+                self.toasts.show("Undid \(named.flatMap { $0.isEmpty ? nil : $0 } ?? label)")
+            }
+            afterChange?()
+        }
+    }
+
     private func undo(_ entry: CoreJournalEntry, label: String, afterChange: (@MainActor () -> Void)?) {
         let core = goCore
         Task { [weak self] in

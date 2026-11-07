@@ -12,13 +12,15 @@
 # the files SPACEVIBE_FIXTURE_LIMITS=typical|edge adds and shoots the sidebar block and the page; settings shoots Settings and the
 # demo tabs at the Large font size. With SPACEVIBE_UI_V5=1 (a development build) `shell` shoots the v5 window instead of the demo
 # states (it reads this synthetic home for the counts and the CLI status rows, then adds the gallery),
-# subagents and hooks shoot the real tab in every state (hooks checks every hook's runs against what fixture-home.mjs writes,
+# subagents, hooks and rules shoot the real tab in every state (rules prints and checks the trace of every rule, family and Codex fact, draws
+# every state, and runs a real family change and a real Remove with Undo and an invalid settings file; scripts/rules-shots.sh runs its
+# Codex variants; hooks checks every hook's runs against what fixture-home.mjs writes,
 # then draws the dead-hook states, the popovers and the in-memory states, and runs a real Remove with Undo), skills shoots the real
 # Skills tab in every state (it checks every skill's
 # sessions against what fixture-home.mjs writes, then draws filtered, grouped, multi-select, the warning popover, the menus, the
 # pane states, nothing matches and an empty category), and limits shoots the v5 Limits page (it prints and checks the
 # trace of every window against the engine's reading, then draws the remaining V5-R62 states from in-memory readings); without
-# the switch skills|subagents|hooks refuse. Nothing else selects a screen.
+# the switch skills|subagents|hooks refuse (rules then shoots the old screen). Nothing else selects a screen.
 #
 # What the fake process list says (written by fixture-home.mjs to <home>/.reins/activity-proc.json, used because
 # SPACEVIBE_TEST=1 and SPACEVIBE_PROC_FIXTURE name it; the pids are made up and only the fake answers for them):

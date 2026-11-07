@@ -140,12 +140,14 @@ struct ShareCell: View {
 struct CountCell: View {
     let text: String
     var width: CGFloat?
+    /// Where the text sits in `width`: the right edge by default, the left for a column that starts at a fixed place (Rules' verdict).
+    var alignment: Alignment = .trailing
 
     var body: some View {
         Text(text)
             .spaceVibeText(.prose, tone: .secondary)
             .lineLimit(1)
-            .frame(width: width, alignment: .trailing)
+            .frame(width: width, alignment: alignment)
     }
 }
 

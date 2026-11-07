@@ -441,6 +441,21 @@ extension Metrics {
         static let noteTop: CGFloat = 8
     }
 
+    /// The Rules page's columns (`b-rules`' page CSS).
+    enum Rules {
+        /// The two CLI columns: the column head, a band's extras and a rule row's verdict share this width (V5-R68).
+        static let columnWidth: CGFloat = 168
+        /// A band's extras end where a row's last cell does: the header's trailing inset is wider than the row's by this much.
+        static let extrasBleed: CGFloat = Band.trailing - ListRow.trailing
+        /// The Answer's CLI rows reach 4 past the card's padding, as the kit's `.fixes` does.
+        static let fixesBleed: CGFloat = Hooks.fixesBleed
+        /// The Codex note under the bands: 12 above it.
+        static let noteTop: CGFloat = 12
+        /// The column head: its height, and the gap between its logo and name.
+        static let headHeight: CGFloat = 28
+        static let headSpacing: CGFloat = 6
+    }
+
     /// The Limits page's columns and gaps (`b-limits`' page CSS).
     enum Limits {
         /// A window row: the name column, and the least a bar keeps when the row is narrow.

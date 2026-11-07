@@ -11,7 +11,7 @@ import SwiftUI
 ///   or the real config folders.
 /// With the v5 switch on, `shell` shoots the v5 window instead of the demo states (`ShellShots`: every Agents tab, Activity, Limits,
 /// the palette, the toast and Settings; it reads the synthetic home, so it needs `SPACEVIBE_TEST=1`) and then the gallery;
-/// `skills`, `subagents` and `hooks` shoot the real tabs in every state (`SkillsShots`, `SubagentsShots`, `HooksShots`), and `limits` the v5 Limits page (`LimitsShots`). The other
+/// `skills`, `subagents`, `hooks` and `rules` shoot the real tabs in every state (`SkillsShots`, `SubagentsShots`, `HooksShots`, `RulesTabShots`), and `limits` the v5 Limits page (`LimitsShots`). The other
 /// real-screen runs below stay on the old shell until their region is built.
 /// - `settings`: Settings on the demo shell in every update state and at the Large font size, and the demo tabs at Large
 ///   (`SettingsShots`). Synthetic data only, like `shell`.
@@ -47,6 +47,7 @@ enum ShotRenderer {
                 case .rules: try ShellShots.run(into: directory, tab: tab)
                 }
             case "loadout": try requireSyntheticHome(environment); try LoadoutShots.run(into: directory)
+            case "rules" where LaunchMode.uiV5Enabled(): try requireSyntheticHome(environment); try RulesTabShots.run(into: directory)
             case "rules": try requireSyntheticHome(environment); try RulesShots.run(into: directory)
             case "activity": try requireSyntheticHome(environment); try ActivityShots.run(into: directory)
             case "limits": try requireSyntheticHome(environment); try LimitsShots.run(into: directory)

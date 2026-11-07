@@ -26,6 +26,8 @@ final class RulesModel {
     private(set) var pending: RulesPending?
     private(set) var isWriting = false
 
+    static let page = "rules"
+
     var draft = ""
     var draftVerdict = CoreVerdict.ask
     /// The engine's (or the shape check's) message about the rule being added, shown next to the field.
@@ -36,6 +38,18 @@ final class RulesModel {
     /// Screenshots only: show row actions without hover.
     var revealRowActions = false
 
+    // The v5 tab's own state (V5-R57, V5-R61, V5-R68). The tab shows the global scope only; the old page keeps the rest.
+    var filter = RulesFilter()
+    /// The rule the keys act on: the chosen one while it is listed, else the first listed.
+    var currentID: String?
+    /// The rule whose detail popover is open.
+    var detailID: String?
+    var isFilterOpen = false
+    /// The verdict menu that is open: one rule's or a whole family's.
+    var verdictMenu: VerdictTarget?
+
+    /// The CLIs on this Mac: the shell's reading (`limits.read`), which a shot or a test replaces.
+    @ObservationIgnored var limitsResults: () -> [CoreLimitsEntry]
     @ObservationIgnored weak var shell: ShellModel?
     @ObservationIgnored private var started = false
     @ObservationIgnored private var generation = 0
@@ -44,7 +58,17 @@ final class RulesModel {
     @ObservationIgnored private(set) var previewsInFlight = 0
     @ObservationIgnored private(set) var readsInFlight = 0
 
-    init(env: AppEnvironment) { self.env = env }
+    init(env: AppEnvironment) {
+        self.env = env
+        limitsResults = { env.limits.results }
+    }
+
+    /// A model over a snapshot read elsewhere (a shot's in-memory state): it reads nothing.
+    convenience init(env: AppEnvironment, snapshot: RulesSnapshot?) {
+        self.init(env: env)
+        self.snapshot = snapshot
+        started = true
+    }
 
     private var service: any CoreService { env.goCore }
 
@@ -53,7 +77,71 @@ final class RulesModel {
     /// Reads are done and nothing waits for the user. Screenshots wait for this.
     var isSettled: Bool { snapshot != nil && readsInFlight == 0 && previewsInFlight == 0 && !isWriting }
 
-    var badge: Int? { snapshot?.globalRuleCount }
+    /// The rules in the global file; nil while unknown, which includes a file that does not parse or cannot be read (a count of 0 would
+    /// say "no rules", and V5-R68 hides them instead).
+    var badge: Int? {
+        guard let snapshot, !snapshot.globalNotReadable else { return nil }
+        if snapshot.selection == .global, !snapshot.problems.isEmpty { return nil }
+        return snapshot.globalRuleCount
+    }
+
+    // MARK: The v5 tab
+
+    /// Codex is on this Mac: the reading of `limits.read` says so; before one exists, its `config.toml` does.
+    var codexInstalled: Bool {
+        if let entry = limitsResults().first(where: { $0.cli == .codex }) { return entry.state != .notInstalled }
+        return snapshot?.codex.present ?? false
+    }
+
+    var page: RulesPage { RulesPage(snapshot: snapshot, failure: failure, codexInstalled: codexInstalled, filter: filter) }
+
+    /// The tab shows the global scope: the old page (or the palette) may have left another selected.
+    func showGlobal() { select(.global) }
+
+    var isMenuOpen: Bool { isFilterOpen || verdictMenu != nil }
+
+    func current(in visible: [CoreRule]) -> CoreRule? { visible.first { $0.id == currentID } ?? visible.first }
+
+    /// A click on a row: it becomes current and its detail opens (V5-R57).
+    func open(_ rule: CoreRule) {
+        currentID = rule.id
+        detailID = rule.id
+    }
+
+    /// `j` (`by: 1`) and `k` (`by: -1`) over the rows listed now, stopping at the first and the last; the detail closes.
+    func move(by step: Int, in visible: [CoreRule]) {
+        guard let current = current(in: visible), let index = visible.firstIndex(of: current) else { return }
+        currentID = visible[min(max(index + step, 0), visible.count - 1)].id
+        detailID = nil
+    }
+
+    /// `Return`: the detail of the current row, closed when it is open already.
+    func toggleDetail(of rule: CoreRule?) {
+        guard let rule else { return }
+        currentID = rule.id
+        detailID = detailID == rule.id ? nil : rule.id
+    }
+
+    /// A small card's row: clear the Filter, open the rule's band, make it current and open its detail.
+    func reveal(_ rule: CoreRule, store: OpenStateStore) {
+        filter.clear()
+        store.setOpen(true, page: Self.page, id: RuleFamily.of(tool: rule.tool).id)
+        open(rule)
+    }
+
+    func toggleFilter(_ value: String) {
+        filter.toggle(.verdict, value)
+        detailID = nil
+    }
+
+    func clearFilters() {
+        filter.clear()
+        detailID = nil
+    }
+
+    func toggleVerdictMenu(_ target: VerdictTarget) {
+        verdictMenu = verdictMenu == target ? nil : target
+    }
 
     // MARK: Reading
 
@@ -263,14 +351,54 @@ final class RulesModel {
         }
     }
 
+    // MARK: The v5 tab's writes (V5-R68)
+
+    /// A rule's verdict: one `rules.changeVerdict`, one toast with Undo.
+    func set(_ rule: CoreRule, to verdict: CoreVerdict) {
+        guard rule.verdict != verdict, page.state == .ready else { return }
+        detailID = nil
+        write(label: RulesTabWording.ruleChanged(rule.rule, to: verdict), undone: RulesTabWording.undone, [Self.changeStep(rule, to: verdict)])
+    }
+
+    /// A whole family's verdict. The core has no call for it (`rules.setCapability` replaces a capability's wide rules with canonical
+    /// ones and refuses a mixed cell), so it is one `rules.changeVerdict` per rule that differs: one Journal entry each, ONE toast,
+    /// and one Undo that reverts them all, newest first. Nothing differs: a message, no toast with Undo.
+    func set(_ family: RuleFamily, to verdict: CoreVerdict) {
+        guard page.state == .ready else { return }
+        let changing = RulesLayout.unique(page.rules).filter { RuleFamily.of(tool: $0.tool) == family && $0.verdict != verdict }
+        detailID = nil
+        guard !changing.isEmpty else {
+            env.toasts.show(RulesTabWording.familyUnchanged(family, to: verdict))
+            return
+        }
+        write(label: RulesTabWording.familyChanged(family, to: verdict, count: changing.count), undone: RulesTabWording.undone,
+              changing.map { Self.changeStep($0, to: verdict) })
+    }
+
+    func removeRule(_ rule: CoreRule) {
+        guard page.state == .ready else { return }
+        detailID = nil
+        let (verdict, text) = (rule.verdict, rule.rule)
+        write(label: RulesTabWording.removed(text), undone: RulesTabWording.undone, [{ core, scope in
+            try await core.rulesRemove(scope: scope.kind, dir: scope.dir, verdict: verdict, rule: text).entry
+        }])
+    }
+
+    private static func changeStep(_ rule: CoreRule, to verdict: CoreVerdict) -> @Sendable (any CoreService, RulesScope) async throws -> CoreJournalEntry? {
+        let (from, text) = (rule.verdict, rule.rule)
+        return { core, scope in try await core.rulesChangeVerdict(scope: scope.kind, dir: scope.dir, rule: text, from: from, to: verdict).entry }
+    }
+
     /// One write for every control: through the core, a toast with Undo, and a reload after the write and after an Undo. A nil
-    /// result ("nothing to change", `rules.setCapability` only) is a message, never a success toast.
-    private func write(
+    /// result ("nothing to change", `rules.setCapability` only) is a message, never a success toast. Several `works` are one change
+    /// (a family's verdicts): one toast, one Undo that reverts them all (`AppEnvironment.performBatchWithUndo`).
+    func write(
         label: String,
+        undone: String? = nil,
         scope target: RulesScope? = nil,
         clears submitted: String? = nil,
         onFailure: (@MainActor (String) -> Void)? = nil,
-        _ work: @escaping @Sendable (any CoreService, RulesScope) async throws -> CoreJournalEntry?
+        _ works: [@Sendable (any CoreService, RulesScope) async throws -> CoreJournalEntry?]
     ) {
         guard let snapshot else {
             env.toasts.show("The config folders could not be resolved.", tone: .danger)
@@ -279,8 +407,9 @@ final class RulesModel {
         guard !isWriting else { return }
         isWriting = true
         let scope = target ?? snapshot.selection.scope
-        env.performWithUndo(
+        env.performBatchWithUndo(
             label: label,
+            undone: undone,
             via: service,
             afterChange: { [weak self] in
                 guard let self else { return }
@@ -292,10 +421,23 @@ final class RulesModel {
                 guard let self else { return }
                 isWriting = false
                 if let onFailure { onFailure(message) } else { env.toasts.show(message, tone: .danger) }
+            },
+            works.map { work in
+                { core in
+                    guard let entry = try await work(core, scope) else { throw CoreError("Nothing to change: the file already holds that.", status: 409) }
+                    return entry
+                }
             }
-        ) { core in
-            guard let entry = try await work(core, scope) else { throw CoreError("Nothing to change: the file already holds that.", status: 409) }
-            return entry
-        }
+        )
+    }
+
+    private func write(
+        label: String,
+        scope target: RulesScope? = nil,
+        clears submitted: String? = nil,
+        onFailure: (@MainActor (String) -> Void)? = nil,
+        _ work: @escaping @Sendable (any CoreService, RulesScope) async throws -> CoreJournalEntry?
+    ) {
+        write(label: label, scope: target, clears: submitted, onFailure: onFailure, [work])
     }
 }
