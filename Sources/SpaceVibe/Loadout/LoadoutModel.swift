@@ -117,6 +117,13 @@ final class LoadoutModel {
             guard generation == readGeneration else { return }
             raw = rows
             readFailure = nil
+            // A core that has no scan result (it restarted, so the old one is gone) answers `scanning` until someone scans.
+            // The old note and counts describe a core that is gone, so they are dropped and the scan is asked for again.
+            if rows.usage == .scanning, !scanRunning {
+                usageResult = nil
+                scanFailure = nil
+                scan()
+            }
             await rebuild()
         } catch {
             readsInFlight -= 1

@@ -45,6 +45,7 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
     private var _undoFailure: Error?
     private var _scanFailure: Error?
     private var _writeGate: WriteGate?
+    private var _scanGate: WriteGate?
 
     init(rows: CoreLoadoutRows) { _rows = rows }
 
@@ -56,6 +57,11 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
     var scanFailure: Error? { get { lock.withLock { _scanFailure } } set { lock.withLock { _scanFailure = newValue } } }
     /// While set, `loadoutCopyToOther` waits at the gate after it is recorded.
     var writeGate: WriteGate? { get { lock.withLock { _writeGate } } set { lock.withLock { _writeGate = newValue } } }
+
+    /// While set, `usageScan` waits at the gate after it is recorded.
+    var scanGate: WriteGate? { get { lock.withLock { _scanGate } } set { lock.withLock { _scanGate = newValue } } }
+    /// What a core restart does: the new core has no scan result, so its rows say `scanning` again.
+    func forgetScan() { lock.withLock { _scanned = false } }
 
     private func record(_ call: String) { lock.withLock { _calls.append(call) } }
 
@@ -84,6 +90,7 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
     override func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult {
         record("scan")
         progress?(CoreUsageProgress(done: 4, total: 4))
+        if let gate = scanGate { await gate.wait() }
         if let failure = scanFailure { throw failure }
         lock.withLock { _scanned = true }
         return Self.usage
@@ -201,6 +208,28 @@ struct LoadoutModelTests {
         model.reload()
         #expect(!model.isSettled)
         try await settle("the re-read") { model.isSettled }
+    }
+
+    @Test("rows that say scanning after a finished scan (the core restarted) ask for a new scan and drop the old note")
+    func restartedCoreScansAgain() async throws {
+        let core = FakeLoadoutCore(rows: Self.rows())
+        let model = try await started(core)
+        #expect(model.usageNote.hasPrefix("Counted from") && core.calls.filter { $0 == "scan" }.count == 1)
+        core.forgetScan()
+        let gate = WriteGate()
+        core.scanGate = gate
+        // A write's re-read sends only `loadout.rows`.
+        model.reload()
+        try await settle("the second scan") { core.calls.filter { $0 == "scan" }.count == 2 }
+        #expect(model.usageResult == nil && model.usageNote.hasPrefix("Counting usage"))
+        gate.open()
+        try await settle("the second scan to finish") { model.isSettled }
+        #expect(model.usageNote.hasPrefix("Counted from"))
+        #expect(model.data?.rows.count == 6)
+        // The rows now say `ready`: a further read does not scan again.
+        model.reload()
+        try await settle("the re-read") { model.isSettled }
+        #expect(core.calls.filter { $0 == "scan" }.count == 2)
     }
 
     @Test("a failed scan is the banner, and the rows are still read")

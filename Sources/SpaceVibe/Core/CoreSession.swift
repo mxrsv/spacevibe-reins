@@ -35,6 +35,9 @@ final class CoreSession: @unchecked Sendable {
 
     var isAlive: Bool { lock.withLock { !dead } }
 
+    /// A test runs something between a request being registered and its line being written (a cancel from another thread).
+    nonisolated(unsafe) var afterRegister: (@Sendable (Int) -> Void)?
+
     /// Starts the process with `["rpc"]` as argv (no shell). `environment` nil inherits ours.
     /// `onWritten` is told the method of every line that left this side (a test counts what reached the pipe).
     init(
@@ -89,26 +92,38 @@ final class CoreSession: @unchecked Sendable {
     func request(id: Int, method: String, line: Data, isRead: Bool, progress: (@Sendable (CoreUsageProgress) -> Void)? = nil) async throws -> Data {
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
-                lock.lock()
-                if dead {
-                    lock.unlock()
-                    continuation.resume(throwing: Lost(sent: false))
-                    return
-                }
-                pending[id] = Pending(isRead: isRead, continuation: continuation, progress: progress)
-                lock.unlock()
-                do {
-                    try write(line, method: method)
-                } catch {
-                    // Unsent: the pipe is dead. Whoever removes the entry resumes it, so the reader's `end` cannot double-resume.
-                    if let entry = take(id) { entry.continuation.resume(throwing: Lost(sent: false)) }
-                    return
-                }
+                let sent = register(id: id, method: method, line: line, entry: Pending(isRead: isRead, continuation: continuation, progress: progress))
                 // The cancel handler may have run before the entry existed.
-                if Task.isCancelled { cancel(id) }
+                if sent, Task.isCancelled { cancel(id) }
             }
         } onCancel: {
             cancel(id)
+        }
+    }
+
+    /// Registers the entry and writes its line in one step under `writeLock`. `cancel` writes through the same lock, so a
+    /// `$/cancelRequest` can reach the pipe only after the request line it names. Returns whether the line was written; when it
+    /// was not, the entry's continuation has been resumed with `Lost(sent: false)`.
+    private func register(id: Int, method: String, line: Data, entry: Pending) -> Bool {
+        writeLock.lock()
+        defer { writeLock.unlock() }
+        let alive = lock.withLock { () -> Bool in
+            if dead { return false }
+            pending[id] = entry
+            return true
+        }
+        guard alive else {
+            entry.continuation.resume(throwing: Lost(sent: false))
+            return false
+        }
+        afterRegister?(id)
+        do {
+            try writeLocked(line, method: method)
+            return true
+        } catch {
+            // Unsent: the pipe is dead. Whoever removes the entry resumes it, so the reader's `end` cannot double-resume.
+            if let entry = take(id) { entry.continuation.resume(throwing: Lost(sent: false)) }
+            return false
         }
     }
 
@@ -132,6 +147,11 @@ final class CoreSession: @unchecked Sendable {
     private func write(_ line: Data, method: String) throws {
         writeLock.lock()
         defer { writeLock.unlock() }
+        try writeLocked(line, method: method)
+    }
+
+    /// The caller holds `writeLock`.
+    private func writeLocked(_ line: Data, method: String) throws {
         guard isAlive else { throw Lost(sent: false) }
         try stdin.write(contentsOf: line)
         onWritten(method)
@@ -174,16 +194,18 @@ final class CoreSession: @unchecked Sendable {
     private func readLoop(_ pipe: FileHandle) {
         let descriptor = pipe.fileDescriptor
         var chunk = [UInt8](repeating: 0, count: Self.readSize)
-        var buffer = Data()
+        var framer = CoreLineFramer()
         while true {
             let count = read(descriptor, &chunk, chunk.count)
             if count < 0 && errno == EINTR { continue }
             if count <= 0 { break }
-            buffer.append(chunk, count: count)
-            while let newline = buffer.firstIndex(of: 0x0A) {
-                let line = buffer[buffer.startIndex ..< newline]
-                if !line.isEmpty { handle(Data(line)) }
-                buffer.removeSubrange(buffer.startIndex ... newline)
+            do {
+                for line in try framer.feed(chunk, count: count) { handle(line) }
+            } catch {
+                // A line past the documented cap: the stream is unusable. Ending the session fails what is pending with the
+                // fixed restart sentence and starts a new core.
+                Self.logger.debug("core sent a line over the size cap")
+                break
             }
         }
         end(notify: true)
