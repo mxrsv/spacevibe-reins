@@ -1,0 +1,6 @@
+{"dir":"send","json":{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"client":{"name":"contract","version":"0"}}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"core":{"name":"spacevibe","version":"dev"},"identity":{"envPrefix":"SPACEVIBE_","dataDir":".spacevibe"},"methods":["debug.panic","debug.print","debug.slow","initialize"]}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":"req-7","method":"no.such.method"}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":"req-7","error":{"code":-32601,"message":"Method not found."}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":2,"method":"debug.slow","params":{"mss":1}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":2,"error":{"code":-32602,"message":"Invalid params: \"mss\" is not a known member."}}}

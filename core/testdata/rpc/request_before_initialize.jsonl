@@ -1,0 +1,10 @@
+{"dir":"send","json":{"jsonrpc":"2.0","id":1,"method":"debug.slow","params":{"ms":0}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":1,"error":{"code":-32002,"message":"Send initialize first."}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":2,"method":"no.such.method"}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":2,"error":{"code":-32002,"message":"Send initialize first."}}}
+{"dir":"send","json":{"jsonrpc":"2.0","method":"debug.slow","params":{"ms":0}}}
+{"dir":"send","json":{"jsonrpc":"2.0","method":"$/cancelRequest","params":{"id":1}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"client":{"name":"contract","version":"0"}}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"core":{"name":"spacevibe","version":"dev"},"identity":{"envPrefix":"SPACEVIBE_","dataDir":".spacevibe"},"methods":["debug.panic","debug.print","debug.slow","initialize"]}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":3,"method":"initialize","params":{"protocolVersion":1}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":3,"error":{"code":-32600,"message":"The session is already initialized."}}}

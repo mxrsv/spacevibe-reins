@@ -1,0 +1,8 @@
+{"dir":"send","json":{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":2,"client":{"name":"c","version":"0"},"future":true}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":1,"error":{"code":-32001,"message":"Protocol version not supported.","data":{"protocolVersion":1}}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"1","client":{"name":"c","version":"0"},"future":true}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":1,"error":{"code":-32001,"message":"Protocol version not supported.","data":{"protocolVersion":1}}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":0,"client":{"name":"c","version":"0"},"future":true}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":1,"error":{"code":-32001,"message":"Protocol version not supported.","data":{"protocolVersion":1}}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":2,"method":"debug.slow","params":{"ms":0}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":2,"error":{"code":-32002,"message":"Send initialize first."}}}

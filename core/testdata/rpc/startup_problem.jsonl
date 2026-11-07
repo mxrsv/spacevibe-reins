@@ -1,0 +1,6 @@
+{"dir":"send","json":{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"client":{"name":"contract","version":"0"}}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"core":{"name":"spacevibe","version":"dev"},"identity":{"envPrefix":"SPACEVIBE_","dataDir":".spacevibe"},"methods":["debug.panic","debug.print","debug.slow","initialize"]}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":1,"method":"debug.slow","params":{"ms":0}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"SPACEVIBE_TEST must be 1 or 0, got \"banana\"","data":{"status":500,"message":"SPACEVIBE_TEST must be 1 or 0, got \"banana\""}}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":2,"method":"no.such.method"}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":2,"error":{"code":-32601,"message":"Method not found."}}}

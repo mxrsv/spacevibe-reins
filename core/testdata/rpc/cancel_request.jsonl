@@ -1,0 +1,13 @@
+{"dir":"send","json":{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"client":{"name":"contract","version":"0"}}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"core":{"name":"spacevibe","version":"dev"},"identity":{"envPrefix":"SPACEVIBE_","dataDir":".spacevibe"},"methods":["debug.panic","debug.print","debug.slow","initialize"]}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":5,"method":"debug.slow","params":{"ms":60000}}}
+{"dir":"send","json":{"jsonrpc":"2.0","method":"$/cancelRequest","params":{"id":5}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":5,"error":{"code":-32800,"message":"Request cancelled."}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":6,"method":"debug.slow","params":{"ms":300,"uncancellable":true}}}
+{"dir":"send","json":{"jsonrpc":"2.0","method":"$/cancelRequest","params":{"id":6}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":6,"result":{"slept":true}}}
+{"dir":"send","json":{"jsonrpc":"2.0","method":"$/cancelRequest","params":{"id":5}}}
+{"dir":"send","json":{"jsonrpc":"2.0","method":"$/cancelRequest","params":{"id":"nope"}}}
+{"dir":"send","json":{"jsonrpc":"2.0","method":"$/cancelRequest","params":7}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":7,"method":"debug.slow","params":{"ms":0}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":7,"result":{"slept":true}}}

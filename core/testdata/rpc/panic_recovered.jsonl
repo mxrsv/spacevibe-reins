@@ -1,0 +1,6 @@
+{"dir":"send","json":{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"client":{"name":"contract","version":"0"}}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"core":{"name":"spacevibe","version":"dev"},"identity":{"envPrefix":"SPACEVIBE_","dataDir":".spacevibe"},"methods":["debug.panic","debug.print","debug.slow","initialize"]}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":1,"method":"debug.panic"}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"Internal error."}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":2,"method":"debug.slow","params":{"ms":0}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":2,"result":{"slept":true}}}
