@@ -53,6 +53,18 @@ A cancelled read answers -32800. A write is cancellable only before it takes the
 - **"Changed" includes the clock** `(new)`. `ageMs` and `lastWriteAgoMs` are computed from now, so a live session changes the report on every poll and pushes every 3 s; with no live session and no log change the core stays silent. H10 in the plan times this on a real home.
 - **One subscription per connection.** A second `activity.subscribe` returns a fresh snapshot and resets the baseline. `activity.unsubscribe` is idempotent and stops the polling; the core reads nothing while unsubscribed. End of input cancels the poll before the 5 s drain (`Call.Session` in `rpc`), so no new report is pushed after it. The poll is the core's own loop over `activity.Service.Read`, not `Service.Watch`: `Watch` takes its own first snapshot as the baseline, so a change between the response and that snapshot would never be pushed. `activity.read` and the poll share one engine, so folded offsets are not repeated.
 
+## Swift client
+
+[`CoreClient`](../../Sources/Reins/Core/CoreClient.swift) maps `CoreService` to the methods above; [`CoreConnection`](../../Sources/Reins/Core/CoreConnection.swift) owns the process, the handshake and the restarts; [`CoreSession`](../../Sources/Reins/Core/CoreSession.swift) is one process with its reader thread. What a maintainer would get wrong:
+
+- **The write lock is shared with the Swift engine.** [`WriteLock`](../../Sources/ReinsCore/WriteLock.swift) takes `flock(LOCK_EX)` on `<data>/write.lock` at its outermost depth, the file and call Go's `fsx.WithWriteLock` uses; keep the two the same call. Both engines must resolve the same data folder, so tests give both the same `SPACEVIBE_HOME`.
+- **Read the pipe with `read(2)`.** `FileHandle.read(upToCount:)` waits for the whole count, so a short reply sits unseen and the call hangs.
+- **A write is never sent again.** A request in flight when the core dies fails with the fixed "restarted" `CoreError`: the dead core may have applied it. A read in flight is sent once more on the new core. A request that never left (the pipe was already dead) is sent again whatever it is. A method the client does not list as a read counts as a write.
+- **Cancel differs by kind.** A cancelled read answers `CancellationError` at once and ignores the late reply. A cancelled write sends `$/cancelRequest` and keeps waiting, because once the core is inside the lock the real result (and its Undo entry) must not be hidden.
+- **Restarts are lazy.** The next request, or a live Activity subscription, starts the core again; the delay grows 0.25 s to 5 s while it dies without answering a request. A protocol-version mismatch is a stored startup problem, never a restart loop.
+- **Dev switches.** `SPACEVIBE_CORE_BINARY` and `SPACEVIBE_CORE_SCREENS` ([`CoreEnvironment`](../../Sources/Reins/Core/CoreEnvironment.swift), [`CoreRouting`](../../Sources/Reins/Core/CoreRouting.swift)) are honored only in a DEBUG build or under `SPACEVIBE_TEST=1`.
+- **Tests stop the core with signals.** The shipped binary has no `debug.slow`, so `SIGSTOP` freezes a request in flight and `SIGKILL` ends it.
+
 ## Output discipline and security boundaries
 
 - **stdout carries the protocol and nothing else.** One writer goroutine owns it. On darwin the core duplicates fd 1 for the protocol and points fd 1 itself and `os.Stdout` at stderr (`dup`, `dup2`), so a stray `fmt.Println`, a cgo write or a child process lands in the log, not in the stream. Other OSes only repoint `os.Stdout` at the Go level: a write to fd 1 by anything but Go code still reaches the protocol. The contract case `stray_print_on_stderr` holds this.

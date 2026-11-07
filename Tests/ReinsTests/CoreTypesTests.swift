@@ -111,7 +111,7 @@ struct CoreTypesTests {
     }
 
     /// The result type of each method that has one. `initialize` and the errors have their own tests.
-    private static let resultTypes: [String: any Codable.Type] = [
+    static let resultTypes: [String: any Codable.Type] = [
         "inventory.read": CoreInventorySnapshot.self, "usage.scan": CoreUsageResult.self, "loadout.rows": CoreLoadoutRows.self,
         "activity.read": CoreActivityReport.self, "activity.subscribe": CoreActivityReport.self, "activity.stop": CoreStopResult.self,
         "loadout.copyToOther": CoreEntryResult.self, "loadout.removeItem": CoreEntryResult.self, "loadout.removeDeadHooks": CoreEntryResult.self,

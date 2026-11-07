@@ -5,6 +5,9 @@ import Foundation
 enum CoreProtocol {
     /// `protocolVersion` of `initialize`: the integer 1. Any other value is -32001.
     static let version = 1
+    /// Prefix of every environment variable the product reads (SV12). The core reports the same value in `initialize`; a
+    /// test holds the two equal. The app does not import the engine for it.
+    static let envPrefix = "SPACEVIBE_"
 }
 
 struct CoreClientInfo: Codable, Equatable, Sendable {
