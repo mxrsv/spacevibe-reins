@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// The services every screen shares: where the config and logs live, the process adapter, the toast, and the way to
+/// The services every screen shares: where the config and logs live, the Go core, the toast, and the way to
 /// run a write with Undo. One instance per run (`AppEnvironment.shared`), injected into the SwiftUI environment by
 /// `reinsRoot` and handed to a tab by its initialiser (`ActivityTab(env: .shared)` style).
 ///
@@ -12,10 +12,13 @@ import Observation
 ///
 /// `startupProblem` is set when the config folders could not be resolved (under `SPACEVIBE_TEST=1` that is a root under the real
 /// home); the in-process core then refuses every call with it, and a screen shows the refusal instead of reading anything.
+/// The Go core (`goCore`) resolves the same folders itself and refuses with its own sentence; when the helper is missing it
+/// refuses with the fixed "could not be started" one.
 ///
 /// Dev launch (`scripts/dev-fixture.sh`): `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `SPACEVIBE_HOME` come from the
-/// environment (`InProcessCore.live` reads them). With `SPACEVIBE_TEST=1` the process adapter is never the real one: it replays
-/// the file named by `SPACEVIBE_PROC_FIXTURE`, or an empty list when that is unset, so nothing can signal a real process.
+/// environment (`InProcessCore.live` and the core, which inherits it, read them). With `SPACEVIBE_TEST=1` the core's process
+/// adapter is never the real one: it replays the file named by `SPACEVIBE_PROC_FIXTURE`, or an empty list when that is unset,
+/// so nothing can signal a real process.
 @MainActor
 @Observable
 final class AppEnvironment {
@@ -23,9 +26,9 @@ final class AppEnvironment {
 
     let startupProblem: String?
     let toasts: ToastCenter
-    /// The engine behind a screen that has moved off `ReinsCore` (plan S.1). In-process until a screen cuts over to the Go core.
+    /// The in-process engine, for the screens that have not cut over to the Go core yet (plan S.1).
     let core: any CoreService
-    /// Which screens read through the Go core (`SPACEVIBE_CORE_SCREENS`, dev builds and tests only). Empty by default.
+    /// Which of those screens read through the Go core (`SPACEVIBE_CORE_SCREENS`, dev builds and tests only). Empty by default.
     let routing: CoreRouting
     /// The Go core process, started on the first call of a screen that routes to it.
     @ObservationIgnored private lazy var coreClient: any CoreService = makeCoreClient()
@@ -43,10 +46,13 @@ final class AppEnvironment {
         self.makeCoreClient = makeCoreClient
     }
 
-    /// The engine a screen reads through: `core` (in process) unless `routing` sends the screen to the Go core.
+    /// The engine a screen that has not cut over reads through: `core` (in process) unless `routing` sends it to the Go core.
     func core(for screen: CoreScreen) -> any CoreService {
         routing.service(for: screen, inProcess: core, core: { coreClient })
     }
+
+    /// The Go core, the only engine of a screen that has cut over (Activity and Stop, Limits). It starts on the first call.
+    var goCore: any CoreService { coreClient }
 
     static func live(environment: [String: String] = ProcessInfo.processInfo.environment, toasts: ToastCenter? = nil) -> AppEnvironment {
         let (core, problem) = InProcessCore.live(environment: environment)

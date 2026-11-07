@@ -161,10 +161,11 @@ struct CoreTypesTests {
     func identityMatchesTheCore() async throws {
         let line = try #require(try CoreTestData.transcriptLines().first { $0.file == "handshake_ok.jsonl" && $0.dir == "recv" })
         let recorded = try JSONDecoder().decode(CoreInitializeResult.self, from: JSONSerialization.data(withJSONObject: try #require(line.json["result"])))
-        let mine = try await InProcessCore(roots: nil, proc: FixtureProcessAdapter.empty).initialize()
+        let mine = try await InProcessCore(roots: nil).initialize()
         #expect(mine.identity == recorded.identity)
         #expect(mine.protocolVersion == recorded.protocolVersion)
-        #expect(Set(recorded.methods).isSubset(of: Set(mine.methods).union(["debug.panic", "debug.print", "debug.slow", "debug.write"])))
+        // Activity and Stop have cut over: the in-process core serves a subset of what the Go core does.
+        #expect(Set(mine.methods).isSubset(of: Set(recorded.methods)))
     }
 
     // MARK: Frozen goldens

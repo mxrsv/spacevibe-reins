@@ -31,7 +31,7 @@ struct InProcessCoreTests {
                 "CODEX_HOME": home.appendingPathComponent(".codex").path, "SPACEVIBE_HOME": home.appendingPathComponent(".spacevibe").path,
                 "SPACEVIBE_TEST": "1",
             ]
-            core = InProcessCore(roots: try Roots.resolve(env: env), proc: FixtureProcessAdapter.empty)
+            core = InProcessCore(roots: try Roots.resolve(env: env))
         }
 
         func remove() { try? FileManager.default.removeItem(at: home) }
@@ -95,17 +95,6 @@ struct InProcessCoreTests {
         // Whichever started second is refused; if the first was already done, both succeed.
         #expect(failures.allSatisfy { $0.status == 409 })
         #expect(outcomes.contains { if case .success = $0 { true } else { false } })
-    }
-
-    @Test("activityRead reads the fixture and activitySubscribe starts with a snapshot, then ends when cancelled")
-    func activity() async throws {
-        let fixture = try Fixture()
-        defer { fixture.remove() }
-        let report = try await fixture.core.activityRead()
-        #expect(report.stats.logs > 0)
-        var iterator = fixture.core.activitySubscribe().makeAsyncIterator()
-        let first = try await iterator.next()
-        #expect(first != nil)
     }
 
     @Test("a rule is added with an Undo entry, a duplicate is refused with 409, and Undo puts the file back")
@@ -250,7 +239,7 @@ struct InProcessCoreTests {
 
     @Test("with no config folders every method fails with the startup sentence, status 500")
     func startupProblem() async {
-        let core = InProcessCore(roots: nil, startupProblem: "SPACEVIBE_TEST must be 1 or 0, got \"banana\"", proc: FixtureProcessAdapter.empty)
+        let core = InProcessCore(roots: nil, startupProblem: "SPACEVIBE_TEST must be 1 or 0, got \"banana\"")
         let expected = CoreError("SPACEVIBE_TEST must be 1 or 0, got \"banana\"", status: 500)
         await expectFailure(expected) { _ = try await core.inventoryRead() }
         await expectFailure(expected) { _ = try await core.limitsRead() }
@@ -258,8 +247,6 @@ struct InProcessCoreTests {
         await expectFailure(expected) { _ = try await core.rulesCheck(rule: "Bash") }
         await expectFailure(expected) { _ = try await core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false) }
         await expectFailure(expected) { _ = try await core.loadoutRemoveItem(id: "x") }
-        var iterator = core.activitySubscribe().makeAsyncIterator()
-        await expectFailure(expected) { _ = try await iterator.next() }
     }
 
     @Test("a call cancelled before it starts throws CancellationError and does nothing")
@@ -279,7 +266,7 @@ struct InProcessCoreTests {
     @MainActor
     @Test("AppEnvironment carries an in-process core by default, and shows a CoreError's message")
     func environment() async throws {
-        let env = AppEnvironment(roots: nil, startupProblem: "No folders.", proc: FixtureProcessAdapter.empty)
+        let env = AppEnvironment(roots: nil, startupProblem: "No folders.")
         #expect(try await env.core.initialize().identity.envPrefix == ReinsCore.envPrefix)
         await expectFailure(CoreError("No folders.", status: 500)) { _ = try await env.core.inventoryRead() }
         #expect(AppEnvironment.message(CoreError("Gone.", status: 404)) == "Gone.")

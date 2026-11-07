@@ -77,12 +77,12 @@ private final class FakeActivityCore: CoreService, @unchecked Sendable {
     func limitsRead() async throws -> CoreLimitsResult { throw unused() }
 }
 
-/// The Activity model reads and stops through `env.core(for: .activity)` (plan S.1c).
+/// The Activity model reads and stops through `env.goCore`, the Go core (plan S.3).
 @Suite("Activity model")
 @MainActor
 struct ActivityModelTests {
     private func model(_ core: FakeActivityCore) -> ActivityModel {
-        ActivityModel(env: AppEnvironment(roots: nil, startupProblem: "No home here.", proc: FixtureProcessAdapter.empty, toasts: ToastCenter(announce: false), core: core))
+        ActivityModel(env: AppEnvironment(roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false), makeCoreClient: { core }))
     }
 
     /// Spins the main actor until `done`, so a `Task` the model started can land.
@@ -243,19 +243,16 @@ struct ActivityModelTests {
     }
 }
 
-/// The page and Stop give the same answers through the in-process engine and the Go core (plan S.1c, cut-over readiness).
-/// Both run on a private copy of the synthetic fixture home with the fixture's fake process list (S-R1: nothing real is signalled).
-@Suite("Activity model, both engines")
+/// The page and Stop against the real Go core (plan S.3): a private copy of the synthetic fixture home with the fixture's fake
+/// process list, named by `SPACEVIBE_PROC_FIXTURE` and read by the core's own fixture adapter (S-R1: nothing real is signalled).
+@Suite("Activity model, Go core")
 @MainActor
-struct ActivityModelEngineTests {
+struct ActivityModelCoreTests {
     private static let procFixture = CoreTestData.directory.appendingPathComponent("fixtures/home/.reins/activity-proc.json").path
 
-    private func model(_ fixture: CoreFixtureHome, viaCore: Bool) throws -> (ActivityModel, CoreClient?) {
-        let client = viaCore ? try fixture.client() : nil
-        let env = AppEnvironment(
-            roots: try fixture.roots(), proc: try FixtureProcessAdapter.load(path: Self.procFixture),
-            toasts: ToastCenter(announce: false), routing: CoreRouting(viaCore: viaCore ? [.activity] : []), makeCoreClient: { client ?? CoreClient() }
-        )
+    private func model(_ fixture: CoreFixtureHome) throws -> (ActivityModel, CoreClient) {
+        let client = try fixture.client()
+        let env = AppEnvironment(roots: try fixture.roots(), toasts: ToastCenter(announce: false), makeCoreClient: { client })
         return (ActivityModel(env: env), client)
     }
 
@@ -271,64 +268,78 @@ struct ActivityModelEngineTests {
         return copy
     }
 
-    @Test("the in-process path and the Go core give the screen the same sessions, failures, files, limits and wording")
-    func sameThroughBothEngines() async throws {
+    @Test("a read gives the screen the fixture home's sessions, failures, files and limits, with their wording", .timeLimit(.minutes(1)))
+    func fixtureHome() async throws {
         let fixture = try CoreFixtureHome(extraEnvironment: ["SPACEVIBE_PROC_FIXTURE": Self.procFixture])
         defer { fixture.remove() }
-        let (inProcess, _) = try model(fixture, viaCore: false)
-        let (viaCore, client) = try model(fixture, viaCore: true)
-        defer { client?.shutdown() }
-        await inProcess.readOnce()
-        await viaCore.readOnce()
-        #expect(inProcess.failure == nil && viaCore.failure == nil)
-        let expected = try #require(inProcess.report)
-        let actual = try #require(viaCore.report)
-        #expect(!expected.sessions.isEmpty && !expected.failures.isEmpty && !expected.files.isEmpty)
-        #expect(masked(actual) == masked(expected))
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
+        await model.readOnce()
+        #expect(model.failure == nil)
+        let report = try #require(model.report)
+        #expect(!report.sessions.isEmpty && !report.failures.isEmpty && !report.files.isEmpty)
+        #expect(Set(CoreCLI.allCases).isSubset(of: Set(report.sessions.map(\.cli))))
+        #expect(report.sessions.contains { $0.cli == .codex && $0.state == .running })
+        #expect(report.sessions.contains { $0.state == .unmeasurable })
         let now = Date()
         for cli in CoreCLI.allCases {
-            #expect(ActivityRows.sessions(actual, cli: cli).map { SessionWording($0, elapsedMs: 0).tagText } == ActivityRows.sessions(expected, cli: cli).map { SessionWording($0, elapsedMs: 0).tagText })
-            #expect(ActivityRows.failures(actual, cli: cli).map { FailureWording($0, now: now).how } == ActivityRows.failures(expected, cli: cli).map { FailureWording($0, now: now).how })
-            #expect(ActivityRows.limits(actual, cli: cli).map(\.text) == ActivityRows.limits(expected, cli: cli).map(\.text))
+            #expect(!ActivityRows.sessions(report, cli: cli).isEmpty)
+            #expect(ActivityRows.sessions(report, cli: cli).allSatisfy { !SessionWording($0, elapsedMs: 0).tagText.isEmpty })
+            #expect(ActivityRows.failures(report, cli: cli).allSatisfy { !FailureWording($0, now: now).how.isEmpty })
         }
-        #expect(inProcess.recentFailures == viaCore.recentFailures)
+        #expect(model.recentFailures == ActivityRows.recentFailureCount(report, now: Date()))
     }
 
-    @Test("the live stream starts with the same snapshot through both engines")
-    func sameStream() async throws {
+    @Test("the live stream starts with the same snapshot a read gives, and the first report arrives promptly (H10)", .timeLimit(.minutes(1)))
+    func stream() async throws {
         let fixture = try CoreFixtureHome(extraEnvironment: ["SPACEVIBE_PROC_FIXTURE": Self.procFixture])
         defer { fixture.remove() }
-        let (inProcess, _) = try model(fixture, viaCore: false)
-        let (viaCore, client) = try model(fixture, viaCore: true)
-        defer { client?.shutdown() }
-        // A hidden tab: one report, then the loop ends and unsubscribes.
-        await inProcess.run(active: false)
-        await viaCore.run(active: false)
-        #expect(try masked(#require(viaCore.report)) == masked(#require(inProcess.report)))
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
+        _ = try await client.initialize()
+        // The core is already up, so this times the subscription alone: its request, the first full report and its decode.
+        let started = ContinuousClock.now
+        var iterator = client.activitySubscribe().makeAsyncIterator()
+        let first = try #require(try await iterator.next())
+        let elapsed = ContinuousClock.now - started
+        print("activity.subscribe time to first report on the fixture home: \(elapsed)")
+        #expect(elapsed < .seconds(2))
+        // A hidden tab takes that one report, then the loop ends and unsubscribes.
+        await model.run(active: false)
+        #expect(masked(try #require(model.report)) == masked(first))
     }
 
-    @Test("Stop gives the same result, and the same refusal once the session is gone, through both engines")
-    func sameStop() async throws {
+    @Test("Stop signals a session, and says so once it is gone", .timeLimit(.minutes(1)))
+    func stop() async throws {
         let fixture = try CoreFixtureHome(extraEnvironment: ["SPACEVIBE_PROC_FIXTURE": Self.procFixture])
         defer { fixture.remove() }
-        var messages: [[String]] = []
-        for viaCore in [false, true] {
-            let (model, client) = try model(fixture, viaCore: viaCore)
-            defer { client?.shutdown() }
-            await model.readOnce()
-            let running = try #require(model.report?.sessions.first { $0.cli == .codex && $0.state == .running })
-            var seen: [String] = []
-            // A Codex thread names its own id; the fixture has no start time for the Claude pids, which Claude needs.
-            for _ in 0..<2 {
-                model.requestStop(running)
-                model.confirmStop()
-                let deadline = Date().addingTimeInterval(30)
-                while model.pendingStop != nil || model.isStopping, Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
-                seen.append(try #require(model.env.toasts.current?.message))
-            }
-            messages.append(seen)
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
+        await model.readOnce()
+        let running = try #require(model.report?.sessions.first { $0.cli == .codex && $0.state == .running })
+        var seen: [String] = []
+        // A Codex thread names its own id; the fixture has no start time for the Claude pids, which Claude needs.
+        for _ in 0..<2 {
+            model.requestStop(running)
+            model.confirmStop()
+            let deadline = Date().addingTimeInterval(30)
+            while model.pendingStop != nil || model.isStopping, Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            seen.append(try #require(model.env.toasts.current?.message))
         }
-        #expect(messages[0].count == 2 && messages[0][0].hasPrefix("Stopped ") && messages[0][1] == "That session is no longer running.")
-        #expect(messages[1] == messages[0])
+        #expect(seen.count == 2 && seen[0].hasPrefix("Stopped ") && seen[1] == "That session is no longer running.")
+    }
+
+    @Test("when the helper is missing, the screen shows the fixed startup sentence and nothing else")
+    func helperMissing() async {
+        let client = CoreClient(binary: URL(fileURLWithPath: "/nonexistent/spacevibe"))
+        let env = AppEnvironment(roots: nil, toasts: ToastCenter(announce: false), makeCoreClient: { client })
+        let model = ActivityModel(env: env)
+        await model.readOnce()
+        #expect(model.failure == CoreWire.startFailedMessage)
+        #expect(model.report == nil && !model.isLoading)
+        // The live loop reports the same sentence (a hidden tab ends once there is a failure to show).
+        let live = ActivityModel(env: env)
+        await live.run(active: false)
+        #expect(live.failure == CoreWire.startFailedMessage)
     }
 }

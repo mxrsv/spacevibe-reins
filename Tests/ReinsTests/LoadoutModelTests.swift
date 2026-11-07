@@ -121,7 +121,7 @@ struct LoadoutModelTests {
 
     private func model(_ reads: FakeLoadoutCore, writes: FakeLoadoutCore? = nil) -> LoadoutModel {
         let env = AppEnvironment(
-            roots: nil, startupProblem: "No home here.", proc: FixtureProcessAdapter.empty, toasts: ToastCenter(announce: false), core: reads,
+            roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false), core: reads,
             routing: CoreRouting(viaCore: writes == nil ? [] : [.loadoutWrites]), makeCoreClient: { writes ?? reads }
         )
         return LoadoutModel(env: env)
@@ -196,7 +196,7 @@ struct LoadoutModelTests {
 
     @Test("with no config folders the in-process core's startup sentence is the failure")
     func startupProblem() async throws {
-        let env = AppEnvironment(roots: nil, startupProblem: "No home here.", proc: FixtureProcessAdapter.empty, toasts: ToastCenter(announce: false))
+        let env = AppEnvironment(roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false))
         let model = LoadoutModel(env: env)
         model.start()
         try await settle("the failure") { model.readFailure != nil }

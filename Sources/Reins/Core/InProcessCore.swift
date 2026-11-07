@@ -10,23 +10,21 @@ import ReinsCore
 /// Not an actor: a blocking inventory read must not queue behind a usage scan. The state the core owns in a process
 /// (the discovered projects, the last scan, whether one runs) sits behind a lock.
 ///
-/// Three things differ from the Go core, none a behavior change for today's screens:
+/// Activity and Stop have cut over (S.3): they live in the Go core only and this adapter no longer serves them.
+///
+/// Two things differ from the Go core, none a behavior change for today's screens:
 /// - `inventoryRead` does not refresh the discovered-project list (the engine's read does not expose it); `rulesSnapshot`
 ///   with `refreshProjects` does, and every other rules call discovers once when the list is empty.
-/// - `activityStop` cannot answer 409 "could not be verified": the engine has no such state.
 /// - The Go-only members (`notReadable`, `globalNotReadable`, `skippedLines`, `unreadable`, `folderNotReadable`) are
 ///   false or 0: the engine has no source for them.
 final class InProcessCore: CoreService, @unchecked Sendable {
-    /// The poll period of `activitySubscribe`, as the Go core's.
-    static let activityPoll: Duration = .seconds(3)
     /// What `initialize` reports as the version: this engine has none of its own.
     static let version = "in-process"
-    /// Every method the core serves; `activity.unsubscribe` is the end of the `activitySubscribe` stream.
+    /// Every method this adapter still serves; the Go core serves these and the ones that cut over.
     static let methods = [
-        "activity.read", "activity.stop", "activity.subscribe", "activity.unsubscribe", "initialize", "inventory.read",
-        "journal.history", "journal.undo", "limits.read", "loadout.copyToOther", "loadout.removeDeadHooks", "loadout.removeItem",
-        "loadout.rows", "rules.add", "rules.changeVerdict", "rules.check", "rules.preview", "rules.remove", "rules.setCapability",
-        "rules.snapshot", "usage.scan",
+        "initialize", "inventory.read", "journal.history", "journal.undo", "limits.read", "loadout.copyToOther",
+        "loadout.removeDeadHooks", "loadout.removeItem", "loadout.rows", "rules.add", "rules.changeVerdict", "rules.check",
+        "rules.preview", "rules.remove", "rules.setCapability", "rules.snapshot", "usage.scan",
     ]
 
     private final class State: @unchecked Sendable {
@@ -46,41 +44,23 @@ final class InProcessCore: CoreService, @unchecked Sendable {
 
     private let roots: Roots?
     private let startupProblem: String
-    private let proc: any ProcessAdapter
-    private let engine = ActivityEngine()
     private let state = State()
 
     /// - Parameters:
     ///   - roots: nil when the config folders could not be resolved; every method then fails with `startupProblem`.
-    ///   - proc: how Activity looks at, and stops, processes.
-    init(roots: Roots?, startupProblem: String? = nil, proc: any ProcessAdapter) {
+    init(roots: Roots?, startupProblem: String? = nil) {
         self.roots = roots
         self.startupProblem = startupProblem ?? "The config folders could not be resolved."
-        self.proc = proc
     }
 
-    /// The core the app runs on, and the startup problem when the config folders could not be resolved (every call then fails
-    /// with it). `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `SPACEVIBE_HOME` come from `environment`. Under `SPACEVIBE_TEST=1`
-    /// the process adapter is never the real one: it replays the file named by `SPACEVIBE_PROC_FIXTURE`, or an empty list.
+    /// The core the app runs on for the screens that have not cut over, and the startup problem when the config folders could
+    /// not be resolved (every call then fails with it). `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `SPACEVIBE_HOME` come from
+    /// `environment`.
     static func live(environment: [String: String] = ProcessInfo.processInfo.environment) -> (core: InProcessCore, startupProblem: String?) {
-        var problems: [String] = []
+        var problem: String?
         var roots: Roots?
-        do { roots = try Roots.resolve(env: environment) } catch { problems.append(String(describing: error)) }
-        let proc: any ProcessAdapter
-        if environment[ReinsCore.env("TEST")] == "1" {
-            if let path = environment[ReinsCore.env("PROC_FIXTURE")], !path.isEmpty {
-                do { proc = try FixtureProcessAdapter.load(path: path) } catch {
-                    problems.append(String(describing: error))
-                    proc = FixtureProcessAdapter.empty
-                }
-            } else {
-                proc = FixtureProcessAdapter.empty
-            }
-        } else {
-            proc = SystemProcessAdapter()
-        }
-        let problem = problems.isEmpty ? nil : problems.joined(separator: " ")
-        return (InProcessCore(roots: roots, startupProblem: problem, proc: proc), problem)
+        do { roots = try Roots.resolve(env: environment) } catch { problem = String(describing: error) }
+        return (InProcessCore(roots: roots, startupProblem: problem), problem)
     }
 
     // MARK: Plumbing
@@ -195,47 +175,15 @@ final class InProcessCore: CoreService, @unchecked Sendable {
         }
     }
 
-    // MARK: Activity
+    // MARK: Served by the Go core only (S.3 Activity and Stop)
 
-    func activityRead() async throws -> CoreActivityReport {
-        try Task.checkCancellation()
-        let roots = try requireRoots()
-        return Self.activity(await engine.readActivity(roots: roots, now: Date(), proc: proc))
-    }
+    /// The screens that cut over have no path here: `AppEnvironment.goCore` is their only service. These exist because
+    /// `CoreService` lists them; S.8 deletes this file.
+    func activityRead() async throws -> CoreActivityReport { throw Self.goCoreOnly }
+    func activitySubscribe() -> AsyncThrowingStream<CoreActivityReport, Error> { AsyncThrowingStream { $0.finish(throwing: Self.goCoreOnly) } }
+    func activityStop(cli: CoreCLI, id: String) async throws -> CoreStopResult { throw Self.goCoreOnly }
 
-    func activitySubscribe() -> AsyncThrowingStream<CoreActivityReport, Error> {
-        AsyncThrowingStream { continuation in
-            let task = Task {
-                do {
-                    var last: CoreActivityReport?
-                    while !Task.isCancelled {
-                        let report = try await self.activityRead()
-                        // A report replaces the last whole; one equal to the last is not sent.
-                        if report != last { continuation.yield(report) }
-                        last = report
-                        try await Task.sleep(for: Self.activityPoll)
-                    }
-                    continuation.finish()
-                } catch is CancellationError {
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in task.cancel() }
-        }
-    }
-
-    func activityStop(cli: CoreCLI, id: String) async throws -> CoreStopResult {
-        try Task.checkCancellation()
-        let roots = try requireRoots()
-        do {
-            let result = try await stopSession(roots: roots, cli: Self.engineCLI(cli), id: id, proc: proc)
-            return CoreStopResult(exited: result.exited)
-        } catch {
-            throw Self.coreError(error)
-        }
-    }
+    private static let goCoreOnly = CoreError("This is served by the Go core only.", status: 500)
 
     // MARK: Loadout writes and the journal
 
@@ -423,32 +371,6 @@ final class InProcessCore: CoreService, @unchecked Sendable {
         return converted
     }
 
-    private static func activity(_ report: ActivityReport) -> CoreActivityReport {
-        CoreActivityReport(
-            sessions: report.sessions.map { s in
-                CoreActivitySession(
-                    cli: same(s.cli, as: CoreCLI.self), id: s.id, title: s.title, project: s.project, pid: s.pid,
-                    state: same(s.state, as: CoreSessionState.self), stateReason: s.stateReason, reasonCode: s.reasonCode?.rawValue,
-                    currentTool: s.currentTool.map { CoreActivityTool(name: $0.name, target: $0.target) },
-                    ageMs: s.ageMs, lastWriteAgoMs: s.lastWriteAgoMs,
-                    cost: s.cost.map { CoreActivityCost(usd: $0.usd, estimated: $0.estimated) }, costNote: s.costNote
-                )
-            },
-            failures: report.failures.map { f in
-                CoreActivityFailure(
-                    kind: same(f.kind, as: CoreFailureKind.self), cli: same(f.cli, as: CoreCLI.self), key: f.key, title: f.title,
-                    count: f.count, exit: f.exit, reason: f.reason, projects: f.projects, sessions: f.sessions, first: f.first,
-                    last: f.last, laterPass: f.laterPass, hook: f.hook.map { CoreActivityHookRef(hash: $0.hash, event: $0.event) }
-                )
-            },
-            files: report.files.map { f in
-                CoreActivityFile(path: f.path, label: f.label, edits: f.edits, sessions: f.sessions, last: f.last, clis: f.clis.map { same($0, as: CoreCLI.self) }, projects: f.projects)
-            },
-            unmeasurable: report.unmeasurable.map { CoreActivityLimit(cli: same($0.cli, as: CoreCLI.self), code: $0.code.rawValue, text: $0.text) },
-            stats: CoreActivityStats(logs: report.stats.logs, truncated: report.stats.truncated)
-        )
-    }
-
     private static func limits(_ entry: CLILimits, now: Date) -> CoreLimitsEntry {
         var state = CoreLimitsState.notInstalled
         var at: Double?
@@ -531,12 +453,12 @@ extension AppEnvironment {
     /// An environment over an in-process core for these roots, for the tests and dev tools that build their own (the app
     /// itself starts from `AppEnvironment.live`). Without roots the core refuses every call with `startupProblem`.
     convenience init(
-        roots: Roots?, startupProblem: String? = nil, proc: any ProcessAdapter, toasts: ToastCenter? = nil, core: (any CoreService)? = nil,
+        roots: Roots?, startupProblem: String? = nil, toasts: ToastCenter? = nil, core: (any CoreService)? = nil,
         routing: CoreRouting = CoreRouting(), makeCoreClient: @escaping () -> any CoreService = { CoreClient() }
     ) {
         let problem = roots == nil ? (startupProblem ?? "The config folders could not be resolved.") : startupProblem
         self.init(
-            startupProblem: problem, toasts: toasts, core: core ?? InProcessCore(roots: roots, startupProblem: problem, proc: proc),
+            startupProblem: problem, toasts: toasts, core: core ?? InProcessCore(roots: roots, startupProblem: problem),
             routing: routing, makeCoreClient: makeCoreClient
         )
     }

@@ -11,7 +11,7 @@ struct RulesModelEngineTests {
     private func model(_ fixture: CoreFixtureHome, viaCore: Bool) throws -> (RulesModel, CoreClient?) {
         let client = viaCore ? try fixture.client() : nil
         let env = AppEnvironment(
-            roots: try fixture.roots(), proc: FixtureProcessAdapter.empty, toasts: ToastCenter(announce: false),
+            roots: try fixture.roots(), toasts: ToastCenter(announce: false),
             routing: CoreRouting(viaCore: viaCore ? [.rules] : []), makeCoreClient: { client ?? CoreClient() }
         )
         return (RulesModel(env: env), client)
@@ -41,7 +41,7 @@ struct RulesModelEngineTests {
     func sameSnapshots() async throws {
         let fixture = try CoreFixtureHome()
         defer { fixture.remove() }
-        let inProcess = InProcessCore(roots: try fixture.roots(), proc: FixtureProcessAdapter.empty)
+        let inProcess = InProcessCore(roots: try fixture.roots())
         let client = try fixture.client()
         defer { client.shutdown() }
 
@@ -61,7 +61,7 @@ struct RulesModelEngineTests {
     func samePreviews() async throws {
         let fixture = try CoreFixtureHome()
         defer { fixture.remove() }
-        let inProcess = InProcessCore(roots: try fixture.roots(), proc: FixtureProcessAdapter.empty)
+        let inProcess = InProcessCore(roots: try fixture.roots())
         let client = try fixture.client()
         defer { client.shutdown() }
         let global = try await inProcess.rulesSnapshot(scope: .global, dir: nil, refreshProjects: true)
@@ -124,7 +124,7 @@ struct RulesModelEngineTests {
             defer { fixture.remove() }
             let client = viaCore ? try fixture.client() : nil
             defer { client?.shutdown() }
-            let inProcess = InProcessCore(roots: try fixture.roots(), proc: FixtureProcessAdapter.empty)
+            let inProcess = InProcessCore(roots: try fixture.roots())
             let service: any CoreService = client.map { $0 as any CoreService } ?? inProcess
             let before = try fixture.tree()
 
@@ -149,7 +149,7 @@ struct RulesModelEngineTests {
             defer { fixture.remove() }
             let client = viaCore ? try fixture.client() : nil
             defer { client?.shutdown() }
-            let inProcess = InProcessCore(roots: try fixture.roots(), proc: FixtureProcessAdapter.empty)
+            let inProcess = InProcessCore(roots: try fixture.roots())
             let service: any CoreService = client.map { $0 as any CoreService } ?? inProcess
             let before = try fixture.tree()
 
@@ -250,7 +250,7 @@ struct RulesModelEngineTests {
     func sameRefusals() async throws {
         let fixture = try CoreFixtureHome()
         defer { fixture.remove() }
-        let inProcess = InProcessCore(roots: try fixture.roots(), proc: FixtureProcessAdapter.empty)
+        let inProcess = InProcessCore(roots: try fixture.roots())
         let client = try fixture.client()
         defer { client.shutdown() }
         let global = try await inProcess.rulesSnapshot(scope: .global, dir: nil, refreshProjects: true)

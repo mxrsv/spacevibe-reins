@@ -10,7 +10,7 @@ struct LimitsModelTests {
     private func model(_ fixture: CoreFixtureHome, viaCore: Bool) throws -> (LimitsModel, CoreClient?) {
         let client = viaCore ? try fixture.client() : nil
         let env = AppEnvironment(
-            roots: try fixture.roots(), proc: FixtureProcessAdapter.empty,
+            roots: try fixture.roots(),
             routing: CoreRouting(viaCore: viaCore ? [.limits] : []), makeCoreClient: { client ?? CoreClient() }
         )
         return (LimitsModel(env: env), client)
@@ -37,7 +37,7 @@ struct LimitsModelTests {
 
     @Test("a read that cannot run leaves the engine's sentence as the failure and no results")
     func failure() async {
-        let env = AppEnvironment(roots: nil, startupProblem: "No home here.", proc: FixtureProcessAdapter.empty)
+        let env = AppEnvironment(roots: nil, startupProblem: "No home here.")
         let model = LimitsModel(env: env)
         await model.readOnce()
         #expect(model.failure == "No home here.")

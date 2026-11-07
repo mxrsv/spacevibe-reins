@@ -9,10 +9,17 @@ struct CoreRoutingTests {
 
     @Test("SPACEVIBE_CORE_SCREENS picks the screens that use the core, ignoring unknown names and spaces")
     func screens() {
-        let routing = CoreRouting(environment: Self.allowed.merging(["SPACEVIBE_CORE_SCREENS": "activity, rules ,nope,"]) { $1 })
-        #expect(routing.viaCore == [.activity, .rules])
-        #expect(routing.usesCore(.activity))
+        let routing = CoreRouting(environment: Self.allowed.merging(["SPACEVIBE_CORE_SCREENS": "loadout, rules ,nope,"]) { $1 })
+        #expect(routing.viaCore == [.loadout, .rules])
+        #expect(routing.usesCore(.loadout))
         #expect(!routing.usesCore(.limits))
+    }
+
+    @Test("a screen that has cut over (activity) is not a routing choice any more: its name is ignored")
+    func cutOverScreens() {
+        let routing = CoreRouting(environment: Self.allowed.merging(["SPACEVIBE_CORE_SCREENS": "activity,limits"]) { $1 })
+        #expect(routing.viaCore == [.limits])
+        #expect(CoreScreen(rawValue: "activity") == nil)
     }
 
     @Test("with no variable, or an empty one, every screen stays in process")
@@ -23,10 +30,10 @@ struct CoreRoutingTests {
 
     @Test("the core is built only for a screen that routes to it")
     func lazyCore() async throws {
-        let inProcess = InProcessCore(roots: nil, proc: FixtureProcessAdapter.empty)
+        let inProcess = InProcessCore(roots: nil)
         let routing = CoreRouting(viaCore: [.limits])
         var built = 0
-        let other = routing.service(for: .activity, inProcess: inProcess) { built += 1; return CoreClient() }
+        let other = routing.service(for: .rules, inProcess: inProcess) { built += 1; return CoreClient() }
         #expect(other is InProcessCore)
         #expect(built == 0)
         let routed = routing.service(for: .limits, inProcess: inProcess) { built += 1; return CoreClient(binary: URL(fileURLWithPath: "/nonexistent")) }

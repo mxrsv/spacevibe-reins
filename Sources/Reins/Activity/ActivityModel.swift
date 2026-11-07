@@ -3,7 +3,7 @@ import Observation
 
 /// The Activity screen's state: the latest report, the live feed, and the Stop flow.
 ///
-/// Reads go through the core `env.core(for: .activity)` picks (in process until the screen cuts over). The live page
+/// Reads go through the Go core (`env.goCore`). The live page
 /// follows `activitySubscribe`: a full snapshot first, then a full report whenever it changed (the core polls every 3 s,
 /// so nothing here does). The loop is driven by the view's `.task(id:)`: subscribed while the Activity tab is the active one,
 /// subscribed until the first report has landed otherwise (the sidebar badge needs it even when the tab is hidden), and not
@@ -39,7 +39,7 @@ final class ActivityModel {
 
     var recentFailures: Int { ActivityRows.recentFailureCount(report, now: Date()) }
 
-    private var core: any CoreService { env.core(for: .activity) }
+    private var core: any CoreService { env.goCore }
 
     // MARK: Reading
 

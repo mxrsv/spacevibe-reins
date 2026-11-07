@@ -185,7 +185,7 @@ struct RulesModelTests {
 
     @Test("with no config folders the in-process core's startup sentence is the failure")
     func startupProblem() async throws {
-        let env = AppEnvironment(roots: nil, startupProblem: "No home here.", proc: FixtureProcessAdapter.empty, toasts: ToastCenter(announce: false))
+        let env = AppEnvironment(roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false))
         let model = RulesModel(env: env)
         model.start()
         try await settle("the failure") { model.failure != nil }

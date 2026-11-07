@@ -14,7 +14,7 @@ struct LoadoutModelEngineTests {
     private func model(_ fixture: CoreFixtureHome, viaCore: Bool, screens: Set<CoreScreen> = [.loadout, .loadoutWrites]) throws -> (LoadoutModel, CoreClient?) {
         let client = viaCore ? try fixture.client() : nil
         let env = AppEnvironment(
-            roots: try fixture.roots(), proc: FixtureProcessAdapter.empty, toasts: ToastCenter(announce: false),
+            roots: try fixture.roots(), toasts: ToastCenter(announce: false),
             routing: CoreRouting(viaCore: viaCore ? screens : []), makeCoreClient: { client ?? CoreClient() }
         )
         return (LoadoutModel(env: env), client)
@@ -39,7 +39,7 @@ struct LoadoutModelEngineTests {
     func sameRows() async throws {
         let fixture = try CoreFixtureHome()
         defer { fixture.remove() }
-        let inProcess = InProcessCore(roots: try fixture.roots(), proc: FixtureProcessAdapter.empty)
+        let inProcess = InProcessCore(roots: try fixture.roots())
         let client = try fixture.client()
         defer { client.shutdown() }
 
@@ -120,7 +120,7 @@ struct LoadoutModelEngineTests {
             defer { fixture.remove() }
             let client = viaCore ? try fixture.client() : nil
             defer { client?.shutdown() }
-            let inProcess = InProcessCore(roots: try fixture.roots(), proc: FixtureProcessAdapter.empty)
+            let inProcess = InProcessCore(roots: try fixture.roots())
             let service: any CoreService = client.map { $0 as any CoreService } ?? inProcess
             let before = try fixture.tree()
             let rows = try await service.loadoutRows()
@@ -179,7 +179,7 @@ struct LoadoutModelEngineTests {
     func sameRefusals() async throws {
         let fixture = try CoreFixtureHome()
         defer { fixture.remove() }
-        let inProcess = InProcessCore(roots: try fixture.roots(), proc: FixtureProcessAdapter.empty)
+        let inProcess = InProcessCore(roots: try fixture.roots())
         let client = try fixture.client()
         defer { client.shutdown() }
         let rows = try await inProcess.loadoutRows()
