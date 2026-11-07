@@ -50,7 +50,7 @@ An item that appears in no scanned log. A state to act on. A newly added item ca
 _Avoid_: unused, dead, pending, not counted yet (in labels)
 
 **Unmeasurable**:
-The CLI keeps no log for this kind of item (Codex hooks). A property of the kind and CLI, never shown as 0.
+Reins cannot know it from what the CLI or model provides: Codex hooks, a session whose state is unreadable, a model with no price. Never shown as 0 or guessed.
 
 **Missing**:
 Not installed in that CLI. About installation, not usage.
@@ -64,6 +64,34 @@ _Avoid_: uses, executions
 How many CLI sessions used a skill or subagent. One session counts once however often it was used.
 _Avoid_: runs (for skills and subagents)
 
+**Estimated cost**:
+Tokens priced at API-equivalent rates, not what a subscription charges. Always labelled as an estimate; a model with no price is unmeasurable.
+_Avoid_: spend, bill
+
 **Window**:
 One usage-limit period of a subscription (for example 5-hour or weekly), shown as percentage left.
 _Avoid_: quota, session (a session is a CLI run)
+
+### Activity
+
+**Session**:
+One run of a CLI, from start to end. Activity lists the running ones; `Sessions` counts the ones that used an item.
+_Avoid_: conversation, process (a process is what Stop signals)
+
+**Session state**:
+Running, waiting (for approval), idle, ended or unmeasurable. Waiting and a long tool run can look the same in a CLI's log, which is why a state can be unmeasurable.
+_Avoid_: status
+
+**Stop**:
+Ends a running session by signalling its process after the pid is re-checked. The one write with no Undo; it names the pid and the consequence first.
+_Avoid_: kill, terminate (in labels)
+
+### Changes
+
+**Journal**:
+Reins's record of every write to a CLI's configuration, holding the old bytes as a restorable copy so the write can be undone.
+_Avoid_: history, log (a log is what a CLI writes)
+
+**Undo**:
+Restores what one Journal entry replaced. Offered from the toast after a write.
+_Avoid_: rollback, revert
