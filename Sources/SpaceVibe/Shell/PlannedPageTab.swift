@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A v5 page whose region is not built yet (W17): the tab head's place and "Not built yet" in the canvas. Registered by
-/// `TabRegistry` for Activity and Limits until their tasks replace it; deleted with the last one.
+/// `TabRegistry` for Activity until its task replaces it; deleted then.
 @MainActor
 final class PlannedPageTab: SpaceVibeTab {
     let id: String

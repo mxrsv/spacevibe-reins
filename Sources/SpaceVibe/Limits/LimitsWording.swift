@@ -27,7 +27,8 @@ enum LimitsWording {
         case state(String)
     }
 
-    /// A reading older than this carries a warning and the `/usage` hint (plan, Decisions).
+    /// A reading this old or older is stale: it carries a warning and the `/usage` hint (plan, Decisions; V5-R74 "6 hours old or
+    /// more", the mock's `readH >= 6`).
     static let staleAfter: TimeInterval = 6 * 3600
     static let lowShare = 20.0
     static let outShare = 5.0
@@ -144,7 +145,7 @@ enum LimitsWording {
 
     // MARK: Readings
 
-    static func isStale(at: Date, now: Date) -> Bool { now.timeIntervalSince(at) > staleAfter }
+    static func isStale(at: Date, now: Date) -> Bool { now.timeIntervalSince(at) >= staleAfter }
 
     /// "4 min ago", "2 days ago": the value under the "Reading" label.
     static func readAge(at: Date, now: Date) -> String { ago(now.timeIntervalSince(at)) }

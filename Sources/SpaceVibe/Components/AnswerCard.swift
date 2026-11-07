@@ -33,6 +33,7 @@ struct AnswerCard<Fixes: View, HeaderActions: View>: View {
         Text(sentence)
             .spaceVibeText(.answer, tone: .primary)
             .fixedSize(horizontal: false, vertical: true)
+            .lineBox(.answer)
             .accessibilityAddTraits(.isHeader)
         if let verdict { verdict }
         if Fixes.self != EmptyView.self {
@@ -92,6 +93,8 @@ struct VerdictBox: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(Metrics.VerdictBox.padding)
+        // Inside the 1 pt edge, as the kit's border does (CSS border-box).
+        .padding(Metrics.Radius.edge)
         .background(shape.fill(Palette.bgSunk))
         .overlay(shape.strokeBorder(Palette.hair, lineWidth: Metrics.Radius.edge))
         .accessibilityElement(children: .combine)

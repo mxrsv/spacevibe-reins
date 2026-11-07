@@ -45,7 +45,7 @@ struct InterFontTests {
     func v5Roles() {
         let expected: [(SpaceVibeType, CGFloat, InterFont.Weight, CGFloat)] = [
             (.micro, 10, .medium, 12), (.small, 11, .regular, 16), (.smallLabel, 11, .medium, 16), (.meta, 12, .regular, 16),
-            (.metaLabel, 12, .medium, 16), (.prose, 13, .regular, 20), (.rowName, 13, .book, 20), (.control, 13, .medium, 20),
+            (.metaLabel, 12, .medium, 16), (.metaLine, 12, .regular, 20), (.prose, 13, .regular, 20), (.rowName, 13, .book, 20), (.control, 13, .medium, 20),
             (.controlStrong, 13, .semibold, 20), (.field, 14, .regular, 20), (.dialogTitle, 14, .semibold, 20), (.cardTitle, 16, .semibold, 24),
             (.heading, 20, .semibold, 28), (.answer, 28, .semibold, 32),
         ]

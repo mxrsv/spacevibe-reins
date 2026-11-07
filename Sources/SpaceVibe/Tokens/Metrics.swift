@@ -407,6 +407,28 @@ extension Metrics {
         static let size: CGFloat = 24
     }
 
+    /// A stale reading's age at a band's right end: the clock 4 before the text.
+    enum StaleNote {
+        static let spacing: CGFloat = 4
+    }
+
+    /// The split canvas (V5-R52): below this width inside its 32 edge, the halves stack.
+    enum SplitCanvas {
+        static let stackBelow: CGFloat = 700
+    }
+
+    /// The Limits page's columns and gaps (`b-limits`' page CSS).
+    enum Limits {
+        /// A window row: the name column, and the least a bar keeps when the row is narrow.
+        static let windowName: CGFloat = 128
+        static let barMinWidth: CGFloat = 96
+        /// A Next resets row: the time before the logo.
+        static let resetTime: CGFloat = 72
+        /// The Source card: between its lines, and between its two buttons.
+        static let sourceLineSpacing: CGFloat = 8
+        static let sourceActionSpacing: CGFloat = 8
+    }
+
     enum Menu {
         static let width: CGFloat = 208
         static let submenuWidth: CGFloat = 232

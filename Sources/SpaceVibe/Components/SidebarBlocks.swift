@@ -264,6 +264,8 @@ struct ContentPanel<Content: View>: View {
             content.frame(maxWidth: .infinity, maxHeight: .infinity)
             StatusBar(hints: hints, source: source)
         }
+        // Inside the 1 pt edge, as the kit's border does (CSS border-box).
+        .padding(Metrics.Radius.edge)
         .blockSurface(Palette.bgPanel, edge: Palette.hair)
         .padding(.top, Metrics.ContentPanel.inset)
         .padding(.trailing, Metrics.ContentPanel.inset)

@@ -42,3 +42,20 @@ struct StateMarkIcon: View {
         SpaceVibeIcon(content: mark.glyph, size: size, ink: mark.color, label: mark.label)
     }
 }
+
+/// The age of a stale reading at a band's right end (V5-R73): the neutral clock and "read 8 h ago", 12 `fg3`, 4 apart.
+struct StaleNote: View {
+    let text: String
+
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        HStack(spacing: Metrics.StaleNote.spacing) {
+            SpaceVibeIcon(content: .clock, ink: Palette.fg3)
+            Text(text).spaceVibeText(.meta, tone: .tertiary).lineLimit(1)
+        }
+        .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(text)
+    }
+}

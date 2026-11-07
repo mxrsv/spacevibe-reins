@@ -78,10 +78,10 @@ struct ControlSpecimens: View {
                 TabHead {
                     EmptyView()
                 } actions: {
-                    ToolbarButton("Refresh", glyph: .enter) {}
+                    ToolbarButton("Refresh", keyCap: "\u{2318}R") {}
                 }
             }
-            SpecimenLayout.caption("Rows: Skills active, Subagents hover, Hooks focus, Filter hover, View focus; Subagents, Hooks, Rules (focused) active; Activity with the accent; Limits' head with Refresh only.")
+            SpecimenLayout.caption("Rows: Skills active, Subagents hover, Hooks focus, Filter hover, View focus; Subagents, Hooks, Rules (focused) active; Activity with the accent; Limits' head with Refresh only, its key cap after the label.")
         }
     }
 

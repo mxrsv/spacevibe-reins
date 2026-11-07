@@ -16,14 +16,16 @@ enum TileLayout {
 ///
 ///     Tile("Next resets", count: "6", isOpen: $open) { ListRows { ... } }
 ///
-/// `maxHeight` caps the whole card; a taller body scrolls inside it (V5-R52). The open state is the caller's, so a page keeps
-/// it in `OpenStateStore` like a band's.
+/// `maxHeight` caps the whole card; a taller body scrolls inside it (V5-R52). A card that `stretches` (a split page's spine)
+/// takes the height its container offers, up to `maxHeight`, with the room below its body empty, as the kit's grid stretches
+/// it. The open state is the caller's, so a page keeps it in `OpenStateStore` like a band's.
 struct Tile<Actions: View, Content: View>: View {
     let title: String
     var count: String?
     var state: StateMark?
     var layout: TileLayout = .rows
     var maxHeight: CGFloat?
+    var stretches = false
     @Binding var isOpen: Bool
     let actions: Actions
     let content: Content
@@ -36,7 +38,10 @@ struct Tile<Actions: View, Content: View>: View {
             header
             if isOpen { cappedBody }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // The edge takes its own point inside the card, as the kit's border does (CSS border-box): the header starts 1 below
+        // the top, and `maxHeight` holds the edge too.
+        .padding(Metrics.Radius.edge)
+        .frame(maxWidth: .infinity, maxHeight: stretches ? (maxHeight ?? .infinity) : nil, alignment: .topLeading)
         .blockSurface(Palette.bgRaise)
         .accessibilityElement(children: .contain)
     }
@@ -65,15 +70,17 @@ struct Tile<Actions: View, Content: View>: View {
     @ViewBuilder
     private var cappedBody: some View {
         if let maxHeight {
-            let limit = max(0, maxHeight - Metrics.Tile.headerHeight)
+            let limit = max(0, maxHeight - Metrics.Tile.headerHeight - 2 * Metrics.Radius.edge)
+            // The body takes its own height up to the cap, and less when its container offers less (`SplitCanvas` fitting
+            // the small cards to the window); what does not fit scrolls inside.
             if isShotRendering {
-                // A headless shot draws no scroll view: the body is cut at the cap, as if scrolled to the top.
-                laidOutBody.fixedSize(horizontal: false, vertical: true).frame(maxHeight: limit, alignment: .top).clipped()
+                // A headless shot draws no scroll view: the body is cut, as if scrolled to the top.
+                laidOutBody.fixedSize(horizontal: false, vertical: true).frame(minHeight: 0, maxHeight: limit, alignment: .top).clipped()
             } else {
                 ScrollView {
                     laidOutBody.onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { bodyHeight = $0 }
                 }
-                .frame(height: min(bodyHeight, limit))
+                .frame(minHeight: 0, idealHeight: min(bodyHeight, limit), maxHeight: min(bodyHeight, limit))
             }
         } else {
             laidOutBody
@@ -102,17 +109,17 @@ struct Tile<Actions: View, Content: View>: View {
 
 extension Tile where Actions == EmptyView {
     init(_ title: String, count: String? = nil, state: StateMark? = nil, layout: TileLayout = .rows, maxHeight: CGFloat? = nil,
-         isOpen: Binding<Bool>, @ViewBuilder content: () -> Content) {
-        self.init(title: title, count: count, state: state, layout: layout, maxHeight: maxHeight, isOpen: isOpen,
-                  actions: EmptyView(), content: content())
+         stretches: Bool = false, isOpen: Binding<Bool>, @ViewBuilder content: () -> Content) {
+        self.init(title: title, count: count, state: state, layout: layout, maxHeight: maxHeight, stretches: stretches,
+                  isOpen: isOpen, actions: EmptyView(), content: content())
     }
 }
 
 extension Tile {
     init(_ title: String, count: String? = nil, state: StateMark? = nil, layout: TileLayout = .rows, maxHeight: CGFloat? = nil,
-         isOpen: Binding<Bool>, @ViewBuilder content: () -> Content, @ViewBuilder actions: () -> Actions) {
-        self.init(title: title, count: count, state: state, layout: layout, maxHeight: maxHeight, isOpen: isOpen,
-                  actions: actions(), content: content())
+         stretches: Bool = false, isOpen: Binding<Bool>, @ViewBuilder content: () -> Content, @ViewBuilder actions: () -> Actions) {
+        self.init(title: title, count: count, state: state, layout: layout, maxHeight: maxHeight, stretches: stretches,
+                  isOpen: isOpen, actions: actions(), content: content())
     }
 }
 

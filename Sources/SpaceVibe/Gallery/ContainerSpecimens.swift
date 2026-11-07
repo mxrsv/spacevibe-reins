@@ -92,8 +92,7 @@ struct ContainerSpecimens: View {
                         Band("Codex", count: 4, isOpen: open("band-codex", false)) { windowRows } lead: {
                             CLIMark(CoreLimitsCLI.codex, size: .control)
                         } extras: {
-                            HStack(spacing: Space.s4) { SpaceVibeIcon(content: .clock, size: .inline); Text("read 8 h ago").spaceVibeText(.meta) }
-                                .foregroundStyle(Palette.fg3)
+                            StaleNote("read 8 h ago")
                         }
                         Band("Gemini CLI", isOpen: open("band-gemini", false)) { EmptyView() } lead: { CLIMark(CoreLimitsCLI.gemini, size: .control) }
                     }

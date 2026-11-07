@@ -67,6 +67,9 @@ jobs:
           for screen in shell skills subagents hooks; do
             SPACEVIBE_UI_V5=1 SPACEVIBE_SHOT_SCREEN=$screen scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/v5-$screen"
           done
+          for variant in typical edge; do
+            SPACEVIBE_UI_V5=1 SPACEVIBE_FIXTURE_LIMITS=$variant SPACEVIBE_SHOT_SCREEN=limits scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/v5-limits-$variant"
+          done
 
       - uses: actions/upload-artifact@v4
         if: always()

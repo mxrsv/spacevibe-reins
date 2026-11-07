@@ -11,8 +11,8 @@ import SwiftUI
 ///   or the real config folders.
 /// With the v5 switch on, `shell` shoots the v5 window instead of the demo states (`ShellShots`: every Agents tab, Activity, Limits,
 /// the palette, the toast and Settings; it reads the synthetic home, so it needs `SPACEVIBE_TEST=1`) and then the gallery;
-/// `skills`, `subagents` and `hooks` shoot the Agents page on that tab. The real-screen runs below stay on the old shell until
-/// their region is built.
+/// `skills`, `subagents` and `hooks` shoot the Agents page on that tab, and `limits` the v5 Limits page (`LimitsShots`). The other
+/// real-screen runs below stay on the old shell until their region is built.
 /// - `settings`: Settings on the demo shell in every update state and at the Large font size, and the demo tabs at Large
 ///   (`SettingsShots`). Synthetic data only, like `shell`.
 /// - `loadout`, `rules`, `activity`, `limits`: the real screen read from the synthetic HOME, with checks on the writes

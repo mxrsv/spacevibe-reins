@@ -8,12 +8,15 @@ struct ToolbarButton: View {
     var glyph: ContentGlyph?
     /// The scope control's caret after the label.
     var trailingCaret = false
+    /// The key that runs it, as a cap after the label (Limits' `Refresh`, `⌘R`).
+    var keyCap: String?
     let action: () -> Void
 
-    init(_ title: String, glyph: ContentGlyph? = nil, trailingCaret: Bool = false, action: @escaping () -> Void) {
+    init(_ title: String, glyph: ContentGlyph? = nil, trailingCaret: Bool = false, keyCap: String? = nil, action: @escaping () -> Void) {
         self.title = title
         self.glyph = glyph
         self.trailingCaret = trailingCaret
+        self.keyCap = keyCap
         self.action = action
     }
 
@@ -23,6 +26,7 @@ struct ToolbarButton: View {
                 if let glyph { SpaceVibeIcon(content: glyph) }
                 Text(title)
                 if trailingCaret { SpaceVibeIcon(content: .caretDown) }
+                if let keyCap { KeyCap(keyCap) }
             }
         }
         .buttonStyle(ToolbarButtonStyle())

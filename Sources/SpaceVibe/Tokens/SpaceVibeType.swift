@@ -127,6 +127,9 @@ struct SpaceVibeType {
     static var meta: SpaceVibeType { v5(12, .regular, 16) }
     /// Controls, menus and filter chips at 12.
     static var metaLabel: SpaceVibeType { v5(12, .medium, 16) }
+    /// A quiet line of free content (the Limits Source card's lines and note): 12 pt in the body's 20 pt line box, as the
+    /// kit's 12 px text that inherits `line-height: 20px` (`.last`, `.note`).
+    static var metaLine: SpaceVibeType { v5(12, .regular, 20) }
     /// Body text in sentences and a count in a row.
     static var prose: SpaceVibeType { v5(13, .regular, 20) }
     /// A row's name (450).
@@ -180,9 +183,11 @@ extension View {
 
     /// The role's whole line box around a block of text, as the kit's CSS draws it: `lineSpacing` puts the leading only
     /// between lines, so half of it goes above the first line and half below the last. For v5 text that is not centred in a
-    /// fixed height (a sentence, a figure and its label).
+    /// fixed height (a sentence, a figure and its label). A box shorter than the face (the Answer's 28/32; Inter is about
+    /// 1.21 em) takes the difference off above and below, so one line is exactly the box; SwiftUI has no negative line
+    /// spacing, so each further line stays about 2 pt taller than the kit's.
     func lineBox(_ role: SpaceVibeType) -> some View {
-        padding(.vertical, role.lineSpacing / 2)
+        padding(.vertical, (role.lineBox - role.naturalLineHeight) / 2)
     }
 }
 

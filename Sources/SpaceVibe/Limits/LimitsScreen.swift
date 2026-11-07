@@ -196,12 +196,3 @@ private struct CopyUsageButton: View {
         .buttonStyle(.spaceVibe(.normal))
     }
 }
-
-/// Copies text only. SpaceVibe never runs the command (S-R4).
-enum LimitsClipboard {
-    @MainActor
-    static func copyUsageCommand() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(LimitsWording.copyHint, forType: .string)
-    }
-}

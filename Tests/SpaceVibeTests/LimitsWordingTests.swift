@@ -130,10 +130,10 @@ struct LimitsWordingTests {
         #expect(LimitsWording.resetsAt(passed, now: Self.now, calendar: Self.calendar) == "17:34")
     }
 
-    @Test("a reading is stale after six hours, and its age reads in minutes, hours, then days")
+    @Test("a reading six hours old or more is stale (V5-R74), and its age reads in minutes, hours, then days")
     func readingAge() {
-        #expect(!LimitsWording.isStale(at: Self.now.addingTimeInterval(-6 * Self.hour), now: Self.now))
-        #expect(LimitsWording.isStale(at: Self.now.addingTimeInterval(-6 * Self.hour - 1), now: Self.now))
+        #expect(!LimitsWording.isStale(at: Self.now.addingTimeInterval(-6 * Self.hour + 1), now: Self.now))
+        #expect(LimitsWording.isStale(at: Self.now.addingTimeInterval(-6 * Self.hour), now: Self.now))
         #expect(LimitsWording.readAge(at: Self.now.addingTimeInterval(-4 * 60), now: Self.now) == "4 min ago")
         #expect(LimitsWording.readAge(at: Self.now.addingTimeInterval(-5 * Self.hour), now: Self.now) == "5 h ago")
         #expect(LimitsWording.readAge(at: Self.now.addingTimeInterval(-2 * 86_400 - 2 * Self.hour), now: Self.now) == "2 days ago")
