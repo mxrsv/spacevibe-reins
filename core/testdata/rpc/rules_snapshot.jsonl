@@ -1,0 +1,26 @@
+{"dir":"send","json":{"id":0,"jsonrpc":"2.0","method":"initialize","params":{"client":{"name":"contract","version":"0"},"protocolVersion":1}}}
+{"dir":"recv","json":{"id":0,"jsonrpc":"2.0","result":{"core":{"name":"spacevibe","version":"dev"},"identity":{"dataDir":".spacevibe","envPrefix":"SPACEVIBE_"},"methods":["activity.read","activity.stop","activity.subscribe","activity.unsubscribe","initialize","inventory.read","journal.history","journal.undo","limits.read","loadout.copyToOther","loadout.removeDeadHooks","loadout.removeItem","loadout.rows","rules.add","rules.changeVerdict","rules.check","rules.preview","rules.remove","rules.setCapability","rules.snapshot","usage.scan"],"protocolVersion":1}}}
+{"dir":"send","json":{"id":1,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":null,"scope":"global"}}}
+{"dir":"recv","text":"(5646 bytes)"}
+{"dir":"send","json":{"id":2,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":"/nowhere/at/all","refreshProjects":true,"scope":"project"}}}
+{"dir":"recv","text":"(5646 bytes)"}
+{"dir":"send","json":{"id":3,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":"relative/dir","scope":"project"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"A project scope needs an absolute folder.","status":400},"message":"A project scope needs an absolute folder."},"id":3,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":4,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":"/x","scope":"global"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"A global scope takes no folder.","status":400},"message":"A global scope takes no folder."},"id":4,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":5,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":null,"scope":"nope"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"The scope must be global, project or local.","status":400},"message":"The scope must be global, project or local."},"id":5,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":30,"jsonrpc":"2.0","method":"rules.add","params":{"dir":"/nowhere/at/all","rule":"Bash(ls)","scope":"project","verdict":"allow"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That project is not known to Reins.","status":404},"message":"That project is not known to Reins."},"id":30,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":31,"jsonrpc":"2.0","method":"rules.setCapability","params":{"capability":"run","dir":"/nowhere/at/all","scope":"local","verdict":"deny"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That project is not known to Reins.","status":404},"message":"That project is not known to Reins."},"id":31,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":32,"jsonrpc":"2.0","method":"rules.preview","params":{"capability":"run","dir":"/nowhere/at/all","scope":"project","verdict":"deny"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That project is not known to Reins.","status":404},"message":"That project is not known to Reins."},"id":32,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":6,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":null,"scope":5}}}
+{"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: scope has the wrong type."},"id":6,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":7,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":null,"scope":"global","verdict":"allow"}}}
+{"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: \"verdict\" is not a known member."},"id":7,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":8,"jsonrpc":"2.0","method":"rules.check","params":{"rule":"Bash(git status)"}}}
+{"dir":"recv","json":{"id":8,"jsonrpc":"2.0","result":{"message":null,"valid":true}}}
+{"dir":"send","json":{"id":9,"jsonrpc":"2.0","method":"rules.check","params":{"rule":"not a rule"}}}
+{"dir":"recv","json":{"id":9,"jsonrpc":"2.0","result":{"message":"That is not a valid rule. Use Tool or Tool(pattern) on one line.","valid":false}}}

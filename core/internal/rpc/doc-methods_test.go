@@ -1,10 +1,18 @@
-package rpc
+package rpc_test
 
 import (
 	"os"
+	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
+
+	"spacevibe.dev/core/internal/config"
+	"spacevibe.dev/core/internal/proc"
+	"spacevibe.dev/core/internal/roots"
+	"spacevibe.dev/core/internal/rpc"
+	"spacevibe.dev/core/internal/rpc/methods"
 )
 
 const protocolDoc = "../../../docs/internals/core-protocol.md"
@@ -35,36 +43,45 @@ func docMethods(t *testing.T) []string {
 
 func TestDocMethodTable(t *testing.T) {
 	doc := docMethods(t)
-	if len(doc) != len(AllMethods) {
-		t.Fatalf("doc table has %d methods, AllMethods has %d", len(doc), len(AllMethods))
-	}
-	for i := range doc {
-		if doc[i] != AllMethods[i] {
-			t.Fatalf("doc row %d is %q, AllMethods has %q", i, doc[i], AllMethods[i])
-		}
+	if !slices.Equal(doc, rpc.AllMethods) {
+		t.Fatalf("doc table is %v, AllMethods is %v", doc, rpc.AllMethods)
 	}
 	seen := map[string]bool{}
-	for _, n := range AllMethods {
+	for _, n := range rpc.AllMethods {
 		if seen[n] {
 			t.Fatalf("AllMethods lists %q twice", n)
 		}
 		seen[n] = true
 	}
 
-	// Registered methods are a subset until the wiring tasks land; each of them then asserts
-	// that the registered set equals AllMethods.
-	reg := NewRegistry()
-	NewServer(reg, Options{})
-	known := map[string]bool{}
-	for _, n := range AllMethods {
-		known[n] = true
-	}
-	for _, n := range reg.Methods() {
-		if !known[n] {
-			t.Errorf("registered method %q is not in AllMethods", n)
-		}
-	}
-	if got := reg.Methods(); len(got) != 1 || got[0] != MethodInitialize {
+	// A bare server registers only initialize; the domain methods are added by methods.Register.
+	bare := rpc.NewRegistry()
+	rpc.NewServer(bare, rpc.Options{})
+	if got := bare.Methods(); !slices.Equal(got, []string{rpc.MethodInitialize}) {
 		t.Errorf("a fresh server registers only initialize, got %v", got)
+	}
+
+	// The wired registry must equal AllMethods and the doc table: nothing missing, nothing extra.
+	dir := t.TempDir()
+	cfg := config.Config{Test: true, UserHome: dir, ClaudeConfigDir: filepath.Join(dir, ".claude"),
+		CodexHome: filepath.Join(dir, ".codex"), Home: filepath.Join(dir, ".spacevibe")}
+	r, err := roots.Resolve(cfg, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	wired := rpc.NewRegistry()
+	rpc.NewServer(wired, rpc.Options{})
+	svc := methods.New(cfg, r, proc.NewFixture(nil, nil, nil, 0), nil)
+	defer svc.Close()
+	svc.Register(wired)
+	want := slices.Sorted(slices.Values(rpc.AllMethods))
+	if got := wired.Methods(); !slices.Equal(got, want) {
+		t.Errorf("registered %v, want exactly AllMethods %v", got, want)
+	}
+	for _, n := range wired.Methods() {
+		lower := strings.ToLower(n)
+		if strings.HasPrefix(lower, "statusline") || strings.Contains(lower, "capture") || strings.Contains(lower, "addhook") {
+			t.Errorf("%q must not be an RPC method", n)
+		}
 	}
 }

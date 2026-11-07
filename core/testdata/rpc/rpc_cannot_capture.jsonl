@@ -1,0 +1,12 @@
+{"dir":"send","json":{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"client":{"name":"contract","version":"0"}}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"core":{"name":"spacevibe","version":"dev"},"identity":{"envPrefix":"SPACEVIBE_","dataDir":".spacevibe"},"methods":["activity.read","activity.stop","activity.subscribe","activity.unsubscribe","initialize","inventory.read","journal.history","journal.undo","limits.read","loadout.copyToOther","loadout.removeDeadHooks","loadout.removeItem","loadout.rows","rules.add","rules.changeVerdict","rules.check","rules.preview","rules.remove","rules.setCapability","rules.snapshot","usage.scan"]}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":9,"method":"statusline.capture","params":{}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":9,"error":{"code":-32601,"message":"Method not found."}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":9,"method":"statusline.install","params":{}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":9,"error":{"code":-32601,"message":"Method not found."}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":9,"method":"loadout.addHook","params":{}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":9,"error":{"code":-32601,"message":"Method not found."}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":9,"method":"loadout.addSkill","params":{}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":9,"error":{"code":-32601,"message":"Method not found."}}}
+{"dir":"send","json":{"jsonrpc":"2.0","id":9,"method":"loadout.addAgent","params":{}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","id":9,"error":{"code":-32601,"message":"Method not found."}}}

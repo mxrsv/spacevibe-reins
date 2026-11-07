@@ -72,15 +72,22 @@ type core struct {
 	lines  chan string
 	stderr lockedBuffer
 	home   string
-	rec    []string
+	rec    []recorded
 	done   chan error
-	start  time.Time
+	// norm, when set, rewrites every recorded line before it is compared with the transcript (see normalize.go).
+	norm  *normalizer
+	start time.Time
 }
 
-// startCore runs bin with a synthetic home. env entries (KEY=value) override the defaults.
+// startCore runs bin with a synthetic, empty home. env entries (KEY=value) override the defaults.
 func startCore(t *testing.T, bin string, env ...string) *core {
 	t.Helper()
-	home := t.TempDir()
+	return startCoreIn(t, bin, t.TempDir(), env...)
+}
+
+// startCoreIn runs bin with its roots under home. env entries (KEY=value) override the defaults.
+func startCoreIn(t *testing.T, bin, home string, env ...string) *core {
+	t.Helper()
 	vars := map[string]string{
 		"PATH": os.Getenv("PATH"), "HOME": home,
 		"CLAUDE_CONFIG_DIR": filepath.Join(home, ".claude"), "CODEX_HOME": filepath.Join(home, ".codex"),
@@ -131,18 +138,32 @@ type transcriptLine struct {
 	Text string          `json:"text,omitempty"`
 }
 
-func (c *core) record(dir, line string) {
-	tl := transcriptLine{Dir: dir}
-	switch {
-	case len(line) <= 2048 && json.Valid([]byte(line)):
-		tl.JSON = json.RawMessage(line)
-	case len(line) <= 2048:
-		tl.Text = line
-	default:
-		tl.Text = fmt.Sprintf("(%d bytes)", len(line))
+// recorded is one line of the conversation as it went over the wire.
+type recorded struct{ dir, line string }
+
+func (c *core) record(dir, line string) { c.rec = append(c.rec, recorded{dir, line}) }
+
+// transcript renders the conversation as the JSON lines of core/testdata/rpc.
+func (c *core) transcript() string {
+	out := make([]string, 0, len(c.rec))
+	for _, r := range c.rec {
+		line := r.line
+		if c.norm != nil {
+			line = c.norm.line(line)
+		}
+		tl := transcriptLine{Dir: r.dir}
+		switch {
+		case len(line) <= 2048 && json.Valid([]byte(line)):
+			tl.JSON = json.RawMessage(line)
+		case len(line) <= 2048:
+			tl.Text = line
+		default:
+			tl.Text = fmt.Sprintf("(%d bytes)", len(line))
+		}
+		b, _ := json.Marshal(tl)
+		out = append(out, string(b))
 	}
-	b, _ := json.Marshal(tl)
-	c.rec = append(c.rec, string(b))
+	return strings.Join(out, "\n") + "\n"
 }
 
 // send writes one line (a newline is added).
@@ -259,18 +280,24 @@ func (c *core) waitExit(closeStdin bool) int {
 // finish ends the session cleanly (exit 0, no stray stdout) and checks the transcript.
 func (c *core) finish(name string) {
 	c.t.Helper()
+	c.end()
+	c.checkTranscript(name)
+}
+
+// end is finish without the transcript, for a case whose interleaving of notifications is not fixed.
+func (c *core) end() {
+	c.t.Helper()
 	if code := c.waitExit(true); code != 0 {
 		c.t.Fatalf("exit code %d, stderr: %s", code, c.stderr.String())
 	}
 	for l := range c.lines {
 		c.t.Fatalf("unexpected output after the session: %.200q", l)
 	}
-	c.checkTranscript(name)
 }
 
 func (c *core) checkTranscript(name string) {
 	c.t.Helper()
-	got := strings.Join(c.rec, "\n") + "\n"
+	got := c.transcript()
 	path := filepath.Join(transcripts, name+".jsonl")
 	if *update {
 		if err := os.MkdirAll(transcripts, 0o755); err != nil {

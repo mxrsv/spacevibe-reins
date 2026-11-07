@@ -1,0 +1,26 @@
+{"dir":"send","json":{"id":0,"jsonrpc":"2.0","method":"initialize","params":{"client":{"name":"contract","version":"0"},"protocolVersion":1}}}
+{"dir":"recv","json":{"id":0,"jsonrpc":"2.0","result":{"core":{"name":"spacevibe","version":"dev"},"identity":{"dataDir":".spacevibe","envPrefix":"SPACEVIBE_"},"methods":["activity.read","activity.stop","activity.subscribe","activity.unsubscribe","initialize","inventory.read","journal.history","journal.undo","limits.read","loadout.copyToOther","loadout.removeDeadHooks","loadout.removeItem","loadout.rows","rules.add","rules.changeVerdict","rules.check","rules.preview","rules.remove","rules.setCapability","rules.snapshot","usage.scan"],"protocolVersion":1}}}
+{"dir":"send","json":{"id":1,"jsonrpc":"2.0","method":"inventory.read","params":{}}}
+{"dir":"recv","text":"(12772 bytes)"}
+{"dir":"send","json":{"id":2,"jsonrpc":"2.0","method":"loadout.removeItem","params":{"id":"claude:skill:neon:neon-postgres"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"This one belongs to a plugin. Remove the plugin instead.","status":403},"message":"This one belongs to a plugin. Remove the plugin instead."},"id":2,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":3,"jsonrpc":"2.0","method":"loadout.removeItem","params":{"id":"claude:agent:local:no-such.md"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"This item no longer exists. Refresh the list.","status":404},"message":"This item no longer exists. Refresh the list."},"id":3,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":4,"jsonrpc":"2.0","method":"loadout.removeItem","params":{"id":"x","path":"/etc/passwd"}}}
+{"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: \"path\" is not a known member."},"id":4,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":5,"jsonrpc":"2.0","method":"loadout.removeItem","params":{"id":7}}}
+{"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: id has the wrong type."},"id":5,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":6,"jsonrpc":"2.0","method":"journal.history","params":{}}}
+{"dir":"recv","json":{"id":6,"jsonrpc":"2.0","result":{"entries":[]}}}
+{"dir":"send","json":{"id":7,"jsonrpc":"2.0","method":"loadout.removeItem","params":{"id":"claude:agent:local:architect.md"}}}
+{"dir":"recv","json":{"id":7,"jsonrpc":"2.0","result":{"entry":{"at":"$TIME","count":1,"id":"$ENTRY_ID","label":"Removed agent architect from Claude Code","undone":false}}}}
+{"dir":"send","json":{"id":8,"jsonrpc":"2.0","method":"journal.history","params":{}}}
+{"dir":"recv","json":{"id":8,"jsonrpc":"2.0","result":{"entries":[{"at":"$TIME","count":1,"id":"$ENTRY_ID","label":"Removed agent architect from Claude Code","undone":false}]}}}
+{"dir":"send","json":{"id":9,"jsonrpc":"2.0","method":"journal.undo","params":{"id":"$ENTRY_ID"}}}
+{"dir":"recv","json":{"id":9,"jsonrpc":"2.0","result":{"label":"Removed agent architect from Claude Code"}}}
+{"dir":"send","json":{"id":10,"jsonrpc":"2.0","method":"journal.undo","params":{"id":"$ENTRY_ID"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"This was already undone.","status":409},"message":"This was already undone."},"id":10,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":11,"jsonrpc":"2.0","method":"journal.undo","params":{"id":"no-such-entry"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That history entry is gone.","status":404},"message":"That history entry is gone."},"id":11,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":12,"jsonrpc":"2.0","method":"journal.history","params":{}}}
+{"dir":"recv","json":{"id":12,"jsonrpc":"2.0","result":{"entries":[{"at":"$TIME","count":1,"id":"$ENTRY_ID","label":"Removed agent architect from Claude Code","undone":true}]}}}

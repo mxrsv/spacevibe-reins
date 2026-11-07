@@ -14,7 +14,7 @@ func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
 
 func run(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintf(stderr, "usage: %s --version | rpc\n", identity.Name)
+		fmt.Fprintf(stderr, "usage: %s --version | rpc | inventory|usage|activity|limits|rules --json\n", identity.Name)
 		return 2
 	}
 	if len(args) == 1 && args[0] == "--version" {
@@ -23,6 +23,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 	if args[0] == "rpc" {
 		return runRPC(args[1:], stderr)
+	}
+	if isOneShot(args[0]) {
+		return runOneShot(args[0], args[1:], stdout, stderr)
 	}
 	if args[0] == "statusline" { // the collector Claude runs; os.Stdin/Stdout/Stderr go to the original command as they are
 		return statusline.Run(args[1:], os.Stdin, os.Stdout, os.Stderr)

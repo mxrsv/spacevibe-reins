@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"time"
 
+	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/rpc"
 )
 
@@ -50,5 +51,19 @@ func registerDebugMethods(reg *rpc.Registry) {
 	// debug.panic panics with a value the response and the log must not repeat.
 	reg.Register("debug.panic", func(context.Context, rpc.Call) (any, error) {
 		panic("SECRET-PANIC-VALUE")
+	})
+	// debug.write makes one atomic write at a path, so the contract test can aim a write at the real home
+	// and see the write guard refuse it (S-R1). It sends the primitive's error as it is.
+	reg.Register("debug.write", func(_ context.Context, call rpc.Call) (any, error) {
+		var p struct {
+			Path string `json:"path"`
+		}
+		if err := rpc.DecodeParams(call.Params, &p); err != nil {
+			return nil, err
+		}
+		if err := fsx.AtomicWrite(p.Path, []byte("probe"), 0o600, fsx.AtomicWriteOptions{}); err != nil {
+			return nil, err
+		}
+		return map[string]bool{"written": true}, nil
 	})
 }

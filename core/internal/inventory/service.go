@@ -84,3 +84,27 @@ func (s *Service) Projects(ctx context.Context) ([]string, error) {
 	}
 	return append([]string(nil), known...), nil
 }
+
+// Known is the project list as it stands, without running discovery: what the last Read or RefreshProjects found.
+// It lets the entry point hand the list of an inventory read to the rules service (rules.SetProjects).
+func (s *Service) Known() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.projects...)
+}
+
+// RefreshProjects runs project discovery again and stores the list. It is the refresh rules.snapshot asks for with
+// refreshProjects, without the rest of Read.
+func (s *Service) RefreshProjects(ctx context.Context) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	found := discoverProjects(ctx, s.roots)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	s.mu.Lock()
+	s.projects = found
+	s.mu.Unlock()
+	return append([]string(nil), found...), nil
+}

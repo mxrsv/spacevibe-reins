@@ -1,0 +1,20 @@
+{"dir":"send","json":{"id":0,"jsonrpc":"2.0","method":"initialize","params":{"client":{"name":"contract","version":"0"},"protocolVersion":1}}}
+{"dir":"recv","json":{"id":0,"jsonrpc":"2.0","result":{"core":{"name":"spacevibe","version":"dev"},"identity":{"dataDir":".spacevibe","envPrefix":"SPACEVIBE_"},"methods":["activity.read","activity.stop","activity.subscribe","activity.unsubscribe","initialize","inventory.read","journal.history","journal.undo","limits.read","loadout.copyToOther","loadout.removeDeadHooks","loadout.removeItem","loadout.rows","rules.add","rules.changeVerdict","rules.check","rules.preview","rules.remove","rules.setCapability","rules.snapshot","usage.scan"],"protocolVersion":1}}}
+{"dir":"send","json":{"id":1,"jsonrpc":"2.0","method":"activity.stop","params":{"cli":"claude","id":"no-such-session"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That session is no longer running.","status":404},"message":"That session is no longer running."},"id":1,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":2,"jsonrpc":"2.0","method":"activity.stop","params":{"cli":"codex","id":"no-such-thread"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That session is no longer running.","status":404},"message":"That session is no longer running."},"id":2,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":3,"jsonrpc":"2.0","method":"activity.stop","params":{"cli":"codex","id":"pid:424242:1793620800000"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That session is no longer running.","status":404},"message":"That session is no longer running."},"id":3,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":4,"jsonrpc":"2.0","method":"activity.stop","params":{"cli":"codex","id":"pid:424242:unknown"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That session is no longer running.","status":404},"message":"That session is no longer running."},"id":4,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":5,"jsonrpc":"2.0","method":"activity.stop","params":{"cli":"gemini","id":"x"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"cli must be claude or codex.","status":400},"message":"cli must be claude or codex."},"id":5,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":6,"jsonrpc":"2.0","method":"activity.stop","params":{"cli":"claude","id":""}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"A session id is required.","status":400},"message":"A session id is required."},"id":6,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":20,"jsonrpc":"2.0","method":"activity.stop","params":{"cli":"claude","id":"x","pid":1}}}
+{"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: \"pid\" is not a known member."},"id":20,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":21,"jsonrpc":"2.0","method":"activity.stop","params":{"cli":"claude","pid":1}}}
+{"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: \"pid\" is not a known member."},"id":21,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":22,"jsonrpc":"2.0","method":"activity.stop","params":{"cli":5,"id":"x"}}}
+{"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: cli has the wrong type."},"id":22,"jsonrpc":"2.0"}}

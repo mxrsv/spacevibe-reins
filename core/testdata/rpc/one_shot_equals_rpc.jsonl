@@ -1,0 +1,22 @@
+{"dir":"send","json":{"id":0,"jsonrpc":"2.0","method":"initialize","params":{"client":{"name":"contract","version":"0"},"protocolVersion":1}}}
+{"dir":"recv","json":{"id":0,"jsonrpc":"2.0","result":{"core":{"name":"spacevibe","version":"dev"},"identity":{"dataDir":".spacevibe","envPrefix":"SPACEVIBE_"},"methods":["activity.read","activity.stop","activity.subscribe","activity.unsubscribe","initialize","inventory.read","journal.history","journal.undo","limits.read","loadout.copyToOther","loadout.removeDeadHooks","loadout.removeItem","loadout.rows","rules.add","rules.changeVerdict","rules.check","rules.preview","rules.remove","rules.setCapability","rules.snapshot","usage.scan"],"protocolVersion":1}}}
+{"dir":"send","json":{"id":1,"jsonrpc":"2.0","method":"inventory.read","params":{}}}
+{"dir":"recv","text":"(12772 bytes)"}
+{"dir":"send","json":{"id":2,"jsonrpc":"2.0","method":"usage.scan","params":{}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","method":"usage/progress","params":{"done":20,"id":2,"total":180}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","method":"usage/progress","params":{"done":40,"id":2,"total":180}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","method":"usage/progress","params":{"done":60,"id":2,"total":180}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","method":"usage/progress","params":{"done":80,"id":2,"total":180}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","method":"usage/progress","params":{"done":100,"id":2,"total":180}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","method":"usage/progress","params":{"done":120,"id":2,"total":180}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","method":"usage/progress","params":{"done":140,"id":2,"total":180}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","method":"usage/progress","params":{"done":160,"id":2,"total":180}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","method":"usage/progress","params":{"done":180,"id":2,"total":180}}}
+{"dir":"recv","json":{"jsonrpc":"2.0","method":"usage/progress","params":{"done":180,"id":2,"total":180}}}
+{"dir":"recv","text":"(4417 bytes)"}
+{"dir":"send","json":{"id":3,"jsonrpc":"2.0","method":"limits.read","params":{}}}
+{"dir":"recv","json":{"id":3,"jsonrpc":"2.0","result":{"limits":[{"at":null,"cli":"claude","plan":null,"source":null,"state":"notRecorded","windows":[]},{"at":null,"cli":"codex","plan":null,"source":null,"state":"notRecorded","windows":[]},{"at":null,"cli":"gemini","plan":null,"source":null,"state":"notInstalled","windows":[]}]}}}
+{"dir":"send","json":{"id":4,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":null,"scope":"global"}}}
+{"dir":"recv","text":"(5646 bytes)"}
+{"dir":"send","json":{"id":9,"jsonrpc":"2.0","method":"activity.read","params":{}}}
+{"dir":"recv","text":"(3378 bytes)"}

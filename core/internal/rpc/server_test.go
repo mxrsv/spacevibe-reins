@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -119,4 +120,37 @@ func TestDecodeParams(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Call.Session is alive while input flows and cancelled when it ends, before the drain: a poll started from a
+// handler stops at end of input.
+func TestCallSessionEndsWithInput(t *testing.T) {
+	reg := NewRegistry()
+	got := make(chan context.Context, 1)
+	reg.Register("t.hold", func(_ context.Context, call Call) (any, error) {
+		got <- call.Session
+		return struct{}{}, nil
+	})
+	srv := NewServer(reg, Options{})
+	in, feed := io.Pipe()
+	var out bytes.Buffer
+	done := make(chan struct{})
+	go func() { _ = srv.Serve(context.Background(), in, &out); close(done) }()
+	io.WriteString(feed, initLine+`{"jsonrpc":"2.0","id":1,"method":"t.hold"}`+"\n")
+	var session context.Context
+	select {
+	case session = <-got:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the handler did not run")
+	}
+	if session == nil || session.Err() != nil {
+		t.Fatalf("session %v while input is open", session)
+	}
+	feed.Close()
+	select {
+	case <-session.Done():
+	case <-time.After(5 * time.Second):
+		t.Fatal("the session context was not cancelled at end of input")
+	}
+	<-done
 }

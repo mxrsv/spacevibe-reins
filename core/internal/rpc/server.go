@@ -164,7 +164,7 @@ func (s *Server) handleLine(ctx context.Context, line []byte) {
 		s.reply(req.ID, nil, newError(CodeMethodNotFound, "Method not found."))
 		return
 	}
-	call := Call{ID: req.ID, Params: req.Params, notify: s.notify}
+	call := Call{ID: req.ID, Params: req.Params, Session: ctx, notify: s.notify}
 	if method == MethodInitialize { // inline: the next line must see the session state
 		res, err := s.invoke(ctx, method, h, call)
 		s.reply(req.ID, res, err)

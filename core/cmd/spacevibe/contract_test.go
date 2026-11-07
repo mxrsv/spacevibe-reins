@@ -232,6 +232,11 @@ func TestContract(t *testing.T) {
 			t.Fatalf("got %+v", r.Error)
 		}
 		c.wantError(c.call("2", "no.such.method", ""), -32601)
+		for i, m := range []string{"inventory.read", "usage.scan", "rules.add", "journal.undo", "activity.subscribe"} { // every domain method
+			if got := c.status(c.call(strconv.Itoa(3+i), m, `{}`)); got != 500 {
+				t.Errorf("%s: status %d", m, got)
+			}
+		}
 		c.finish("startup_problem")
 	})
 
@@ -241,8 +246,8 @@ func TestContract(t *testing.T) {
 		if err := json.Unmarshal(c.initialize().Result, &res); err != nil {
 			t.Fatal(err)
 		}
-		if !slices.Equal(res.Methods, []string{"initialize"}) {
-			t.Fatalf("methods: %v", res.Methods)
+		if want := slices.Sorted(slices.Values(rpc.AllMethods)); !slices.Equal(res.Methods, want) {
+			t.Fatalf("methods: %v, want exactly AllMethods %v", res.Methods, want)
 		}
 		c.wantError(c.call("1", "debug.print", ""), -32601)
 		c.finish("shipped_binary")
@@ -297,6 +302,11 @@ func TestContract(t *testing.T) {
 		}
 		c.finish("no_listener")
 	})
+
+	readCases(t)
+	writeCases(t)
+	leakCases(t)
+	oneShotCases(t)
 
 	t.Run("no_net_deps", func(t *testing.T) {
 		for _, tags := range []string{"", "contracttest"} {

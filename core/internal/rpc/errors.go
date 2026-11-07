@@ -58,3 +58,7 @@ func toError(err error) *Error {
 	}
 	return newError(CodeInternal, "Internal error.")
 }
+
+// SafeMessage is the sentence a caller outside the protocol (the one-shot commands) may show for err: the same
+// message the shell would get in the error object.
+func SafeMessage(err error) string { return toError(err).Message }

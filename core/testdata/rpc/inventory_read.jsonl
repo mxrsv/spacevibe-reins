@@ -1,0 +1,8 @@
+{"dir":"send","json":{"id":0,"jsonrpc":"2.0","method":"initialize","params":{"client":{"name":"contract","version":"0"},"protocolVersion":1}}}
+{"dir":"recv","json":{"id":0,"jsonrpc":"2.0","result":{"core":{"name":"spacevibe","version":"dev"},"identity":{"dataDir":".spacevibe","envPrefix":"SPACEVIBE_"},"methods":["activity.read","activity.stop","activity.subscribe","activity.unsubscribe","initialize","inventory.read","journal.history","journal.undo","limits.read","loadout.copyToOther","loadout.removeDeadHooks","loadout.removeItem","loadout.rows","rules.add","rules.changeVerdict","rules.check","rules.preview","rules.remove","rules.setCapability","rules.snapshot","usage.scan"],"protocolVersion":1}}}
+{"dir":"send","json":{"id":1,"jsonrpc":"2.0","method":"inventory.read","params":{}}}
+{"dir":"recv","text":"(12772 bytes)"}
+{"dir":"send","json":{"id":2,"jsonrpc":"2.0","method":"inventory.read","params":{"refresh":true}}}
+{"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: \"refresh\" is not a known member."},"id":2,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":3,"jsonrpc":"2.0","method":"inventory.read","params":[]}}
+{"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: params must be an object."},"id":3,"jsonrpc":"2.0"}}

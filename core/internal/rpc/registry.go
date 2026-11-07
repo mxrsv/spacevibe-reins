@@ -19,6 +19,10 @@ type Call struct {
 	ID json.RawMessage
 	// Params is the raw params member: empty, null or a JSON value. Decode it with DecodeParams.
 	Params json.RawMessage
+	// Session is cancelled when the connection's input ends (and when Serve returns), before the drain wait. A
+	// handler that starts work that outlives its request, such as the Activity poll, derives its context from it so
+	// end of input stops that work. It is nil outside a server.
+	Session context.Context
 
 	notify func(method string, params any)
 }

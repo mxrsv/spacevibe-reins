@@ -1,0 +1,6 @@
+{"dir":"send","json":{"id":0,"jsonrpc":"2.0","method":"initialize","params":{"client":{"name":"contract","version":"0"},"protocolVersion":1}}}
+{"dir":"recv","json":{"id":0,"jsonrpc":"2.0","result":{"core":{"name":"spacevibe","version":"dev"},"identity":{"dataDir":".spacevibe","envPrefix":"SPACEVIBE_"},"methods":["activity.read","activity.stop","activity.subscribe","activity.unsubscribe","debug.panic","debug.print","debug.slow","debug.write","initialize","inventory.read","journal.history","journal.undo","limits.read","loadout.copyToOther","loadout.removeDeadHooks","loadout.removeItem","loadout.rows","rules.add","rules.changeVerdict","rules.check","rules.preview","rules.remove","rules.setCapability","rules.snapshot","usage.scan"],"protocolVersion":1}}}
+{"dir":"send","json":{"id":1,"jsonrpc":"2.0","method":"debug.write","params":{"path":"$REAL_HOME/.spacevibe-never-written/probe"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"SPACEVIBE_TEST=1: refusing to write under the real home.","status":500},"message":"SPACEVIBE_TEST=1: refusing to write under the real home."},"id":1,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":2,"jsonrpc":"2.0","method":"debug.write","params":{"path":"$HOME/own-file"}}}
+{"dir":"recv","json":{"id":2,"jsonrpc":"2.0","result":{"written":true}}}
