@@ -256,7 +256,8 @@ struct LimitsCanvas: View {
 
     // MARK: Mapping to blocks
 
-    /// Every card and band starts open, as the mock draws the page (lead's call pending on V5-R55, see the plan's U7 notes).
+    /// Every card and band starts open, as the frozen mock draws Limits (the lead's decision of 2026-11-08; V5-R55's rule is
+    /// for the list pages). `OpenStateStore` keeps the user's choice.
     private func open(_ id: String) -> Binding<Bool> {
         store.binding(page: Self.page, id: id, byDefault: true)
     }
