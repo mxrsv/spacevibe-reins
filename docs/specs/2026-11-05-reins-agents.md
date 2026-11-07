@@ -10,15 +10,15 @@ Mocks, tracked in [`mocks/agents/`](../../mocks/agents/index.html) with syntheti
 
 ## Intent
 
-- **Outcome:** one page with a card per agent. Each card has buttons that open that agent's configuration in a panel on the right, where every setting of Claude Code and Codex can be changed. The owner asked for "toàn diện, không hạn chế".
+- **Outcome:** one page with a card per CLI. Each card has buttons that open that CLI's configuration in a panel on the right, where every setting of Claude Code and Codex can be changed. The owner asked for "toàn diện, không hạn chế".
 - **User:** the owner, the only user today, who judges the interface by eye.
-- **Why:** each agent's configuration is spread over Rules and Loadout. The owner wants one place per agent, in that CLI's own terms.
+- **Why:** each CLI's configuration is spread over Rules and Loadout. The owner wants one place per CLI, in that CLI's own terms.
 - **Success:**
   - From the page, a permission is changed in at most two clicks plus the edit, saved after one confirmation, and undone from the toast.
   - The window is blocked only while that confirmation is open.
   - The build matches the mock by the owner's eye.
 - **Constraint:**
-  - Claude Code and Codex only for now; the layout leaves room for a third agent.
+  - Claude Code and Codex only for now; the layout leaves room for a third CLI.
   - Every write keeps a restorable copy.
   - Secrets are never shown.
   - Screens compose components and tokens only.
@@ -27,7 +27,7 @@ Mocks, tracked in [`mocks/agents/`](../../mocks/agents/index.html) with syntheti
 ## Interface
 
 - **Placement.** Agents replaces Rules in the sidebar: Loadout, Agents, Activity, then the Limits entry, with Agents on `⌘2`. Its sidebar icon is Solar's `bot`.
-- **Page.** One card per agent, stacked, with no tools row.
+- **Page.** One card per CLI, stacked, with no tools row.
   - The card opens with the 40 pt CLI mark, the name in `title`, and one sentence at Global:
     - Claude Code: its default mode, then the ask and deny rule counts.
     - Codex: the sentence on how it runs, in the warn tone when it has no sandbox or never asks.
@@ -46,10 +46,10 @@ Mocks, tracked in [`mocks/agents/`](../../mocks/agents/index.html) with syntheti
   - Only one panel is open at a time.
   - Clicking the open panel's button again closes it; clicking another button swaps the panel, behind the draft guard.
   - **Width:** drag the left edge between 420 and 720 pt. The width is remembered separately for Advanced and for the other panels, and Advanced opens at 720.
-  - The agent cards never get narrower than 440 pt; the window's minimum width grows instead.
-  - **Header:** the small CLI mark, the panel's name, the agent's name and Close (`Esc`).
+  - The CLI cards never get narrower than 440 pt; the window's minimum width grows instead.
+  - **Header:** the small CLI mark, the panel's name, the CLI's name and Close (`Esc`).
   - **Tools row:** the panel's scope picker, the file path and Show in Finder. In Rules it is Edit | Preview and Open in editor instead.
-- **Scope.** Each panel has its own picker. It starts at Global and remembers the agent's last choice until the app quits. Projects come from the inventory's project list.
+- **Scope.** Each panel has its own picker. It starts at Global and remembers the CLI's last choice until the app quits. Projects come from the inventory's project list.
 
   | Panel | Claude Code | Codex |
   | --- | --- | --- |
@@ -164,8 +164,8 @@ Mocks, tracked in [`mocks/agents/`](../../mocks/agents/index.html) with syntheti
 From the 2026-11-04 interview unless dated otherwise.
 
 - **Panel, not modal.** A modal cramps long content, stacks a second dialog on top and locks the window.
-- **Push, not overlay** (2026-11-05). An overlay would cover the cards' buttons and the other agent.
-- **Hooks are per agent; skills and subagents are shared.**
+- **Push, not overlay** (2026-11-05). An overlay would cover the cards' buttons and the other CLI.
+- **Hooks are per CLI; skills and subagents are shared.**
 - **Codex becomes writable.** This reverses the parent spec's "writing Codex settings is out of scope".
 - **Configuration is comprehensive.** Common groups get forms; everything else goes through Advanced.
 - **The write boundary in `PRODUCT.md` widens** to every configuration and instruction file of both CLIs.
@@ -174,7 +174,7 @@ From the 2026-11-04 interview unless dated otherwise.
 
 ## Out of scope
 
-- A third agent: Gemini CLI, Cursor, OpenCode and others.
+- A third CLI: Gemini CLI, Cursor, OpenCode and others.
 - A modal or overlay panel, or two panels at once.
 - A bundled settings schema.
 - Editing `~/.claude.json` outside MCP.

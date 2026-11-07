@@ -56,6 +56,14 @@ The CLI keeps no log for this kind of item (Codex hooks). A property of the kind
 Not installed in that CLI. About installation, not usage.
 _Avoid_: absent, not found
 
+**Runs**:
+How many times a hook fired. Used for hooks only.
+_Avoid_: uses, executions
+
+**Sessions**:
+How many CLI sessions used a skill or subagent. One session counts once however often it was used.
+_Avoid_: runs (for skills and subagents)
+
 **Window**:
 One usage-limit period of a subscription (for example 5-hour or weekly), shown as percentage left.
 _Avoid_: quota, session (a session is a CLI run)
