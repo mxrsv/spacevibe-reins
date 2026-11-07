@@ -97,3 +97,47 @@ func TestModificationTime(t *testing.T) {
 		t.Errorf("got %v, want %v", got, want)
 	}
 }
+
+// G-fix.20: the folder must be ours and closed to others.
+func TestManagedDirectoryRefusesWorldOrGroupWritable(t *testing.T) {
+	skipOnWindows(t)
+	cfg, r := testRoots(t)
+	folder := filepath.Join(r.Data, "bin")
+	if err := os.MkdirAll(folder, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for _, mode := range []os.FileMode{0o770, 0o707, 0o777} {
+		if err := os.Chmod(folder, mode); err != nil {
+			t.Fatal(err)
+		}
+		_, err := ManagedDirectory(cfg, r, "bin")
+		e := wantStatus(t, err, coreerr.StatusConflict)
+		if e.Message != "The collector directory is not owned by you or can be written by others." {
+			t.Error(e.Message)
+		}
+	}
+	for _, mode := range []os.FileMode{0o700, 0o755, 0o750} {
+		if err := os.Chmod(folder, mode); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := ManagedDirectory(cfg, r, "bin"); err != nil {
+			t.Errorf("mode %v refused: %v", mode, err)
+		}
+	}
+}
+
+// A folder owned by somebody else is refused. Needs a folder we do not own: /var or /tmp roots are
+// root-owned on unix, but the check works from a Lstat, so exercise ownedAndPrivate directly.
+func TestOwnedAndPrivateRefusesForeignOwner(t *testing.T) {
+	skipOnWindows(t)
+	info, err := os.Lstat("/")
+	if err != nil {
+		t.Skip(err)
+	}
+	if os.Getuid() == 0 {
+		t.Skip("root owns /")
+	}
+	if ownedAndPrivate(info) {
+		t.Error("a root-owned folder counted as ours")
+	}
+}

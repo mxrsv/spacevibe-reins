@@ -1,10 +1,13 @@
 package toml
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 )
 
 // The vectors below are extra to the Swift suite. Each expected value was also produced by the
@@ -207,4 +210,37 @@ func TestCodexQuirksFixture(t *testing.T) {
 	wantValue(t, doc, []string{"permissions", "noisy", "network"}, "bad key", boolean(true))
 	wantEqual(t, "skippedLines", doc.SkippedLines, 0)
 	wantEqual(t, "hooks entries", len(doc.EntriesIn([]string{"hooks"})), 2)
+}
+
+// G-fix.21: TablePaths is linear. 50k distinct headers (the old scan took minutes) must finish
+// well under 2 s, and duplicates and look-alike paths still collapse correctly.
+func TestTablePathsLinearOn50kHeaders(t *testing.T) {
+	const n = 50_000
+	var b strings.Builder
+	for i := 0; i < n; i++ {
+		fmt.Fprintf(&b, "[projects.\"/work/p%d\"]\n", i)
+	}
+	b.WriteString("[projects.\"/work/p0\"]\n[other]\n")
+	doc := Read(b.String())
+	start := time.Now()
+	got := doc.TablePaths([]string{"projects"})
+	elapsed := time.Since(start)
+	if len(got) != n {
+		t.Fatalf("got %d paths, want %d", len(got), n)
+	}
+	if got[0][1] != "/work/p0" || got[n-1][1] != fmt.Sprintf("/work/p%d", n-1) {
+		t.Errorf("order: %v ... %v", got[0], got[n-1])
+	}
+	if elapsed > 2*time.Second {
+		t.Fatalf("TablePaths took %v for %d headers", elapsed, n)
+	}
+	if all := doc.TablePaths(nil); len(all) != n+1 {
+		t.Errorf("TablePaths(nil) = %d, want %d", len(all), n+1)
+	}
+}
+
+func TestTablePathsKeepsLookAlikesApart(t *testing.T) {
+	doc := Read("[\"a b\".c]\n[a.\"b c\"]\n[\"a\".\"b c\"]\n[\"a b\".c]\n")
+	got := doc.TablePaths(nil)
+	wantEqual(t, "paths", got, [][]string{{"a b", "c"}, {"a", "b c"}})
 }

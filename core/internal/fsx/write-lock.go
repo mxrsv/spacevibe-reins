@@ -40,6 +40,10 @@ func WithWriteLock(dataDir string, fn func() error) error {
 
 // WithWriteLockValue is WithWriteLock for a body that returns a value (for example a journal entry).
 func WithWriteLockValue[T any](dataDir string, fn func() (T, error)) (T, error) {
+	if err := checkWrite(dataDir); err != nil {
+		var zero T
+		return zero, err
+	}
 	processLock.Lock()
 	defer processLock.Unlock()
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {

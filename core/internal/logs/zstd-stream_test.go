@@ -6,9 +6,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/klauspost/compress/zstd"
 )
 
 // Swift: ZstdStreamTests.swift "reads a file written by zlib.zstdCompressSync byte for byte"
@@ -337,5 +340,67 @@ func drainZstd(t *testing.T, path string) (int, error) {
 func TestZstdDirectoryIsCannotOpen(t *testing.T) {
 	if _, err := OpenZstdStream(filepath.Dir(fixturePath("zst/small.jsonl.zst")), 0); !errors.Is(err, ErrCannotOpen) {
 		t.Fatalf("err = %v, want ErrCannotOpen", err)
+	}
+}
+
+// zstdWithWindow encodes payload as a streaming frame whose header declares the given window size
+// (klauspost encoder, content size unknown so the window descriptor is written).
+func zstdWithWindow(t *testing.T, window int, payload []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	enc, err := zstd.NewWriter(&buf, zstd.WithWindowSize(window), zstd.WithEncoderConcurrency(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := enc.Write(payload); err != nil {
+		t.Fatal(err)
+	}
+	if err := enc.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func decodeAll(input []byte) ([]byte, error) {
+	s, err := newZstdStream(bytes.NewReader(input), 0)
+	if err != nil {
+		return nil, err
+	}
+	defer s.Close()
+	var out []byte
+	err = s.ForEachChunk(func(c []byte) error { out = append(out, c...); return nil })
+	return out, err
+}
+
+// G-fix.12: the window cap is libzstd's default 1<<27, not the 512 MiB output cap. A frame that
+// declares a larger window is refused as too large; one at the cap still decodes.
+func TestZstdWindowCapIsLibzstdDefault(t *testing.T) {
+	if zstdWindowCap != 1<<27 || DefaultMaxOutputBytes != 512<<20 {
+		t.Fatalf("caps: window %d, output %d", zstdWindowCap, DefaultMaxOutputBytes)
+	}
+	// The encoder shrinks the window for a small input, so the payload must be larger than 1 MiB.
+	payload := bytes.Repeat([]byte(`{"type":"assistant"}`+"\n"), 100_000)
+	atCap := zstdWithWindow(t, 1<<27, payload)
+	over := zstdWithWindow(t, 1<<28, payload)
+	for window, frame := range map[int][]byte{1 << 27: atCap, 1 << 28: over} {
+		var h zstd.Header
+		if err := h.Decode(frame); err != nil || h.WindowSize != uint64(window) {
+			t.Fatalf("test frame declares window %d (%v), want %d", h.WindowSize, err, window)
+		}
+	}
+	got, err := decodeAll(atCap)
+	if err != nil || !bytes.Equal(got, payload) {
+		t.Fatalf("window at the cap: %v (%d bytes)", err, len(got))
+	}
+	if _, err := decodeAll(over); !errors.Is(err, ErrTooLarge) {
+		t.Fatalf("window past the cap: err = %v, want ErrTooLarge", err)
+	}
+	// The same through the file entry point.
+	path := filepath.Join(t.TempDir(), "big-window.jsonl.zst")
+	if err := os.WriteFile(path, over, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadAllZstd(path); !errors.Is(err, ErrTooLarge) {
+		t.Fatalf("file: err = %v, want ErrTooLarge", err)
 	}
 }

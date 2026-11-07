@@ -13,6 +13,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"spacevibe.dev/core/internal/coreerr"
@@ -36,8 +37,12 @@ type AtomicWriteOptions struct {
 // name), set to exactly mode's permission bits (the umask may have trimmed them) and fsynced.
 // Errors are coreerr.Error with status 500 and never quote file content. On any failure after the
 // temp file was created it is removed. A file at the temp name that this call did not create is
-// never removed.
+// never removed. The write guard is asked about path first (write-guard.go), and the folder is
+// fsynced after the rename.
 func AtomicWrite(path string, data []byte, mode os.FileMode, opts AtomicWriteOptions) error {
+	if err := checkWrite(path); err != nil {
+		return err
+	}
 	temp, err := tempName(path)
 	if err != nil {
 		return coreerr.NewStatus("Could not write next to "+path+". Nothing was changed.", coreerr.StatusInternalFailure)
@@ -74,6 +79,7 @@ func finish(temp, path string, opts AtomicWriteOptions) error {
 	if err := os.Rename(temp, path); err != nil {
 		return coreerr.NewStatus("Could not replace "+path+" ("+reason(err)+"). Nothing was changed.", coreerr.StatusInternalFailure)
 	}
+	syncDir(filepath.Dir(path)) // make the rename itself survive a crash (G-fix.20)
 	return nil
 }
 

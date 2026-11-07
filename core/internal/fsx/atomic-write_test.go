@@ -407,3 +407,44 @@ func TestConcurrentWritersNeverShareATempFile(t *testing.T) {
 		t.Errorf("stray %v", strayTempFiles(t, dir))
 	}
 }
+
+// G-fix.6: only ENOENT/ENOTDIR mean "absent"; any other stat failure is a 409, not a new file.
+func TestResolveTargetOnlyAbsentMeansAbsent(t *testing.T) {
+	skipOnWindows(t)
+	dir := tempDir(t)
+	if got, err := ResolveTarget(filepath.Join(dir, "missing.json")); err != nil || got.Existed {
+		t.Errorf("ENOENT: %+v %v", got, err)
+	}
+	file := filepath.Join(dir, "plain")
+	writeFile(t, file, "x", 0o600)
+	if got, err := ResolveTarget(filepath.Join(file, "under-a-file")); err != nil || got.Existed {
+		t.Errorf("ENOTDIR: %+v %v", got, err)
+	}
+
+	// Permission denied on the parent folder.
+	locked := filepath.Join(dir, "locked")
+	writeFile(t, filepath.Join(locked, "settings.json"), canary, 0o600)
+	if err := os.Chmod(locked, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0o700) })
+	if _, err := os.Stat(filepath.Join(locked, "settings.json")); err == nil {
+		t.Skip("running as a user that ignores folder permissions")
+	}
+	_, err := ResolveTarget(filepath.Join(locked, "settings.json"))
+	e := wantStatus(t, err, coreerr.StatusConflict)
+	if !strings.HasSuffix(e.Message, " could not be checked, so it was left alone.") || strings.Contains(e.Message, canary) {
+		t.Error(e.Message)
+	}
+
+	// A link loop (ELOOP) is not absent either.
+	a, b := filepath.Join(dir, "loop-a"), filepath.Join(dir, "loop-b")
+	if err := os.Symlink(b, a); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(a, b); err != nil {
+		t.Fatal(err)
+	}
+	_, err = ResolveTarget(a)
+	wantStatus(t, err, coreerr.StatusConflict)
+}

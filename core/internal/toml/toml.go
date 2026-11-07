@@ -10,6 +10,8 @@ import (
 	"errors"
 	"os"
 	"slices"
+	"strconv"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -146,15 +148,35 @@ func (d Document) Value(table []string, key string) (Value, bool) {
 }
 
 // TablePaths returns header paths that start with prefix, in file order, without repeats.
+// One pass with a set of the paths already seen, so a file with n headers costs O(n) (the Swift
+// version scanned the result list for every header, O(n^2); G-fix.21).
 func (d Document) TablePaths(prefix []string) [][]string {
 	seen := [][]string{}
+	known := make(map[string]struct{})
 	for _, h := range d.Tables {
-		if len(h.Path) >= len(prefix) && slices.Equal(h.Path[:len(prefix)], prefix) &&
-			!slices.ContainsFunc(seen, func(p []string) bool { return slices.Equal(p, h.Path) }) {
-			seen = append(seen, h.Path)
+		if len(h.Path) < len(prefix) || !slices.Equal(h.Path[:len(prefix)], prefix) {
+			continue
 		}
+		key := pathKey(h.Path)
+		if _, dup := known[key]; dup {
+			continue
+		}
+		known[key] = struct{}{}
+		seen = append(seen, h.Path)
 	}
 	return seen
+}
+
+// pathKey is an unambiguous map key for a path: each part is length-prefixed, so ["a","b c"] and
+// ["a b","c"] never collide, whatever characters the parts hold.
+func pathKey(path []string) string {
+	var b strings.Builder
+	for _, part := range path {
+		b.WriteString(strconv.Itoa(len(part)))
+		b.WriteByte(':')
+		b.WriteString(part)
+	}
+	return b.String()
 }
 
 // ErrUnreadable is returned by ReadFile when the file is missing, unreadable or not UTF-8.

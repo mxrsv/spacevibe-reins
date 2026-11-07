@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"syscall"
 
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/roots"
@@ -26,21 +27,32 @@ type Target struct {
 // ResolveTarget follows links so the file a link points at is the one written, and a link stays a
 // link. A link to nothing is refused with 409 (the Node core would replace the link with a regular
 // file, which loses the user's link). A path that exists but is not a regular file is refused with
-// 409. A path that cannot be stat-ed for any other reason counts as missing.
+// 409. Only ENOENT and ENOTDIR mean "absent"; any other stat failure (permission denied, a link
+// loop, an I/O error) is refused with 409 and a fixed sentence, because writing a "new" file over
+// something that could not be inspected could replace the user's file (G-fix.6; Swift read every
+// failure as absent).
 // Ported from FileEdit.resolveTarget (FileEdit.swift:171-183).
 func ResolveTarget(path string) (Target, error) {
 	_, lerr := os.Lstat(path)
 	info, err := os.Stat(path)
 	if err != nil {
-		if lerr == nil {
+		switch {
+		case isAbsent(err) && lerr == nil:
 			return Target{}, coreerr.NewStatus(path+" is a link to a file that does not exist, so it was left alone.", coreerr.StatusConflict)
+		case isAbsent(err) && isAbsent(lerr):
+			return Target{Real: path, Existed: false, Mode: NewFileMode}, nil
 		}
-		return Target{Real: path, Existed: false, Mode: NewFileMode}, nil
+		return Target{}, coreerr.NewStatus(path+" could not be checked, so it was left alone.", coreerr.StatusConflict)
 	}
 	if !info.Mode().IsRegular() {
 		return Target{}, coreerr.NewStatus(path+" is not a regular file.", coreerr.StatusConflict)
 	}
 	return Target{Real: roots.ResolvedPath(path), Existed: true, Mode: info.Mode().Perm()}, nil
+}
+
+// isAbsent is true only for "no such file or directory" and "a parent is not a directory".
+func isAbsent(err error) bool {
+	return errors.Is(err, fs.ErrNotExist) || errors.Is(err, syscall.ENOTDIR)
 }
 
 // UnchangedSince is the byte re-check an edit makes in BeforeRename: it reports whether path still

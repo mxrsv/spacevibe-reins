@@ -36,8 +36,12 @@ const (
 	// DefaultMaxOutputBytes is far above any real session log (the largest on a heavy machine is tens of MB) and far
 	// below a decompression bomb.
 	DefaultMaxOutputBytes = 512 << 20
-	// zstdMemoryCap bounds the decoder's window and memory, the same size as the output cap.
+	// zstdMemoryCap bounds the decoder's memory, the same size as the output cap.
 	zstdMemoryCap = 512 << 20
+	// zstdWindowCap is libzstd's default maximum window (ZSTD_WINDOWLOG_LIMIT_DEFAULT 27, Sources/CZstd/zstd.h:1287),
+	// which is what the Swift reader accepted. A frame that declares a larger window is refused as ErrTooLarge
+	// instead of making the decoder allocate up to the output cap (G-fix.12).
+	zstdWindowCap = 1 << 27
 	// zstdChunkBytes is the size of one decoded chunk (libzstd's ZSTD_DStreamOutSize).
 	zstdChunkBytes = 128 << 10
 	// maxEmptyReads stops a decoder that keeps returning nothing without an error.
@@ -84,7 +88,7 @@ func newZstdStream(r io.Reader, maxOutputBytes int64) (*ZstdStream, error) {
 	decoder, err := zstd.NewReader(source,
 		zstd.WithDecoderConcurrency(1), // synchronous decode: no goroutines, reads happen inside Read
 		zstd.WithDecoderMaxMemory(zstdMemoryCap),
-		zstd.WithDecoderMaxWindow(zstdMemoryCap),
+		zstd.WithDecoderMaxWindow(zstdWindowCap),
 	)
 	if err != nil {
 		if source.failure() != nil {
