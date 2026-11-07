@@ -1,6 +1,6 @@
 # Reins: UI v5 build
 
-Spec: [design language v5](../specs/2026-11-06-reins-design-language-v5.md): requirements V5-R1 to V5-R76, acceptance V5-A1 to V5-A24, the traceability table for ledger D1 to D65, the open questions and the data gaps (G1 to G13). This plan does not restate them.
+Spec: [design language v5](../specs/2026-11-06-reins-design-language-v5.md): requirements V5-R1 to V5-R76, acceptance V5-A1 to V5-A24, the traceability table for ledger D1 to D68, the open questions and the data gaps (G1 to G13). This plan does not restate them.
 Reference: the frozen mock at `~/scratch/spacevibe-reins/linear-directions/` (outside git, F4); see the spec's "Reference mock".
 Checkout: `spacevibe-reins` on `main`, shared with other sessions. When this plan was written the go-core rename R1 (`REINS_*` to `SPACEVIBE_*`) was being applied, uncommitted, in the same checkout. Commit with `git commit -- <paths>` only (W11).
 Started 2026-11-07. Status: not started; the U0 gates are open.
@@ -9,13 +9,13 @@ Started 2026-11-07. Status: not started; the U0 gates are open.
 
 | Plan | Relation |
 | --- | --- |
-| [Agents](2026-11-05-reins-agents.md) | This plan supersedes its UI placement: A8 (an Agents screen of CLI cards at `⌘2`), A10 (shots of that screen), the UI half of A12 (the Rules tab and Loadout's hooks go at this plan's X1), and the spec's AG1 placement and AG10's comparison with mock C′, by D43 to D49 and D65. It does not touch A1 to A6 (engine; the go-core plan's D-5 retargets them), A7, A9 and AG8 (the per-CLI settings panel and its push panel, a later phase by D47 and D48) or A11. Its reserved names `Sources/Reins/Agents/` and the CI loop keyed on that folder are reused here (U6). |
+| [Agents](2026-11-05-reins-agents.md) | This plan supersedes its UI placement: A8 (an Agents screen of CLI cards at `⌘2`), A10 (shots of that screen), the UI half of A12 (the Rules tab and Loadout's hooks go at this plan's X1), and the spec's AG1 placement and AG10's comparison with mock C′, by D43 to D49 and D68. It does not touch A1 to A6 (engine; the go-core plan's D-5 retargets them), A7, A9 and AG8 (the per-CLI settings panel and its push panel, a later phase by D47 and D48) or A11. Its reserved names `Sources/Reins/Agents/` and the CI loop keyed on that folder are reused here (U6). |
 | [Design language v4](2026-11-05-reins-design-language-v4.md) | V2 to V8 are replaced by this plan (D15); only V1 (its spec text) was done. |
 | [Go core and SpaceVibe identity](2026-11-07-go-core-and-spacevibe-identity.md) | Its open D-5 gates U1 (G-0). Its S.1 needs pixel-identical shots of the old screens, so S.1 and this plan never edit the same screen folder at once. Its R1 renames the env prefix (this plan already uses `SPACEVIBE_`), R2 the bundle id, R3 `Sources/Reins` to `Sources/SpaceVibe` (paths below then shift; risk H2). |
 | [Tokens](2026-11-03-reins-tokens.md) | No Tokens page exists in the frozen mock; that plan must place its page later (risk H12). |
 | [Settings](2026-11-04-reins-settings.md) | Settings takes the new token values only (V5-R7); its own eye task S10 is unaffected. |
 
-Edits owed to other records, not made in this session: a pointer from the Agents plan's A8, A10 and A12 and the v4 plan's V2 to V8 to this plan; the "v4 changes" section of [the 2026-11-03 spec](../specs/2026-11-03-reins-design-language.md) marked superseded; the ledger's duplicate IDs (spec C1). They are listed again in Handoff.
+Edits owed to other records, not made in this session: a pointer from the Agents plan's A8, A10 and A12 and the v4 plan's V2 to V8 to this plan; the "v4 changes" section of [the 2026-11-03 spec](../specs/2026-11-03-reins-design-language.md) marked superseded. They are listed again in Handoff.
 
 ## Approach
 
@@ -31,7 +31,7 @@ Edits owed to other records, not made in this session: a pointer from the Agents
 ### Tokens (spec C3)
 
 - Colour values in `Palette` change app-wide once, in U2 (D53). Settings and the old screens take them; V5-A11's shots check that nothing breaks. The toast duration (5 s) and the focus fill (D57) are app-wide too.
-- The D63 spacing and sizes, the new type roles and the new blocks are new tokens and components that only v5 code uses, behind the switch. The old `Metrics` and `Rhythm` values stay for the old screens until X1 removes the unused ones ("changed N of M").
+- The D66 spacing and sizes, the new type roles and the new blocks are new tokens and components that only v5 code uses, behind the switch. The old `Metrics` and `Rhythm` values stay for the old screens until X1 removes the unused ones ("changed N of M").
 
 ### Files (F2)
 
@@ -158,7 +158,7 @@ Every task: `git status --porcelain` before the first edit, leave other sessions
   - Files: new `Sources/Reins/Subagents/SubagentsTab.swift`; new `Sources/Reins/Subagents/SubagentsModel.swift` (Answer, bands by presence and by model, warning states, filters, the addable rule); new `Sources/Reins/Subagents/SubagentsShots.swift`; `Sources/Reins/Agents/AgentsPage.swift`; new `Tests/ReinsTests/SubagentsModelTests.swift`.
   - Depends on: U8.
   - Build: settle G1 and G10 first. Without model and tools in the data, the model column, the Model grouping, the Can-touch filter and the "can run Bash" half of the Answer are left out as named departures (open question 7), and the Answer uses only the facts the data has. The add-to-other-CLI toast says what the write really does.
-  - Verify: TEST; SHOTS `subagents` (V5-R62 states); MOCK `agents`; SIDE; the V5-A20 trace; fit (the spine scrolls inside, accepted by D65); RUN.
+  - Verify: TEST; SHOTS `subagents` (V5-R62 states); MOCK `agents`; SIDE; the V5-A20 trace; fit (the spine scrolls inside, accepted by D68); RUN.
   - Acceptance: V5-A1 (Subagents), V5-A6, V5-A18 to V5-A20, V5-A22, V5-A24; V5-R52 to V5-R57, V5-R63, V5-R64.
 
 - [ ] **U10. Agents > Hooks**
@@ -196,7 +196,7 @@ Every task: `git status --porcelain` before the first edit, leave other sessions
 
 - [ ] **U14. Owner eye approval, one batch**
   - Build: in the owner's runtime: RUN, left open; the owner may also run `SPACEVIBE_UI_V5=1 scripts/dev.sh` themselves to see their real data (it reads the real `~/.claude` and `~/.codex`; every write has Undo and a restorable copy). Open the review sheet as the last step (W18, main sheet only).
-  - The owner judges each surface on structure, content, look and theme, in dark and light (light for the first time since D63), and answers the spec's open questions 1 to 9.
+  - The owner judges each surface on structure, content, look and theme, in dark and light (light for the first time since D66), and answers the spec's open questions 1 to 9.
   - Verify: the owner's words per surface and per open question, with the date, in Handoff. A surface not approved gets a fix task appended here and only that surface is shown again (the same batch, not a new stop between tasks).
   - Acceptance: V5-A14, V5-A1, V5-A20 (the owner's real-data look).
 
@@ -253,7 +253,7 @@ Every task: `git status --porcelain` before the first edit, leave other sessions
 | H5 | `fg3` text on `bgRaise` misses 4.5:1 (about 3.5:1 computed from the kit values `#6B7078` on `#191A1D`), so raising it is a visible departure from the mock | U2 contrast test; the departure goes on the U14 sheet |
 | H6 | A MingCute or Phosphor licence asks for more than a credit line | U3 licence read |
 | H7 | The data gaps G1 to G13 leave cards or columns out | the first step of U9 to U12 |
-| H8 | Light mode, never eye-checked since D63, is rejected at U14 | the agent reads the light SIDE sheets in U13 first |
+| H8 | Light mode, never eye-checked since D66, is rejected at U14 | the agent reads the light SIDE sheets in U13 first |
 | H9 | The dev-build flag leaks into a distribution build | checked when this plan was written: `scripts/release.sh` (line 81) always calls `build-app.sh --distribution`, for `--prepare` and `--notarize` alike, so the flag stays out as long as U1 adds it only outside that branch; U1 greps the branch again |
 | H10 | Headless shots differ from the live window (scale, font rendering) | the owner's RUN window at U14 |
 | H11 | Other sessions change the shared checkout during a task | `git status --porcelain` before each task (W11); commit only the task's paths |
@@ -272,6 +272,6 @@ None yet. This plan has run no command.
 - Remaining work:
 - Blockers:
 - Owner decisions recorded (G-0, G-1, G-2, OQ1 to OQ9, per-surface approval):
-- Follow-ups outside this plan: pointers from the Agents plan (A8, A10, A12) and the v4 plan (V2 to V8) to this plan; the 2026-11-03 spec's "v4 changes" marked superseded; the ledger's duplicate IDs (spec C1); PRODUCT.md's primary-datum line if open question 1 keeps 28; the go-core plan's D-5 answer recorded in its ledger.
+- Follow-ups outside this plan: pointers from the Agents plan (A8, A10, A12) and the v4 plan (V2 to V8) to this plan; the 2026-11-03 spec's "v4 changes" marked superseded; PRODUCT.md's primary-datum line if open question 1 keeps 28; the go-core plan's D-5 answer recorded in its ledger.
 
 /goal Build Reins UI v5 per docs/specs/2026-11-06-reins-design-language-v5.md and docs/plans/2026-11-07-reins-ui-v5-build.md: after the U0 gates (go-core D-5 answered, the W20 table shown, track approved), do U1 to U13 in order on main, one commit each, every v5 surface behind SPACEVIBE_UI_V5 (debug or non-distribution builds only) with the old app as the default. Done means scripts/test.sh passes with N above the starting count, including the contrast, hue, style-boundary, icon-policy, launch-mode, Answer and write tests against TempHome; scripts/build-app.sh prints minos 15.0; shots of every page and every V5-R62 state exist in dark and light beside the frozen mock, and the V5-A20 real-data trace, the V5-A22 fit and the V5-A23 conformance results are pasted in the plan. Stop at U14 for the owner's one batch eye approval, comparing each surface with the mock in dark and light; X1 cut-over, push, merge and release need the owner. Never touch the real ~/.claude or ~/.codex.
