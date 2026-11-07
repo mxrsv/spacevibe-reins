@@ -40,6 +40,10 @@ struct StyleBoundaryTests {
         ("overlay shape", #"\.overlay\s*(\{|\([^)]*?(Rectangle|Capsule|Circle|Ellipse|stroke|\.fill|Color|Gradient))"#),
         ("gradient", #"\b(Linear|Radial|Angular|Elliptical)Gradient\b"#),
         ("looping animation", #"repeatForever"#),
+        // A screen draws no shape and paints none, wherever the shape sits (one line or a trailing closure). `contentShape(`
+        // sets a hit area, draws nothing, and is allowed.
+        ("shape", #"(?<!contentShape\()\b(Rectangle|RoundedRectangle|UnevenRoundedRectangle|Capsule|Circle|Ellipse)\s*\("#),
+        ("shape paint", #"\.(stroke|strokeBorder|fill|clipShape)\s*\("#),
     ]
 
     /// Empty since 2026-11-03 (design-language plan T6): no screen file may hold a style literal. A file that truly needs an
@@ -121,23 +125,34 @@ struct StyleBoundaryTests {
         #expect(v5Entries.isEmpty, "v5 folders get no allowlist entry: \(v5Entries)")
     }
 
+    /// One line can match several patterns (a shape inside `.background(` is a background and a shape), so a must-fail case
+    /// checks `>= 1`, not an exact count.
     @Test("the V5-R8 patterns catch a screen that paints itself")
     func paintPatterns() {
         #expect(Self.violations(in: "x.background(Color.red)") == 1)
         #expect(Self.violations(in: "x.background(.red)") == 1)
         #expect(Self.violations(in: "x.background(.regularMaterial)") == 1)
-        #expect(Self.violations(in: "x.background(RoundedRectangle(cornerRadius: Metrics.groupRadius).fill(tone))") == 1)
+        #expect(Self.violations(in: "x.background(RoundedRectangle(cornerRadius: Metrics.groupRadius).fill(tone))") >= 1)
         #expect(Self.violations(in: "x.background {") == 1)
         #expect(Self.violations(in: "x.background(model.ground)") == 0)
         #expect(Self.violations(in: "x.border(tone, width: 1)") == 1)
         #expect(Self.violations(in: "x.shadow(radius: 4)") == 1)
-        #expect(Self.violations(in: "x.overlay(Circle().stroke(tone))") == 1)
-        #expect(Self.violations(in: "x.overlay(RoundedRectangle(cornerRadius: Metrics.row).strokeBorder(tone))") == 1)
+        #expect(Self.violations(in: "x.overlay(Circle().stroke(tone))") >= 1)
+        #expect(Self.violations(in: "x.overlay(RoundedRectangle(cornerRadius: Metrics.row).strokeBorder(tone))") >= 1)
         #expect(Self.violations(in: "x.overlay(alignment: .top) { Hairline() }") == 0)
         #expect(Self.violations(in: "let g = LinearGradient(colors: stops, startPoint: .top, endPoint: .bottom)") == 1)
         #expect(Self.violations(in: "RadialGradient(") == 1)
         #expect(Self.violations(in: "withAnimation(.linear.repeatForever()) { on = true }") == 1)
         #expect(Self.violations(in: "// .shadow(radius: 4) in a comment") == 0)
+        // One-line trailing closures: the first `)` of the call must not hide the shape.
+        #expect(Self.violations(in: "x.overlay(alignment: .top) { Rectangle().stroke(tone) }") >= 1)
+        #expect(Self.violations(in: "x.background(alignment: .leading) { Capsule().fill(.secondary) }") >= 1)
+        // A closure that spans lines: each line is judged alone, so the shape line fails.
+        #expect(Self.violations(in: "x.overlay(alignment: .trailing) {\n    Circle().strokeBorder(tone)\n}") >= 1)
+        #expect(Self.violations(in: "x.background {\n    Color.clear\n}") >= 1)
+        #expect(Self.violations(in: "x.clipShape(shape)") == 1)
+        // A hit area is not a drawing.
+        #expect(Self.violations(in: "x.contentShape(Rectangle())") == 0)
     }
 
     @Test("the patterns catch what they name and skip comments")
@@ -151,7 +166,7 @@ struct StyleBoundaryTests {
         #expect(Self.violations(in: "VStack(spacing: 0) {") == 0)
         #expect(Self.violations(in: "x.frame(width: 58, alignment: .trailing)") == 1)
         #expect(Self.violations(in: "x.frame(maxWidth: .infinity)") == 0)
-        #expect(Self.violations(in: "RoundedRectangle(cornerRadius: 6)") == 1)
+        #expect(Self.violations(in: "RoundedRectangle(cornerRadius: 6)") >= 1)
         #expect(Self.violations(in: "// .font(ReinsFont.body) in a comment") == 0)
         #expect(Self.violations(in: "x.reinsText(.caption, tone: .tertiary)") == 0)
     }
