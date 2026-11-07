@@ -111,11 +111,8 @@ struct RulesModelTests {
     }
 
     private func model(_ core: FakeRulesCore) -> RulesModel {
-        // The default engine refuses everything, so a call that is not routed to the fake fails loudly.
-        let env = AppEnvironment(
-            startupProblem: nil, toasts: ToastCenter(announce: false), core: UnservedCore(),
-            routing: CoreRouting(viaCore: [.rules]), makeCoreClient: { core }
-        )
+        // The in-process core refuses everything, so a call that strays to it fails loudly.
+        let env = AppEnvironment(startupProblem: nil, toasts: ToastCenter(announce: false), core: UnservedCore(), makeCoreClient: { core })
         return RulesModel(env: env)
     }
 
@@ -134,7 +131,7 @@ struct RulesModelTests {
 
     // MARK: Reading
 
-    @Test("the first read asks the routed core to discover the projects, and a scope switch reuses its list")
+    @Test("the first read asks the core to discover the projects, and a scope switch reuses its list")
     func reads() async throws {
         let core = FakeRulesCore(snapshot: Self.snapshot())
         let model = try await started(core)
@@ -183,13 +180,14 @@ struct RulesModelTests {
         #expect(model.failure == nil && model.snapshot != nil)
     }
 
-    @Test("with no config folders the in-process core's startup sentence is the failure")
-    func startupProblem() async throws {
-        let env = AppEnvironment(roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false))
-        let model = RulesModel(env: env)
+    @Test("when the helper is missing, the page shows the fixed startup sentence and no rules")
+    func helperMissing() async throws {
+        let client = CoreClient(binary: URL(fileURLWithPath: "/nonexistent/spacevibe"))
+        let model = RulesModel(env: AppEnvironment(roots: nil, toasts: ToastCenter(announce: false), makeCoreClient: { client }))
         model.start()
         try await settle("the failure") { model.failure != nil }
-        #expect(model.failure == "No home here." && model.snapshot == nil)
+        #expect(model.failure == CoreWire.startFailedMessage)
+        #expect(model.snapshot == nil)
     }
 
     @Test("a scope the core could not look at is not editable: a click on its grid asks for no preview")

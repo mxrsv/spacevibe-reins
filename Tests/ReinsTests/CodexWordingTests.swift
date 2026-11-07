@@ -17,14 +17,16 @@ struct CodexWordingTests {
         try FileManager.default.createDirectory(at: codex.appendingPathComponent("rules"), withIntermediateDirectories: true)
         if let toml { try toml.write(to: codex.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8) }
         if let rules { try rules.write(to: codex.appendingPathComponent("rules/default.rules"), atomically: true, encoding: .utf8) }
-        let env = [
+        let env = ProcessInfo.processInfo.environment.merging([
             "HOME": root.path,
             "CLAUDE_CONFIG_DIR": root.appendingPathComponent(".claude").path,
             "CODEX_HOME": codex.path,
             "SPACEVIBE_HOME": root.appendingPathComponent(".spacevibe").path,
             "SPACEVIBE_TEST": "1",
-        ]
-        return try await InProcessCore.live(environment: env).core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false).codex
+        ]) { _, new in new }
+        let client = CoreClient(binary: try CoreFixtureHome.coreBinary(), environment: env)
+        defer { client.shutdown() }
+        return try await client.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false).codex
     }
 
     /// Every string the page would draw for this config.

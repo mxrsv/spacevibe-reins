@@ -3,8 +3,7 @@ import Observation
 
 /// The Rules screen's state: the chosen scope, what was read for it, the grid confirmation, the add-rule draft and every write.
 ///
-/// Everything goes through the core (`env.core(for: .rules)`; in process until the screen cuts over), so reads and writes run
-/// off the main actor. A refresh (launch, app activation, after a write or an Undo) asks the core to discover the projects
+/// Everything goes through the Go core (`env.goCore`), so reads and writes run off the main actor. A refresh (launch, app activation, after a write or an Undo) asks the core to discover the projects
 /// again; a scope switch reuses the list the core holds. A newer read replaces an older one, so a slow read never overwrites a
 /// fresh one. The core keeps settings-file paths out of its messages and checks a rule's shape (`rules.check`). Nothing here
 /// reads `env` values or logs rule text.
@@ -47,7 +46,7 @@ final class RulesModel {
 
     init(env: AppEnvironment) { self.env = env }
 
-    private var service: any CoreService { env.core(for: .rules) }
+    private var service: any CoreService { env.goCore }
 
     var isLoading: Bool { snapshot == nil && failure == nil }
 

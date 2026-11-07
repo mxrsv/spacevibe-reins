@@ -1,11 +1,9 @@
 import Foundation
 
 /// Where the app finds the Go core and which dev-only switches it honors (plan S.2). The switches exist for debug builds
-/// and tests only: a release build ignores them, so a stray variable in a user's shell can never swap the helper or send a
-/// screen down another path (S-R1).
+/// and tests only: a release build ignores them, so a stray variable in a user's shell can never swap the helper (S-R1).
 enum CoreEnvironment {
     static let binaryOverride = CoreProtocol.envPrefix + "CORE_BINARY"
-    static let screensOverride = CoreProtocol.envPrefix + "CORE_SCREENS"
     static let testFlag = CoreProtocol.envPrefix + "TEST"
 
     /// The name of a product variable: `variable("TEST")` is `SPACEVIBE_TEST`.

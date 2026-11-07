@@ -6,7 +6,7 @@ import Observation
 /// `reinsRoot` and handed to a tab by its initialiser (`ActivityTab(env: .shared)` style).
 ///
 ///     // a screen model that writes:
-///     env.performWithUndo(label: "Removed Bash(git push:*)", via: env.core(for: .rules), afterChange: { reload() }) { core in
+///     env.performWithUndo(label: "Removed Bash(git push:*)", via: env.goCore, afterChange: { reload() }) { core in
 ///         try await core.rulesRemove(...).entry      // the CoreJournalEntry the core recorded
 ///     }
 ///
@@ -26,11 +26,9 @@ final class AppEnvironment {
 
     let startupProblem: String?
     let toasts: ToastCenter
-    /// The in-process engine, for the screens that have not cut over to the Go core yet (plan S.1).
+    /// The in-process stub (`InProcessCore`): every screen has cut over, so nothing reads through it; S.8 deletes it.
     let core: any CoreService
-    /// Which of those screens read through the Go core (`SPACEVIBE_CORE_SCREENS`, dev builds and tests only). Empty by default.
-    let routing: CoreRouting
-    /// The Go core process, started on the first call of a screen that routes to it.
+    /// The Go core process, started on the first call.
     @ObservationIgnored private lazy var coreClient: any CoreService = makeCoreClient()
     @ObservationIgnored private let makeCoreClient: () -> any CoreService
     /// The Limits readings, shared by the sidebar block on every tab and its detail.
@@ -38,20 +36,14 @@ final class AppEnvironment {
     /// The updater and what Settings > Update shows. `ReinsApp` starts it in a normal launch; elsewhere it never runs.
     @ObservationIgnored lazy var updates = UpdateController(toasts: toasts)
 
-    init(startupProblem: String? = nil, toasts: ToastCenter? = nil, core: any CoreService, routing: CoreRouting = CoreRouting(), makeCoreClient: @escaping () -> any CoreService = { CoreClient() }) {
+    init(startupProblem: String? = nil, toasts: ToastCenter? = nil, core: any CoreService, makeCoreClient: @escaping () -> any CoreService = { CoreClient() }) {
         self.startupProblem = startupProblem
         self.toasts = toasts ?? ToastCenter()
         self.core = core
-        self.routing = routing
         self.makeCoreClient = makeCoreClient
     }
 
-    /// The engine a screen that has not cut over reads through: `core` (in process) unless `routing` sends it to the Go core.
-    func core(for screen: CoreScreen) -> any CoreService {
-        routing.service(for: screen, inProcess: core, core: { coreClient })
-    }
-
-    /// The Go core, the only engine of a screen that has cut over (Activity and Stop, Limits, Loadout), and the engine every Undo runs on. It starts on the first call.
+    /// The Go core, the only engine of every screen (Activity and Stop, Limits, Loadout, Rules), and the engine every Undo runs on. It starts on the first call.
     var goCore: any CoreService { coreClient }
 
     static func live(environment: [String: String] = ProcessInfo.processInfo.environment, toasts: ToastCenter? = nil) -> AppEnvironment {
@@ -59,8 +51,8 @@ final class AppEnvironment {
         return AppEnvironment(startupProblem: problem, toasts: toasts, core: core)
     }
 
-    /// Runs a write through `service` (the engine the screen's writes route to). On success it shows a toast with `label` and an
-    /// Undo that calls `goCore.journalUndo` with the entry the write returned (the journal is one file for both engines), and `afterChange` runs on the main actor after the
+    /// Runs a write through `service` (the Go core, `goCore`). On success it shows a toast with `label` and an
+    /// Undo that calls `goCore.journalUndo` with the entry the write returned, and `afterChange` runs on the main actor after the
     /// write and again after an Undo, so a screen can reload; it does not run when the write failed. On failure it shows a danger
     /// toast with the `CoreError` message, or with `onFailure` the message goes there instead (a screen that shows the error next
     /// to the control, such as the Rules add-rule row).
