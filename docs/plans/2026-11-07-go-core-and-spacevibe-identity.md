@@ -269,15 +269,15 @@ DOCS = bash ~/.claude/scripts/docs-compliance.sh && bash ~/.claude/scripts/docs-
 
 ### Phase P0: preconditions (sequential, one session)
 
-- [ ] **P0.1 Spec rewrite and W20 traceability (gate before P0.3)**
+- [x] **P0.1 Spec rewrite and W20 traceability (gate before P0.3)**
   - Files: `docs/specs/2026-11-02-reins.md` (Platform, Identity, a new traceability section)
   - Depends on: none
   - Build: rewrite Platform as Go core + SwiftUI shell + stdio protocol, and Identity as SpaceVibe / `spacevibe.dev`. Add a table with one row per decision: SV1 to SV17, the quoted decision, a requirement ID, an acceptance check (this plan's tasks implement the checks). Show the table to the owner before code (W20). The ledger stays the source of decisions.
   - Verify: `grep -cE '^\| SV(1[0-7]\|[1-9]) ' docs/specs/2026-11-02-reins.md` → 17; the date the owner saw the table is recorded; DOCS. (SV1 to SV17)
-- [ ] **P0.2 Owner decisions at plan approval**
+- [x] **P0.2 Owner decisions at plan approval**
   - Build: record the answers to D-2 and D-7 (needed now) and any of D-1 and D-3 to D-6 the owner gives, in the ledger (the decision source), not in the plan.
   - Verify: the ledger "Open" list shows which items closed and the owner's words.
-- [ ] **P0.3 Delete the Node oracle (S8.3, SV5)**
+- [x] **P0.3 Delete the Node oracle (S8.3, SV5)**
   - Files:
     - `git mv core/pricing.json core/internal/pricing/pricing.json` (or `engine/…` per D-7).
     - Update the path at `Tests/ReinsCoreTests/ActivityPricingTests.swift:9`.
@@ -292,7 +292,7 @@ DOCS = bash ~/.claude/scripts/docs-compliance.sh && bash ~/.claude/scripts/docs-
     - `git grep -nE 'make-golden|core/[a-z-]+\.mjs' -- AGENTS.md Sources Tests scripts .github` → empty.
     - `node scripts/fixture-home.mjs "$(mktemp -d)"` → exit 0.
     - DOCS.
-- [ ] **P0.4 Move the frozen fixtures (SV5, B6)**
+- [x] **P0.4 Move the frozen fixtures (SV5, B6)**
   - Files: `git mv Tests/ReinsCoreTests/Fixtures core/testdata/fixtures`. Edit `Tests/ReinsCoreTests/Support/Fixtures.swift:6-8` (new path from `#filePath`) and `Package.swift:44` (drop `exclude: ["Fixtures"]`). New: `core/testdata/fixtures/SHA256SUMS` over `golden/*.json`, `manifest.json`, `zst/*`. `scripts/test.sh` gains `(cd core/testdata/fixtures && shasum -a 256 -c --quiet SHA256SUMS)` before the tests.
   - Depends on: P0.3
   - Build: bytes do not change. The 2026-11-03 review found fixtures hidden by a global gitignore, so check every moved path stays tracked.
@@ -301,7 +301,7 @@ DOCS = bash ~/.claude/scripts/docs-compliance.sh && bash ~/.claude/scripts/docs-
     - `git ls-files core/testdata/fixtures | wc -l` equals `git ls-files Tests/ReinsCoreTests/Fixtures | wc -l` taken before the move (record both; about 304 on disk).
     - `git status --porcelain --ignored core/testdata` → no `!!` lines.
     - SW, with N unchanged.
-- [ ] **R1 Env and data-folder rename, one commit (SV12, AC3)**
+- [x] **R1 Env and data-folder rename, one commit (SV12, AC3)**
   - Files:
     - Swift sources: `Sources/ReinsCore/Roots.swift:23,41,52-57`, `FileEdit.swift:187,191`, `FileEditAtomicWrite.swift:16` (temp prefix `.spacevibe-<pid>-<rand>.tmp`), `StatuslineSetup.swift:5`, `Sources/ReinsStatusline/main.swift:64`, `Sources/Reins/App/AppEnvironment.swift:46-47`, `App/UpdateController.swift:108`, `App/LaunchMode.swift:13,16`, `Gallery/ShotRenderer.swift:26,45`, `Limits/LimitsShots.swift`, `Rules/RulesShots.swift`.
     - Tests: `Tests/ReinsCoreTests/Support/TempHome.swift:20,28`, the env key in `Support/FixtureHome.swift:35`, and every `REINS_*` in the test files.
@@ -314,7 +314,7 @@ DOCS = bash ~/.claude/scripts/docs-compliance.sh && bash ~/.claude/scripts/docs-
     - `git grep -n '\.reins' -- Sources scripts Tests` → only the `FixtureHome.swift` fixture line(s), named.
     - SW, with N unchanged, including `RootsTests` "real home throws".
     - `scripts/test-statusline.sh` → exit 0.
-- [ ] **P0.5 Go module scaffold and bundling (SV1, SV6, SV12)**
+- [x] **P0.5 Go module scaffold and bundling (SV1, SV6, SV12)**
   - Files:
     - New: `core/go.mod`, `core/cmd/spacevibe/main.go`, `core/internal/identity/identity.go`, `core/internal/config/config.go`.
     - Edits: `.gitignore` (Go build output), `scripts/test.sh` (runs GO, builds the core to `.build/spacevibe-core/spacevibe`, exports `SPACEVIBE_CORE_BINARY` for Swift tests), `scripts/build-app.sh` (see Build), `scripts/dev.sh` and `scripts/dev-fixture.sh` (same helper), `.github/workflows/swift.yml` (`actions/setup-go` with `go-version-file: core/go.mod`).
@@ -332,7 +332,7 @@ DOCS = bash ~/.claude/scripts/docs-compliance.sh && bash ~/.claude/scripts/docs-
 
 ### Phase P1: SV8 core review (read-only; parallel with G1)
 
-- [ ] **P1 Severity-ranked review of ReinsCore**
+- [x] **P1 Severity-ranked review of ReinsCore**
   - Files: read only: `Sources/ReinsCore/**`, `core/testdata/fixtures/golden/*`, the spec's ACs and Known defects, and the "Debt accepted" line of the 2026-11-02 plan.
   - Depends on: P0.4
   - Build: run fresh-context reviewers (`code-reviewer`, `security-reviewer`, `silent-failure-hunter`) in SV8 order:
@@ -345,9 +345,46 @@ DOCS = bash ~/.claude/scripts/docs-compliance.sh && bash ~/.claude/scripts/docs-
     - Each finding maps to a "fix during port" task in G2 (with a new test), an SV5 golden fix, or a spec question. The caller adds these as tasks `G-fix.n` here.
   - Verify: every finding has a target task ID or an explicit "won't fix" from the owner. (SV8)
 
+#### P1 findings (2026-11-07; reports in chat by `code-reviewer`, `security-reviewer`, `silent-failure-hunter`, all sonnet, all WARNING, 0 CRITICAL)
+
+Sources: CR = code-reviewer, SE = security-reviewer, SF = silent-failure-hunter. Every finding below was labelled confirmed (code path) unless marked H (Hypothesis — unverified). Parity ports first (G2.x), then these tasks, each with a new test; a fix that changes a golden is a golden fix (SV5) and is listed under "Owner" instead.
+
+| ID | Sev | Finding | Target |
+| --- | --- | --- | --- |
+| G-fix.1 | HIGH | TCC-denied or deleted project aborts or empties the rules listing (`RulesStore.swift:38,72,77`; `RulesSnapshot.swift:61`) (CR H1/H2, SF 6) | G2.4 |
+| G-fix.2 | MED | Real-home guard bypass via `/System/Volumes/Data/...`; guard only at 2 call sites; put it inside every fsx write/move/remove primitive; inode compare (SE M1) | fsx, roots |
+| G-fix.3 | MED | Undo trusts `journal.json` paths: containment under CLI/data roots, backups under `<data>/trash` (SE M2) | G2.3 |
+| G-fix.4 | MED | Journal read-modify-write must run under the cross-process flock, with a two-process test (SE M3, SF 5) | G2.3 |
+| G-fix.5 | MED | `copyItem` follows symlinks, no size cap, 0644 files: open-regular helper, 1 MiB cap, 0600 (SE M4) | G2.3 |
+| G-fix.6 | MED | `FileEdit.resolveTarget` treats any stat failure as "absent" (CR M3, H) | fsx |
+| G-fix.7 | MED | `createAll` rollback can trash a path it did not create; duplicate `clis` triggers it (CR M5) | G2.3 |
+| G-fix.8 | MED | `history` swallows a corrupt journal (CR M6, SF low) | G2.3 |
+| G-fix.9 | HIGH | Undo and rollback put-backs fail silently (`try?`), leaving a half-undone entry; rollback failure drops the original error (SF 4, 19) | G2.3 |
+| G-fix.10 | MED | Stop: re-check start time and process name right before kill; `ps`/`lsof` failure must read "unknown", not empty; distinct "cannot verify" error (SE L1, SF 13, 14) | proc, G2.2 |
+| G-fix.11 | LOW | Reads outside the inventory reader lack FIFO/size guard (activity status, stop status, session titles `.git`, limits cache, FileEdit re-read) (SE L2, H for `.git`) | G2.2, G2.5, fsx |
+| G-fix.12 | LOW | zstd window must be 1<<27 as libzstd's default, not 512 MiB (SE L5) | logs |
+| G-fix.13 | MED | Unreadable `SKILL.md`/agent, plugin file failures and invalid `settings.json` vanish silently: add `problems` lines (SF 9, 10) | G2.1 |
+| G-fix.14 | MED | Hooks of types http/mcp_tool/prompt/agent invisible: add a "N hooks not shown" problem line (SF 11) | G2.1 |
+| G-fix.15 | MED | Merged statusline windows carry the newest timestamp: keep per-window `observedAt`; `fileExists` -> presence in Limits (SF 17, CR low) | G2.5 |
+| G-fix.16 | HIGH | Codex `addHook` reports success for a hook Codex skips until trusted: refuse Codex like `copyToOther` (SF 3) | G2.3 |
+| G-fix.17 | MED | Agent copy can write empty instructions; DEL in a Codex TOML string (CR low H) (SF 18) | G2.3 |
+| G-fix.18 | HIGH | Unreadable Codex `config.toml`/`.rules` reads as safe defaults; TOML `skippedLines` never surfaced (SF 7, 8) | G2.4 |
+| G-fix.19 | MED | Statusline capture failures invisible: bounded `last-error`; re-install wraps twice if data root moved; argv0 resolution; stdin error (SF 15, SE L6) | G2.6 |
+| G-fix.20 | LOW | Directory fsync after rename; `managedDirectory` owner/mode check (SE L3, L7) | fsx |
+| G-fix.21 | LOW | `TOMLDocument.tablePaths` quadratic (SE L4, H): use a map in the Go port | toml |
+| G-fix.22 | MED | S-R3: the Go parse and RPC error paths get one leak test with a secret-bearing file (SE L8); pricing note quotes a model name from logs (G1.8 report) | G2.2, PR.2 wiring |
+
+**Owner (reported once, not fixed by agents; each needs a spec or SV5 call):**
+
+- Codex skills path: docs list `~/.agents/skills`, Reins writes `$CODEX_HOME/skills` (SF 1, H until A1; BLOCK if A1 shows it is ignored).
+- Secrets cell writes `Read(./.env)` which anchors at cwd only, and `Write(path)` rules never match (SF 2): golden fix for `rules.json`.
+- Usage "0 runs" hides unreadable logs and oversized lines (SF 12): shape change to `UsageResult`.
+- Undo of a rule edit refuses when the file changed since (CR M2); undo of `created` moves whatever sits there (CR M4, SF low); trash is never pruned and the journal holds hook commands (SE M5); statusline value over 100 (SF 16, H); "Push and deploy" rules are not a boundary (SF 21); hook scan drops cancelled hooks (SF 20, H); duplicate hook add is frozen by golden `add-hook-duplicate-command` (CR M1, golden fix).
+- Known-defect wording "project `.claude/` is not read" is stale for Loadout (CR spec question).
+
 ### Phase PR: protocol (parallel with G1)
 
-- [ ] **PR.1 Protocol and architecture docs**
+- [x] **PR.1 Protocol and architecture docs**
   - Files (new): `docs/internals/core-protocol.md`, `docs/internals/overview.md` (D5 entry point: shell/core split, data flow, the trap list above)
   - Depends on: P0.5
   - Build: document framing, lifecycle (argv `["rpc"]`, `initialize`, mismatch refusal, EOF), the method table (name, params, result, errors, side effects, journal entry), notifications, error codes, the canonical golden writer rules, and the security boundaries (stdout carries the protocol only, no listener, no content in errors).
@@ -369,24 +406,24 @@ DOCS = bash ~/.claude/scripts/docs-compliance.sh && bash ~/.claude/scripts/docs-
 
 Each task ports the named Swift unit tests as Go table tests with the same vectors and records Swift vs Go case counts in the coverage ledger below.
 
-- [ ] **G1.1 `textjs`** ← `ActivityText.swift` (incl. `OrderedMap` :254). Tests: the `ActivityText` vectors from `ActivityTests` and `ActivitySafetyTests`, plus new vectors with astral characters, U+0085 and U+FEFF. Verify: GO. (SV5)
-- [ ] **G1.2 `ojson`** ← `JSONValue.swift`, `JSONParser.swift`, `OrderedJSON.swift`. Tests: `OrderedJSONTests` (the 11-style byte round trip; edits splice only the edited region), depth 256, invalid UTF-8, and errors carrying no content (S-R3). Verify: GO.
-- [ ] **G1.3 `toml`** ← `TOMLReader.swift`, ported by hand. Deciding check for the dependency: parse each `core/testdata/fixtures/rules-home/codex-*/.codex/config.toml` with go-toml/v2 in a scratch program. If any errors, go-toml stays out of go.mod. Tests: `TOMLReaderTests`, plus the recursion bound from `ReadHardeningTests`. Verify: GO; the scratch result recorded here.
-- [ ] **G1.4 `logs`** ← `ZstdStream.swift` (klauspost decoder: concurrency 1, memory and window capped at 512 MiB), `LogFiles.swift`, `TailReader.swift`.
+- [x] **G1.1 `textjs`** ← `ActivityText.swift` (incl. `OrderedMap` :254). Tests: the `ActivityText` vectors from `ActivityTests` and `ActivitySafetyTests`, plus new vectors with astral characters, U+0085 and U+FEFF. Verify: GO. (SV5)
+- [x] **G1.2 `ojson`** ← `JSONValue.swift`, `JSONParser.swift`, `OrderedJSON.swift`. Tests: `OrderedJSONTests` (the 11-style byte round trip; edits splice only the edited region), depth 256, invalid UTF-8, and errors carrying no content (S-R3). Verify: GO.
+- [x] **G1.3 `toml`** ← `TOMLReader.swift`, ported by hand. Deciding check for the dependency: parse each `core/testdata/fixtures/rules-home/codex-*/.codex/config.toml` with go-toml/v2 in a scratch program. If any errors, go-toml stays out of go.mod. Tests: `TOMLReaderTests`, plus the recursion bound from `ReadHardeningTests`. Verify: GO; the scratch result recorded here.
+- [x] **G1.4 `logs`** ← `ZstdStream.swift` (klauspost decoder: concurrency 1, memory and window capped at 512 MiB), `LogFiles.swift`, `TailReader.swift`.
   - Tests: `ZstdStreamTests` (small, twice, `large` against `zst/large.meta.json` sha256 and line count, `cli-made`, truncated), `LogFilesTests`, `TailReaderTests`, the FIFO case of `ReadHardeningTests`.
   - Add the klauspost/compress licence notice to `Sources/Reins/App/Credits.swift` (BSD; binary redistribution). Read the licence file in the module cache first.
   - Verify: GO.
-- [ ] **G1.5 Hashes** ← `InventoryHash.swift` (`Sha1`, `sha`, `hookHash`), `JournalSHA256.swift`, replaced by `crypto/sha1` and `crypto/sha256`. Tests: the `JournalTests.swift:9-19` vectors and the hook ids in `golden/inventory.json`. Verify: GO.
-- [ ] **G1.6 `roots`, `config`, `coreerr`** ← `Roots.swift`, `ReinsError.swift`, `FileEdit.refuseRealHomeUnderTest`. Port the `resolvedPath` algorithm itself and read the real home from the password database (H1). Tests: `RootsTests`, the guard cases of `WriteGuardTests`. Verify: GO; plus a darwin `CGO_ENABLED=0` build of the guard test with `HOME` overridden still throws. (AC3)
-- [ ] **G1.7 `fsx`** ← `FileEditAtomicWrite.swift`, `WriteLock.swift`, `modificationTime`, `managedDirectory`. Locked entry and unlocked body pairs, plus `flock` on `<data>/write.lock`. Tests: the atomic-write cases of `FileEditTests`, `WriteConcurrencyTests` (goroutines), and a new two-process test that runs the test binary twice against one data folder (no lost journal entry). Verify: GO.
-- [ ] **G1.8 `pricing`** ← `Pricing.swift`, plus the embedded `pricing.json`. Keep the summation order (`Pricing.swift:60`). Tests: `ActivityPricingTests`, which checks the table equals the JSON. Verify: GO.
-- [ ] **G1.9 `proc`** ← `ProcessAdapter.swift`, plus the fixture adapter moved from `Sources/Reins/Activity/FixtureProcessAdapter.swift`.
+- [x] **G1.5 Hashes** ← `InventoryHash.swift` (`Sha1`, `sha`, `hookHash`), `JournalSHA256.swift`, replaced by `crypto/sha1` and `crypto/sha256`. Tests: the `JournalTests.swift:9-19` vectors and the hook ids in `golden/inventory.json`. Verify: GO.
+- [x] **G1.6 `roots`, `config`, `coreerr`** ← `Roots.swift`, `ReinsError.swift`, `FileEdit.refuseRealHomeUnderTest`. Port the `resolvedPath` algorithm itself and read the real home from the password database (H1). Tests: `RootsTests`, the guard cases of `WriteGuardTests`. Verify: GO; plus a darwin `CGO_ENABLED=0` build of the guard test with `HOME` overridden still throws. (AC3)
+- [x] **G1.7 `fsx`** ← `FileEditAtomicWrite.swift`, `WriteLock.swift`, `modificationTime`, `managedDirectory`. Locked entry and unlocked body pairs, plus `flock` on `<data>/write.lock`. Tests: the atomic-write cases of `FileEditTests`, `WriteConcurrencyTests` (goroutines), and a new two-process test that runs the test binary twice against one data folder (no lost journal entry). Verify: GO.
+- [x] **G1.8 `pricing`** ← `Pricing.swift`, plus the embedded `pricing.json`. Keep the summation order (`Pricing.swift:60`). Tests: `ActivityPricingTests`, which checks the table equals the JSON. Verify: GO.
+- [x] **G1.9 `proc`** ← `ProcessAdapter.swift`, plus the fixture adapter moved from `Sources/Reins/Activity/FixtureProcessAdapter.swift`.
   - The darwin adapter runs `/bin/ps` and `/usr/sbin/lsof` with `TZ=UTC LC_ALL=C` and the 3 s / 5 s timeouts, uses `syscall.Kill`, and maps ESRCH and EPERM.
   - The fixture adapter works only under `SPACEVIBE_TEST=1`, with the same gating as `AppEnvironment.swift:46-57`.
   - On other OSes the adapter reports "not measurable on this OS".
   - Tests: `ProcessGuardTests`, plus vectors for `psLine` and `lockPath`.
   - Verify: GO; XC. (S-R4)
-- [ ] **G1.10 `goldentest` harness**
+- [x] **G1.10 `goldentest` harness**
   - Build:
     - The materializer (B6 path, stamp protocol).
     - The canonical writer.
@@ -398,7 +435,7 @@ Each task ports the named Swift unit tests as Go table tests with the same vecto
 
 ### Phase G0: goldens that must exist first
 
-- [ ] **G0.1 Swift-recorded Limits golden (AC10)**
+- [x] **G0.1 Swift-recorded Limits golden (AC10)**
   - Files: new `Tests/ReinsCoreTests/LimitsGoldenTests.swift`; new `core/testdata/fixtures/golden/limits.json` and its line in SHA256SUMS
   - Depends on: P0.4
   - Build:
