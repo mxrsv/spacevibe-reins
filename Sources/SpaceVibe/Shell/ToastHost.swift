@@ -2,11 +2,12 @@ import SwiftUI
 
 /// Draws the current toast over the window, above the hint bar. Mounted once by `ShellView`. In the v5 shell (`isV5`) it
 /// is the v5 toast (`ToastBar`), 24 from the content panel's right edge and 48 above its bottom, and its action's key, `Z` for
-/// Undo, runs it from anywhere while the toast shows.
+/// Undo, runs it from anywhere while the toast shows and the palette is closed.
 struct ToastHost: View {
     var isV5 = false
 
     @Environment(ToastCenter.self) private var toasts
+    @Environment(ShellModel.self) private var shell
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -37,7 +38,8 @@ struct ToastHost: View {
                 if let toast = toasts.current {
                     ZStack {
                         ToastBar(toast: toast, run: toasts.runCurrentAction)
-                        if toast.action?.keyCap == ToastAction.undoKeyCap {
+                        // Not while the palette is open: its field takes plain keys, and Undo writes a file.
+                        if toast.action?.keyCap == ToastAction.undoKeyCap, !shell.isPaletteOpen {
                             Button("Undo", action: toasts.runCurrentAction)
                                 .keyboardShortcut(KeyEquivalent(Character(ToastAction.undoKeyCap.lowercased())), modifiers: [])
                                 .opacity(0)
