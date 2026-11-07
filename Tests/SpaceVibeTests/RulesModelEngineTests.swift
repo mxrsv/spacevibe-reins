@@ -36,7 +36,7 @@ struct RulesModelEngineTests {
 
     @Test("rules.snapshot reads every scope the fixture has and echoes the scope and folder asked")
     func snapshots() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
@@ -53,7 +53,7 @@ struct RulesModelEngineTests {
 
     @Test("rules.preview answers every cell and verdict of the global scope and one project; a mixed cell refuses")
     func previews() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
@@ -81,7 +81,7 @@ struct RulesModelEngineTests {
 
     @Test("the screen shows the scopes, rules, grid and Codex page the core read")
     func screen() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, client) = try model(fixture)
         defer { client.shutdown() }
@@ -100,45 +100,45 @@ struct RulesModelEngineTests {
 
     @Test("rules.setCapability then journal.undo puts the home back, byte for byte; a repeat write answers a null entry")
     func capabilityRoundTrip() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
 
         let entry = try #require(try await client.rulesSetCapability(scope: .global, dir: nil, capability: .push, verdict: .deny).entry)
-        #expect(try fixture.tree() != before, "the write changed nothing")
+        #expect(try await fixture.tree() != before, "the write changed nothing")
         #expect(try await client.rulesSetCapability(scope: .global, dir: nil, capability: .push, verdict: .deny).entry == nil)
         #expect(try await client.journalUndo(id: entry.id).label == entry.label)
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
     @Test("add, move and remove each write one journal entry that Undo restores, byte for byte")
     func ruleWritesAndUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
 
         let added = try await client.rulesAdd(scope: .global, dir: nil, verdict: .ask, rule: "Bash(echo round-trip)").entry
         let moved = try await client.rulesChangeVerdict(scope: .global, dir: nil, rule: "Bash(echo round-trip)", from: .ask, to: .deny).entry
         let removed = try await client.rulesRemove(scope: .global, dir: nil, verdict: .deny, rule: "Bash(echo round-trip)").entry
         #expect(added.label.hasPrefix("Added ask rule") && moved.count == 1 && removed.label.hasPrefix("Removed deny rule"))
         for entry in [removed, moved, added] { _ = try await client.journalUndo(id: entry.id) }
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
     @Test("a grid write and its Undo from the screen put the home back, byte for byte")
     func gridWriteFromTheScreen() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, client) = try model(fixture)
         defer { client.shutdown() }
         try await settled(model)
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
 
         model.requestSet(.push, to: .deny)
         try await wait("the confirmation") { model.pending != nil }
@@ -146,24 +146,24 @@ struct RulesModelEngineTests {
         model.confirmPending()
         try await wait("the toast") { model.env.toasts.current?.message == "Set Push and deploy to Deny" }
         try await wait("the re-read") { model.isSettled && model.snapshot?.grid.first { $0.capability == .push }?.state == .deny }
-        #expect(try fixture.tree() != before)
+        #expect(try await fixture.tree() != before)
 
         model.env.toasts.runCurrentAction()
         try await wait("the Undo toast") { model.env.toasts.current?.message.hasPrefix("Undid") == true }
         try await wait("the grid back") { model.isSettled && model.snapshot?.grid.first { $0.capability == .push }?.state != .deny }
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
     @Test("a rule added from the screen shows; a duplicate and an invalid rule are refused next to the field; Undo takes the rule out again")
     func addFromTheScreen() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, client) = try model(fixture)
         defer { client.shutdown() }
         try await settled(model)
         try await pick(model, "spacevibe-bench", .shared)
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
 
         model.draft = "Bash(npm test *)"
         model.draftVerdict = .ask
@@ -183,7 +183,7 @@ struct RulesModelEngineTests {
 
         model.env.toasts.runCurrentAction()
         try await wait("the Undo") { model.env.toasts.current?.message.hasPrefix("Undid") == true }
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
@@ -208,7 +208,7 @@ struct RulesModelEngineTests {
 
     @Test("the refusals (duplicate, invalid, missing, same verdict, unknown project, stray folder) keep their status and name no absolute path")
     func refusalsAreStable() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
@@ -233,7 +233,7 @@ struct RulesModelEngineTests {
         ("Bash(npm test", "That is not a valid rule. Use Tool or Tool(pattern) on one line."),
     ])
     func ruleCheckRefuses(text: String, message: String) async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
@@ -242,7 +242,7 @@ struct RulesModelEngineTests {
 
     @Test("rules.check accepts a rule with or without surrounding whitespace, and one exactly at the 1000-unit limit but not one over")
     func ruleCheckAccepts() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
@@ -257,7 +257,7 @@ struct RulesModelEngineTests {
 
     @Test("a project that discovery did not find falls back to the global snapshot, and a write to it is a 404")
     func unknownProject() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
@@ -280,7 +280,7 @@ struct RulesModelEngineTests {
 
     @Test("a settings file that is not valid JSON reads as a problem named by its label, never its path, and the grid is not editable")
     func invalidFile() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         try Data("{ not json".utf8).write(to: fixture.home.appendingPathComponent(".claude/settings.json"))
         let (model, client) = try model(fixture)

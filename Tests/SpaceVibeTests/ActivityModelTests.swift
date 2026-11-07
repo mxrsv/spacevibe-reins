@@ -270,7 +270,7 @@ struct ActivityModelCoreTests {
 
     @Test("a read gives the screen the fixture home's sessions, failures, files and limits, with their wording", .timeLimit(.minutes(1)))
     func fixtureHome() async throws {
-        let fixture = try CoreFixtureHome(extraEnvironment: ["SPACEVIBE_PROC_FIXTURE": Self.procFixture])
+        let fixture = try await CoreFixtureHome.make(extraEnvironment: ["SPACEVIBE_PROC_FIXTURE": Self.procFixture])
         defer { fixture.remove() }
         let (model, client) = try model(fixture)
         defer { client.shutdown() }
@@ -292,7 +292,7 @@ struct ActivityModelCoreTests {
 
     @Test("the live stream starts with the same snapshot a read gives, and the first report arrives promptly (H10)", .timeLimit(.minutes(1)))
     func stream() async throws {
-        let fixture = try CoreFixtureHome(extraEnvironment: ["SPACEVIBE_PROC_FIXTURE": Self.procFixture])
+        let fixture = try await CoreFixtureHome.make(extraEnvironment: ["SPACEVIBE_PROC_FIXTURE": Self.procFixture])
         defer { fixture.remove() }
         let (model, client) = try model(fixture)
         defer { client.shutdown() }
@@ -311,7 +311,7 @@ struct ActivityModelCoreTests {
 
     @Test("Stop signals a session, and says so once it is gone", .timeLimit(.minutes(1)))
     func stop() async throws {
-        let fixture = try CoreFixtureHome(extraEnvironment: ["SPACEVIBE_PROC_FIXTURE": Self.procFixture])
+        let fixture = try await CoreFixtureHome.make(extraEnvironment: ["SPACEVIBE_PROC_FIXTURE": Self.procFixture])
         defer { fixture.remove() }
         let (model, client) = try model(fixture)
         defer { client.shutdown() }

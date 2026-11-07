@@ -18,12 +18,6 @@ struct HooksModelEngineTests {
     "Interrupt":[{"hooks":[{"type":"command","command":"echo codex-interrupt"}]}]}}
     """
 
-    /// The fixture copy and its tree reads are synchronous file work: done on the main actor they hold up every other main-actor suite
-    /// (the Loadout model suite waits at most 10 s for its rows), so they run off it.
-    private func makeFixture() async throws -> CoreFixtureHome { try await Task.detached { try CoreFixtureHome() }.value }
-
-    private func tree(_ fixture: CoreFixtureHome) async throws -> [String: Data] { try await Task.detached { try fixture.tree() }.value }
-
     private func hooks(_ fixture: CoreFixtureHome, codexOnly: Bool = false) async throws -> (HooksModel, AppEnvironment, CoreClient) {
         if codexOnly {
             let url = fixture.home.appendingPathComponent(codexHooks)
@@ -57,7 +51,7 @@ struct HooksModelEngineTests {
 
     @Test("the tab lists the global hooks of the fixture: two cannot run, one is in both CLIs, and Codex's run count is Unmeasurable")
     func rows() async throws {
-        let fixture = try await makeFixture()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, _, client) = try await hooks(fixture)
         defer { client.shutdown() }
@@ -72,11 +66,11 @@ struct HooksModelEngineTests {
 
     @Test("the core refuses a hook copy into Codex with its own sentence, and the tab's rule says the same before any call; nothing is written")
     func codexRefusal() async throws {
-        let fixture = try await makeFixture()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await hooks(fixture)
         defer { client.shutdown() }
-        let before = try await tree(fixture)
+        let before = try await fixture.tree()
         let target = try row(model, "guard-destructive.sh")
         let id = try #require(target.members[.claude]?.id)
         do {
@@ -90,16 +84,16 @@ struct HooksModelEngineTests {
         model.copy(target, to: .codex)
         try await wait("the toast") { env.toasts.current != nil }
         #expect(env.toasts.current?.message == "SpaceVibe does not write hooks into Codex." && env.toasts.current?.action == nil)
-        #expect(try await tree(fixture).difference(from: before).isEmpty)
+        #expect(try await fixture.tree().difference(from: before).isEmpty)
     }
 
     @Test("a Codex-only hook copied to Claude Code writes settings.json only, the toast carries the matcher note, Undo restores every byte")
     func copyToClaudeAndUndo() async throws {
-        let fixture = try await makeFixture()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await hooks(fixture, codexOnly: true)
         defer { client.shutdown() }
-        let before = try await tree(fixture)
+        let before = try await fixture.tree()
         let target = try row(model, "echo codex-pre")
         #expect(target.presentCLIs == [.codex] && model.mode(target, cli: .claude) == .toggles && model.showsToggle(target, cli: .claude))
 
@@ -107,83 +101,83 @@ struct HooksModelEngineTests {
         try await wait("the toast") { env.toasts.current != nil }
         let label = "Copied echo codex-pre to Claude Code"
         #expect(env.toasts.current?.message == "\(label). \(HooksWording.matcherNote)" && env.toasts.current?.action != nil)
-        let changed = try await tree(fixture).difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed == [".claude/settings.json"], "one file is written: Claude Code's settings")
         let settings = try String(contentsOf: fixture.home.appendingPathComponent(".claude/settings.json"), encoding: .utf8)
         #expect(settings.contains("echo codex-pre"), "the command is in Claude Code's settings")
         try await wait("the re-read") { model.loadout.isSettled && model.rows.first { $0.hookTitle == "echo codex-pre" }?.presentCLIs.count == 2 }
 
         try await undo(model, env, label: label)
-        let left = try await tree(fixture).difference(from: before)
+        let left = try await fixture.tree().difference(from: before)
         #expect(left.isEmpty, "differs from the original: \(left)")
     }
 
     @Test("a Codex-only hook on an event Claude Code lacks cannot be copied: no toggle, and `a` says why; nothing is written")
     func interruptHasNoClaudeEvent() async throws {
-        let fixture = try await makeFixture()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await hooks(fixture, codexOnly: true)
         defer { client.shutdown() }
-        let before = try await tree(fixture)
+        let before = try await fixture.tree()
         let target = try row(model, "echo codex-interrupt")
         #expect(!model.showsToggle(target, cli: .claude) && model.mode(target, cli: .claude) == .readOnly)
         #expect(model.context.block(target, to: .claude) == .noEvent(.claude, event: "Interrupt"))
         model.copyToOtherCLI(target)
         try await wait("the toast") { env.toasts.current != nil }
         #expect(env.toasts.current?.message == "Claude Code has no Interrupt event.")
-        #expect(try await tree(fixture).difference(from: before).isEmpty)
+        #expect(try await fixture.tree().difference(from: before).isEmpty)
     }
 
     @Test("Remove on a hook whose script is gone deletes it from the settings file in one toast; Undo restores every byte")
     func removeDeadAndUndo() async throws {
-        let fixture = try await makeFixture()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await hooks(fixture)
         defer { client.shutdown() }
-        let before = try await tree(fixture)
+        let before = try await fixture.tree()
         let target = try row(model, "notify.sh")
         #expect(target.isDeadHook && HooksWording.slot(for: target, home: nil)?.offersRemove == true)
         model.remove(target)
         try await wait("the toast") { env.toasts.current != nil }
         let label = "Removed notify.sh"
         #expect(env.toasts.current?.message == label && env.toasts.current?.action != nil)
-        let changed = try await tree(fixture).difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed == [".claude/settings.json"])
         try await wait("the re-read") { model.loadout.isSettled && !model.rows.contains { $0.hookTitle == "notify.sh" } }
         #expect(model.answer.sentence == "1 hook can't run." && model.rows.count == 6)
 
         try await undo(model, env, label: label)
-        let left = try await tree(fixture).difference(from: before)
+        let left = try await fixture.tree().difference(from: before)
         #expect(left.isEmpty, "differs from the original: \(left)")
         #expect(model.answer.sentence == "2 hooks can't run.")
     }
 
     @Test("pressing a lit Codex logo removes Codex's copy only; Undo restores it; the Claude Code logo of the same row is the only copy then")
     func removeCodexCopyAndUndo() async throws {
-        let fixture = try await makeFixture()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await hooks(fixture)
         defer { client.shutdown() }
-        let before = try await tree(fixture)
+        let before = try await fixture.tree()
         let target = try row(model, "notify-done.sh")
         #expect(model.mode(target, cli: .codex) == .toggles && model.mode(target, cli: .claude) == .toggles)
         model.toggle(target, cli: .codex)
         try await wait("the toast") { env.toasts.current != nil }
         let label = "Removed the Codex copy of notify-done.sh"
         #expect(env.toasts.current?.message == label)
-        let changed = try await tree(fixture).difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed == [codexHooks], "Codex's hook file changed, Claude Code's did not")
         try await wait("the re-read") { model.loadout.isSettled && model.rows.first { $0.hookTitle == "notify-done.sh" }?.presentCLIs == [.claude] }
         let alone = try row(model, "notify-done.sh")
         #expect(model.mode(alone, cli: .claude) == .onlyCopy, "the only copy is not a toggle")
         try await undo(model, env, label: label)
-        let left = try await tree(fixture).difference(from: before)
+        let left = try await fixture.tree().difference(from: before)
         #expect(left.isEmpty, "differs from the original: \(left)")
     }
 
     @Test("a plugin's hook is read-only: no Remove, no toggle, and the write path refuses it")
     func pluginRefusal() async throws {
-        let fixture = try await makeFixture()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let plugin = ".claude/plugins/cache/neon/hooks/hooks.json"
         let file = fixture.home.appendingPathComponent(plugin)
@@ -191,14 +185,14 @@ struct HooksModelEngineTests {
         try Data(#"{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo plugin-stop"}]}]}}"#.utf8).write(to: file)
         let (model, env, client) = try await hooks(fixture)
         defer { client.shutdown() }
-        let before = try await tree(fixture)
+        let before = try await fixture.tree()
         let target = try row(model, "echo plugin-stop")
         #expect(target.plugin == "neon" && model.mode(target, cli: .claude) == .readOnly)
         #expect(HooksWording.slot(for: target, home: nil)?.mark.kind == .lock)
         model.remove(target)
         try await wait("the toast") { env.toasts.current != nil }
         #expect(env.toasts.current?.message == "echo plugin-stop is owned by the neon plugin. SpaceVibe cannot change it.")
-        #expect(try await tree(fixture).difference(from: before).isEmpty)
+        #expect(try await fixture.tree().difference(from: before).isEmpty)
     }
 }
 

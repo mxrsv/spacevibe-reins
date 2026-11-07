@@ -35,6 +35,12 @@ struct CoreFixtureHome {
         environment = ProcessInfo.processInfo.environment.merging(fixture) { _, new in new }
     }
 
+    /// The way a test builds one. The copy is synchronous file work (about 0.2 s under load); done on the main actor it holds up every
+    /// other `@MainActor` suite, and the Loadout model suite waits at most 10 s for its rows. So it runs off the main actor.
+    static func make(extraEnvironment: [String: String] = [:]) async throws -> CoreFixtureHome {
+        try await Task.detached { try CoreFixtureHome(extraEnvironment: extraEnvironment) }.value
+    }
+
     func remove() { try? FileManager.default.removeItem(at: home) }
 
     /// The Go core `scripts/test.sh` builds. A bare `swift test` has none: run `scripts/test.sh`.
@@ -45,8 +51,13 @@ struct CoreFixtureHome {
 
     func client() throws -> CoreClient { CoreClient(binary: try Self.coreBinary(), environment: environment) }
 
-    /// Every file under the home except SpaceVibe's own data folder: path relative to the home, and its bytes.
-    func tree() throws -> [String: Data] {
+    /// Every file under the home except SpaceVibe's own data folder: path relative to the home, and its bytes. Read off the main actor,
+    /// for the reason `make` gives.
+    func tree() async throws -> [String: Data] {
+        try await Task.detached { try self.readTree() }.value
+    }
+
+    private func readTree() throws -> [String: Data] {
         var out: [String: Data] = [:]
         for relative in try FileManager.default.subpathsOfDirectory(atPath: home.path) where relative != ".spacevibe" && !relative.hasPrefix(".spacevibe/") {
             let url = home.appendingPathComponent(relative)

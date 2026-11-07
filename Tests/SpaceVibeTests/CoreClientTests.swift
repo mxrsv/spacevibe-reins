@@ -9,7 +9,7 @@ struct CoreClientTests {
     private static let architect = "claude:agent:local:architect.md"
 
     private func withClient<T>(_ body: (CoreFixtureHome, CoreClient) async throws -> T) async throws -> T {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         let client = try fixture.client()
         defer {
             client.shutdown()
@@ -79,7 +79,7 @@ struct CoreClientTests {
 
     @Test("a refused environment is a startup problem every method reports, and initialize still answers", .timeLimit(.minutes(1)))
     func startupProblem() async throws {
-        let fixture = try CoreFixtureHome(extraEnvironment: ["SPACEVIBE_TEST": "2"])
+        let fixture = try await CoreFixtureHome.make(extraEnvironment: ["SPACEVIBE_TEST": "2"])
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
@@ -170,7 +170,7 @@ struct CoreClientTests {
 
     @Test("shutdown closes the core's stdin and the core exits", .timeLimit(.minutes(1)))
     func shutdownEndsCore() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         _ = try await client.initialize()
@@ -184,7 +184,7 @@ struct CoreClientTests {
 
     @Test("releasing the client ends the core", .timeLimit(.minutes(1)))
     func deinitEndsCore() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         var client: CoreClient? = try fixture.client()
         _ = try await #require(client).initialize()

@@ -38,11 +38,11 @@ struct SkillsModelEngineTests {
 
     @Test("pressing a dim logo adds the skill to that CLI with one toast; Undo restores the home byte for byte")
     func toggleAddAndUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await skills(fixture)
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let row = try #require(claudeOnly(model).first)
         #expect(model.mode(row, cli: .codex) == .toggles)
 
@@ -50,18 +50,18 @@ struct SkillsModelEngineTests {
         try await wait("the toast") { env.toasts.current != nil }
         let label = "Added \(row.name) to Codex"
         #expect(env.toasts.current?.message == label && env.toasts.current?.action != nil)
-        #expect(try fixture.tree().difference(from: before).count == 1, "one file is written: the copy")
+        #expect(try await fixture.tree().difference(from: before).count == 1, "one file is written: the copy")
         try await wait("the re-read") { model.loadout.isSettled && model.rows.first { $0.key == row.key }?.presentCLIs == [.claude, .codex] }
 
         try await undo(model, env, label: label)
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
         #expect(model.rows.first { $0.key == row.key }?.presentCLIs == [.claude])
     }
 
     @Test("adding the same skill again after Undo writes again: the double-click guard does not outlive the write")
     func addAgainAfterUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await skills(fixture)
         defer { client.shutdown() }
@@ -78,11 +78,11 @@ struct SkillsModelEngineTests {
 
     @Test("pressing a lit logo removes the skill from that CLI only; Undo restores it")
     func toggleRemoveAndUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await skills(fixture)
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let row = try #require(model.rows.first { $0.presentCLIs.count == 2 && $0.plugin == nil && $0.project == nil })
         #expect(model.mode(row, cli: .codex) == .toggles)
 
@@ -93,17 +93,17 @@ struct SkillsModelEngineTests {
         try await wait("the re-read") { model.loadout.isSettled && model.rows.first { $0.key == row.key }?.presentCLIs == [.claude] }
 
         try await undo(model, env, label: label)
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
     @Test("a bulk add is one toast and one Undo for every skill")
     func bulkAddAndUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await skills(fixture)
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let picked = Array(claudeOnly(model).prefix(2))
         try #require(picked.count == 2, "the fixture has two skills only Claude Code has")
         #expect(model.bulkMode(picked, cli: .codex) == .toggles && !model.isLit(picked, cli: .codex))
@@ -112,21 +112,21 @@ struct SkillsModelEngineTests {
         try await wait("the toast") { env.toasts.current != nil }
         let label = "Added 2 skills to Codex"
         #expect(env.toasts.current?.message == label)
-        #expect(try fixture.tree().difference(from: before).count == 2)
+        #expect(try await fixture.tree().difference(from: before).count == 2)
         try await wait("the re-read") { model.loadout.isSettled && model.isLit(model.rows.filter { r in picked.contains { $0.key == r.key } }, cli: .codex) }
 
         try await undo(model, env, label: label)
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "one Undo put both skills back; differs: \(changed)")
     }
 
     @Test("a bulk remove from every CLI is one toast and one Undo; a bulk toggle never removes an only copy")
     func bulkRemoveAndUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await skills(fixture)
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let both = try #require(model.rows.first { $0.presentCLIs.count == 2 && $0.plugin == nil && $0.project == nil })
         let one = try #require(claudeOnly(model).first)
         #expect(model.bulkMode([one], cli: .claude) == .onlyCopy)
@@ -135,21 +135,21 @@ struct SkillsModelEngineTests {
         try await wait("the toast") { env.toasts.current != nil }
         let label = "Removed 2 skills"
         #expect(env.toasts.current?.message == label)
-        #expect(try fixture.tree().difference(from: before).count == 3, "two copies of one skill and one copy of the other")
+        #expect(try await fixture.tree().difference(from: before).count == 3, "two copies of one skill and one copy of the other")
         try await wait("the re-read") { model.loadout.isSettled && model.rows.contains { $0.key == both.key } == false }
 
         try await undo(model, env, label: label)
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
     @Test("a plugin's skill is read-only: no write, and a toast that says why")
     func pluginRefusal() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await skills(fixture)
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let plugin = try #require(model.rows.first { $0.plugin != nil })
         for cli in CoreCLI.allCases { #expect(model.mode(plugin, cli: cli) == .readOnly) }
         model.toggle(plugin, cli: .codex)
@@ -157,22 +157,22 @@ struct SkillsModelEngineTests {
         model.remove([plugin])
         #expect(env.toasts.current?.message == "Plugin-owned skills cannot be changed here.")
         try await Task.sleep(for: .milliseconds(300))
-        #expect(try fixture.tree().difference(from: before).isEmpty)
+        #expect(try await fixture.tree().difference(from: before).isEmpty)
     }
 
     @Test("the only copy of a skill is not a toggle: its last lit logo does nothing")
     func onlyCopy() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await skills(fixture)
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let row = try #require(claudeOnly(model).first)
         #expect(model.mode(row, cli: .claude) == .onlyCopy)
         model.toggle(row, cli: .claude)
         try await Task.sleep(for: .milliseconds(300))
         #expect(env.toasts.current == nil)
-        #expect(try fixture.tree().difference(from: before).isEmpty)
+        #expect(try await fixture.tree().difference(from: before).isEmpty)
     }
 }
 

@@ -49,7 +49,7 @@ struct SubagentsModelEngineTests {
 
     @Test("the tab lists the global subagents of the fixture, with the sessions the logs hold")
     func rows() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, _, client) = try await subagents(fixture)
         defer { client.shutdown() }
@@ -63,11 +63,11 @@ struct SubagentsModelEngineTests {
 
     @Test("Add to Codex writes the name, the description and the instructions and nothing of the model or tools; the toast says so; Undo restores every byte")
     func addToCodexAndUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await subagents(fixture)
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let target = try row(model, "typescript-reviewer")
         #expect(model.mode(target, cli: .codex) == .toggles && target.presentCLIs == [.claude])
 
@@ -75,7 +75,7 @@ struct SubagentsModelEngineTests {
         try await wait("the toast") { env.toasts.current != nil }
         let label = "Added typescript-reviewer to Codex"
         #expect(env.toasts.current?.message == "\(label). Its model and tools are not copied." && env.toasts.current?.action != nil)
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed == [".codex/agents/typescript-reviewer.toml"], "one file is written: the copy")
         let copy = try text(fixture, ".codex/agents/typescript-reviewer.toml")
         #expect(copy.contains("name = \"typescript-reviewer\"") && copy.contains("description = ") && copy.contains("developer_instructions = "))
@@ -83,18 +83,18 @@ struct SubagentsModelEngineTests {
         try await wait("the re-read") { model.loadout.isSettled && model.rows.first { $0.name == "typescript-reviewer" }?.presentCLIs == [.claude, .codex] }
 
         try await undo(model, env, label: label)
-        let left = try fixture.tree().difference(from: before)
+        let left = try await fixture.tree().difference(from: before)
         #expect(left.isEmpty, "differs from the original: \(left)")
     }
 
     @Test("Add to Claude Code from a Codex-only subagent writes a markdown file with a name and a description, no model and no tools line")
     func addToClaudeAndUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let source = "name = \"codex-helper\"\ndescription = \"Helps in Codex\"\nmodel = \"gpt-5.1-codex-mini\"\nmodel_reasoning_effort = \"medium\"\ndeveloper_instructions = \"Do the thing.\"\n"
         let (model, env, client) = try await subagents(fixture, extra: [codexOnly: source])
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let target = try row(model, "codex-helper")
         #expect(target.presentCLIs == [.codex])
         model.addToOtherCLI(target)
@@ -105,17 +105,17 @@ struct SubagentsModelEngineTests {
         #expect(!copy.contains("model") && !copy.contains("tools"), "the Codex model and effort are not copied, and no tools line is written: \(copy)")
         try await wait("the re-read") { model.loadout.isSettled && model.rows.first { $0.name == "codex-helper" }?.presentCLIs.count == 2 }
         try await undo(model, env, label: "Added codex-helper to Claude Code")
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
     @Test("pressing a lit logo removes that CLI's copy only; Undo restores it")
     func removeOneCopyAndUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await subagents(fixture)
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let target = try row(model, "security-reviewer")
         #expect(model.mode(target, cli: .codex) == .toggles)
         model.toggle(target, cli: .codex)
@@ -124,35 +124,35 @@ struct SubagentsModelEngineTests {
         #expect(env.toasts.current?.message == label)
         try await wait("the re-read") { model.loadout.isSettled && model.rows.first { $0.name == "security-reviewer" }?.presentCLIs == [.claude] }
         try await undo(model, env, label: label)
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
     @Test("Remove deletes the subagent from every CLI that has it in one toast; Undo restores both files")
     func removeEverywhereAndUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await subagents(fixture)
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let target = try row(model, "security-reviewer")
         model.remove(target)
         try await wait("the toast") { env.toasts.current != nil }
         #expect(env.toasts.current?.message == "Removed security-reviewer")
-        #expect(try fixture.tree().difference(from: before) == [".claude/agents/security-reviewer.md", ".codex/agents/security-reviewer.toml"])
+        #expect(try await fixture.tree().difference(from: before) == [".claude/agents/security-reviewer.md", ".codex/agents/security-reviewer.toml"])
         try await wait("the re-read") { model.loadout.isSettled && model.rows.contains { $0.name == "security-reviewer" } == false }
         try await undo(model, env, label: "Removed security-reviewer")
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "one Undo put both files back; differs: \(changed)")
     }
 
     @Test("a plugin's subagent is read-only: no write, and a toast that says why")
     func pluginRefusal() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await subagents(fixture, extra: [pluginAgent: "---\nname: neon-helper\ndescription: Helps with Neon\n---\n\nSynthetic agent.\n"])
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let plugin = try row(model, "neon-helper")
         #expect(plugin.plugin == "neon", "the core reads it as the plugin's")
         for cli in CoreCLI.allCases { #expect(model.mode(plugin, cli: cli) == .readOnly) }
@@ -163,22 +163,22 @@ struct SubagentsModelEngineTests {
         model.addToOtherCLI(plugin)
         #expect(env.toasts.current?.message == "neon-helper is owned by the neon plugin. SpaceVibe cannot change it.")
         try await Task.sleep(for: .milliseconds(300))
-        #expect(try fixture.tree().difference(from: before).isEmpty)
+        #expect(try await fixture.tree().difference(from: before).isEmpty)
         #expect(SubagentsAddable(model.rows, detected: model.detected).leftOut.contains("neon-helper (plugin-owned)"))
     }
 
     @Test("the only copy is not a toggle: its last lit logo does nothing")
     func onlyCopy() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await subagents(fixture)
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let target = try row(model, "typescript-reviewer")
         #expect(model.mode(target, cli: .claude) == .onlyCopy)
         model.toggle(target, cli: .claude)
         try await Task.sleep(for: .milliseconds(300))
         #expect(env.toasts.current == nil)
-        #expect(try fixture.tree().difference(from: before).isEmpty)
+        #expect(try await fixture.tree().difference(from: before).isEmpty)
     }
 }

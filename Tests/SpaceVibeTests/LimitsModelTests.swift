@@ -15,7 +15,7 @@ struct LimitsModelTests {
 
     @Test("the core gives the page the fixture's entries, in order, and the page's tiles and summaries follow from them", .timeLimit(.minutes(1)))
     func fixtureHome() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, client) = try model(fixture)
         defer { client.shutdown() }
@@ -32,7 +32,7 @@ struct LimitsModelTests {
 
     @Test("a core that refuses its environment leaves its own sentence as the failure and no results", .timeLimit(.minutes(1)))
     func coreStartupProblem() async throws {
-        let fixture = try CoreFixtureHome(extraEnvironment: ["SPACEVIBE_TEST": "2"])
+        let fixture = try await CoreFixtureHome.make(extraEnvironment: ["SPACEVIBE_TEST": "2"])
         defer { fixture.remove() }
         let (model, client) = try model(fixture)
         defer { client.shutdown() }

@@ -33,7 +33,7 @@ struct LoadoutModelEngineTests {
 
     @Test("loadout.rows is scanning until a scan finishes, then ready with cells, counts and row flags")
     func rowsBeforeAndAfterScan() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
@@ -54,7 +54,7 @@ struct LoadoutModelEngineTests {
 
     @Test("a second scan while one runs is refused with 409")
     func overlappingScan() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
@@ -72,7 +72,7 @@ struct LoadoutModelEngineTests {
 
     @Test("the screen shows the fixture's rows, scopes, counts, problems and usage note")
     func screen() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, client) = try model(fixture)
         defer { client.shutdown() }
@@ -89,12 +89,12 @@ struct LoadoutModelEngineTests {
 
     @Test("Remove then Undo from the screen puts the home back, byte for byte")
     func removeAndUndoFromTheScreen() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, client) = try model(fixture)
         defer { client.shutdown() }
         try await settled(model)
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
 
         let row = try #require(model.data?.rows.first { $0.name == "architect" && $0.kind == .agent })
         let member = try #require(row.members[.claude])
@@ -102,24 +102,24 @@ struct LoadoutModelEngineTests {
         model.remove(row, member: member)
         try await wait("the toast") { model.env.toasts.current != nil }
         #expect(model.env.toasts.current?.message == "Removed agent architect from Claude Code")
-        #expect(try fixture.tree()[".claude/agents/architect.md"] == nil)
+        #expect(try await fixture.tree()[".claude/agents/architect.md"] == nil)
         try await wait("the re-read") { model.isSettled && model.data?.rows.contains { $0.name == "architect" } == false }
 
         model.env.toasts.runCurrentAction()
         try await wait("the Undo toast") { model.env.toasts.current?.message.hasPrefix("Undid") == true }
         #expect(model.env.toasts.current?.message == "Undid Removed agent architect from Claude Code")
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
         try await wait("the row back") { model.isSettled && model.data?.rows.contains { $0.name == "architect" } == true }
     }
 
     @Test("copy to the other CLI, remove and remove dead hooks each write one journal entry that Undo restores")
     func writesAndUndo() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
-        let before = try fixture.tree()
+        let before = try await fixture.tree()
         let rows = try await client.loadoutRows()
         let copy = try #require(rows.items.first { $0.cli == .claude && $0.kind == .skill && !$0.inOther && $0.scope == .global && $0.removable })
         let dead = rows.hooks.filter { $0.cli == .claude && $0.dead && $0.removable }
@@ -128,7 +128,7 @@ struct LoadoutModelEngineTests {
         var ids: [String] = []
         let copied = try await client.loadoutCopyToOther(id: copy.id).entry
         ids.append(copied.id)
-        #expect(try fixture.tree() != before)
+        #expect(try await fixture.tree() != before)
         ids.append(try await client.loadoutRemoveItem(id: copy.id).entry.id)
         let deadEntry = try await client.loadoutRemoveDeadHooks(cli: .claude).entry
         #expect(deadEntry.label.hasPrefix("Removed \(dead.count) dead hook"), "\(deadEntry.label)")
@@ -136,7 +136,7 @@ struct LoadoutModelEngineTests {
         let history = try await client.journalHistory().entries.map(\.id)
         #expect(Array(history.reversed()) == ids)
         for id in ids.reversed() { _ = try await client.journalUndo(id: id) }
-        let changed = try fixture.tree().difference(from: before)
+        let changed = try await fixture.tree().difference(from: before)
         #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
@@ -163,7 +163,7 @@ struct LoadoutModelEngineTests {
 
     @Test("the refusals (copy over an existing name, unknown id, plugin and project items, no dead hooks, unknown Undo) have the core's status and sentence")
     func refusals() async throws {
-        let fixture = try CoreFixtureHome()
+        let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
