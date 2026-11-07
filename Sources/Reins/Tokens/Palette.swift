@@ -90,7 +90,7 @@ enum PaletteValue {
     /// Departure, light: spec `#2F9E6B` reads 2.89:1 as a mark on a current row; `#2A9B68` reads 3:1.
     static let ok = ColorValue(light: 0x2A9B68, dark: 0x4CB782)
     /// Departure, light: spec `#C4811A` reads 2.76:1 as a mark on a current row and 2.81:1 on a band header. U2's `#BD7A0B`
-    /// read 3:1 there, then 2.84:1 on a focused band (`bgBandFocus`) and 2.62:1 as a bar on the track of a current row; `#B26F00` (OKLCH
+    /// read 3:1 there, then 2.85:1 on a focused band (`bgBandFocus`) and 2.62:1 as a bar on the track of a current row; `#B26F00` (OKLCH
     /// lightness lowered, chroma and hue kept to the sRGB gamut) reads 3:1 on both.
     static let warn = ColorValue(light: 0xB26F00, dark: 0xE2A33C)
     /// Departure, both, hue only (OKLCH lightness and chroma kept): the spec's `#E5604F` (dark) and `#D2442F` (light) sit
