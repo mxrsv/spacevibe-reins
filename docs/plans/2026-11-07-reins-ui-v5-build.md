@@ -66,18 +66,20 @@ MOCK   headless Chrome, never the Playwright MCP (it writes `.playwright-mcp/` i
 SIDE   one HTML sheet per task in /tmp/reins-v5/<task>/side.html: mock PNG beside app PNG per surface and theme
        → the agent reads it; differences are listed against the spec's "Mock substitutions" (anything else is a defect or a named departure)
 RUN    (W22, the runtime the owner looks at; agent memory "reins-dev-app-launch")
-       pkill -x Reins; while pgrep -x Reins >/dev/null; do sleep 0.2; done
+       pkill -x SpaceVibe; while pgrep -x SpaceVibe >/dev/null; do sleep 0.2; done
        scripts/build-app.sh
        scripts/dev-fixture.sh --prepare | grep '^export' > /tmp/reins-v5/env.sh
-       ( . /tmp/reins-v5/env.sh; open -n build/Reins.app --env HOME="$HOME" --env CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG_DIR" \
+       ( . /tmp/reins-v5/env.sh; open -n build/SpaceVibe.app --env HOME="$HOME" --env CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG_DIR" \
            --env CODEX_HOME="$CODEX_HOME" --env SPACEVIBE_HOME="$SPACEVIBE_HOME" --env SPACEVIBE_TEST=1 \
            --env SPACEVIBE_PROC_FIXTURE="$SPACEVIBE_PROC_FIXTURE" --env SPACEVIBE_UI_V5=1 )
        → lsappinfo list shows the app with the bundle id of Resources/Info.plist and type="Foreground";
-         ps eww -p "$(pgrep -x Reins)" shows the synthetic HOME; the task's page opens from the sidebar and its actions work
-       → afterwards pkill -x Reins and delete the synthetic home named in env.sh (never the real home)
+         ps eww -p "$(pgrep -x SpaceVibe)" shows the synthetic HOME; the task's page opens from the sidebar and its actions work
+       → afterwards pkill -x SpaceVibe and delete the synthetic home named in env.sh (never the real home)
 DOCS   bash ~/.claude/scripts/docs-compliance.sh && bash ~/.claude/scripts/docs-anchors.sh
        → exit 0 and no finding (both passed when this plan was written)
 ```
+
+Renames landed mid-track (go-core R2 at 86a83d0, R3 at d509feb and 3d6867d, 2026-11-07); read every path and name in this plan through this map: `Sources/Reins/` → `Sources/SpaceVibe/`; `Tests/ReinsTests/` → `Tests/SpaceVibeTests/`; `Sources/ReinsCore`, `Tests/ReinsCoreTests`, `CZstd` and `ReinsStatusline` are deleted (S.8, 359eab0; the engine is the Go core behind `CoreService`); types `ReinsIcon` → `SpaceVibeIcon`, `ReinsType` → `SpaceVibeType`, `ReinsGlyph` → `SpaceVibeGlyph`, `ReinsButtonStyle` → `SpaceVibeButtonStyle`, `ReinsMark` → `SpaceVibeMark`, `ReinsSwitch` → `SpaceVibeSwitch`, `ReinsTab` → `SpaceVibeTab`, `.reins(_:)` → `.spaceVibe(_:)`, the env helper `ReinsCore.env` → `CoreEnvironment.variable`; executable and bundle `SpaceVibe` / `build/SpaceVibe.app`, bundle id `dev.spacevibe.app` (the RUN block above is updated). Task text below keeps the old names.
 
 `scripts/dev-fixture.sh` run mode is not used for RUN: it starts the raw debug binary, which macOS registers as a background process that hides under other windows. `scripts/dev.sh` is not used by agents: it reads the real `~/.claude` and `~/.codex` (S-R1); the owner uses it in U14.
 
