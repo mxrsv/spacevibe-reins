@@ -75,7 +75,7 @@ public struct UsageSessions: Codable, Equatable, Sendable {
     public var codex: Int
 }
 
-/// The result of one scan: the shape `scan()` returns in core/usage.mjs.
+/// The result of one scan: the shape `scan()` returns in Node usage (git b58269d).
 public struct UsageResult: Codable, Equatable, Sendable {
     public var totals: UsageTotals
     /// Distinct sessions per CLI.

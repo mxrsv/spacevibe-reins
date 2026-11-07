@@ -1,6 +1,6 @@
 import Foundation
 
-/// Every Loadout write: add, remove and copy skills, agents and hooks. Port of the item half of core/mutate.mjs.
+/// Every Loadout write: add, remove and copy skills, agents and hooks. Port of the item half of Node mutate (git b58269d).
 ///
 /// Each call records one journal entry so `Journal.undo` can reverse it. Removed files go to the app trash, never away
 /// for good; a removed link keeps its target text. Items are found again by `Inventory.read`, so an id that no longer

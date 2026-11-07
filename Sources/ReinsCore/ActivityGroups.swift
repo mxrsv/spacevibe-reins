@@ -1,6 +1,6 @@
 import Foundation
 
-/// A repeated failed command (or failing hook), grouped across sessions. Same fields as `Failure` in core/activity.mjs.
+/// A repeated failed command (or failing hook), grouped across sessions. Same fields as `Failure` in Node activity (git b58269d).
 public struct ActivityFailure: Equatable, Sendable {
     public enum Kind: String, Sendable { case command, hook }
 
@@ -45,7 +45,7 @@ struct ActivityLogEntry {
     var project: String?
 }
 
-/// Turns per-log states into the two cross-session lists of the Activity tab (core/activity-groups.mjs).
+/// Turns per-log states into the two cross-session lists of the Activity tab (Node activity-groups (git b58269d)).
 enum ActivityGroups {
     private static let titleMax = 120
 

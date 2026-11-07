@@ -1,6 +1,6 @@
 import Foundation
 
-// Activity tab data: running sessions of both CLIs, failed commands and file history. Port of core/activity.mjs.
+// Activity tab data: running sessions of both CLIs, failed commands and file history. Port of Node activity (git b58269d).
 // Read-only on logs; it never executes a recorded command or hook (AGENTS.md R4). All process access goes through
 // `ProcessAdapter`. Field names in `ActivityReport.jsonObject` are the Node output's, so the golden compares directly.
 

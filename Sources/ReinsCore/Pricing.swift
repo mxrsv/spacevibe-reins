@@ -10,7 +10,7 @@ public struct ModelPrice: Equatable, Sendable {
 }
 
 /// The estimate-only price table. It is a Swift literal, not a bundled JSON file, so ReinsCore needs no resource bundle.
-/// A test compares it with core/pricing.json (fetched 2026-10-24 from https://platform.claude.com/docs/en/about-claude/pricing
+/// A test compares it with core/internal/pricing/pricing.json (fetched 2026-10-24 from https://platform.claude.com/docs/en/about-claude/pricing
 /// for Claude; the GPT rows follow the same file). Models that need tier information nobody observed are left out on purpose:
 /// no price means no estimate (`nil`), never a guess.
 public enum Pricing {

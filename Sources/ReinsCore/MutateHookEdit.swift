@@ -1,6 +1,6 @@
 import Foundation
 
-/// The two pure edits on a hook file, `withHook` and `withoutHook` of core/mutate.mjs, done on an `OrderedJSON` so the
+/// The two pure edits on a hook file, `withHook` and `withoutHook` of Node mutate (git b58269d), done on an `OrderedJSON` so the
 /// file keeps its key order, indent and every byte outside the edited array.
 ///
 /// A hook file holds `hooks: { <event>: [ { matcher?, hooks: [ { type, command, ... } ] } ] }`. A group is identified by

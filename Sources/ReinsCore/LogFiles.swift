@@ -1,7 +1,7 @@
 import Foundation
 
 /// Finding and opening session logs. Older Codex rollouts sit on disk as `.jsonl.zst`, so a reader that only knows `.jsonl`
-/// silently loses most of a machine's Codex history. Same naming rule as core/log-files.mjs.
+/// silently loses most of a machine's Codex history. Same naming rule as Node log-files (git b58269d).
 public enum LogFiles {
     private static let readChunk = 1 << 20
 

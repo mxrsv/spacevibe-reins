@@ -1,6 +1,6 @@
 import Foundation
 
-/// The synthetic HOME that scripts/make-golden.mjs stores under Fixtures/home, and the golden JSON the Node core made for it.
+/// The synthetic HOME stored under Fixtures/home, and its golden JSON (frozen goldens (SV5), last generated at b58269d3f3eb).
 ///
 /// Why a fixed path: ids in the goldens (hook ids, project ids) are hashes of absolute paths. The Node side runs on
 /// `canonicalRoot`, so Swift reads the same tree at the same path and the ids agree. The tree there is READ-ONLY and shared
@@ -8,7 +8,7 @@ import Foundation
 /// goldens, which is fine for write tests).
 enum FixtureHome {
     static let token = "$HOME"
-    /// Keep in step with CANONICAL_ROOT in scripts/make-golden.mjs.
+    /// The path the frozen goldens (SV5), last generated at b58269d3f3eb, ran on; ids in the goldens hash it.
     static let canonicalRoot = URL(fileURLWithPath: "/private/tmp/reins-fixture-home", isDirectory: true)
     private static let stampName = ".fixture-stamp"
     private static let lock = NSLock()
@@ -97,7 +97,7 @@ enum FixtureHome {
         try Fixtures.json("golden/\(name).json")
     }
 
-    /// Replaces the fixture root path with `$HOME` in every string of a JSON value, as make-golden.mjs does for goldens.
+    /// Replaces the fixture root path with `$HOME` in every string of a JSON value, as the goldens were written.
     /// Apply it to a Swift result before comparing with a golden.
     static func normalize(_ value: Any, root: URL = canonicalRoot) -> Any {
         switch value {

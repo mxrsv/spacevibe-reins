@@ -1,7 +1,7 @@
 import Foundation
 
 // Folds one session log (a Claude Code transcript or a Codex rollout) into a small state object, one line at a time.
-// Port of core/activity-fold.mjs. Read-only: it parses recorded text and never runs a recorded command or hook (R4).
+// Port of Node activity-fold (git b58269d). Read-only: it parses recorded text and never runs a recorded command or hook (R4).
 // Most lines are skipped by a byte search before any JSON parse; the search strings are the ones the Node code used, so
 // both sides skip the same lines.
 

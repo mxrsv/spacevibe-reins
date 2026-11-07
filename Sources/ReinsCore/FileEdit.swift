@@ -1,7 +1,7 @@
 import Foundation
 
-/// The one way Reins changes a config file: atomic, undoable, content-safe. Same job as `editFile` in core/mutate.mjs,
-/// plus a JSON layer that does what `parseConfig` and `serialize` do in core/rules.mjs.
+/// The one way Reins changes a config file: atomic, undoable, content-safe. Same job as `editFile` in Node mutate (git b58269d),
+/// plus a JSON layer that does what `parseConfig` and `serialize` do in Node rules (git b58269d).
 ///
 /// - The previous bytes are copied to the app trash first; the returned op lets `Journal.undo` put back exactly those
 ///   bytes (only if the file still holds what this edit wrote) or move a file this edit created to the trash.

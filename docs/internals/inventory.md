@@ -61,4 +61,4 @@ Settings are read only for hooks, plugin flags and skill overrides. No other val
 ## Verification
 
 - `scripts/test.sh`: [InventoryTests.swift](../../Tests/ReinsCoreTests/InventoryTests.swift), [FrontmatterTests.swift](../../Tests/ReinsCoreTests/FrontmatterTests.swift) and [RootsTests.swift](../../Tests/ReinsCoreTests/RootsTests.swift) run against `TempHome` or the fixture home, never the real config.
-- The Node core in `core/` is the parity oracle until plan task S8.3; goldens come from `node scripts/make-golden.mjs`.
+- The goldens are frozen (SV5); the Node core that generated them is deleted and lives in git history.

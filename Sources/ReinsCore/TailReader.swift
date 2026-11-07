@@ -219,7 +219,7 @@ public final class CompressedLogReader: LogReader {
             result.didReset = true
         }
 
-        // maxBytes counts UTF-8 bytes, like TailReader. core/tail-reader.mjs counts UTF-16 units; the two agree on ASCII logs.
+        // maxBytes counts UTF-8 bytes, like TailReader. Node tail-reader (git b58269d) counts UTF-16 units; the two agree on ASCII logs.
         var tail = LineTail(maxBytes: maxBytes)
         var invalid = 0
         let oversized: Int

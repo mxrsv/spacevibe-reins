@@ -1,6 +1,6 @@
 import Foundation
 
-/// Namespace of the Loadout inventory engine (port of core/inventory.mjs). The functions live in the `Inventory*.swift` files.
+/// Namespace of the Loadout inventory engine (port of Node inventory (git b58269d)). The functions live in the `Inventory*.swift` files.
 public enum Inventory {
     /// Hook events each CLI documents. Claude's list comes from its docs; Codex's from observation only.
     public static let events: [String: [String]] = [

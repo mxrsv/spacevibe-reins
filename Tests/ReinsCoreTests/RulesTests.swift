@@ -4,7 +4,7 @@ import Testing
 
 /// Claude permission rules (RulesStore, Rules grid) and the read-only Codex reader (CodexPermissions). Every test runs on a
 /// TempHome or FixtureHome; the real ~/.claude and ~/.codex are never read (REINS_TEST=1 and the Roots guard).
-/// Behavior reference: core/rules.mjs and core/rules.test.mjs.
+/// Behavior reference: frozen goldens (SV5), last generated at b58269d3f3eb and the Node rules tests at that commit.
 @Suite("Rules")
 struct RulesTests {
     /// Stands in for a secret value: it must never show up in a result, a message, a label or the journal.

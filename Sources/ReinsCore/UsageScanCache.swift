@@ -1,6 +1,6 @@
 import Foundation
 
-/// One scanned log as the cache keeps it. The layout matches core/usage.mjs, so a cache written by either engine is readable by the other.
+/// One scanned log as the cache keeps it. The layout matches Node usage (git b58269d), so a cache written by either engine is readable by the other.
 struct CachedFile: Codable, Equatable, Sendable {
     /// `UsageScanner.scanVersion` when it was parsed.
     var v: Int

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Reading a rule string, and the text tests the capability grid needs. Same results as `parseRule`, `PUSH_RE` and
-/// `ENV_RE` in core/rules.mjs, including JavaScript's ASCII-only `\w` and `\b` (ICU's are Unicode-aware).
+/// `ENV_RE` in Node rules (git b58269d), including JavaScript's ASCII-only `\w` and `\b` (ICU's are Unicode-aware).
 public enum Rules {
     public static let maxRuleLength = 1000
 

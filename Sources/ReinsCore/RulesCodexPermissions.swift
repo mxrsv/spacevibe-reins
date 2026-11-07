@@ -59,7 +59,7 @@ public struct CodexPermissions: Equatable, Sendable {
     public var projects: [CodexProject] = []
     public var rules = CodexRulesSummary()
 
-    /// Same fields as `readCodexPermissions` in core/rules.mjs, minus the file path.
+    /// Same fields as `readCodexPermissions` in Node rules (git b58269d), minus the file path.
     public static func read(roots: Roots) -> CodexPermissions {
         var out = CodexPermissions()
         out.rules = summarizeRules(roots.codex.root.appendingPathComponent("rules", isDirectory: true))

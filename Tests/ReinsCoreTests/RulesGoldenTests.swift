@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import ReinsCore
 
-/// Swift Rules and Codex reader against what the Node core returned for the same files (scripts/golden/rules.mjs).
+/// Swift Rules and Codex reader against the frozen goldens (SV5), last generated at b58269d3f3eb for the same files.
 /// Reads run on the shared fixture HOME and on Fixtures/rules-home/main; every write case runs on a fresh copy of
 /// rules-home/main in a TempHome. Writes are compared by the parsed settings JSON, the journal label and op kinds, and the
 /// refusal (status and message): Node rewrites a whole file and Swift edits only the changed list, so bytes are tested in RulesTests.
@@ -70,7 +70,7 @@ struct RulesGoldenTests {
     }
 }
 
-/// Turns Swift results into the JSON shape scripts/golden/rules.mjs wrote, and replays its cases.
+/// Turns Swift results into the JSON shape of the frozen goldens (SV5), last generated at b58269d3f3eb, and replays its cases.
 struct RulesGoldenView {
     let store: RulesStore
     let root: URL

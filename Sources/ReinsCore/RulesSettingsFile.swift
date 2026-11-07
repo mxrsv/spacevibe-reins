@@ -33,7 +33,7 @@ enum RulesSettingsFile {
     }
 
     /// Removes every occurrence of each `remove` rule and appends each `add` rule that is not already there, one list per
-    /// verdict, exactly as `withRules` in core/rules.mjs: kept elements first (non-strings are kept), then the new ones.
+    /// verdict, exactly as `withRules` in Node rules (git b58269d): kept elements first (non-strings are kept), then the new ones.
     /// Returns the document unchanged when no list would differ, so a no-op writes nothing.
     static func edit(_ document: OrderedJSON, file: URL, remove: [VerdictRule], add: [VerdictRule]) throws -> OrderedJSON {
         let permissions = try permissions(in: document.root, file: file)

@@ -4,9 +4,9 @@ import Testing
 
 @Suite("Activity pricing")
 struct ActivityPricingTests {
-    @Test("the Swift price table equals core/pricing.json")
+    @Test("the Swift price table equals core/internal/pricing/pricing.json")
     func tableMatchesNodeJSON() throws {
-        let file = Fixtures.directory.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("core/pricing.json")
+        let file = Fixtures.directory.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("core/internal/pricing/pricing.json")
         let root = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])
         let models = try #require(root["models"] as? [String: [String: Any]])
         #expect(Set(models.keys) == Set(Pricing.models.keys))

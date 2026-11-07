@@ -1,7 +1,7 @@
 import Foundation
 
 /// The module's JavaScript-text helpers: string and time functions that behave like the JavaScript the Node core used
-/// (core/activity-fold.mjs and friends), so the Swift output matches the goldens byte for byte. `\s` and `trim()` use the
+/// (Node activity-fold (git b58269d) and friends), so the Swift output matches the goldens byte for byte. `\s` and `trim()` use the
 /// JavaScript white-space set, and lengths and slices count UTF-16 code units. Hashes live in `Inventory.sha`.
 enum ActivityText {
     // MARK: White space

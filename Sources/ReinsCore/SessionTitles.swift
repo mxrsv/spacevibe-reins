@@ -1,6 +1,6 @@
 import Foundation
 
-/// Session titles and project names (core/session-titles.mjs). Pure helpers plus a read-only `.git` lookup; nothing here runs a command.
+/// Session titles and project names (Node session-titles (git b58269d)). Pure helpers plus a read-only `.git` lookup; nothing here runs a command.
 public enum SessionTitles {
     static let titleMax = 80
 

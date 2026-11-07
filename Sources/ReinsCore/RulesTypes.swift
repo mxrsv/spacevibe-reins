@@ -8,7 +8,7 @@ public enum RuleVerdict: String, CaseIterable, Sendable {
     var title: String { rawValue.prefix(1).uppercased() + rawValue.dropFirst() }
 }
 
-/// One row of the capability grid. Same ids and order as `CAPABILITIES` in core/rules.mjs.
+/// One row of the capability grid. Same ids and order as `CAPABILITIES` in Node rules (git b58269d).
 public enum Capability: String, CaseIterable, Sendable {
     case read, edit, run, network, push, secrets
 
@@ -65,7 +65,7 @@ public enum RuleScope: Equatable, Hashable, Sendable {
         }
     }
 
-    /// Used in journal labels, as in core/rules.mjs.
+    /// Used in journal labels, as in Node rules (git b58269d).
     var journalLabel: String { dir.map { "\(kind) \($0)" } ?? "global" }
 }
 

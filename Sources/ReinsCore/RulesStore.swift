@@ -4,7 +4,7 @@ import Foundation
 /// `FileEdit.editJSON`, so it is journaled and undoable, keeps every other key, the indent and the line endings, and
 /// refuses a file that is not valid JSON or has the wrong shape (409, never quoting content).
 ///
-/// Behavior reference: core/rules.mjs. Differences from Node, on purpose:
+/// Behavior reference: Node rules (git b58269d). Differences from Node, on purpose:
 /// - A project folder must be one that project discovery found (404 otherwise). In Node this check sits in the IPC layer;
 ///   here it is in the engine so no caller can make Reins create `<any folder>/.claude/settings.json`.
 /// - The file is edited in place (only the changed list), not rewritten with `JSON.stringify`.

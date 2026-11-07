@@ -25,7 +25,7 @@ extension RootsError: CustomStringConvertible {
     }
 }
 
-/// Where the config, the logs and Reins' own data live (AC3). Same rules as `roots()` in core/inventory.mjs.
+/// Where the config, the logs and Reins' own data live (AC3). Same rules as `roots()` in Node inventory (git b58269d).
 public struct Roots: Equatable, Sendable {
     public let claude: CLIRoots
     public let codex: CLIRoots

@@ -1,7 +1,7 @@
 import Foundation
 
 extension Inventory {
-    /// First 12 hex digits of the SHA-1 of the UTF-8 text. Hook ids and hook identity are built from it (`sha` in core/inventory.mjs).
+    /// First 12 hex digits of the SHA-1 of the UTF-8 text. Hook ids and hook identity are built from it (`sha` in Node inventory (git b58269d)).
     public static func sha(_ text: String) -> String {
         Sha1.digest(Array(text.utf8)).prefix(6).map { String(format: "%02x", $0) }.joined()
     }

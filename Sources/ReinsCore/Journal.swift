@@ -73,7 +73,7 @@ public struct JournalEntry: Equatable, Sendable {
     }
 }
 
-/// What `history` returns: the summary shape of `history` in core/mutate.mjs.
+/// What `history` returns: the summary shape of `history` in Node mutate (git b58269d).
 public struct HistoryItem: Equatable, Sendable {
     public let id: String
     public let at: String

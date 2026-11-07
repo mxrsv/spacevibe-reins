@@ -1,6 +1,6 @@
 import Foundation
 
-/// The `---` header of a SKILL.md or an agent `.md` file. Same behaviour as `frontmatter()` in core/inventory.mjs: flat
+/// The `---` header of a SKILL.md or an agent `.md` file. Same behaviour as `frontmatter()` in Node inventory (git b58269d): flat
 /// `key: value` lines only, values as text, `>` and `|` block scalars joined (folded with a space, literal with newlines).
 /// Not a YAML parser: lists and nested maps are not understood, and their lines are ignored.
 public enum Frontmatter {

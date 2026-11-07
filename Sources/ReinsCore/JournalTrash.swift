@@ -1,7 +1,7 @@
 import Foundation
 
 /// The app's own trash under the data root. Removed files and the old bytes of edited files go here, never into the
-/// journal, so the journal stays small and never holds file content. Layout as in core/mutate.mjs:
+/// journal, so the journal stays small and never holds file content. Layout as in Node mutate (git b58269d):
 /// `<data>/trash/<epoch ms>-<8 hex>/<name>`, folders 0700.
 public enum Trash {
     /// True when anything sits at the path, including a link whose target is gone.

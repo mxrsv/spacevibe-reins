@@ -4,7 +4,7 @@ import Foundation
 /// An actor, so a scan that reads gigabytes never runs on the main thread. Logs are only read; the one file written is the scan
 /// cache under the REINS data root. Per-file results are cached by size and mtime and stamped with `scanVersion`.
 public actor UsageScanner {
-    /// Bump when the parser changes what a log file yields, so cached results are rescanned. Same number as core/usage.mjs.
+    /// Bump when the parser changes what a log file yields, so cached results are rescanned. Same number as Node usage (git b58269d).
     public static let scanVersion = 2
     /// Default cap: lines longer than this are skipped, not parsed.
     public static let maxLineBytes = 32 << 20

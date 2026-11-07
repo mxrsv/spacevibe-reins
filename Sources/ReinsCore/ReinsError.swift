@@ -1,6 +1,6 @@
 import Foundation
 
-/// An error whose message is safe to show to the user. Same job as `UserError` in core/mutate.mjs.
+/// An error whose message is safe to show to the user. Same job as `UserError` in Node mutate (git b58269d).
 ///
 /// The message may name a path or a rule, never file content: a parse error from a settings file can quote a secret,
 /// so callers replace those with a fixed sentence. `status` follows HTTP: 400 bad input, 403 refused, 404 gone,

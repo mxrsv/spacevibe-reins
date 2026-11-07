@@ -38,7 +38,7 @@ struct MutateTests {
         func tree() throws -> [String: String] { try TreeHash.measure(home.root, root: root, skipTop: [".reins", ".fixture-stamp"]) }
     }
 
-    /// Path -> sha1 of the text with the copy's root replaced by `$HOME` (the hashing of scripts/golden/mutate.mjs).
+    /// Path -> sha1 of the text with the copy's root replaced by `$HOME` (the hashing the frozen goldens (SV5), last generated at b58269d3f3eb, used).
     private enum TreeHash {
         static func sha1(_ text: String) -> String {
             Sha1.digest(Array(text.utf8)).map { String(format: "%02x", $0) }.joined()

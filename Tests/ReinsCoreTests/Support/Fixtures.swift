@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-/// Committed test data under Tests/ReinsCoreTests/Fixtures (written by scripts/make-golden.mjs).
+/// Committed test data under Tests/ReinsCoreTests/Fixtures (frozen goldens (SV5), last generated at b58269d3f3eb).
 enum Fixtures {
     static let directory = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()

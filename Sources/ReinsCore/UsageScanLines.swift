@@ -8,7 +8,7 @@ struct FileRecord: Codable, Equatable, Sendable {
     var hook: [String: HookTotals] = [:]
 }
 
-/// Per-line parsing of Claude and Codex session logs. Ported from core/usage.mjs; the cheap byte checks come first so most
+/// Per-line parsing of Claude and Codex session logs. Ported from Node usage (git b58269d); the cheap byte checks come first so most
 /// lines are never turned into a String.
 enum UsageScan {
     private static func regex(_ pattern: String) -> NSRegularExpression { try! NSRegularExpression(pattern: pattern) }

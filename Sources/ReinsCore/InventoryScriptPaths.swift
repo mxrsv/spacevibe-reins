@@ -2,7 +2,7 @@ import Foundation
 
 extension Inventory {
     private static let scriptExtensions: Set<String> = ["sh", "bash", "zsh", "js", "mjs", "cjs", "ts", "py", "rb"]
-    // Quoted '/abs', quoted "/abs" without $, or a bare /abs after whitespace or at the start. Same pattern as core/inventory.mjs.
+    // Quoted '/abs', quoted "/abs" without $, or a bare /abs after whitespace or at the start. Same pattern as Node inventory (git b58269d).
     private static let scriptPathPattern = try! NSRegularExpression(pattern: #"'(/[^']+)'|"(/[^"$]+)"|(?:^|\s)(/[^\s'";|&)]+)"#)
 
     /// Absolute script paths a hook command points at, in order of first appearance. A command is dead only when it names at

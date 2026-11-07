@@ -1,7 +1,7 @@
 import Foundation
 
 /// Writes bytes next to the target and renames over it, so a reader never sees half a file. Mirrors `atomicWrite` in
-/// core/mutate.mjs. `validate` gets the bytes read back from the temp file; throwing aborts before the rename and the
+/// Node mutate (git b58269d). `validate` gets the bytes read back from the temp file; throwing aborts before the rename and the
 /// temp file is removed, so the target is untouched.
 enum AtomicWrite {
     /// - Parameter path: a real path (symlinks already resolved by the caller), so the target is written and a link to it stays a link.

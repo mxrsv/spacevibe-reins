@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import ReinsCore
 
-/// Swift `readActivity` against what the Node core returned for the same logs (scripts/golden/activity.mjs).
+/// Swift `readActivity` against the frozen goldens (SV5), last generated at b58269d3f3eb for the same logs.
 /// Two cases: the shared fixture HOME, and the section-specific Fixtures/activity-home rebuilt in a TempHome.
 /// Lists whose order is not part of the contract are sorted by the same keys the golden script used.
 @Suite("Activity golden")
