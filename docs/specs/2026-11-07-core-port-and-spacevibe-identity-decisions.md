@@ -61,6 +61,27 @@ Owner, after seeing the W20 table and the open decisions with recommendations: "
 
 Still the owner's alone: every outward-facing gate (GH1, REL1, GH2, WEB1 to WEB3), the Sparkle key creation in R2, the runtime checks A1 to A5, X2, F1.
 
+### Status 2026-11-08
+
+Settled or taken, no further owner input needed (all still reversible until the gate that publishes them):
+
+- D-2 port order: followed; the Go port is built and every golden passes.
+- D-7 `core/`, `spacevibe.dev/core`: in use.
+- C1/Q1, C2/Q8: in use (canonical bytes with asserted case counts; the Go test owns the golden after the Swift tests were deleted).
+- C3/Q2: the frozen fixtures are named skipped sites in the rename report (plan, Verification evidence).
+- D-3: `spacevibe statusline install|undo|capture` is built; `ReinsStatusline` is deleted.
+- D-4: the core does not run `claude --version` or `codex --version`.
+- D-5: UI-only work continued (UI v5 track); re-targeting the engine tasks of the Agents and Tokens plans is for those plans' owners (not checked here).
+- Spike item: no longer open; the Go port reads `.jsonl.zst` fixtures, parses TOML and cross-builds (plan, Verification evidence).
+
+Still open:
+
+- D-1 repo name: `mxrsv/spacevibe` is only a working value in one constant (`scripts/release.sh`, `site/components/landing/content.ts`); GH1 needs explicit approval.
+- D-6 and X2: Windows hardware run, not done.
+- New Sparkle key pair and the account flip (R2), then AC7 and the H7 check.
+- Runtime checks A1 to A5, F1 eye approval, and every outward gate (GH1, REL1, GH2, WEB1 to WEB3).
+- Windows and Linux UI technology; Hub `/vote`, marketing and the workspace map (workspace session).
+
 ## Out of scope for this ledger
 
 Building the Windows or Linux shell, the visual design of the `spacevibe.dev` landing, and any edit outside this repository.

@@ -44,11 +44,7 @@ Phase S0 and S1 first; S2 modules then run in parallel by owner; each UI phase e
 
 - [x] S0.1 Toolchain: build and launch an empty SwiftUI window from `Package.swift` with CLT only, using the board's scripts; run one swift-testing test through `scripts/test.sh`; record `vtool -show-build-version`. Done 2026-11-02: Swift 6.3.2, `build-app.sh` builds in about 31 s, `vtool` reports minos 15.0, signed with the Developer ID identity (no prompt), one window of 960x632 seen and quit. `scripts/test.sh` runs 86 tests in 10 suites; bare `swift test` fails to compile here (`no such module 'Testing'`).
 - [x] S0.2 zstd: decide system library vs vendored decoder; prove it reads a `.jsonl.zst` rollout fixture. Done 2026-11-02: no usable system zstd (SDK has no header, `/usr/lib` no libzstd, Compression has no zstd), so `CZstd` vendors decompress-only zstd v1.5.7 (checksum recorded in `Sources/CZstd/README.md`); byte-identical reads of Node-made and CLI-made files, two frames, and a 5.7 MB stream.
-- [ ] S0.3 TCC: read a `<project>/.claude` folder under `~/Documents` from the signed app; record the prompt, the denied behavior and what survives a rebuild (signing identity per board rule B3).
-- [ ] S0.4 Process facts: `Process` with `ps`, `lsof` and `kill` (same lock-fd mapping as the Electron plan 0.3 evidence), and the signal behavior of both CLIs for Stop (spec "To verify"; needs a live session, see Action needed).
-- [ ] S0.5 Real-CLI check (AC2, owner): a skill, agent, hook and permission written by `ReinsCore` is honored by a real `claude` and `codex` on a throwaway config.
-
-- [ ] S0.6 Portability: `swift build` of a stub `ReinsCore` (one JSON read, one `Process` call) on Linux, in a container or CI. Record whether `swift-testing` runs there and whether Swift on Windows builds the same stub. Unverified today; this is the cheapest signal that the door is open. Repeat on Linux whenever `ReinsCore` gains a dependency, and check that `Package.swift` still resolves there now that it declares Sparkle, a macOS-only binary package.
+- S0.3 to S0.6 (TCC, process facts and Stop, real-CLI check, Swift portability): moved on 2026-11-08 to the [Go core and identity plan](2026-11-07-go-core-and-spacevibe-identity.md), see its "What this plan takes over" table: S0.3 is A3, S0.4 is A2, S0.5 is A1, S0.6 is dropped (ReinsCore is deleted) and replaced by X1 and X2. S0.1 and S0.2 above stay as history.
 
 ### Phase S1: scaffold and shared plumbing
 
@@ -85,7 +81,7 @@ Own plan: [2026-11-03-reins-tokens.md](2026-11-03-reins-tokens.md), after S2 and
 
 - [ ] S7.1 `build-app.sh`: release build, bundle, Developer ID signature, hardened runtime, verification output; notarization is release work.
 - [ ] S7.2 UI tests are not available without Xcode; cover flows with `ReinsCore` tests plus a scripted launch against the fixture HOME and screenshots.
-- [ ] S7.3 Updater (AC7): Sparkle 2.10.0 in the `Reins` target, `UpdateController`, "Check for Updates…" menu item, toast on a scheduled find, `build-app.sh` embeds and signs the framework and takes `REINS_UPDATE_FEED_URL`, `scripts/test-update.sh`, `scripts/generate-update-feed.sh`. Built 2026-11-03; stays open until the owner approves the toast and update window by eye with AC6. Not in this task: notarization, the public feed host, a real release.
+- S7.3 Updater (AC7): built 2026-11-03 (evidence below, kept as history). Re-verified with the new Sparkle key in R2 of the [Go core and identity plan](2026-11-07-go-core-and-spacevibe-identity.md), not here.
   - Window path, by hand: a Developer ID build with an `http://127.0.0.1` feed checked at launch with no prompt and opened Sparkle's window. Two mouse clicks on that window, not sent by the agent, started the download and the relaunch; build 2 then ran from the same path and its bundle verified. A relaunch does not inherit the launch environment, so that process read the real home (read-only until a write is clicked) and was stopped.
   - Toast path, by hand: with the last check set to 24 h minus 70 s, the check fired mid-session and logged `by user: false, toast: true` with no attention event. A launch in the foreground logged `toast: false` because Sparkle's window takes focus at once. The toast's look is in `~/scratch/spacevibe-reins/shots/update-toast/`; clicking View is unverified.
   - `scripts/test-update.sh`: wrong signature downloaded and still build 1 after quit, right signature build 2 and verifying. The two runs differ only in the signature.
@@ -96,9 +92,7 @@ Own plan: [2026-11-03-reins-tokens.md](2026-11-03-reins-tokens.md), after S2 and
 
 ### Phase S8: accept and cut over
 
-- [ ] S8.1 AC5: run the packaged app with the network off and open all four tabs.
-- [ ] S8.2 AC1: the owner times the permission task (find, remove, undo) under one minute.
-- [ ] S8.3 Parity reached: delete `core/`, `scripts/make-golden.mjs`, `scripts/golden/`, `test.mjs`, the root `package.json` and the "Node core" section of `AGENTS.md` (D8, D12), after the owner agrees. Done on 2026-11-04 at the owner's request: `electron/`, the Electron renderer (`src/`), `web/`, `e2e/`, the Electron and TypeScript build files and the Electron lines of `AGENTS.md` (backup outside git). Mark this plan historical (D1) when the rest is done.
+- S8.1 to S8.3: moved on 2026-11-08 to the [Go core and identity plan](2026-11-07-go-core-and-spacevibe-identity.md): S8.1 is A4, S8.2 is A5, S8.3 (Node deletion) is P0.3. The Electron removal of 2026-11-04 stays as recorded in Handoff.
 
 ## Progress log (2026-11-03)
 
