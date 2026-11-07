@@ -23,7 +23,7 @@ const maxJSONBytes = 16 << 20
 // Fixed sentences of the store. Those with a file name are scrubbed by Service.
 const (
 	needAbsoluteMessage    = "A project scope needs an absolute folder."
-	unknownProjectMessage  = "That project is not known to Reins."
+	unknownProjectMessage  = "That project is not known to SpaceVibe."
 	projectGoneMessage     = "That project folder does not exist."
 	alreadyThatVerdictText = "The rule already has that verdict."
 	ruleChangedMessage     = "This rule has already changed. Refresh the list."

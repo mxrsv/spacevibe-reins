@@ -11,11 +11,11 @@
 {"dir":"send","json":{"id":5,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":null,"scope":"nope"}}}
 {"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"The scope must be global, project or local.","status":400},"message":"The scope must be global, project or local."},"id":5,"jsonrpc":"2.0"}}
 {"dir":"send","json":{"id":30,"jsonrpc":"2.0","method":"rules.add","params":{"dir":"/nowhere/at/all","rule":"Bash(ls)","scope":"project","verdict":"allow"}}}
-{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That project is not known to Reins.","status":404},"message":"That project is not known to Reins."},"id":30,"jsonrpc":"2.0"}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That project is not known to SpaceVibe.","status":404},"message":"That project is not known to SpaceVibe."},"id":30,"jsonrpc":"2.0"}}
 {"dir":"send","json":{"id":31,"jsonrpc":"2.0","method":"rules.setCapability","params":{"capability":"run","dir":"/nowhere/at/all","scope":"local","verdict":"deny"}}}
-{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That project is not known to Reins.","status":404},"message":"That project is not known to Reins."},"id":31,"jsonrpc":"2.0"}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That project is not known to SpaceVibe.","status":404},"message":"That project is not known to SpaceVibe."},"id":31,"jsonrpc":"2.0"}}
 {"dir":"send","json":{"id":32,"jsonrpc":"2.0","method":"rules.preview","params":{"capability":"run","dir":"/nowhere/at/all","scope":"project","verdict":"deny"}}}
-{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That project is not known to Reins.","status":404},"message":"That project is not known to Reins."},"id":32,"jsonrpc":"2.0"}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"That project is not known to SpaceVibe.","status":404},"message":"That project is not known to SpaceVibe."},"id":32,"jsonrpc":"2.0"}}
 {"dir":"send","json":{"id":6,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":null,"scope":5}}}
 {"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: scope has the wrong type."},"id":6,"jsonrpc":"2.0"}}
 {"dir":"send","json":{"id":7,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":null,"scope":"global","verdict":"allow"}}}

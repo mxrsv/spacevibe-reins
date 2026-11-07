@@ -220,8 +220,8 @@ struct RulesModelEngineTests {
             "add an invalid rule: 400 That is not a valid rule. Use Tool or Tool(pattern) on one line.",
             "remove a rule that is not there: 409 This rule has already changed. Refresh the list.",
             "move a rule to its own verdict: 400 The rule already has that verdict.",
-            "add to a project discovery did not find: 404 That project is not known to Reins.",
-            "preview a project discovery did not find: 404 That project is not known to Reins.",
+            "add to a project discovery did not find: 404 That project is not known to SpaceVibe.",
+            "preview a project discovery did not find: 404 That project is not known to SpaceVibe.",
             "a global scope with a folder: 400 A global scope takes no folder.",
         ])
     }
