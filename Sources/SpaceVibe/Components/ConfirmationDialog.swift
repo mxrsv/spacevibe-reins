@@ -88,8 +88,9 @@ enum ConfirmationFocus: Hashable {
 /// 400-wide card centred on it, `bgPop` with a `hair2` edge, the top-edge highlight and the dialog shadow, padding 20 20 16,
 /// its parts 8 apart. The title (14/20 600), the message (13/20 `fg2`; a `Text`, so a pid can be bold), the small line
 /// (12/16 `fg3`), then 12 below them the actions at the right: `Cancel` with its `esc` cap and the solid danger button. Esc
-/// and a click on the scrim cancel, except while the action runs (`isWorking`). The old screens keep `ConfirmationDialog`
-/// until the cut-over (X1).
+/// and a click on the scrim cancel, except while the action runs (`isWorking`). The focus start on Cancel and the `Tab`
+/// cycle apply where buttons take the keyboard focus (macOS keyboard navigation on); Esc works either way. The old screens
+/// keep `ConfirmationDialog` until the cut-over (X1).
 struct ConfirmationPanel: View {
     let title: String
     let message: Text
@@ -134,9 +135,12 @@ struct ConfirmationPanel: View {
             }
             HStack(spacing: Metrics.Dialog.actionSpacing) {
                 Spacer(minLength: 0)
+                // Esc reaches Cancel even when no button can take the focus (macOS keyboard navigation off), as
+                // `ActivityStopConfirmation` does.
                 Button(action: cancel) { ActionLabel("Cancel", key: "esc") }
                     .buttonStyle(ActionButtonStyle())
                     .focused($focus, equals: .cancel)
+                    .keyboardShortcut(.cancelAction)
                 Button(action: confirm) { ActionLabel(confirmTitle, glyph: confirmGlyph) }
                     .buttonStyle(ActionButtonStyle(kind: .solidDanger))
                     .focused($focus, equals: .confirm)
