@@ -20,7 +20,7 @@ struct ActivitySessionRow: View {
                 help: session.title
             )
         }
-        .lead { CLIDot(core: session.cli, decorative: true) }
+        .lead { CLIDot(session.cli, decorative: true) }
         .cells {
             StateCell {
                 Tag(wording.tagText, tone: wording.tagTone, icon: wording.tagIcon)

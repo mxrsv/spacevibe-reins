@@ -1,5 +1,3 @@
-import ReinsCore
-
 /// The Loadout entries of the `⌘K` palette. Actions show while the tab is active; items are searched from any tab once the
 /// user has typed. Every entry performs a real change or a jump; nothing here runs a hook.
 extension LoadoutModel {
@@ -17,7 +15,7 @@ extension LoadoutModel {
                 ) { [weak self] in self?.remove(row, member: member) })
             }
         }
-        for cli in InventoryCLI.allCases {
+        for cli in CoreCLI.allCases {
             let count = deadHookCount(cli: cli)
             guard count > 1 else { continue }
             out.append(PaletteEntry(
@@ -34,7 +32,7 @@ extension LoadoutModel {
         guard let data else { return [] }
         var out: [PaletteEntry] = []
         for row in data.rows {
-            for cli in InventoryCLI.allCases where LoadoutRows.copyPlan(row, to: cli, events: data.events) != nil {
+            for cli in CoreCLI.allCases where LoadoutRows.copyPlan(row, to: cli, events: data.events) != nil {
                 out.append(PaletteEntry(
                     id: "loadout.copy.\(row.key).\(cli.rawValue)",
                     title: "Copy \(row.kind.noun) \(row.name) to \(cli.label)",

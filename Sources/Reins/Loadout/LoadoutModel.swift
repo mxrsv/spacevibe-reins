@@ -1,21 +1,22 @@
 import Foundation
 import Observation
-import ReinsCore
 
 /// What the table shows right now: the scope's rows before and after the chip filter, its chip counts and the bar scale.
 struct LoadoutView {
     var scope: LoadoutScope
     var all: [LoadoutRow]
     var shown: [LoadoutRow]
-    var counts: FilterCounts
+    var counts: CoreFilterCounts
     var max: [LoadoutKind: Int]
 }
 
 /// The Loadout screen's state: the inventory, the usage scan, the chip and scope choice, and every write.
 ///
-/// Reads and the scan run off the main actor. The inventory is read first and shown with pending cells; the scan then fills the
-/// cells in. After every write (and every Undo) the inventory is read again; the usage totals are kept, because a write cannot
-/// change what the logs say. A newer read or build replaces an older one, so a slow one never overwrites a fresh one.
+/// Everything goes through the core (`env.core(for: .loadout)` for reads and the scan, `.loadoutWrites` for writes; in process
+/// until the screen cuts over). The rows are read first and shown with pending cells; the scan then runs and the rows are read
+/// again with its counts attached. After every write (and every Undo) the rows are read again; the core keeps the usage totals,
+/// because a write cannot change what the logs say. A newer read or build replaces an older one, so a slow one never
+/// overwrites a fresh one.
 @MainActor
 @Observable
 final class LoadoutModel {
@@ -28,8 +29,8 @@ final class LoadoutModel {
     private(set) var data: LoadoutData?
     /// The inventory could not be read at all (no config folders).
     private(set) var readFailure: String?
-    private(set) var usageResult: UsageResult?
-    private(set) var scanProgress: UsageProgress?
+    private(set) var usageResult: CoreUsageResult?
+    private(set) var scanProgress: CoreUsageProgress?
     private(set) var scanFailure: String?
 
     var scope = LoadoutRows.globalScope
@@ -44,7 +45,7 @@ final class LoadoutModel {
 
     /// Set by the screen, so a palette entry can switch to this tab.
     @ObservationIgnored weak var shell: ShellModel?
-    @ObservationIgnored private var raw: InventorySnapshot?
+    @ObservationIgnored private var raw: CoreLoadoutRows?
     @ObservationIgnored private var started = false
     @ObservationIgnored private var scanRunning = false
     @ObservationIgnored private var readsInFlight = 0
@@ -71,6 +72,9 @@ final class LoadoutModel {
 
     var badge: Int? { data?.globalCount }
 
+    private var reads: any CoreService { env.core(for: .loadout) }
+    private var writes: any CoreService { env.core(for: .loadoutWrites) }
+
     // MARK: Reading
 
     /// The first read and scan. Safe to call again.
@@ -95,30 +99,40 @@ final class LoadoutModel {
     }
 
     func reload() {
-        guard let roots = env.roots else {
-            readFailure = env.startupProblem ?? "The config folders could not be resolved."
-            return
-        }
+        let generation = beginRead()
+        Task { await fetch(generation) }
+    }
+
+    /// Counted before the task starts, so `isSettled` is false from the moment a read is asked for.
+    private func beginRead() -> Int {
         readGeneration += 1
-        let generation = readGeneration
         readsInFlight += 1
-        Task {
-            let snapshot = await Task.detached(priority: .userInitiated) { Inventory.read(roots: roots) }.value
+        return readGeneration
+    }
+
+    /// One `loadout.rows`, then the build. Nothing is read while the core cannot resolve the config folders: its refusal is
+    /// the failure shown.
+    private func fetch(_ generation: Int) async {
+        do {
+            let rows = try await reads.loadoutRows()
             readsInFlight -= 1
             guard generation == readGeneration else { return }
-            raw = snapshot
+            raw = rows
             readFailure = nil
             await rebuild()
+        } catch {
+            readsInFlight -= 1
+            guard generation == readGeneration, !(error is CancellationError) else { return }
+            readFailure = AppEnvironment.message(error)
         }
     }
 
     private func scan() {
-        guard let roots = env.roots, !scanRunning else { return }
+        guard !scanRunning else { return }
         scanRunning = true
-        let scanner = UsageScanner(roots: roots)
         Task {
             do {
-                let result = try await scanner.scan(progress: { [weak self] progress in
+                let result = try await reads.usageScan(progress: { [weak self] progress in
                     Task { @MainActor in self?.scanProgress = progress }
                 })
                 usageResult = result
@@ -126,13 +140,13 @@ final class LoadoutModel {
             } catch is CancellationError {
                 // Nothing to report; the next refresh scans again.
             } catch {
-                // The engine only throws on cancellation, so this is a defensive branch. The message is the engine's own
-                // sentence or a fixed one, never a raw description (S-R3).
+                // The core's own sentence or a fixed one, never a raw description (S-R3).
                 scanFailure = AppEnvironment.message(error)
             }
-            scanRunning = false
             scanProgress = nil
-            await rebuild()
+            // The core attaches the finished scan to the rows it sends next, so the cells are read again.
+            await fetch(beginRead())
+            scanRunning = false
         }
     }
 
@@ -141,8 +155,7 @@ final class LoadoutModel {
         buildsRequested += 1
         buildGeneration += 1
         let generation = buildGeneration
-        let usage = usageResult.map(UsageInput.ready) ?? .scanning
-        let built = await Task.detached(priority: .userInitiated) { LoadoutData.build(raw: snapshot, usage: usage) }.value
+        let built = await Task.detached(priority: .userInitiated) { LoadoutData.build(raw: snapshot) }.value
         buildsApplied += 1
         guard generation == buildGeneration else { return }
         data = built
@@ -158,7 +171,7 @@ final class LoadoutModel {
             scope: effective,
             all: all,
             shown: all.filter { filter.matches($0.flags) },
-            counts: data.countsByScope[effective.value] ?? Inventory.filterCounts([]),
+            counts: data.countsByScope[effective.value] ?? CoreFilterCounts(all: 0, only: .init(claude: 0, codex: 0), neverRan: 0, dead: 0),
             max: LoadoutRows.maxRuns(all)
         )
     }
@@ -181,48 +194,45 @@ final class LoadoutModel {
 
     // MARK: Writes
 
-    func add(_ row: LoadoutRow, to cli: InventoryCLI) {
+    func add(_ row: LoadoutRow, to cli: CoreCLI) {
         guard let id = LoadoutRows.copyPlan(row, to: cli, events: data?.events ?? [:]) else { return }
-        perform(guardKey: "copy:\(id):\(cli.rawValue)", label: LoadoutFormat.addLabel(row: row, to: cli)) { roots in
-            try Mutate.copyToOther(roots: roots, id: id)
+        perform(guardKey: "copy:\(id):\(cli.rawValue)", label: LoadoutFormat.addLabel(row: row, to: cli)) { core in
+            try await core.loadoutCopyToOther(id: id).entry
         }
     }
 
     func remove(_ row: LoadoutRow, member: LoadoutMember) {
         let id = member.id
-        perform(guardKey: "remove:\(id)", label: LoadoutFormat.removeLabel(row: row, member: member)) { roots in
-            try Mutate.removeItem(roots: roots, id: id)
+        perform(guardKey: "remove:\(id)", label: LoadoutFormat.removeLabel(row: row, member: member)) { core in
+            try await core.loadoutRemoveItem(id: id).entry
         }
     }
 
     /// Writes that hold their double-click guard right now. Screenshots check it.
     var guardedWrites: Int { inFlight.count }
 
-    /// The dead hooks `Mutate.removeDeadHooks` removes for this CLI: every one, not one per row (two files can share a row).
-    func deadHookCount(cli: InventoryCLI) -> Int {
+    /// The dead hooks `loadout.removeDeadHooks` removes for this CLI: every one, not one per row (two files can share a row).
+    func deadHookCount(cli: CoreCLI) -> Int {
         raw?.hooks.filter { $0.cli == cli && $0.dead && $0.removable }.count ?? 0
     }
 
-    func removeDeadHooks(cli: InventoryCLI) {
+    func removeDeadHooks(cli: CoreCLI) {
         let count = deadHookCount(cli: cli)
         let label = "Removed \(count) dead \(count == 1 ? "hook" : "hooks") from \(cli.label)"
-        perform(guardKey: "remove-dead:\(cli.rawValue)", label: label) { roots in
-            try Mutate.removeDeadHooks(roots: roots, cli: cli)
+        perform(guardKey: "remove-dead:\(cli.rawValue)", label: label) { core in
+            try await core.loadoutRemoveDeadHooks(cli: cli).entry
         }
     }
 
-    private func perform(guardKey: String, label: String, _ work: @escaping @Sendable (Roots) throws -> JournalEntry) {
+    private func perform(guardKey: String, label: String, _ work: @escaping @Sendable (any CoreService) async throws -> CoreJournalEntry) {
         guard inFlight[guardKey] == nil else { return }
-        guard let roots = env.roots else {
-            env.toasts.show(env.startupProblem ?? "The config folders could not be resolved.", tone: .danger)
-            return
-        }
         guardTickets += 1
         let ticket = guardTickets
         inFlight[guardKey] = ticket
         let started = ContinuousClock.now
         env.performWithUndo(
             label: label,
+            via: writes,
             afterChange: { [weak self] in
                 self?.release(guardKey, ticket: ticket, since: started)
                 self?.reload()
@@ -231,7 +241,7 @@ final class LoadoutModel {
                 self?.release(guardKey, ticket: ticket, since: started)
                 self?.env.toasts.show(message, tone: .danger)
             }
-        ) { try work(roots) }
+        ) { try await work($0) }
     }
 
     /// Frees the guard once the write finished, but not before `writeGuard` has passed. Undo reuses `afterChange`; its stale

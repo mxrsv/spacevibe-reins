@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// One matrix row. Return, Space and a click only select it; the buttons inside it are the only things that change files.
@@ -20,7 +19,7 @@ struct LoadoutRowView: View {
         }
         .lead { ReinsIcon(row.kind.icon, size: .row) }
         .cells {
-            ForEach(InventoryCLI.allCases, id: \.self) { cli in
+            ForEach(CoreCLI.allCases, id: \.self) { cli in
                 UsageCell(
                     cli: cli,
                     model: LoadoutFormat.cellModel(row.cells[cli], scanFailure: model.scanFailure),
@@ -41,7 +40,7 @@ struct LoadoutRowView: View {
                 EmptyActionSlot()
                 ReadOnlyMark(reason: LoadoutRows.readOnlyReason(row))
             } else {
-                ForEach(InventoryCLI.allCases, id: \.self) { cli in
+                ForEach(CoreCLI.allCases, id: \.self) { cli in
                     if let member = members.first(where: { $0.cli == cli }) {
                         RowActionButton(title: LoadoutFormat.removeAction(row: row, member: member), icon: .trash, kind: .danger, iconOnly: true, badge: cli) {
                             model.remove(row, member: member)

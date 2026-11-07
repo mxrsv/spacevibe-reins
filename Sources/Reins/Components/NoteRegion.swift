@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// Plain-text notes about what the screen cannot know ("Cannot be measured"): one region under the lists it qualifies,
@@ -9,9 +8,6 @@ struct NoteRegion: View {
         let cli: InventoryCLI
         let notes: [String]
         var id: InventoryCLI { cli }
-
-        // bridge: removed with the Loadout migration
-        init(core cli: CoreCLI, notes: [String]) { self.init(cli: InventoryCLI(cli), notes: notes) }
 
         init(cli: InventoryCLI, notes: [String]) {
             self.cli = cli

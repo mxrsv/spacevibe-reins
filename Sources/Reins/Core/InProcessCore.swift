@@ -224,8 +224,7 @@ final class InProcessCore: CoreService, @unchecked Sendable {
     }
 
     func loadoutRemoveDeadHooks(cli: CoreCLI) async throws -> CoreEntryResult {
-        let engineCLI = Self.engineCLI(cli)
-        return try await run { roots in CoreEntryResult(entry: Self.entry(try Mutate.removeDeadHooks(roots: roots, cli: engineCLI))) }
+        return try await run { roots in CoreEntryResult(entry: Self.entry(try Mutate.removeDeadHooks(roots: roots, cli: Self.engineCLI(cli)))) }
     }
 
     func journalUndo(id: String) async throws -> CoreUndoResult {
@@ -344,7 +343,12 @@ final class InProcessCore: CoreService, @unchecked Sendable {
 
     // MARK: Engine type to DTO
 
-    private static func engineCLI(_ cli: CoreCLI) -> InventoryCLI { cli == .claude ? .claude : .codex }
+    /// The engine's own CLI type, named by the call it is passed to: the app's `InventoryCLI` is the DTO's, so this file cannot
+    /// spell the engine's (and `ReinsCore.InventoryCLI` does not parse: the module has a type of its own name).
+    private static func engineCLI<Engine: RawRepresentable>(_ cli: CoreCLI) -> Engine where Engine.RawValue == String {
+        guard let converted = Engine(rawValue: cli.rawValue) else { preconditionFailure("\(Engine.self) has no case \(cli.rawValue)") }
+        return converted
+    }
 
     private static func activity(_ report: ActivityReport) -> CoreActivityReport {
         CoreActivityReport(

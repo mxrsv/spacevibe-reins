@@ -1,5 +1,4 @@
 import AppKit
-import ReinsCore
 import SwiftUI
 
 /// The colour a CLI carries on the Limits surface. Gemini CLI has no brand colour in the app, so it reads neutral.
@@ -23,8 +22,7 @@ extension CoreLimitsCLI {
 
 extension CoreLimitsCLI {
     /// The same CLI as the inventory names it (Claude Code or Codex).
-    // bridge: removed with the Loadout migration
-    init(_ cli: InventoryCLI) { self = cli == .claude ? .claude : .codex }
+    init(_ cli: CoreCLI) { self = cli == .claude ? .claude : .codex }
 }
 
 /// A bare CLI brand mark, independent of data/semantic colours: Claude and Gemini retain the asset's colour;
@@ -41,7 +39,7 @@ struct CLIMark: View {
         self.size = size
     }
 
-    init(_ cli: InventoryCLI, size: Size = .large) {
+    init(_ cli: CoreCLI, size: Size = .large) {
         self.init(CoreLimitsCLI(cli), size: size)
     }
 

@@ -20,7 +20,7 @@ struct ActivityLane: View {
                 CardHeader(
                     cli.label, count: sessions.isEmpty ? nil : sessions.count,
                     detail: sessions.isEmpty ? nil : (sessions.count == 1 ? "session" : "sessions"),
-                    lead: { CLIDot(core: cli, decorative: true) }
+                    lead: { CLIDot(cli, decorative: true) }
                 )
                 if sessions.isEmpty { EmptyRow("No \(cli.label) session is running.") }
                 ForEach(sessions) { session in

@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 enum ReinsButtonKind {

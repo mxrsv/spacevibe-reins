@@ -80,11 +80,45 @@ final class AppEnvironment {
         return roots
     }
 
+    /// Runs a write through `service` (the engine the screen's writes route to). On success it shows a toast with `label` and an
+    /// Undo that calls `service.journalUndo` with the entry the write returned; on failure it shows a danger toast with the
+    /// `CoreError` message. `afterChange` and `onFailure` are as for the engine overload below.
+    func performWithUndo(label: String, via service: any CoreService, afterChange: (@MainActor () -> Void)? = nil, onFailure: (@MainActor (String) -> Void)? = nil, _ work: @escaping @Sendable (any CoreService) async throws -> CoreJournalEntry) {
+        Task { [weak self] in
+            let outcome: Result<CoreJournalEntry, Error>
+            do { outcome = .success(try await work(service)) } catch { outcome = .failure(error) }
+            guard let self else { return }
+            switch outcome {
+            case .success(let entry):
+                self.toasts.show(label, undo: { [weak self] in self?.undo(entry, via: service, label: label, afterChange: afterChange) })
+                afterChange?()
+            case .failure(let error):
+                if let onFailure { onFailure(Self.message(error)) } else { self.toasts.show(Self.message(error), tone: .danger) }
+            }
+        }
+    }
+
+    private func undo(_ entry: CoreJournalEntry, via service: any CoreService, label: String, afterChange: (@MainActor () -> Void)?) {
+        Task { [weak self] in
+            let outcome: Result<CoreUndoResult, Error>
+            do { outcome = .success(try await service.journalUndo(id: entry.id)) } catch { outcome = .failure(error) }
+            guard let self else { return }
+            switch outcome {
+            case .success(let undone):
+                self.toasts.show("Undid \(undone.label.isEmpty ? label : undone.label)")
+                afterChange?()
+            case .failure(let error):
+                self.toasts.show(Self.message(error), tone: .danger)
+            }
+        }
+    }
+
     /// Runs a write off the main thread. On success it shows a toast with `label` and an Undo that calls
     /// `Journal.undo` (also off the main thread); on failure it shows a danger toast with `ReinsError.message`.
     /// `afterChange` runs on the main actor after the write and again after an undo, so a screen can reload; it does
     /// not run when the write failed. With `onFailure` the message goes there instead of a toast (a screen that shows the
     /// error next to the control, such as the Rules add-rule row).
+    // bridge: removed with the Rules migration
     func performWithUndo(label: String, afterChange: (@MainActor () -> Void)? = nil, onFailure: (@MainActor (String) -> Void)? = nil, _ work: @escaping @Sendable () throws -> JournalEntry) {
         let roots: Roots
         do { roots = try requireRoots() } catch {

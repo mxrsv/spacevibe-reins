@@ -38,7 +38,7 @@ private struct ActivityFileRowView: View {
         .lead { ReinsIcon(.file, size: .row) }
         .cells {
             HStack(spacing: Space.s4) {
-                ForEach(file.clis, id: \.rawValue) { CLIDot(core: $0) }
+                ForEach(file.clis, id: \.rawValue) { CLIDot($0) }
             }
             .frame(width: Metrics.fileCLIsWidth, alignment: .trailing)
             Text([ActivityFormat.plural(file.edits, "edit"), ActivityFormat.plural(file.sessions, "session"), ActivityFormat.ago(file.last, now: now)].joined(separator: " \u{00B7} "))

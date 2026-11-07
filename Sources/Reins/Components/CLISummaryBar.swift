@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// One line about the other CLI at the top of a page that shows only one (Rules): its mark and name, how it stands in a

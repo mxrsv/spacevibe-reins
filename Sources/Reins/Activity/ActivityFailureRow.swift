@@ -24,7 +24,7 @@ struct ActivityFailureRow: View {
             if isHook {
                 ReinsIcon(.hook, size: .row, label: "Hook")
             } else {
-                CLIDot(core: failure.cli, decorative: true)
+                CLIDot(failure.cli, decorative: true)
             }
         }
         .cells {

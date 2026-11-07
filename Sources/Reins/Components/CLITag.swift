@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// The CLI's name as a tag, with a dot in the CLI's colour. For rows that mix both CLIs (file history, failed commands).

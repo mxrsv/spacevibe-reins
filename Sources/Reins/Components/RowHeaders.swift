@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// A sub-group inside one card: "Deny 3", "Ask first 2". 32 pt, no fill and no line under it: the 16 pt of space the card

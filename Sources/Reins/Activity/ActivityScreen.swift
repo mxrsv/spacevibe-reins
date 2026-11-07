@@ -39,7 +39,7 @@ struct ActivityScreen: View {
                     }
                     NoteRegion(
                         title: "Cannot be measured",
-                        columns: CoreCLI.allCases.map { NoteRegion.Column(core: $0, notes: ActivityRows.limits(report, cli: $0).map(\.text)) },
+                        columns: CoreCLI.allCases.map { NoteRegion.Column(cli: $0, notes: ActivityRows.limits(report, cli: $0).map(\.text)) },
                         shared: [ActivityRows.costLimit]
                     )
                     .padding(.top, Rhythm.cards)

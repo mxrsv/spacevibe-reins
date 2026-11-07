@@ -1,5 +1,4 @@
 import Foundation
-import ReinsCore
 
 /// A label above a row's name: text, tone and icon. Decided here so the row view only draws.
 struct LoadoutTag: Equatable {
@@ -14,7 +13,7 @@ enum LoadoutFormat {
     /// finish, so the cell says that instead.
     static let scanPendingReason = "Usage scan has not finished"
 
-    static func cellModel(_ state: UsageCellState, scanFailure: String?) -> UsageCellModel {
+    static func cellModel(_ state: CoreUsageCell, scanFailure: String?) -> UsageCellModel {
         switch state {
         case .counted(let runs, _, _): return .counted(runs: runs)
         case .pending(let reason):
@@ -35,7 +34,7 @@ enum LoadoutFormat {
     }
 
     /// What the counts rest on. They come from every session log found, not a fixed window, so it says how many and since when.
-    static func usageNote(result: UsageResult?, progress: UsageProgress?, failure: String?) -> String {
+    static func usageNote(result: CoreUsageResult?, progress: CoreUsageProgress?, failure: String?) -> String {
         if let result {
             let since = [result.windows.claude.oldest, result.windows.codex.oldest].compactMap { $0 }.min()
             let claude = result.sessions.claude.formatted(.number.locale(Locale(identifier: "en_US")))
@@ -53,7 +52,7 @@ enum LoadoutFormat {
         return "Removed \(row.kind.noun) \(row.name) from \(cli)"
     }
 
-    static func addLabel(row: LoadoutRow, to cli: InventoryCLI) -> String {
+    static func addLabel(row: LoadoutRow, to cli: CoreCLI) -> String {
         "Added \(row.kind.noun) \(row.name) to \(cli.label)"
     }
 

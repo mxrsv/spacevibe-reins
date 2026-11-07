@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// One CLI's usage evidence for one row. The five states look different from each other on purpose

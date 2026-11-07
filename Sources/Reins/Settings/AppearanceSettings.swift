@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// Settings > Appearance: Theme as three tiles, Font size over two Loadout rows that show it, and the interface language.

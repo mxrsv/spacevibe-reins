@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// Made-up Loadout cards that exercise every usage state. Synthetic names only; used by the gallery and the demo tabs,

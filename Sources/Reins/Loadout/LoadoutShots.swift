@@ -1,5 +1,4 @@
 import Foundation
-import ReinsCore
 import SwiftUI
 
 /// Headless screenshots of the real Loadout screen, read from the synthetic HOME before any frame is drawn (`ImageRenderer`
@@ -9,13 +8,15 @@ import SwiftUI
 ///     SPACEVIBE_SHOT_SCREEN=loadout scripts/dev-fixture.sh --shots <dir>
 ///
 /// The "added" and "removed" shots make the real write in the synthetic HOME, draw the toast, then undo it through the journal
-/// and check the row is back, so one run also exercises Add to, Remove and Undo against real files. Nothing outside the
-/// synthetic HOME is touched: `Roots.resolve` refuses a root under the real home when `SPACEVIBE_TEST=1`.
+/// and check the row is back, so one run also exercises Add to, Remove and Undo against real files. The writes go through the
+/// core `env.core(for: .loadoutWrites)` picks, as the screen's do. Nothing outside the synthetic HOME is touched:
+/// `Roots.resolve` refuses a root under the real home when `SPACEVIBE_TEST=1`.
 @MainActor
 enum LoadoutShots {
     static func run(into directory: URL) throws {
         let env = AppEnvironment.live(toasts: ToastCenter(announce: false))
-        guard let roots = env.roots else { throw ShotHarness.Failure(env.startupProblem ?? "no roots") }
+        guard env.roots != nil else { throw ShotHarness.Failure(env.startupProblem ?? "no roots") }
+        let writes = env.core(for: .loadoutWrites)
         let model = LoadoutModel(env: env)
         model.start()
         try settle(model)
@@ -62,54 +63,55 @@ enum LoadoutShots {
 
             // Add to Codex: a real copy, the toast, then a real Undo.
             if let row = model.data?.rows.first(where: { $0.name == "ponytail" }), let id = LoadoutRows.copyPlan(row, to: .codex, events: model.data?.events ?? [:]) {
-                let entry = try Mutate.copyToOther(roots: roots, id: id)
+                let entry = try call("Add to Codex") { try await writes.loadoutCopyToOther(id: id).entry }
                 model.reload()
                 try settle(model)
                 env.toasts.show(LoadoutFormat.addLabel(row: row, to: .codex), undo: {})
                 try shot("added")
                 reset()
-                _ = try Journal.undo(roots, id: entry.id)
+                _ = try call("Undo of Add to Codex") { try await writes.journalUndo(id: entry.id) }
                 model.reload()
                 try settle(model)
-                try checkCell(model, "ponytail", cli: .codex, matches: { $0.isMissing }, what: "Undo of Add to Codex restored the empty cell")
+                try checkCell(model, "ponytail", cli: .codex, matches: { $0 == .missing }, what: "Undo of Add to Codex restored the empty cell")
             }
 
             // Remove: a real removal from Claude Code, the toast, then a real Undo.
             if let row = model.data?.rows.first(where: { $0.name == "tdd" }), let member = row.removableMembers.first {
-                let entry = try Mutate.removeItem(roots: roots, id: member.id)
+                let memberID = member.id
+                let entry = try call("Remove") { try await writes.loadoutRemoveItem(id: memberID).entry }
                 model.reload()
                 try settle(model)
                 env.toasts.show(LoadoutFormat.removeLabel(row: row, member: member), undo: {})
                 try shot("removed")
                 reset()
-                _ = try Journal.undo(roots, id: entry.id)
+                _ = try call("Undo of Remove") { try await writes.journalUndo(id: entry.id) }
                 model.reload()
                 try settle(model)
-                try checkCell(model, "tdd", cli: .claude, matches: { !$0.isMissing }, what: "Undo of Remove restored the skill")
+                try checkCell(model, "tdd", cli: .claude, matches: { $0 != .missing }, what: "Undo of Remove restored the skill")
             }
 
             try memberChecks()
-            try deadHookChecks(model, env: env, roots: roots)
+            try deadHookChecks(model, env: env, writes: writes)
         }
     }
 
     /// Two items with one key in one CLI: the row keeps the one the usage cells are built from (the last).
     private static func memberChecks() throws {
-        func skill(_ id: String) -> InventoryItem {
-            InventoryItem(id: id, cli: .claude, kind: .skill, name: "twin", entry: "SKILL.md", description: "", owner: "user", path: "/x/\(id)", file: "/x/\(id)/SKILL.md", removable: true, scope: .global, project: nil)
+        func skill(_ id: String) -> CoreInventoryItem {
+            CoreInventoryItem(id: id, cli: .claude, kind: .skill, name: "twin", entry: "SKILL.md", description: "", owner: "user", path: "/x/\(id)", file: "/x/\(id)/SKILL.md", removable: true, scope: .global, project: nil, inOther: false, key: "skill::twin")
         }
-        let snapshot = InventorySnapshot(items: [skill("first"), skill("second")], hooks: [], problems: [], roots: [:])
+        let snapshot = CoreLoadoutRows(usage: .scanning, items: [skill("first"), skill("second")], hooks: [], problems: [], events: [:], roots: [:], countsByScope: [:], rowFlags: [:])
         let row = LoadoutRows.build(snapshot, home: nil).first
         try ShotHarness.check(row?.members[.claude]?.id == "second", "a row with two same-key items acts on the item its cell is built from")
     }
 
     /// The dead-hook count in the toast is the engine's, the guard outlives the write, and a double click writes once.
-    private static func deadHookChecks(_ model: LoadoutModel, env: AppEnvironment, roots: Roots) throws {
+    private static func deadHookChecks(_ model: LoadoutModel, env: AppEnvironment, writes: any CoreService) throws {
         let count = model.deadHookCount(cli: .claude)
         guard count > 0 else { return }
-        let direct = try Mutate.removeDeadHooks(roots: roots, cli: .claude)
+        let direct = try call("the direct dead-hook removal") { try await writes.loadoutRemoveDeadHooks(cli: .claude).entry }
         try ShotHarness.check(direct.label.hasPrefix("Removed \(count) dead hook"), "the dead-hook count matches the engine's journal label (\(direct.label))")
-        _ = try Journal.undo(roots, id: direct.id)
+        _ = try call("Undo of the direct removal") { try await writes.journalUndo(id: direct.id) }
         model.reload()
         try settle(model)
 
@@ -129,9 +131,19 @@ enum LoadoutShots {
         env.toasts.dismiss()
     }
 
-    private static func checkCell(_ model: LoadoutModel, _ name: String, cli: InventoryCLI, matches predicate: (UsageCellState) -> Bool, what: String) throws {
+    private static func checkCell(_ model: LoadoutModel, _ name: String, cli: CoreCLI, matches predicate: (CoreUsageCell) -> Bool, what: String) throws {
         let row = model.data?.rows.first(where: { $0.name == name })
         try ShotHarness.check(row.map { predicate($0.cells[cli]) } ?? false, what)
+    }
+
+    /// Runs one core call and spins the main run loop until it answers (`ImageRenderer` runs no `.task`).
+    private static func call<T: Sendable>(_ what: String, _ work: @escaping @Sendable () async throws -> T) throws -> T {
+        var outcome: Result<T, Error>?
+        Task { @MainActor in
+            do { outcome = .success(try await work()) } catch { outcome = .failure(error) }
+        }
+        try ShotHarness.wait(what) { outcome != nil }
+        return try outcome!.get()
     }
 
     /// Spins the main run loop until reads, the scan and the builds are done, or the read fails.

@@ -1,10 +1,9 @@
 import Foundation
-import ReinsCore
 
 enum LoadoutKind: CaseIterable {
     case skill, agent, hook
 
-    init(_ kind: InventoryKind) {
+    init(_ kind: CoreKind) {
         switch kind {
         case .skill: self = .skill
         case .agent: self = .agent
@@ -39,8 +38,8 @@ enum LoadoutKind: CaseIterable {
 
 /// One installed thing in one CLI: a skill or agent folder/file, or one hook command.
 enum LoadoutMember: Equatable, Sendable {
-    case item(InventoryItem)
-    case hook(InventoryHook)
+    case item(CoreInventoryItem)
+    case hook(CoreInventoryHook)
 
     var id: String {
         switch self {
@@ -49,7 +48,7 @@ enum LoadoutMember: Equatable, Sendable {
         }
     }
 
-    var cli: InventoryCLI {
+    var cli: CoreCLI {
         switch self {
         case .item(let item): item.cli
         case .hook(let hook): hook.cli
@@ -70,20 +69,12 @@ enum LoadoutMember: Equatable, Sendable {
         }
     }
 
-    var cells: InventoryCells? {
+    var cells: CoreCells? {
         switch self {
         case .item(let item): item.cells
         case .hook(let hook): hook.cells
         }
     }
-}
-
-/// Which chip a row answers to. Decided per row with the same engine function that counts the chips, so a chip's
-/// number and the rows it shows cannot disagree.
-struct LoadoutFlags: Equatable, Sendable {
-    var one: Bool
-    var neverRan: Bool
-    var dead: Bool
 }
 
 enum LoadoutFilter: CaseIterable, Hashable {
@@ -98,7 +89,7 @@ enum LoadoutFilter: CaseIterable, Hashable {
         }
     }
 
-    func matches(_ flags: LoadoutFlags) -> Bool {
+    func matches(_ flags: CoreRowFlags) -> Bool {
         switch self {
         case .all: true
         case .one: flags.one
@@ -107,7 +98,7 @@ enum LoadoutFilter: CaseIterable, Hashable {
         }
     }
 
-    func count(in counts: FilterCounts) -> Int {
+    func count(in counts: CoreFilterCounts) -> Int {
         switch self {
         case .all: counts.all
         case .one: counts.only.claude + counts.only.codex
@@ -124,9 +115,11 @@ struct LoadoutRow: Identifiable, Equatable, Sendable {
     var kind: LoadoutKind
     /// Absolute project path, or nil for user-level config.
     var project: String?
-    var members: [InventoryCLI: LoadoutMember]
-    var cells: InventoryCells
-    var flags: LoadoutFlags
+    var members: [CoreCLI: LoadoutMember]
+    var cells: CoreCells
+    /// Which chip the row answers to: the core's `rowFlags`, decided with the function that counts the chips, so a chip's
+    /// number and the rows it shows cannot disagree.
+    var flags: CoreRowFlags
     var name: String
     /// A description for skills and agents; the command for hooks.
     var detail: String
@@ -138,7 +131,7 @@ struct LoadoutRow: Identifiable, Equatable, Sendable {
     var addedNote: String?
 
     var removableMembers: [LoadoutMember] {
-        InventoryCLI.allCases.compactMap { members[$0] }.filter(\.removable)
+        CoreCLI.allCases.compactMap { members[$0] }.filter(\.removable)
     }
 }
 
