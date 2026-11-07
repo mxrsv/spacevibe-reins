@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// AC10, wording half: share left, tone, resets, reading age, the short states and the stale marker, against fixed dates.
 @Suite("Limits wording")

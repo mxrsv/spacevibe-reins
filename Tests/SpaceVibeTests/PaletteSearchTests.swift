@@ -1,6 +1,6 @@
 import SwiftUI
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// A tab that only supplies palette items, so the cap can be reached without piling up demo content.
 @MainActor

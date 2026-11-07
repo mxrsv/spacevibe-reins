@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// The Codex page of Rules: what it says about a config, and that no secret-looking string from `config.toml` reaches the
 /// screen (AGENTS.md S-R3).

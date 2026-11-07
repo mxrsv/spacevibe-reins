@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 @Suite("Activity wording")
 struct ActivityFormatTests {

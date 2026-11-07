@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// A `CoreService` that serves only Activity, for the model tests: the stream is fed by hand, and Stop answers what the test sets.
 /// Every other method refuses.

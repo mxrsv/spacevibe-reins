@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Writes the app's icons as SwiftUI path code into Sources/Reins/Components, from three icon sets in their Iconify JSON form.
+// Writes the app's icons as SwiftUI path code into Sources/SpaceVibe/Components, from three icon sets in their Iconify JSON form.
 // No SVG is shipped or parsed at run time (spec docs/specs/2026-11-03-reins-design-language.md, v3 "Icons"; v5 spec V5-R9,
 // V5-R10, V5-R12).
 //
@@ -22,7 +22,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT_DIR = join(REPO, 'Sources/Reins/Components');
+const OUT_DIR = join(REPO, 'Sources/SpaceVibe/Components');
 
 /** [Swift case, Solar icon without the "-bold-duotone" suffix, what it stands for (the SF Symbol it replaces)]. The old screens. */
 export const GLYPHS = [

@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>Reins</string>
+	<string>SpaceVibe</string>
 	<!-- Built by scripts/build-app.sh from Resources/AppIcon.svg through scripts/build-icon.swift. -->
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>

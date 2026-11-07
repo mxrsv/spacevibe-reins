@@ -1,6 +1,6 @@
 import CoreText
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 @Suite("Inter, the only typeface")
 struct InterFontTests {

@@ -1,5 +1,5 @@
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// V5-A16 and V5-R46: green, amber and red mean state only. Measured as OKLCH hue in both appearances: a state family is
 /// its hue ±20° (the working threshold, which the owner's eye at the final eye task may move); every category, the Claude

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// The Loadout screen runs on the Go core (plan S.5 and S.6). Every test runs on a private copy of the synthetic fixture home
 /// (S-R1: never the real one), so a write test's byte comparison is the whole home outside Reins' own folder.

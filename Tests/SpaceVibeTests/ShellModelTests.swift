@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 extension ShellModel {
     /// A shell over the demo tabs (or the given ones) with its own throwaway defaults suite, forced dark, so no test reads

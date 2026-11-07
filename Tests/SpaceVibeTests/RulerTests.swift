@@ -1,6 +1,6 @@
 import CoreGraphics
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// The ten-cell ruler (spec `docs/specs/2026-11-03-reins-design-language.md`, v3 "Progress", DL8): each cell is a tenth of the
 /// real track width with the 3 pt gap at its trailing end, the filled cells take the share, the last filled one is cut at it,

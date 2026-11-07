@@ -1,5 +1,5 @@
 import Foundation
-@testable import Reins
+@testable import SpaceVibe
 
 /// A `CoreService` that serves nothing: every method refuses with a 500. A model test subclasses it and overrides only the
 /// methods its screen calls, so a stray call to another one fails loudly instead of answering with made-up data.

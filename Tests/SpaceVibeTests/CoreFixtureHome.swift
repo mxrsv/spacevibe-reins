@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// A private copy of the synthetic fixture home (`core/testdata/fixtures`) and the environment that points the real Go
 /// core at it (S-R1: never the real home). The tree is materialized here from `fixtures/manifest.json`, so it depends on no engine.

@@ -4,7 +4,7 @@ Reference pages for the engine (the Go core): what each subsystem is responsible
 
 | Subsystem | Page | Source |
 | --- | --- | --- |
-| Shell and core split, data flow, fixtures and goldens, Swift-to-Go traps | [overview.md](overview.md) | `core/`, `Sources/Reins` |
+| Shell and core split, data flow, fixtures and goldens, Swift-to-Go traps | [overview.md](overview.md) | `core/`, `Sources/SpaceVibe` |
 | Stdio protocol between the shell and the core: framing, lifecycle, errors, every method and its JSON | [core-protocol.md](core-protocol.md) | `core/internal/rpc` (PR.2), `core/internal/goldentest` |
 | Skills, subagents and hooks installed for both CLIs, and their usage cells | [inventory.md](inventory.md) | `core/internal/inventory`, `core/internal/roots` |
 

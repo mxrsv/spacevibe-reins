@@ -7,7 +7,7 @@ import PackageDescription
 // `.macOS(.v15)` here is what makes the shipped binary report `minos 15.0`, and
 // `LSMinimumSystemVersion` in Resources/Info.plist must stay in step with it.
 let package = Package(
-    name: "Reins",
+    name: "SpaceVibe",
     platforms: [.macOS(.v15)],
     dependencies: [
         // Linked by the app target only. The engine is the Go helper `Contents/Helpers/spacevibe`, not a Swift target.
@@ -15,15 +15,15 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "Reins",
+            name: "SpaceVibe",
             dependencies: [.product(name: "Sparkle", package: "Sparkle")],
             swiftSettings: [.swiftLanguageMode(.v5)],
             // scripts/build-app.sh copies Sparkle.framework to Contents/Frameworks.
             linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
         ),
         .testTarget(
-            name: "ReinsTests",
-            dependencies: ["Reins"],
+            name: "SpaceVibeTests",
+            dependencies: ["SpaceVibe"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]

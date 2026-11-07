@@ -1,7 +1,7 @@
 import Foundation
 import Sparkle
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 @Suite("App updates")
 struct UpdateControllerTests {

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// The Limits model reads through `env.goCore`, the Go core (plan S.4). The core runs on a private copy of the synthetic
 /// fixture home (S-R1).

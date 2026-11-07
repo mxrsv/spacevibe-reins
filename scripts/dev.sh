@@ -5,9 +5,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-APP_NAME="Reins"
+APP_NAME="SpaceVibe"
 APP_BUNDLE="build/${APP_NAME}.app"
-EXECUTABLE_NAME="Reins"
+EXECUTABLE_NAME="SpaceVibe"
 
 scripts/build-app.sh
 

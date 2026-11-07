@@ -2,7 +2,7 @@ import Foundation
 import Testing
 
 /// Screens compose base components; they never style themselves (spec `docs/specs/2026-11-03-reins-design-language.md`,
-/// "Component base", DL3). A restyle then means editing `Sources/Reins/Tokens` or `Sources/Reins/Components` only.
+/// "Component base", DL3). A restyle then means editing `Sources/SpaceVibe/Tokens` or `Sources/SpaceVibe/Components` only.
 ///
 /// This reads source text: every forbidden pattern is lexical. `allowed` was a ratchet while the screens moved onto components;
 /// it is now empty, so any literal in a screen folder fails. A count that differs from an entry in either direction fails too.
@@ -15,7 +15,7 @@ struct StyleBoundaryTests {
         "Agents", "Skills", "Subagents", "Hooks",
     ]
 
-    /// Folders under `Sources/Reins` that are not screens: tokens and components own the look, `Gallery/` lays out specimens,
+    /// Folders under `Sources/SpaceVibe` that are not screens: tokens and components own the look, `Gallery/` lays out specimens,
     /// `App/` is the entry point, `Core/` is the engine seam (DTOs and the `CoreService` adapters, no views).
     static let exemptFolders = ["Tokens", "Components", "Gallery", "App", "Core"]
 
@@ -54,10 +54,10 @@ struct StyleBoundaryTests {
 
     static var appSources: URL {
         URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent() // ReinsTests
+            .deletingLastPathComponent() // SpaceVibeTests
             .deletingLastPathComponent() // Tests
             .deletingLastPathComponent() // checkout
-            .appendingPathComponent("Sources/Reins")
+            .appendingPathComponent("Sources/SpaceVibe")
     }
 
     /// Forbidden matches in one file. Whole-line comments are skipped; a trailing comment is skipped when the line has no
@@ -104,7 +104,7 @@ struct StyleBoundaryTests {
         #expect(problems.isEmpty, "\(problems.joined(separator: "\n"))")
     }
 
-    @Test("every folder under Sources/Reins is a listed screen folder or exempt")
+    @Test("every folder under Sources/SpaceVibe is a listed screen folder or exempt")
     func everyFolderIsKnown() throws {
         let entries = try FileManager.default.contentsOfDirectory(atPath: Self.appSources.path)
         var isDirectory: ObjCBool = false

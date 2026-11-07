@@ -5,7 +5,7 @@
 # Sparkle's update window takes a click, so these test bundles (never the committed plist) turn on background install;
 # the signature check is the same either way. The window and relaunch are checked by hand: see the plan, task S7.3.
 #
-# Runs against a temporary HOME. Needs the Developer ID identity, the key in the Keychain, and no other Reins running,
+# Runs against a temporary HOME. Needs the Developer ID identity, the key in the Keychain, and no other SpaceVibe running,
 # because the app's Sparkle settings live in the shared `dev.spacevibe.app` defaults domain; only the SU* keys this
 # run sets are touched, and they are removed at the end.
 set -euo pipefail
@@ -23,7 +23,7 @@ TOOLS=".build/artifacts/sparkle/Sparkle/bin"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
-if pgrep -x Reins >/dev/null; then fail "quit the running Reins first"; fi
+if pgrep -x SpaceVibe >/dev/null; then fail "quit the running SpaceVibe first"; fi
 
 WORK="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/reins-update-test.XXXXXX")" && pwd -P)"
 SERVER=""
@@ -33,7 +33,7 @@ clear_settings() {
   done
 }
 cleanup() {
-  pkill -f "${WORK}/.*/MacOS/Reins" 2>/dev/null || true
+  pkill -f "${WORK}/.*/MacOS/SpaceVibe" 2>/dev/null || true
   if [[ -n "${SERVER}" ]]; then kill "${SERVER}" 2>/dev/null || true; wait "${SERVER}" 2>/dev/null || true; fi
   clear_settings
   rm -rf "${WORK}"
@@ -43,26 +43,26 @@ trap cleanup EXIT
 echo "==> building (feed ${FEED}/appcast.xml)"
 SPACEVIBE_BUNDLE_DIR="${WORK}/base" SPACEVIBE_UPDATE_FEED_URL="${FEED}/appcast.xml" scripts/build-app.sh >"${WORK}/build.log" 2>&1 \
   || { tail -20 "${WORK}/build.log" >&2; fail "build"; }
-IDENTITY="$(codesign -dvv "${WORK}/base/Reins.app" 2>&1 | sed -n 's/^Authority=\(Developer ID Application:.*\)$/\1/p')"
+IDENTITY="$(codesign -dvv "${WORK}/base/SpaceVibe.app" 2>&1 | sed -n 's/^Authority=\(Developer ID Application:.*\)$/\1/p')"
 [[ -n "${IDENTITY}" ]] || fail "needs a Developer ID signature (see AGENTS.md B3)"
 
 # make_bundle <dir> <build number> <version>
 make_bundle() {
   mkdir -p "$1"
-  ditto "${WORK}/base/Reins.app" "$1/Reins.app"
-  plutil -replace CFBundleVersion -string "$2" "$1/Reins.app/Contents/Info.plist"
-  plutil -replace CFBundleShortVersionString -string "$3" "$1/Reins.app/Contents/Info.plist"
-  plutil -replace SUAutomaticallyUpdate -bool YES "$1/Reins.app/Contents/Info.plist"
-  plutil -replace SUAllowsAutomaticUpdates -bool YES "$1/Reins.app/Contents/Info.plist"
-  codesign --force --options runtime --timestamp=none --sign "${IDENTITY}" "$1/Reins.app" 2>/dev/null
+  ditto "${WORK}/base/SpaceVibe.app" "$1/SpaceVibe.app"
+  plutil -replace CFBundleVersion -string "$2" "$1/SpaceVibe.app/Contents/Info.plist"
+  plutil -replace CFBundleShortVersionString -string "$3" "$1/SpaceVibe.app/Contents/Info.plist"
+  plutil -replace SUAutomaticallyUpdate -bool YES "$1/SpaceVibe.app/Contents/Info.plist"
+  plutil -replace SUAllowsAutomaticUpdates -bool YES "$1/SpaceVibe.app/Contents/Info.plist"
+  codesign --force --options runtime --timestamp=none --sign "${IDENTITY}" "$1/SpaceVibe.app" 2>/dev/null
 }
 
 mkdir -p "${WORK}/feed" "${WORK}/home/.claude" "${WORK}/home/.codex" "${WORK}/home/.spacevibe"
 make_bundle "${WORK}/new" 2 0.2.0
-ditto -c -k --keepParent "${WORK}/new/Reins.app" "${WORK}/feed/Reins-0.2.0.zip"
+ditto -c -k --keepParent "${WORK}/new/SpaceVibe.app" "${WORK}/feed/SpaceVibe-0.2.0.zip"
 "${TOOLS}/generate_appcast" --account "${SPARKLE_ACCOUNT}" --download-url-prefix "${FEED}/" --maximum-deltas 0 "${WORK}/feed" >/dev/null
 cp "${WORK}/feed/appcast.xml" "${WORK}/appcast-right.xml"
-# A signature of the right size that the Reins key did not make.
+# A signature of the right size that the SpaceVibe key did not make.
 sed -E "s|sparkle:edSignature=\"[^\"]*\"|sparkle:edSignature=\"$(openssl rand -base64 64 | tr -d '\n')\"|" \
   "${WORK}/appcast-right.xml" >"${WORK}/appcast-wrong.xml"
 
@@ -73,7 +73,7 @@ SERVER=$!
 run() {
   local name="$1" appcast="$2" expected="$3" dir="${WORK}/$1" pid="" info
   echo "==> ${name}"
-  info="${dir}/Reins.app/Contents/Info.plist"
+  info="${dir}/SpaceVibe.app/Contents/Info.plist"
   make_bundle "${dir}" 1 0.1.0
   cp "${appcast}" "${WORK}/feed/appcast.xml"
   : >"${WORK}/server.log"
@@ -81,14 +81,14 @@ run() {
   # Far enough in the past that the scheduled check runs at launch.
   defaults write "${DOMAIN}" SULastCheckTime -date '2020-01-01 00:00:00 +0000'
   open -g -n --env "HOME=${WORK}/home" --env "CLAUDE_CONFIG_DIR=${WORK}/home/.claude" --env "CODEX_HOME=${WORK}/home/.codex" \
-    --env "SPACEVIBE_HOME=${WORK}/home/.spacevibe" "${dir}/Reins.app"
+    --env "SPACEVIBE_HOME=${WORK}/home/.spacevibe" "${dir}/SpaceVibe.app"
 
-  for _ in $(seq 1 60); do grep -q 'GET /Reins-0.2.0.zip' "${WORK}/server.log" && break; sleep 1; done
-  grep -q 'GET /Reins-0.2.0.zip' "${WORK}/server.log" || { cat "${WORK}/server.log" >&2; fail "${name}: the app never downloaded the update"; }
+  for _ in $(seq 1 60); do grep -q 'GET /SpaceVibe-0.2.0.zip' "${WORK}/server.log" && break; sleep 1; done
+  grep -q 'GET /SpaceVibe-0.2.0.zip' "${WORK}/server.log" || { cat "${WORK}/server.log" >&2; fail "${name}: the app never downloaded the update"; }
   echo "    downloaded after the check: $(grep -c 'GET /appcast.xml' "${WORK}/server.log") feed request(s)"
   sleep 6 # Verification and extraction run in the background and have no signal this script can read.
 
-  pid="$(pgrep -f "${dir}/Reins.app/Contents/MacOS/Reins" || true)"
+  pid="$(pgrep -f "${dir}/SpaceVibe.app/Contents/MacOS/SpaceVibe" || true)"
   [[ -n "${pid}" ]] || fail "${name}: the app died before quit"
   swift - "${pid}" <<'SWIFT'
 import AppKit
@@ -103,7 +103,7 @@ SWIFT
     sleep 1
   done
   [[ "${actual}" == "${expected}" ]] || fail "${name}: build ${actual} after quit, expected ${expected}"
-  codesign --verify --deep --strict "${dir}/Reins.app" 2>/dev/null || fail "${name}: the bundle no longer verifies"
+  codesign --verify --deep --strict "${dir}/SpaceVibe.app" 2>/dev/null || fail "${name}: the bundle no longer verifies"
   echo "    PASS: build ${actual} after quit, signature valid"
 }
 

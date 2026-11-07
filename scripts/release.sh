@@ -28,7 +28,7 @@ esac
 if [[ $# -ne 1 ]]; then usage >&2; exit 2; fi
 
 GITHUB_REPO="mxrsv/spacevibe-reins"
-APP_NAME="Reins"
+APP_NAME="SpaceVibe"
 SIGNING_IDENTITY="${SPACEVIBE_SIGNING_IDENTITY:-Developer ID Application: VAN BINH TRAN (DJDD3T8LH7)}"
 NOTARY_PROFILE="${SPACEVIBE_NOTARY_PROFILE:-}"
 
@@ -130,6 +130,6 @@ Publish, in this order (each step is outward-facing; do not script it away):
   1. git tag ${TAG} ${REVISION:0:7} && git push origin main ${TAG}
   2. gh release create ${TAG} "${DMG}" "${OUTPUT_DIR}/appcast.xml" --title "${APP_NAME} ${VERSION}" --notes-file <notes.md>
      The asset must keep the name appcast.xml: installed copies read ${UPDATE_FEED_URL}
-  3. Download the DMG from the release page on another Mac, open it and launch Reins once before announcing.
+  3. Download the DMG from the release page on another Mac, open it and launch SpaceVibe once before announcing.
 STEPS
 fi

@@ -1,5 +1,5 @@
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// V5-A2 and V5-R40: every text and meaning-carrying pair on its real, composited ground, in both appearances: text
 /// 4.5:1, marks (state glyphs and dots, CLI bars, the verdict cut-out) 3:1. A miss is fixed in `PaletteValue`, never

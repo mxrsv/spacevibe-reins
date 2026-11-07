@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// Holds a fake write at the core until the test opens the gate, so a test can look at the model while the write runs
 /// instead of racing it.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs Reins against a SYNTHETIC home, never the real ~/.claude and ~/.codex.
+# Runs SpaceVibe against a SYNTHETIC home, never the real ~/.claude and ~/.codex.
 #
 #   scripts/dev-fixture.sh                    build, then open the app window on a fresh synthetic home
 #   scripts/dev-fixture.sh --shots <dir>      build, then write headless screenshots (no window) into <dir>
@@ -37,7 +37,7 @@ esac
 SCRATCH="${SPACEVIBE_BUILD_PATH:-/tmp/reins-build-dev-fixture}"
 echo "==> swift build (scratch ${SCRATCH})"
 swift build --scratch-path "${SCRATCH}"
-BIN="$(swift build --scratch-path "${SCRATCH}" --show-bin-path)/Reins"
+BIN="$(swift build --scratch-path "${SCRATCH}" --show-bin-path)/SpaceVibe"
 # The raw binary is not a bundle, so the Go core goes next to it and SPACEVIBE_CORE_BINARY names it.
 export SPACEVIBE_CORE_BINARY="${SCRATCH}/spacevibe-core/spacevibe"
 scripts/build-core.sh "${SPACEVIBE_CORE_BINARY}"
@@ -70,6 +70,6 @@ case "${MODE}" in
   shots)
     SPACEVIBE_SHOT_DIR="${SHOT_DIR}" "${BIN}" ;;
   run)
-    echo "==> starting Reins (the home is deleted when it quits)"
+    echo "==> starting SpaceVibe (the home is deleted when it quits)"
     "${BIN}" ;;
 esac

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// Every icon comes from a generated set or from Reins's own verdict glyphs (V5-A4; the v3 rule DL7 it extends): category
 /// glyphs from MingCute Line, sidebar and content glyphs from Phosphor Duotone, Solar only for the screens not yet rebuilt,
@@ -43,7 +43,7 @@ struct IconPolicyTests {
         try String(contentsOf: appSources.appendingPathComponent(relative), encoding: .utf8)
     }
 
-    /// Matches per file under `Sources/Reins`, `Gallery/` exempt. Whole-line comments are skipped.
+    /// Matches per file under `Sources/SpaceVibe`, `Gallery/` exempt. Whole-line comments are skipped.
     static func violations() throws -> [String: Int] {
         let expressions = forbidden.map { (name: $0.name, regex: try! NSRegularExpression(pattern: $0.pattern)) }
         var result: [String: Int] = [:]

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// Where the committed core test data lives, and the JSON helpers both Core test files share.
 enum CoreTestData {

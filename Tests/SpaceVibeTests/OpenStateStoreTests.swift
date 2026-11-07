@@ -1,5 +1,5 @@
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// V5-R55: open and closed choices per page and band, kept until the app quits, and a write never folds the band of the
 /// row it changed. Each test makes its own store, so nothing leaks from the app's shared one.

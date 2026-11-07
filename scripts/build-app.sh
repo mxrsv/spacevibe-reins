@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds, assembles and signs `Reins.app` into build/.
+# Builds, assembles and signs `SpaceVibe.app` into build/.
 #
 #   scripts/build-app.sh                 development build: Developer ID when present, else ad-hoc; no timestamp; compiled
 #                                        with SPACEVIBE_DEV_BUILD, so the SPACEVIBE_UI_V5 switch works
@@ -29,8 +29,8 @@ case "${1:-}" in
 esac
 if [[ $# -gt 1 ]]; then echo "Too many build arguments" >&2; exit 2; fi
 
-APP_NAME="Reins"
-EXECUTABLE_NAME="Reins"
+APP_NAME="SpaceVibe"
+EXECUTABLE_NAME="SpaceVibe"
 BUILD_DIR="${SPACEVIBE_BUNDLE_DIR:-build}"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
 SIGNING_IDENTITY="${SPACEVIBE_SIGNING_IDENTITY:-Developer ID Application: VAN BINH TRAN (DJDD3T8LH7)}"

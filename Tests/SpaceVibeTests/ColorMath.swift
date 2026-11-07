@@ -1,5 +1,5 @@
 import Foundation
-@testable import Reins
+@testable import SpaceVibe
 
 /// Colour arithmetic for `ContrastTests` and `HuePolicyTests`, on the values in `PaletteValue` (sRGB, WCAG 2 relative
 /// luminance, OKLCH after Björn Ottosson's reference matrices).

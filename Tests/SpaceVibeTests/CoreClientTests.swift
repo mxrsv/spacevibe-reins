@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// `CoreClient` against the real Go core that `scripts/test.sh` builds. Each test has its own fixture home and client,
 /// because swift-testing runs tests in parallel.

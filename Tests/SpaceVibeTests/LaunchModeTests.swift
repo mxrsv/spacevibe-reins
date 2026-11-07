@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// The v5 dev switch (W17, V5-A21): honoured only in a development build, never in a distribution build.
 @Suite("Launch mode: the v5 dev switch")

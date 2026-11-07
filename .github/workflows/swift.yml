@@ -59,11 +59,11 @@ jobs:
           for variant in typical edge; do
             SPACEVIBE_FIXTURE_LIMITS=$variant SPACEVIBE_SHOT_SCREEN=limits scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/limits-$variant"
           done
-          if [ -d Sources/Reins/TokenUsage ]; then
+          if [ -d Sources/SpaceVibe/TokenUsage ]; then
             SPACEVIBE_SHOT_SCREEN=tokens scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/tokens"
           fi
           # Agents plan A10: one fixture home per Codex permission model, behind the development switch.
-          if [ -d Sources/Reins/Agents ]; then
+          if [ -d Sources/SpaceVibe/Agents ]; then
             for variant in legacy profiles both; do
               SPACEVIBE_AGENTS=1 SPACEVIBE_FIXTURE_AGENTS=$variant SPACEVIBE_SHOT_SCREEN=agents scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/agents-$variant"
             done

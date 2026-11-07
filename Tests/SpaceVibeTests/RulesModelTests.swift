@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Reins
+@testable import SpaceVibe
 
 /// A core that serves the Rules calls from canned data and records what the screen asked, so the model is tested on DTOs alone
 /// (plan S.1e).
