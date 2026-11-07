@@ -93,6 +93,20 @@ func TestSymlinkAndMkdirAll(t *testing.T) {
 	wantStatus(t, Symlink("x", link), coreerr.StatusConflict)
 }
 
+// Added with G2.3: the exclusive folder create a caller needs to know it owns what it made.
+func TestMkdirExclusive(t *testing.T) {
+	dir := tempDir(t)
+	made := filepath.Join(dir, "made")
+	if err := MkdirExclusive(made, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	wantStatus(t, MkdirExclusive(made, 0o700), coreerr.StatusConflict)
+	wantStatus(t, MkdirExclusive(filepath.Join(dir, "no", "parent"), 0o700), coreerr.StatusInternalFailure)
+	file := filepath.Join(dir, "file")
+	writeFile(t, file, "x", 0o600)
+	wantStatus(t, MkdirExclusive(file, 0o700), coreerr.StatusConflict)
+}
+
 func TestMoveRenames(t *testing.T) {
 	dir := tempDir(t)
 	from, to := filepath.Join(dir, "from"), filepath.Join(dir, "trash", "to")

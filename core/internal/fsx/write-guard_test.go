@@ -44,6 +44,8 @@ func TestEveryPrimitiveRefusesTheRealHome(t *testing.T) {
 			"RemoveTree":          func() error { return RemoveTree(bad) },
 			"Symlink":             func() error { return Symlink(source, bad) },
 			"MkdirAll":            func() error { return MkdirAll(bad, 0o700) },
+			"MkdirExclusive":      func() error { return MkdirExclusive(bad, 0o700) },
+			"MoveWith to":         func() error { return MoveWith(source, bad, os.Rename) },
 			"Move to":             func() error { return Move(source, bad) },
 			"Move from":           func() error { return Move(bad, filepath.Join(scratch, "dest")) },
 			"WithWriteLock":       func() error { return WithWriteLock(filepath.Dir(bad), func() error { return nil }) },

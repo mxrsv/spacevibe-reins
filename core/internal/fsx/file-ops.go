@@ -105,6 +105,24 @@ func Symlink(target, linkPath string) error {
 	return nil
 }
 
+// MkdirExclusive creates the single folder path with perm (the umask applies) and fails with 409
+// if anything exists there, a link included. The parent must exist. A caller that must own what it
+// creates (so a rollback never removes somebody else's folder) uses it where MkdirAll cannot say
+// whether it created the folder.
+func MkdirExclusive(path string, perm os.FileMode) error {
+	if err := checkWrite(path); err != nil {
+		return err
+	}
+	if err := os.Mkdir(path, perm); err != nil {
+		if errors.Is(err, fs.ErrExist) {
+			return coreerr.NewStatus(path+" already exists, so it was left alone.", coreerr.StatusConflict)
+		}
+		return coreerr.NewStatus("Could not create the folder "+path+" ("+reason(err)+"). Nothing was changed.", coreerr.StatusInternalFailure)
+	}
+	syncDir(filepath.Dir(path))
+	return nil
+}
+
 // MkdirAll creates path and any missing parents with perm (the umask applies). An existing folder
 // is fine.
 func MkdirAll(path string, perm os.FileMode) error {
@@ -124,6 +142,13 @@ func MkdirAll(path string, perm os.FileMode) error {
 // a failed copy removes the partial copy and leaves the source alone. The folder of to is fsynced
 // after the rename.
 func Move(from, to string) error { return moveWith(from, to, os.Rename) }
+
+// MoveWith is Move with the rename step supplied by the caller. A caller's test uses it to make the
+// rename fail with EXDEV and so exercise the cross-volume copy (H13) through its own code path;
+// production code passes os.Rename (or calls Move).
+func MoveWith(from, to string, rename func(oldpath, newpath string) error) error {
+	return moveWith(from, to, rename)
+}
 
 func moveWith(from, to string, rename func(oldpath, newpath string) error) error {
 	if err := checkWrite(from, to); err != nil {
