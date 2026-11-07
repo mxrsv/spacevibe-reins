@@ -1,8 +1,15 @@
 import ReinsCore
 import SwiftUI
 
-/// Every shared view in every state. Reach it with `SPACEVIBE_GALLERY=1`; the screenshot mode renders the same content.
+/// Every shared view in every state. Reach it with `SPACEVIBE_GALLERY=1`; the screenshot mode renders the same content, in two
+/// halves (`part`) because one image taller than 16384 px renders blank.
 struct ComponentGalleryContent: View {
+    enum Part {
+        case all, first, second
+    }
+
+    var part: Part = .all
+
     @State private var segment = "ask"
     @State private var file = "shared"
     @State private var scope = "global"
@@ -15,191 +22,198 @@ struct ComponentGalleryContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            section("Colour tokens") { Swatches() }
-            section("Text roles: Inter at 12, 14 and 16, plus figure and display") { TypeRoles() }
-            section("Buttons on the well, then inside a card (no outline: surface, then surfaceRaised)") {
-                VStack(alignment: .leading, spacing: Space.s12) {
-                    buttons
-                    GroupedList { buttons.padding(.horizontal, Metrics.rowHorizontalPadding) }
+            if part != .second {
+                section("Colour tokens") { Swatches() }
+                section("Text roles: Inter at 12, 14 and 16, plus figure and display") { TypeRoles() }
+                section("Buttons on the well, then inside a card (no outline: surface, then surfaceRaised)") {
+                    VStack(alignment: .leading, spacing: Space.s12) {
+                        buttons
+                        GroupedList { buttons.padding(.horizontal, Metrics.rowHorizontalPadding) }
+                    }
+                }
+                section("Tags inside a card: neutral, with an icon, and a dot per tone; counts, CLI tag and dot, key caps") {
+                    GroupedList { tags.padding(.horizontal, Metrics.rowHorizontalPadding) }
+                }
+                section("Segmented control, filter chips, scope picker, search field: all 28 pt, on the well, then inside a card") {
+                    VStack(alignment: .leading, spacing: Space.s12) {
+                        controls
+                        GroupedList { controls.padding(.horizontal, Metrics.rowHorizontalPadding) }
+                    }
+                }
+                section("CLI switch with brand glyphs, then read-only readouts: neutral, a value that needs a look, and nothing set") {
+                    VStack(alignment: .leading, spacing: Space.s12) {
+                        SegmentedControl(label: "Rules for", options: [
+                            SegmentOption("Claude Code", value: InventoryCLI.claude, cli: .claude),
+                            SegmentOption("Codex", value: InventoryCLI.codex, cli: .codex),
+                        ], selection: $rulesCLI)
+                        GroupedList {
+                            HStack(spacing: Rhythm.tools) {
+                                SegmentReadout(label: "Sandbox", options: ["Read only", "Workspace", "Full access"], selected: "Workspace")
+                                SegmentReadout(label: "Asks before acting", options: ["Unless allowed", "When needed", "Never"], selected: "Never", warn: true)
+                                SegmentReadout(label: "Network", options: ["Off", "On"], selected: nil)
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, Metrics.rowHorizontalPadding)
+                        }
+                    }
+                }
+                section("Status lead in each tone, and the bar about the other CLI") {
+                    VStack(spacing: Space.s12) {
+                        StatusLead(tone: .warn, sentence: "Has no sandbox and never asks, except for 1 command rule", detail: #"sandbox_mode = "danger-full-access" · approval_policy = "never""#)
+                        StatusLead(tone: .success, sentence: "Writes only inside the workspace and asks when it needs more", detail: #"sandbox_mode = "workspace-write""#)
+                        StatusLead(tone: .neutral, sentence: "Runs on its defaults: there is no ~/.codex/config.toml")
+                        CLISummaryBar(cli: .codex, message: "Has no sandbox and never asks, except for 1 command rule", warn: true, actionTitle: "Open Codex") {}
+                        CLISummaryBar(cli: .claude, message: "Asks before push and deploy, blocks secrets (.env)", actionTitle: "Open Claude Code") {}
+                    }
+                }
+                section("Text input: normal and invalid") {
+                    HStack(spacing: Rhythm.tools) {
+                        TextInputField(label: "Rule", placeholder: "Bash(npm test *)", text: $draft, code: true, focused: $draftFocused) {}
+                        TextInputField(label: "Rule", placeholder: "Bash(npm test *)", text: $badDraft, code: true, invalid: true, focused: $badDraftFocused) {}
+                        Text("Write the rule as Tool(pattern).").reinsText(.caption, tone: .danger)
+                        Spacer(minLength: 0)
+                    }
+                }
+                section("Ruler: 0, 4, 39 and 100 percent, not known, low (20% left) and out (5% left)") { RulerSpecimens() }
+                section("Icons of the old screens: Solar Bold Duotone at 14, 16, 20 and 22, then the drawn chevrons. Solar by 480 Design, CC BY 4.0") { IconSpecimens() }
+                if LaunchMode.uiV5Enabled() {
+                    section("Icons of the v5 screens: MingCute Line (category), Phosphor Duotone (sidebar and content) and the verdict glyphs, at 12, 14, 16 and 24, then in the sidebar's tone") { V5IconSpecimens() }
                 }
             }
-            section("Tags inside a card: neutral, with an icon, and a dot per tone; counts, CLI tag and dot, key caps") {
-                GroupedList { tags.padding(.horizontal, Metrics.rowHorizontalPadding) }
-            }
-            section("Segmented control, filter chips, scope picker, search field: all 28 pt, on the well, then inside a card") {
-                VStack(alignment: .leading, spacing: Space.s12) {
-                    controls
-                    GroupedList { controls.padding(.horizontal, Metrics.rowHorizontalPadding) }
-                }
-            }
-            section("CLI switch with brand glyphs, then read-only readouts: neutral, a value that needs a look, and nothing set") {
-                VStack(alignment: .leading, spacing: Space.s12) {
-                    SegmentedControl(label: "Rules for", options: [
-                        SegmentOption("Claude Code", value: InventoryCLI.claude, cli: .claude),
-                        SegmentOption("Codex", value: InventoryCLI.codex, cli: .codex),
-                    ], selection: $rulesCLI)
+            if part != .first {
+                section("Cards, rows and the five usage states") { DemoLoadoutList() }
+                section("Rows: the selected one hides the dividers on both sides of it") {
                     GroupedList {
-                        HStack(spacing: Rhythm.tools) {
-                            SegmentReadout(label: "Sandbox", options: ["Read only", "Workspace", "Full access"], selected: "Workspace")
-                            SegmentReadout(label: "Asks before acting", options: ["Unless allowed", "When needed", "Never"], selected: "Never", warn: true)
-                            SegmentReadout(label: "Network", options: ["Off", "On"], selected: nil)
-                            Spacer(minLength: 0)
+                        CardHeader("Rows", count: 5)
+                        Row { RowText("Plain row", subtitle: "Second line in the muted colour") }
+                            .lead { ReinsIcon(.skill, size: .row) }
+                        Row(selected: true, revealActions: true, onActivate: {}) {
+                            RowText("Selected row with actions", subtitle: "Actions stay visible while selected")
                         }
-                        .padding(.horizontal, Metrics.rowHorizontalPadding)
-                    }
-                }
-            }
-            section("Status lead in each tone, and the bar about the other CLI") {
-                VStack(spacing: Space.s12) {
-                    StatusLead(tone: .warn, sentence: "Has no sandbox and never asks, except for 1 command rule", detail: #"sandbox_mode = "danger-full-access" · approval_policy = "never""#)
-                    StatusLead(tone: .success, sentence: "Writes only inside the workspace and asks when it needs more", detail: #"sandbox_mode = "workspace-write""#)
-                    StatusLead(tone: .neutral, sentence: "Runs on its defaults: there is no ~/.codex/config.toml")
-                    CLISummaryBar(cli: .codex, message: "Has no sandbox and never asks, except for 1 command rule", warn: true, actionTitle: "Open Codex") {}
-                    CLISummaryBar(cli: .claude, message: "Asks before push and deploy, blocks secrets (.env)", actionTitle: "Open Claude Code") {}
-                }
-            }
-            section("Text input: normal and invalid") {
-                HStack(spacing: Rhythm.tools) {
-                    TextInputField(label: "Rule", placeholder: "Bash(npm test *)", text: $draft, code: true, focused: $draftFocused) {}
-                    TextInputField(label: "Rule", placeholder: "Bash(npm test *)", text: $badDraft, code: true, invalid: true, focused: $badDraftFocused) {}
-                    Text("Write the rule as Tool(pattern).").reinsText(.caption, tone: .danger)
-                    Spacer(minLength: 0)
-                }
-            }
-            section("Ruler: 0, 4, 39 and 100 percent, not known, low (20% left) and out (5% left)") { RulerSpecimens() }
-            section("Icons: Solar Bold Duotone at 14, 16, 20 and 22, then the drawn chevrons. Solar by 480 Design, CC BY 4.0") { IconSpecimens() }
-            section("Cards, rows and the five usage states") { DemoLoadoutList() }
-            section("Rows: the selected one hides the dividers on both sides of it") {
-                GroupedList {
-                    CardHeader("Rows", count: 5)
-                    Row { RowText("Plain row", subtitle: "Second line in the muted colour") }
                         .lead { ReinsIcon(.skill, size: .row) }
-                    Row(selected: true, revealActions: true, onActivate: {}) {
-                        RowText("Selected row with actions", subtitle: "Actions stay visible while selected")
-                    }
-                    .lead { ReinsIcon(.skill, size: .row) }
-                    .actions {
-                        RowActionButton(title: "Copy to Codex", icon: .copy) {}
-                        RowActionButton(title: "Remove", icon: .trash, kind: .danger, iconOnly: true) {}
-                    }
-                    Row(onActivate: {}) { RowText("Session with a state", subtitle: "spacevibe-bench \u{00B7} just now") }
-                        .lead { CLIDot(.codex) }
-                        .cells { StateCell { Tag("not measurable", icon: .warning) }; NumberCell(text: "~$148.20") }
-                    Row(onActivate: {}) { RowText("A row with nothing to change", subtitle: "Owned by a plugin") }
-                        .lead { ReinsIcon(.skill, size: .row) }
-                        .cells { FixedCell { Tag("\u{00D7}3") }; NumberCell(text: "~$1.33") }
-                        .actions { HStack(spacing: Space.s4) { EmptyActionSlot(); ReadOnlyMark(reason: "Read-only: owned by a plugin") } }
-                    Row(tall: true) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            RowText("pnpm tsc --noEmit", subtitle: "exit 2 \u{00B7} spacevibe-bench \u{00B7} last 1 h ago", mono: true, codeSubtitle: false)
-                            Text("lib/leaderboard/rank.ts(41,9): error TS2322").reinsText(.code, tone: .secondary)
+                        .actions {
+                            RowActionButton(title: "Copy to Codex", icon: .copy) {}
+                            RowActionButton(title: "Remove", icon: .trash, kind: .danger, iconOnly: true) {}
                         }
+                        Row(onActivate: {}) { RowText("Session with a state", subtitle: "spacevibe-bench \u{00B7} just now") }
+                            .lead { CLIDot(.codex) }
+                            .cells { StateCell { Tag("not measurable", icon: .warning) }; NumberCell(text: "~$148.20") }
+                        Row(onActivate: {}) { RowText("A row with nothing to change", subtitle: "Owned by a plugin") }
+                            .lead { ReinsIcon(.skill, size: .row) }
+                            .cells { FixedCell { Tag("\u{00D7}3") }; NumberCell(text: "~$1.33") }
+                            .actions { HStack(spacing: Space.s4) { EmptyActionSlot(); ReadOnlyMark(reason: "Read-only: owned by a plugin") } }
+                        Row(tall: true) {
+                            VStack(alignment: .leading, spacing: 0) {
+                                RowText("pnpm tsc --noEmit", subtitle: "exit 2 \u{00B7} spacevibe-bench \u{00B7} last 1 h ago", mono: true, codeSubtitle: false)
+                                Text("lib/leaderboard/rank.ts(41,9): error TS2322").reinsText(.code, tone: .secondary)
+                            }
+                        }
+                        .lead { CLIDot(.claude) }
+                        .cells { Tag("\u{00D7}8", tone: .danger) }
+                        EmptyRow("Nothing matches this filter.")
+                        ShowMoreRow(reveal: 8, hiddenAfter: 12) {}
                     }
-                    .lead { CLIDot(.claude) }
-                    .cells { Tag("\u{00D7}8", tone: .danger) }
-                    EmptyRow("Nothing matches this filter.")
-                    ShowMoreRow(reveal: 8, hiddenAfter: 12) {}
                 }
-            }
-            section("Section rows inside one card") {
-                GroupedList {
-                    CardHeader("Claude Code rules at Global", count: 4, lead: { CLIDot(.claude, decorative: true) })
-                    SectionRow("Deny", count: 2)
-                    Row { RowText("Bash(rm -rf:*)", mono: true) { Tag("Deny", tone: .danger) } }
-                    Row { RowText("Read(.env*)", mono: true) { Tag("Deny", tone: .danger) } }
-                    SectionRow("Allow", count: 2)
-                    Row { RowText("Read(*)", mono: true) { Tag("Allow") } }
-                    Row { RowText("Bash(git status)", mono: true) { Tag("Allow") } }
-                }
-            }
-            section("Notes") {
-                NoteRegion(
-                    title: "Cannot be measured",
-                    columns: [
-                        .init(cli: .claude, notes: ["Claude Code does not record permission prompts, so a long tool run and a wait for approval look the same."]),
-                        .init(cli: .codex, notes: ["Codex does not log hook runs, so failed hooks are not shown for Codex."]),
-                    ],
-                    shared: ["Cost is estimated from logged tokens at API prices (API-equivalent), not what you are billed."]
-                )
-            }
-            section("Inset box and warning, as inside a confirmation") {
-                VStack(alignment: .leading, spacing: Space.s12) {
-                    InsetBox {
-                        HStack(spacing: Space.s8) { Tag("Deny", tone: .danger); Text("Bash(git push *)").reinsText(.code, tone: .primary) }
-                        HStack(spacing: Space.s8) { Tag("Allow"); Text("Bash(vercel *)").reinsText(.code, tone: .primary) }
+                section("Section rows inside one card") {
+                    GroupedList {
+                        CardHeader("Claude Code rules at Global", count: 4, lead: { CLIDot(.claude, decorative: true) })
+                        SectionRow("Deny", count: 2)
+                        Row { RowText("Bash(rm -rf:*)", mono: true) { Tag("Deny", tone: .danger) } }
+                        Row { RowText("Read(.env*)", mono: true) { Tag("Deny", tone: .danger) } }
+                        SectionRow("Allow", count: 2)
+                        Row { RowText("Read(*)", mono: true) { Tag("Allow") } }
+                        Row { RowText("Bash(git status)", mono: true) { Tag("Allow") } }
                     }
-                    WarningNote(text: "A rule that stays in this file still wins, so Push and deploy will read Ask, not Allow.")
                 }
-                .frame(maxWidth: Metrics.wideDialogWidth)
-            }
-            section("Confirmation") {
-                ConfirmationDialog("Stop Fix leaderboard rank tie?", message: "The current turn ends and work already done stays. This cannot be undone.", cancel: {}) {
-                    Button("Cancel") {}.buttonStyle(.reins(.normal))
-                    Button("Stop") {}.buttonStyle(.reins(.danger))
+                section("Notes") {
+                    NoteRegion(
+                        title: "Cannot be measured",
+                        columns: [
+                            .init(cli: .claude, notes: ["Claude Code does not record permission prompts, so a long tool run and a wait for approval look the same."]),
+                            .init(cli: .codex, notes: ["Codex does not log hook runs, so failed hooks are not shown for Codex."]),
+                        ],
+                        shared: ["Cost is estimated from logged tokens at API prices (API-equivalent), not what you are billed."]
+                    )
                 }
-                .frame(height: Metrics.galleryOverlayHeight)
-                .clipShape(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous))
-            }
-            section("Sidebar items and the command palette") {
-                HStack(alignment: .top, spacing: Space.s24) {
-                    VStack(spacing: Metrics.sidebarItemSpacing) {
-                        SidebarItem(title: "Loadout", icon: .loadout, count: 22, isActive: true) {}
-                        SidebarItem(title: "Rules", icon: .rules, count: 11, isActive: false) {}
-                        SidebarItem(title: "Activity", icon: .activity, count: 2, alert: true, isActive: false) {}
+                section("Inset box and warning, as inside a confirmation") {
+                    VStack(alignment: .leading, spacing: Space.s12) {
+                        InsetBox {
+                            HStack(spacing: Space.s8) { Tag("Deny", tone: .danger); Text("Bash(git push *)").reinsText(.code, tone: .primary) }
+                            HStack(spacing: Space.s8) { Tag("Allow"); Text("Bash(vercel *)").reinsText(.code, tone: .primary) }
+                        }
+                        WarningNote(text: "A rule that stays in this file still wins, so Push and deploy will read Ask, not Allow.")
                     }
-                    .sidebarSurface()
+                    .frame(maxWidth: Metrics.wideDialogWidth)
+                }
+                section("Confirmation") {
+                    ConfirmationDialog("Stop Fix leaderboard rank tie?", message: "The current turn ends and work already done stays. This cannot be undone.", cancel: {}) {
+                        Button("Cancel") {}.buttonStyle(.reins(.normal))
+                        Button("Stop") {}.buttonStyle(.reins(.danger))
+                    }
                     .frame(height: Metrics.galleryOverlayHeight)
-                    PaletteCard {
-                        Text("Search skills, hooks, rules, or run an action").paletteField()
-                        Hairline()
-                        VStack(alignment: .leading, spacing: 0) {
-                            PaletteSectionTitle(title: "Go to")
-                            PaletteRow(entry: PaletteEntry(id: "g.loadout", title: "Loadout", icon: .loadout, trailing: "\u{2318}1") {}, isHighlighted: true) {}
-                            PaletteRow(entry: PaletteEntry(id: "g.rules", title: "Rules", icon: .rules, trailing: "\u{2318}2") {}, isHighlighted: false) {}
-                            PaletteSectionTitle(title: "Skills")
-                            PaletteRow(entry: PaletteEntry(id: "s.ponytail", title: "ponytail", subtitle: "Pick the laziest solution", icon: .skill) {}, isHighlighted: false) {}
-                            PaletteEmptyRow(text: "No matches")
-                        }
-                        .paletteList()
-                        Hairline()
-                        PaletteFooter {
-                            PaletteHint(text: "navigate") { ReinsIcon(.navigate, size: .inline) }
-                            PaletteHint(text: "close") { Kbd("Esc") }
-                        }
-                    }
-                    Spacer(minLength: 0)
-                }
-            }
-            section("Limits: share cells (normal, low 20%, out 5%, not known), the figure in each tone, fact tiles, sidebar tiles") {
-                LimitsSpecimens()
-            }
-            section("Banner") {
-                VStack(spacing: Space.s12) {
-                    Banner(.error, message: "Could not read settings.json", detail: "Line 14: unexpected comma. Nothing was changed.", actionTitle: "Try again") {}
-                    Banner(.warn, message: "Usage counting is slower than usual", detail: "Showing counts from the last scan.", actionTitle: "Rescan") {}
-                    Banner(.warn, message: "Codex does not record hook runs")
-                }
-            }
-            section("Empty state") {
-                GroupedList {
-                    EmptyState("No skills yet", message: "Skills you add to Claude Code or Codex show up here with how often they ran.", icon: .loadout) {
-                        Button("Rescan") {}.buttonStyle(.reins(.normal))
-                    }
-                }
-            }
-            section("Toast") {
-                HStack(spacing: Space.s16) {
-                    ToastView(toast: Toast(message: "Removed ponytail", tone: .info, action: .undo {}), run: {}, dismiss: {})
-                    ToastView(toast: Toast(message: "Could not write settings.json", tone: .danger, action: nil), run: {}, dismiss: {})
-                    Spacer(minLength: 0)
-                }
-            }
-            section("Hint bar") {
-                HintBar(hints: [KeyHint(keys: "Tab", label: "Row actions")])
                     .clipShape(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous))
-            }
-            section("Settings: rail tabs, theme tiles (System, Light, Dark), the switch on, off and disabled, the Reins mark, a raised block") {
-                SettingsSpecimens()
+                }
+                section("Sidebar items and the command palette") {
+                    HStack(alignment: .top, spacing: Space.s24) {
+                        VStack(spacing: Metrics.sidebarItemSpacing) {
+                            SidebarItem(title: "Loadout", icon: .loadout, count: 22, isActive: true) {}
+                            SidebarItem(title: "Rules", icon: .rules, count: 11, isActive: false) {}
+                            SidebarItem(title: "Activity", icon: .activity, count: 2, alert: true, isActive: false) {}
+                        }
+                        .sidebarSurface()
+                        .frame(height: Metrics.galleryOverlayHeight)
+                        PaletteCard {
+                            Text("Search skills, hooks, rules, or run an action").paletteField()
+                            Hairline()
+                            VStack(alignment: .leading, spacing: 0) {
+                                PaletteSectionTitle(title: "Go to")
+                                PaletteRow(entry: PaletteEntry(id: "g.loadout", title: "Loadout", icon: .loadout, trailing: "\u{2318}1") {}, isHighlighted: true) {}
+                                PaletteRow(entry: PaletteEntry(id: "g.rules", title: "Rules", icon: .rules, trailing: "\u{2318}2") {}, isHighlighted: false) {}
+                                PaletteSectionTitle(title: "Skills")
+                                PaletteRow(entry: PaletteEntry(id: "s.ponytail", title: "ponytail", subtitle: "Pick the laziest solution", icon: .skill) {}, isHighlighted: false) {}
+                                PaletteEmptyRow(text: "No matches")
+                            }
+                            .paletteList()
+                            Hairline()
+                            PaletteFooter {
+                                PaletteHint(text: "navigate") { ReinsIcon(.navigate, size: .inline) }
+                                PaletteHint(text: "close") { Kbd("Esc") }
+                            }
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+                section("Limits: share cells (normal, low 20%, out 5%, not known), the figure in each tone, fact tiles, sidebar tiles") {
+                    LimitsSpecimens()
+                }
+                section("Banner") {
+                    VStack(spacing: Space.s12) {
+                        Banner(.error, message: "Could not read settings.json", detail: "Line 14: unexpected comma. Nothing was changed.", actionTitle: "Try again") {}
+                        Banner(.warn, message: "Usage counting is slower than usual", detail: "Showing counts from the last scan.", actionTitle: "Rescan") {}
+                        Banner(.warn, message: "Codex does not record hook runs")
+                    }
+                }
+                section("Empty state") {
+                    GroupedList {
+                        EmptyState("No skills yet", message: "Skills you add to Claude Code or Codex show up here with how often they ran.", icon: .loadout) {
+                            Button("Rescan") {}.buttonStyle(.reins(.normal))
+                        }
+                    }
+                }
+                section("Toast") {
+                    HStack(spacing: Space.s16) {
+                        ToastView(toast: Toast(message: "Removed ponytail", tone: .info, action: .undo {}), run: {}, dismiss: {})
+                        ToastView(toast: Toast(message: "Could not write settings.json", tone: .danger, action: nil), run: {}, dismiss: {})
+                        Spacer(minLength: 0)
+                    }
+                }
+                section("Hint bar") {
+                    HintBar(hints: [KeyHint(keys: "Tab", label: "Row actions")])
+                        .clipShape(RoundedRectangle(cornerRadius: Metrics.groupRadius, style: .continuous))
+                }
+                section("Settings: rail tabs, theme tiles (System, Light, Dark), the switch on, off and disabled, the Reins mark, a raised block") {
+                    SettingsSpecimens()
+                }
             }
         }
         .padding(.horizontal, Metrics.pagePadding)
@@ -372,7 +386,7 @@ private struct IconSpecimens: View {
         GroupedList {
             ForEach(Array(ReinsGlyph.allCases.enumerated()), id: \.offset) { _, glyph in
                 HStack(spacing: Metrics.rowSpacing) {
-                    Text(glyph.solarName).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
+                    Text(glyph.iconName).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.5, alignment: .leading)
                     ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
                         ReinsIcon(glyph, size: size).frame(width: Metrics.iconLarge)
                     }
@@ -513,5 +527,56 @@ private struct SettingsSpecimens: View {
                 .groupedListPart(.plain)
             }
         }
+    }
+}
+
+/// Every v5 glyph at 12, 14, 16 and 24 in the secondary tone, and at 16 in the tertiary tone (a lead icon) and in a warn ink,
+/// two to a line: the category set, the content set, then the five verdict glyphs.
+private struct V5IconSpecimens: View {
+    private let sizes: [IconSize] = [.small, .inline, .control, .large]
+    private let columns = 2
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s12) {
+            GroupedList {
+                specimenGrid(CategoryGlyph.allCases.map { glyph in
+                    (glyph.iconName, { size, ink in ReinsIcon(category: glyph, size: size, ink: ink) })
+                })
+            }
+            GroupedList {
+                specimenGrid(ContentGlyph.allCases.map { glyph in
+                    (glyph.iconName, { size, ink in ReinsIcon(content: glyph, size: size, ink: ink) })
+                })
+            }
+            GroupedList {
+                specimenGrid(VerdictGlyph.Kind.allCases.map { kind in
+                    ("verdict \(kind)", { size, _ in VerdictGlyph(kind, size: size) })
+                })
+            }
+        }
+    }
+
+    private func specimenGrid(_ items: [(String, (IconSize, Color?) -> some View)]) -> some View {
+        let rows = stride(from: 0, to: items.count, by: columns).map { Array(items[$0 ..< min($0 + columns, items.count)]) }
+        return VStack(alignment: .leading, spacing: Space.s8) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                HStack(alignment: .center, spacing: Space.s16) {
+                    ForEach(Array(row.enumerated()), id: \.offset) { _, item in
+                        HStack(spacing: Space.s8) {
+                            Text(item.0).reinsText(.code, tone: .tertiary).frame(width: Metrics.usageCellWidth * 1.4, alignment: .leading)
+                            ForEach(Array(sizes.enumerated()), id: \.offset) { _, size in
+                                item.1(size, nil).frame(width: Metrics.iconLarge)
+                            }
+                            item.1(.control, Palette.warnInk)
+                            item.1(.control, Palette.textTertiary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    ForEach(0 ..< columns - row.count, id: \.self) { _ in Color.clear.frame(maxWidth: .infinity) }
+                }
+            }
+        }
+        .foregroundStyle(Palette.textSecondary)
+        .padding(.horizontal, Metrics.rowHorizontalPadding)
     }
 }

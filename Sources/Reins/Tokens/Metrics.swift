@@ -102,6 +102,8 @@ enum Metrics {
     static let iconRow: CGFloat = 20
     static let iconControl: CGFloat = 16
     static let iconInline: CGFloat = 14
+    /// Chevrons, checks and the filter-chip close (V5-R16); the smallest an icon is ever drawn.
+    static let iconSmall: CGFloat = 12
     static let iconLarge: CGFloat = 24
     /// The hand-drawn chevron's stroke in its 24 pt box (Solar Linear's width), scaled with the icon.
     static let chevronStroke: CGFloat = 1.5
@@ -165,6 +167,16 @@ enum Metrics {
 /// them; the flat names above stay for the screens not yet rebuilt until the cut-over (X1). Spacing between blocks is in
 /// `Rhythm` (`edge`, `card`, `group`, `side`).
 extension Metrics {
+    /// The verdict glyphs' drawing (the kit's `v2-*` symbols): a hexagon in a 16 box, stroked 1.5 with round caps and joins.
+    enum Verdict {
+        static let box: CGFloat = 16
+        static let stroke: CGFloat = 1.5
+        /// `nm`'s dashed outline: dash and gap, in the 16 box.
+        static let dash: [CGFloat] = [1.8, 2.4]
+        /// `nm`'s centre dot.
+        static let dotRadius: CGFloat = 1.1
+    }
+
     enum Radius {
         /// Key cap, checkbox, a chart bar's top.
         static let small: CGFloat = 4

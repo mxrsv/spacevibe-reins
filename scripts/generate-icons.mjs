@@ -1,24 +1,30 @@
 #!/usr/bin/env node
-// Writes Sources/Reins/Components/ReinsIconData.swift: the app's icons as SwiftUI path code, from the Solar icon set
-// (Solar by 480 Design, CC BY 4.0) in its Iconify JSON form. No SVG is shipped or parsed at run time (spec
-// docs/specs/2026-11-03-reins-design-language.md, v3 "Icons"; plan task V4).
+// Writes the app's icons as SwiftUI path code into Sources/Reins/Components, from three icon sets in their Iconify JSON form.
+// No SVG is shipped or parsed at run time (spec docs/specs/2026-11-03-reins-design-language.md, v3 "Icons"; v5 spec V5-R9,
+// V5-R10, V5-R12).
 //
-//   npm pack @iconify-json/solar        # into a scratch folder outside the repo; never commit it
-//   tar xzf iconify-json-solar-*.tgz
-//   node scripts/generate-icons.mjs <scratch>/package/icons.json
+//   ReinsIconData.swift     Solar Bold Duotone (480 Design, CC BY 4.0): the old screens, until the cut-over deletes them
+//   CategoryIconData.swift  MingCute Line (MingCute Design, Apache-2.0): the category glyphs
+//   ContentIconData.swift   Phosphor Duotone (Phosphor Icons, MIT): the v5 sidebar and content glyphs
 //
-// Each glyph becomes two layers in its 24 x 24 box: the solid layer and the lighter one Solar draws at 50% opacity. Both
-// take one colour in the app. Every path is reduced to absolute move, line, cubic and close: H and V become lines, Q, T
-// and S become cubics, and arcs are split into cubics of at most 90 degrees. Numbers are rounded to 3 decimals, glyphs are
-// sorted by name, so a rerun on the same input writes the same file.
+//   cd <scratch folder outside the repo; never commit it>
+//   npm pack @iconify-json/solar@1.2.13 @iconify-json/mingcute@1.2.10 @iconify-json/ph@1.2.2
+//   for f in *.tgz; do mkdir "${f%.tgz}" && tar xzf "$f" -C "${f%.tgz}"; done
+//   node scripts/generate-icons.mjs <solar>/package/icons.json <mingcute>/package/icons.json <ph>/package/icons.json
+//
+// Each glyph becomes one or two layers in its 24 x 24 box (Phosphor is scaled down from its 256 grid): the solid layer and,
+// for the duotone sets, the lighter one. Both take one colour in the app. Every path is reduced to absolute move, line, cubic
+// and close: H and V become lines, Q, T and S become cubics, and arcs are split into cubics of at most 90 degrees. Numbers
+// are rounded to 3 decimals, glyphs are sorted by name, so a rerun on the same input writes the same files. Each file's header
+// names the package version it was made from, and the licence notices live in Credits.swift (V5-R15).
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = join(REPO, 'Sources/Reins/Components/ReinsIconData.swift');
+const OUT_DIR = join(REPO, 'Sources/Reins/Components');
 
-/** [Swift case, Solar icon without the "-bold-duotone" suffix, what it stands for (the SF Symbol it replaces)]. */
+/** [Swift case, Solar icon without the "-bold-duotone" suffix, what it stands for (the SF Symbol it replaces)]. The old screens. */
 export const GLYPHS = [
   ['activity', 'pulse', 'the Activity tab (waveform.path.ecg)'],
   ['add', 'add', 'add (plus)'],
@@ -58,10 +64,6 @@ export const GLYPHS = [
   ['update', 'refresh-circle', 'Settings: the Update section'],
   ['warning', 'danger-triangle', 'a warning, not measurable (exclamationmark.triangle)'],
 ];
-
-const SUFFIX = '-bold-duotone';
-const BOX = 24;
-const LIGHT_OPACITY = 0.5;
 
 // MARK: SVG body
 
@@ -275,26 +277,105 @@ function arcToCubics(x1, y1, rxIn, ryIn, angle, large, sweep, x2, y2) {
   return out;
 }
 
+// MARK: Sources
+
+/** [Swift case, MingCute icon without the "-line" suffix, what it stands for]. The category glyphs (spec V5-R10, D32). */
+const CATEGORY_GLYPHS = [
+  ['hook', 'fish-symbol', 'a hook (Hooks category)'],
+  ['skill', 'flash', 'a skill (Skills category)'],
+  ['subagent', 'robot', 'a subagent (Subagents category)'],
+];
+
+/** [Swift case, Phosphor icon without the "-duotone" suffix, what it stands for]. The mock's sidebar and content glyphs
+ *  (system/shared.js sprite), plus the stop, copy and bug glyphs Activity drew page-locally. */
+const CONTENT_GLYPHS = [
+  ['bug', 'bug', 'a failed command (Activity: Failed tab); the mock draws its own bug, this is Phosphor\'s nearest'],
+  ['caretDown', 'caret-down', 'a disclosure or menu chevron'],
+  ['check', 'check', 'done, chosen'],
+  ['clock', 'clock', 'a time, a stale or unknown reading, a newly added item'],
+  ['close', 'x', 'dismiss, clear, remove a filter chip'],
+  ['copy', 'copy', 'copy'],
+  ['enter', 'arrow-elbow-down-left', 'Return, and refresh in the mock'],
+  ['file', 'file', 'a file (Activity: Files tab, file rows)'],
+  ['filter', 'funnel', 'the Filter button and its menu'],
+  ['gauge', 'gauge', 'Limits (sidebar)'],
+  ['lock', 'lock', 'owned by a plugin, read-only; Codex read-only'],
+  ['moon', 'moon', 'switch to the dark appearance'],
+  ['open', 'arrow-square-out', 'open a file or a session'],
+  ['plus', 'plus', 'add'],
+  ['pulse', 'pulse', 'Activity (sidebar, Running tab)'],
+  ['rank', 'chart-bar', 'the Rank field of the filter menu; the mock draws three bars, this is Phosphor\'s nearest'],
+  ['rule', 'list-checks', 'Rules category glyph (the mock\'s checklist; D32 names none)'],
+  ['search', 'magnifying-glass', 'search (sidebar, fields)'],
+  ['sliders', 'sliders-horizontal', 'Settings (sidebar), the View button'],
+  ['stack', 'stack', 'Agents (sidebar), the CLI filter group'],
+  ['stop', 'stop-circle', 'stop a session; the mock fills a rounded square, this is Phosphor\'s outlined one'],
+  ['sun', 'sun', 'switch to the light appearance'],
+  ['terminal', 'terminal-window', 'a CLI (the CLI field of the filter menu)'],
+  ['trash', 'trash', 'remove'],
+  ['warning', 'warning', 'a warning (never ran, can\'t run)'],
+];
+
+/**
+ * One icon set and the Swift enum it becomes. `sourceOpacity` is the opacity the set gives its light layer, `layerOpacity`
+ * the one the app draws it at; `outline` is the stroke the mock adds to a glyph (system/shared.css `.ico`, in the set's own
+ * box units), reproduced so the app's glyphs weigh the same.
+ */
+const SOURCES = [
+  {
+    key: 'solar', label: 'Solar', prefix: 'solar', pkg: '@iconify-json/solar', license: 'CC-BY-4.0', box: 24, suffix: '-bold-duotone',
+    glyphs: GLYPHS, out: 'ReinsIconData.swift', type: 'ReinsGlyph', light: true, sourceOpacity: 0.5, layerOpacity: 0.5, outline: 0,
+    credit: 'Solar by 480 Design, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).',
+    doc: ['Every icon the old screens draw, from Solar Bold Duotone. Each has a solid layer and a lighter one in a 24 x 24 box (`ReinsIcon`',
+      'draws them in one colour, the lighter at `layerOpacity`). The v5 screens use `CategoryGlyph` and `ContentGlyph` instead.'],
+  },
+  {
+    key: 'mingcute', label: 'MingCute', prefix: 'mingcute', pkg: '@iconify-json/mingcute', license: 'Apache-2.0', box: 24, suffix: '-line',
+    glyphs: CATEGORY_GLYPHS, out: 'CategoryIconData.swift', type: 'CategoryGlyph', light: false, sourceOpacity: 1, layerOpacity: 1, outline: 0,
+    credit: 'MingCute by MingCute Design, Apache-2.0 (https://www.apache.org/licenses/LICENSE-2.0).\n// Changed from the original: the SVG path data is rewritten as absolute move, line and cubic commands (Apache-2.0 section 4(b)).',
+    doc: ['The category glyphs (spec V5-R10), from MingCute Line: one layer in a 24 x 24 box, drawn in one colour.'],
+  },
+  {
+    key: 'phosphor', label: 'Phosphor', prefix: 'ph', pkg: '@iconify-json/ph', license: 'MIT', box: 256, suffix: '-duotone',
+    glyphs: CONTENT_GLYPHS, out: 'ContentIconData.swift', type: 'ContentGlyph', light: true, sourceOpacity: 0.2, layerOpacity: 0.25, outline: 8,
+    credit: 'Phosphor Icons, Copyright (c) 2023 Phosphor Icons, MIT (https://github.com/phosphor-icons/core/blob/main/LICENSE).\n// Changed from the original: the SVG path data is rewritten as absolute move, line and cubic commands and scaled from the 256 grid to 24.',
+    doc: ['The sidebar and content glyphs, from Phosphor Duotone, scaled from its 256 grid to a 24 x 24 box. Each has a solid layer and a lighter',
+      'one (`ReinsIcon` draws them in one colour, the lighter at `layerOpacity`, both with the kit\'s thin outline `outlineWidth`).'],
+  },
+];
+
 // MARK: Glyphs
 
-/** Both layers of one Solar icon: commands and fill rule each. Throws on anything the two layers cannot hold. */
-export function glyphLayers(set, solarName) {
-  const icon = set.icons[solarName];
-  if (!icon) throw new Error(`${solarName}: not in the set`);
-  if ((icon.width ?? set.width ?? BOX) !== BOX || (icon.height ?? set.height ?? BOX) !== BOX) throw new Error(`${solarName}: not a 24 box`);
-  if (icon.left || icon.top || icon.rotate || icon.hFlip || icon.vFlip) throw new Error(`${solarName}: transformed`);
+const DRAW_BOX = 24;
+
+/** Scales path commands from the set's own box to the 24 box the app draws in. */
+function scaled(commands, k) {
+  return commands.map(([op, ...args]) => [op, ...args.map((v) => v * k)]);
+}
+
+/** The layers of one icon: commands and fill rule each. Throws on anything the source's layers cannot hold. */
+export function glyphLayers(set, name, source) {
+  const icon = set.icons[name];
+  if (!icon) throw new Error(`${name}: not in the set`);
+  if ((icon.width ?? set.width ?? DRAW_BOX) !== source.box || (icon.height ?? set.height ?? DRAW_BOX) !== source.box) {
+    throw new Error(`${name}: not a ${source.box} box`);
+  }
+  if (icon.left || icon.top || icon.rotate || icon.hFlip || icon.vFlip) throw new Error(`${name}: transformed`);
+  const k = DRAW_BOX / source.box;
   const layers = { solid: { commands: [], evenOdd: null }, light: { commands: [], evenOdd: null } };
   for (const element of elements(icon.body)) {
-    const key = Math.abs(element.opacity - 1) < 1e-9 ? 'solid' : Math.abs(element.opacity - LIGHT_OPACITY) < 1e-9 ? 'light' : null;
-    if (!key) throw new Error(`${solarName}: opacity ${element.opacity}`);
+    const key = Math.abs(element.opacity - 1) < 1e-9 ? 'solid' : source.light && Math.abs(element.opacity - source.sourceOpacity) < 1e-9 ? 'light' : null;
+    if (!key) throw new Error(`${name}: opacity ${element.opacity}`);
     const layer = layers[key];
-    layer.commands.push(...element.commands);
+    layer.commands.push(...scaled(element.commands, k));
     // One fill rule per layer. A layer that mixes them takes even-odd, which matches as long as its non-zero parts do not
     // overlap anything; check the result against the source (the plan's verification renders both).
     layer.evenOdd = (layer.evenOdd ?? false) || element.evenOdd;
   }
   for (const [key, layer] of Object.entries(layers)) {
-    if (!layer.commands.length) throw new Error(`${solarName}: no ${key} layer`);
+    if (key === 'light' && !source.light) {
+      if (layer.commands.length) throw new Error(`${name}: a light layer in a single-layer set`);
+    } else if (!layer.commands.length) throw new Error(`${name}: no ${key} layer`);
     layer.evenOdd = Boolean(layer.evenOdd);
   }
   return layers;
@@ -318,24 +399,26 @@ function swiftLines(commands) {
   return lines;
 }
 
-export function swiftSource(set, version) {
-  const glyphs = [...GLYPHS].sort((a, b) => a[0].localeCompare(b[0], 'en'));
-  const built = glyphs.map(([name, solar, meaning]) => ({ name, solar: solar + SUFFIX, meaning, layers: glyphLayers(set, solar + SUFFIX) }));
+export function swiftSource(source, set, version) {
+  const glyphs = [...source.glyphs].sort((a, b) => a[0].localeCompare(b[0], 'en'));
+  const built = glyphs.map(([name, icon, meaning]) => ({ name, icon: icon + source.suffix, meaning, layers: glyphLayers(set, icon + source.suffix, source) }));
   const cap = (s) => s[0].toUpperCase() + s.slice(1);
+  const layerKeys = source.light ? ['solid', 'light'] : ['solid'];
   const out = [];
-  out.push(`// Generated by scripts/generate-icons.mjs from @iconify-json/solar ${version}. Do not edit; rerun the script.`);
-  out.push('// Solar by 480 Design, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).');
+  out.push(`// Generated by scripts/generate-icons.mjs from ${source.pkg} ${version}. Do not edit; rerun the script.`);
+  out.push(`// ${source.credit}`);
   out.push('import CoreGraphics');
   out.push('');
-  out.push('/// Every icon the app draws, from Solar Bold Duotone. Each has a solid layer and a lighter one in a 24 x 24 box (`ReinsIcon`');
-  out.push('/// draws them in one colour, the lighter at `lightOpacity`).');
-  out.push('enum ReinsGlyph: CaseIterable {');
+  for (const line of source.doc) out.push(`/// ${line}`);
+  out.push(`enum ${source.type}: CaseIterable, GlyphSource {`);
   for (const g of built) out.push(`    /// ${cap(g.meaning)}.`, `    case ${g.name}`);
-  out.push('', `    static let box: CGFloat = ${BOX}`, `    static let lightOpacity = ${LIGHT_OPACITY}`, '');
-  out.push('    /// The Solar icon the glyph is drawn from.');
-  out.push('    var solarName: String {', '        switch self {');
-  for (const g of built) out.push(`        case .${g.name}: "${g.solar}"`);
+  out.push('', `    /// The ${source.label} icon the glyph is drawn from.`);
+  out.push('    var iconName: String {', '        switch self {');
+  for (const g of built) out.push(`        case .${g.name}: "${g.icon}"`);
   out.push('        }', '    }', '');
+  out.push(`    var hasLightLayer: Bool { ${source.light} }`);
+  out.push(`    var layerOpacity: Double { ${source.layerOpacity} }`);
+  out.push(`    var outlineWidth: CGFloat { ${num(source.outline * DRAW_BOX / source.box)} }`, '');
   out.push('    /// Whether a layer fills even-odd, where the source cuts a hole.');
   out.push('    func evenOdd(_ layer: GlyphLayer) -> Bool {', '        switch layer {');
   for (const key of ['solid', 'light']) {
@@ -344,10 +427,11 @@ export function swiftSource(set, version) {
   }
   out.push('        }', '    }', '');
   out.push('    func draw(_ layer: GlyphLayer, into p: inout GlyphPen) {', '        switch (self, layer) {');
-  for (const g of built) for (const key of ['solid', 'light']) out.push(`        case (.${g.name}, .${key}): Self.${g.name}${cap(key)}(&p)`);
+  for (const g of built) for (const key of layerKeys) out.push(`        case (.${g.name}, .${key}): Self.${g.name}${cap(key)}(&p)`);
+  if (!source.light) out.push('        case (_, .light): break');
   out.push('        }', '    }');
   for (const g of built) {
-    for (const key of ['solid', 'light']) {
+    for (const key of layerKeys) {
       out.push('', `    private static func ${g.name}${cap(key)}(_ p: inout GlyphPen) {`);
       for (const line of swiftLines(g.layers[key].commands)) out.push(`        ${line}`);
       out.push('    }');
@@ -358,17 +442,23 @@ export function swiftSource(set, version) {
 }
 
 function main() {
-  const source = process.argv[2];
-  if (!source) {
-    console.error('usage: node scripts/generate-icons.mjs <path to @iconify-json/solar icons.json>');
+  const paths = process.argv.slice(2);
+  if (paths.length !== SOURCES.length) {
+    console.error('usage: node scripts/generate-icons.mjs <solar icons.json> <mingcute icons.json> <phosphor (ph) icons.json>');
     process.exit(2);
   }
-  const set = JSON.parse(readFileSync(source, 'utf8'));
-  const pkg = JSON.parse(readFileSync(join(dirname(source), 'package.json'), 'utf8'));
-  if (set.prefix !== 'solar' || pkg.name !== '@iconify-json/solar') throw new Error('not the Solar set');
-  if (pkg.license !== 'CC-BY-4.0') throw new Error(`licence changed to ${pkg.license}: check it before shipping`);
-  writeFileSync(OUT, swiftSource(set, pkg.version));
-  console.log(OUT);
+  const outputs = SOURCES.map((source, i) => {
+    const set = JSON.parse(readFileSync(paths[i], 'utf8'));
+    const pkg = JSON.parse(readFileSync(join(dirname(paths[i]), 'package.json'), 'utf8'));
+    if (set.prefix !== source.prefix || pkg.name !== source.pkg) throw new Error(`argument ${i + 1} is not ${source.pkg}`);
+    if (pkg.license !== source.license) throw new Error(`${source.pkg}: licence changed to ${pkg.license}; check it before shipping`);
+    return [join(OUT_DIR, source.out), swiftSource(source, set, pkg.version)];
+  });
+  // Nothing is written until every set has been read and checked.
+  for (const [file, text] of outputs) {
+    writeFileSync(file, text);
+    console.log(file);
+  }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) main();

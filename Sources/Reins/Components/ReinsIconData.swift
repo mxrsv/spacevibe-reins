@@ -2,9 +2,9 @@
 // Solar by 480 Design, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
 import CoreGraphics
 
-/// Every icon the app draws, from Solar Bold Duotone. Each has a solid layer and a lighter one in a 24 x 24 box (`ReinsIcon`
-/// draws them in one colour, the lighter at `lightOpacity`).
-enum ReinsGlyph: CaseIterable {
+/// Every icon the old screens draw, from Solar Bold Duotone. Each has a solid layer and a lighter one in a 24 x 24 box (`ReinsIcon`
+/// draws them in one colour, the lighter at `layerOpacity`). The v5 screens use `CategoryGlyph` and `ContentGlyph` instead.
+enum ReinsGlyph: CaseIterable, GlyphSource {
     /// The Activity tab (waveform.path.ecg).
     case activity
     /// Add (plus).
@@ -80,11 +80,8 @@ enum ReinsGlyph: CaseIterable {
     /// A warning, not measurable (exclamationmark.triangle).
     case warning
 
-    static let box: CGFloat = 24
-    static let lightOpacity = 0.5
-
     /// The Solar icon the glyph is drawn from.
-    var solarName: String {
+    var iconName: String {
         switch self {
         case .activity: "pulse-bold-duotone"
         case .add: "add-bold-duotone"
@@ -125,6 +122,10 @@ enum ReinsGlyph: CaseIterable {
         case .warning: "danger-triangle-bold-duotone"
         }
     }
+
+    var hasLightLayer: Bool { true }
+    var layerOpacity: Double { 0.5 }
+    var outlineWidth: CGFloat { 0 }
 
     /// Whether a layer fills even-odd, where the source cuts a hole.
     func evenOdd(_ layer: GlyphLayer) -> Bool {

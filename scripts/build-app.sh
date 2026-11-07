@@ -71,6 +71,9 @@ ditto "${BINARY_DIR}/Sparkle.framework" "${APP_BUNDLE}/Contents/Frameworks/Spark
 # Inter, the only typeface (OFL); InterFont registers it from here at launch.
 mkdir -p "${APP_BUNDLE}/Contents/Resources/Fonts"
 cp Resources/Fonts/InterVariable.woff2 Resources/Fonts/OFL.txt "${APP_BUNDLE}/Contents/Resources/Fonts/"
+# Licence texts that must travel with the app (Apache-2.0 section 4(a) for the MingCute glyphs; Credits names the file).
+mkdir -p "${APP_BUNDLE}/Contents/Resources/Licenses"
+cp Resources/Licenses/*.txt "${APP_BUNDLE}/Contents/Resources/Licenses/"
 # The CLI brand marks Limits draws (CLIMark reads them from here).
 mkdir -p "${APP_BUNDLE}/Contents/Resources/Brand"
 cp Resources/Brand/*.svg "${APP_BUNDLE}/Contents/Resources/Brand/"
@@ -116,6 +119,9 @@ codesign --verify --deep --strict --verbose=2 "${APP_BUNDLE}"
 
 echo "==> font"
 ls "${APP_BUNDLE}/Contents/Resources/Fonts"
+
+echo "==> licences"
+ls "${APP_BUNDLE}/Contents/Resources/Licenses"
 
 echo "==> designated requirement"
 codesign -d -r- "${APP_BUNDLE}" 2>&1 | sed -n '/designated/,$p'

@@ -7,7 +7,7 @@ import ReinsCore
 ///
 /// `SPACEVIBE_SHOT_SCREEN` picks the run, and nothing else does:
 /// - `shell` (the default): the demo shell states and the gallery, `<name>-<dark|light>.png`, 1440x900 points at 2x for the
-///   shell states and the gallery at its full height. Synthetic demo data only; it never touches the saved appearance choice
+///   shell states and the gallery at its full height, in two images (`gallery`, `gallery-more`). Synthetic demo data only; it never touches the saved appearance choice
 ///   or the real config folders.
 /// - `settings`: Settings on the demo shell in every update state and at the Large font size, and the demo tabs at Large
 ///   (`SettingsShots`). Synthetic data only, like `shell`.
@@ -57,7 +57,8 @@ enum ShotRenderer {
             try write(shell(choice) { shell, _ in shell.openPalette(query: "p") }, name: "shell-palette-filtered", choice: choice, to: directory)
             try write(shell(choice) { _, toasts in toasts.show("Removed ponytail", undo: {}) }, name: "shell-toast", choice: choice, to: directory)
             try write(shell(choice) { _, toasts in toasts.show("Reins 0.2.0 is available", action: UpdateController.viewAction {}) }, name: "shell-toast-update", choice: choice, to: directory)
-            try write(gallery(choice), name: "gallery", choice: choice, to: directory, fullHeight: true)
+            try write(gallery(choice, part: .first), name: "gallery", choice: choice, to: directory, fullHeight: true)
+            try write(gallery(choice, part: .second), name: "gallery-more", choice: choice, to: directory, fullHeight: true)
         }
     }
 
@@ -70,7 +71,7 @@ enum ShotRenderer {
             .frame(width: size.width, height: size.height)
     }
 
-    private static func gallery(_ choice: AppearanceChoice) -> some View {
+    private static func gallery(_ choice: AppearanceChoice, part: ComponentGalleryContent.Part) -> some View {
         let shell = ShellModel(tabs: DemoTabs.make(), appearance: AppearanceStore(forced: choice))
         return VStack(alignment: .leading, spacing: 0) {
             Text("Component gallery")
@@ -78,7 +79,7 @@ enum ShotRenderer {
                 .padding(.horizontal, Metrics.pagePadding)
                 .padding(.top, 20)
                 .padding(.bottom, 4)
-            ComponentGalleryContent()
+            ComponentGalleryContent(part: part)
         }
         .frame(width: size.width, alignment: .topLeading)
         .background(Palette.background)
@@ -91,7 +92,8 @@ enum ShotRenderer {
             .environment(\.isShotRendering, true))
         renderer.scale = scale
         if fullHeight { renderer.proposedSize = ProposedViewSize(width: size.width, height: nil) }
-        guard let image = renderer.cgImage,
+        // A taller image renders blank without an error (the 16384 px texture limit), so it is refused here: split the content.
+        guard let image = renderer.cgImage, image.height <= maxImageHeight,
               let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else {
             throw ShotError.renderFailed(name)
         }
@@ -100,10 +102,12 @@ enum ShotRenderer {
         print(url.path)
     }
 
+    private static let maxImageHeight = 16384
+
     private enum ShotError: LocalizedError {
         case renderFailed(String)
         var errorDescription: String? {
-            if case .renderFailed(let name) = self { return "could not render \(name)" }
+            if case .renderFailed(let name) = self { return "could not render \(name) (a shot taller than 16384 px renders blank: split it)" }
             return nil
         }
     }

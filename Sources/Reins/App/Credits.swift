@@ -1,10 +1,29 @@
 import AppKit
 
-/// The licences the app must show: the bundled typeface, the icon set and the Go library inside the bundled core. Shown in the standard About panel (Reins menu,
+/// The licences the app must show: the bundled typeface, the three icon sets and the Go library inside the bundled core. Shown in the standard About panel (Reins menu,
 /// About Reins), which has no other credits.
 enum Credits {
-    /// CC BY 4.0 asks for the author, the licence with its link, and a note of what was changed.
+    /// Solar draws the old screens, until the v5 cut-over deletes them. CC BY 4.0 asks for the author, the licence with its link, and a note of what was changed.
     static let icons = "Icons: Solar by 480 Design, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to SwiftUI paths; each icon's lighter shapes are drawn as one layer."
+    /// Apache-2.0 section 4(a) asks for a copy of the licence to go with the glyphs. It ships as a file in the bundle, beside
+    /// Inter's `OFL.txt`: `Resources/Licenses/MingCute-Apache-2.0.txt` is the upstream `LICENSE` (mingcute-design/mingcute-icons,
+    /// blob d645695, last changed in bcee804, 2026-07-30), copied by `scripts/build-app.sh` into `Contents/Resources/Licenses/`.
+    /// Section 4(b) asks for a note that the files changed; the header of the generated `CategoryIconData.swift` carries it too.
+    /// The upstream `LICENSE` is the unfilled template (no copyright line) and the repository has no `NOTICE` file.
+    static let categoryIcons = "Category icons: MingCute by MingCute Design, Apache-2.0 (https://www.apache.org/licenses/LICENSE-2.0). Converted to SwiftUI paths (changed from the original). The licence text is in the app bundle: Contents/Resources/Licenses/MingCute-Apache-2.0.txt."
+
+    /// MIT asks for the copyright notice and the permission notice in all copies or substantial portions.
+    static let contentIcons = """
+    Sidebar and content icons: Phosphor Icons (https://github.com/phosphor-icons/core), MIT. Converted to SwiftUI paths and scaled (changed from the original).
+
+    Copyright (c) 2023 Phosphor Icons
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+    """
     static let typeface = "Typeface: Inter, copyright 2016 The Inter Project Authors (https://github.com/rsms/inter), SIL Open Font License 1.1."
 
     /// BSD 3-Clause asks binary redistributions to reproduce the copyright notice, the conditions and the disclaimer.
@@ -26,7 +45,7 @@ enum Credits {
     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     """
 
-    static var text: String { [icons, typeface, compress].joined(separator: "\n\n") }
+    static var text: String { [icons, categoryIcons, contentIcons, typeface, compress].joined(separator: "\n\n") }
 
     @MainActor
     static func showAboutPanel() {

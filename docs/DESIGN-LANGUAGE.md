@@ -65,24 +65,31 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
 
 ## Icons
 
-- **Solar Bold Duotone is the only icon set** (Solar by 480 Design, CC BY 4.0, https://creativecommons.org/licenses/by/4.0/).
-  The credit is in the About panel ([`Credits`](../Sources/Reins/App/Credits.swift)) and here.
+- **Three generated sets and Reins's own verdict glyphs** (V5-R9, V5-R10, V5-R12, V5-R14 to V5-R16): MingCute Line for the
+  category glyphs ([`CategoryGlyph`](../Sources/Reins/Components/CategoryIconData.swift): Skills `flash-line`, Subagents
+  `robot-line`, Hooks `fish-symbol-line`), Phosphor Duotone for the sidebar and content glyphs
+  ([`ContentGlyph`](../Sources/Reins/Components/ContentIconData.swift), Rules is its checklist glyph), and Solar Bold
+  Duotone ([`ReinsGlyph`](../Sources/Reins/Components/ReinsIconData.swift)) only for the screens not yet rebuilt. The five
+  hexagon verdict glyphs are shapes in [`VerdictGlyph`](../Sources/Reins/Components/VerdictGlyph.swift), one colour (`fg2`).
+  The credits are in the About panel ([`Credits`](../Sources/Reins/App/Credits.swift)).
   [`IconPolicyTests`](../Tests/ReinsTests/IconPolicyTests.swift) fails on an SF Symbol or any other image outside
   `Gallery/`; the CLI brand marks in [`CLIMark`](../Sources/Reins/Components/CLIMark.swift) are the one image.
 - **Agent logos keep their brand colours.** [`CLIMark`](../Sources/Reins/Components/CLIMark.swift) draws the Claude and
   Gemini assets in their original colours and the Codex mark in black/white for the appearance. It adds no box, tint or
   border around a logo; the colour of a usage bar or a sidebar state tile never recolours the logo.
-- **Generated Swift, not files.** [`generate-icons.mjs`](../scripts/generate-icons.mjs) turns the `@iconify-json/solar`
-  package (downloaded into a scratch folder, never committed) into
-  [`ReinsIconData.swift`](../Sources/Reins/Components/ReinsIconData.swift): two layers per glyph as path code. A glyph
-  that is missing gets a line in the script's table, then a rerun; the file is never edited by hand. Its table names the
-  Solar icon behind each glyph.
-- **One colour per icon.** [`ReinsIcon`](../Sources/Reins/Components/ReinsIcon.swift) draws both layers in the current
-  foreground style, the lighter at 50%. Only a state tag and a banner tint an icon with their tone's ink.
-- **Sizes** (`IconSize`): 22 sidebar, 20 row lead and banner, 16 buttons, tags and fields, 14 beside 12 pt text, 24 an
-  empty state. Never below 14.
-- **The chevron is drawn**, not taken from Solar Bold Duotone, whose chevron breaks up at small sizes: `Chevron` strokes
-  Solar Linear's geometry (right, down, and the up-and-down pair of a menu).
+- **Generated Swift, not files.** [`generate-icons.mjs`](../scripts/generate-icons.mjs) turns the three
+  `@iconify-json` packages (downloaded into a scratch folder, never committed) into the three data files: layers per glyph as
+  path code in a 24 box (Phosphor's 256 grid is scaled). A glyph that is missing gets a line in the script's table, then a
+  rerun; the files are never edited by hand. The tables name the icon behind each glyph. A glyph name that exists in two sets
+  is picked by label: `ReinsIcon(.lock)` is Solar, `ReinsIcon(category: .skill)` and `ReinsIcon(content: .stack)` the v5 sets.
+- **One colour per icon.** [`ReinsIcon`](../Sources/Reins/Components/ReinsIcon.swift) draws the layers in the current
+  foreground style, the lighter at its set's opacity (Solar 50%, Phosphor 25% as the mock draws it, with the mock's thin
+  outline around Phosphor shapes). Only a state tag and a banner tint an icon with their tone's ink.
+- **Sizes** (`IconSize`): v5 uses 16 (controls, tabs, rows, menus, sidebar), 14 (popovers, file rows, notes, beside 12 pt
+  text), 12 (chevrons, checks, the chip close) and 24 (the pane head's tile); never below 12. The old 22 and 20 stay until
+  the cut-over.
+- **The old chevron is drawn**, not taken from Solar Bold Duotone, whose chevron breaks up at small sizes: `Chevron` strokes
+  Solar Linear's geometry (right, down, and the up-and-down pair of a menu). v5 uses Phosphor's caret at 12.
 
 ## Components
 

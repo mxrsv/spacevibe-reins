@@ -1,11 +1,31 @@
 import SwiftUI
 
-/// The two layers of a glyph: the solid one and the lighter one Solar draws at half opacity.
+/// The two layers of a glyph: the solid one and, in a duotone set, the lighter one.
 enum GlyphLayer {
     case solid, light
 }
 
-/// Writes one layer of a generated glyph (`ReinsIconData.swift`) into a `Path`, in the glyph's 24 x 24 box.
+/// The box every generated glyph is drawn in, whatever grid its set uses (the generator scales to it).
+enum GlyphBox {
+    static let side: CGFloat = 24
+}
+
+/// One glyph of a generated icon set (`ReinsIconData.swift`, `CategoryIconData.swift`, `ContentIconData.swift`): its shapes in
+/// the 24 x 24 box and how the set is drawn. `ReinsIcon` draws any of them.
+protocol GlyphSource: Sendable {
+    /// The icon of the set this glyph is drawn from, for example `flash-line`.
+    var iconName: String { get }
+    /// False for a single-layer set (MingCute Line).
+    var hasLightLayer: Bool { get }
+    /// The opacity of the lighter layer.
+    var layerOpacity: Double { get }
+    /// A stroke in the glyph's colour added around every shape, in the 24 box (Phosphor's, as the mock draws it); 0 for none.
+    var outlineWidth: CGFloat { get }
+    func evenOdd(_ layer: GlyphLayer) -> Bool
+    func draw(_ layer: GlyphLayer, into p: inout GlyphPen)
+}
+
+/// Writes one layer of a generated glyph into a `Path`, in the glyph's 24 x 24 box.
 struct GlyphPen {
     var path = Path()
 
@@ -17,7 +37,7 @@ struct GlyphPen {
     mutating func z() { path.closeSubpath() }
 }
 
-extension ReinsGlyph {
+extension GlyphSource {
     /// One layer as a path in the 24 x 24 box.
     func path(_ layer: GlyphLayer) -> Path {
         var pen = GlyphPen()
@@ -28,28 +48,32 @@ extension ReinsGlyph {
 
 /// One layer of a glyph, scaled from its 24 pt box to the rect it is given (square, centred).
 struct GlyphShape: Shape {
-    let glyph: ReinsGlyph
+    let glyph: any GlyphSource
     let layer: GlyphLayer
 
     func path(in rect: CGRect) -> Path {
         let side = min(rect.width, rect.height)
-        let scale = side / ReinsGlyph.box
+        let scale = side / GlyphBox.side
         let transform = CGAffineTransform(translationX: rect.midX - side / 2, y: rect.midY - side / 2).scaledBy(x: scale, y: scale)
         return glyph.path(layer).applying(transform)
     }
 }
 
-/// The icon sizes (spec v3, Icons): never below 14, where the Bold weight loses its detail.
-enum IconSize {
-    /// A sidebar item: 22.
+/// The icon sizes: 16 for controls, tabs, rows, menus and the sidebar; 14 in popovers, file rows, notes and beside 12 pt text;
+/// 12 for chevrons, checks and the filter-chip close; 24 in a pane head's tile (V5-R16). Never below 12. `sidebar` and `row`
+/// are the old screens' sizes and go with them.
+enum IconSize: CaseIterable {
+    /// A sidebar item of the old screens: 22.
     case sidebar
-    /// A row's lead slot, a banner: 20.
+    /// A row's lead slot, a banner, in the old screens: 20.
     case row
-    /// Buttons, tags, fields and cells: 16.
+    /// Buttons, tags, fields, cells, tabs, rows, menus and the v5 sidebar: 16.
     case control
-    /// Beside 12 pt text (the usage legend, notes, palette hints): 14, the smallest.
+    /// Beside 12 pt text (the usage legend, notes, palette hints, popovers, file rows): 14.
     case inline
-    /// An empty state's mark: 24.
+    /// A chevron, a check, the filter-chip close: 12, the smallest.
+    case small
+    /// An empty state's mark and the pane head's tile: 24.
     case large
 
     var points: CGFloat {
@@ -58,40 +82,73 @@ enum IconSize {
         case .row: Metrics.iconRow
         case .control: Metrics.iconControl
         case .inline: Metrics.iconInline
+        case .small: Metrics.iconSmall
         case .large: Metrics.iconLarge
         }
     }
 }
 
-/// An icon from the generated Solar set: both layers in one colour, the lighter at half opacity. The colour is the current
-/// foreground style, so an icon is neutral wherever it sits; `ink` is for the two places that tint one (a state tag, a
+/// An icon from one of the generated sets: its layers in one colour, the lighter at the set's `layerOpacity`. The colour is the
+/// current foreground style, so an icon is neutral wherever it sits; `ink` is for the two places that tint one (a state tag, a
 /// banner). Hidden from VoiceOver unless it has a `label`, for an icon that carries meaning on its own.
+///
+/// `ReinsIcon(.lock)` draws a Solar glyph (old screens). The v5 sets have their own labels, so a name that exists in two sets
+/// never reads two ways: `ReinsIcon(category: .skill)` (MingCute) and `ReinsIcon(content: .stack)` (Phosphor).
 struct ReinsIcon: View {
-    let glyph: ReinsGlyph
+    let source: any GlyphSource
     var size: IconSize = .control
     var ink: Color?
     var label: String?
 
-    init(_ glyph: ReinsGlyph, size: IconSize = .control, ink: Color? = nil, label: String? = nil) {
-        self.glyph = glyph
+    init(source: any GlyphSource, size: IconSize = .control, ink: Color? = nil, label: String? = nil) {
+        self.source = source
         self.size = size
         self.ink = ink
         self.label = label
     }
 
+    init(_ glyph: ReinsGlyph, size: IconSize = .control, ink: Color? = nil, label: String? = nil) {
+        self.init(source: glyph, size: size, ink: ink, label: label)
+    }
+
+    init(category glyph: CategoryGlyph, size: IconSize = .control, ink: Color? = nil, label: String? = nil) {
+        self.init(source: glyph, size: size, ink: ink, label: label)
+    }
+
+    init(content glyph: ContentGlyph, size: IconSize = .control, ink: Color? = nil, label: String? = nil) {
+        self.init(source: glyph, size: size, ink: ink, label: label)
+    }
+
     var body: some View {
         let drawn = ZStack {
-            GlyphShape(glyph: glyph, layer: .light)
-                .fill(style: FillStyle(eoFill: glyph.evenOdd(.light)))
-                .opacity(ReinsGlyph.lightOpacity)
-            GlyphShape(glyph: glyph, layer: .solid)
-                .fill(style: FillStyle(eoFill: glyph.evenOdd(.solid)))
+            if source.hasLightLayer {
+                GlyphLayerView(source: source, layer: .light, side: size.points).opacity(source.layerOpacity)
+            }
+            GlyphLayerView(source: source, layer: .solid, side: size.points)
         }
         .frame(width: size.points, height: size.points)
         Group {
             if let ink { drawn.foregroundStyle(ink) } else { drawn }
         }
         .modifier(IconAccessibility(label: label))
+    }
+}
+
+/// A layer's fill, with the set's outline over it where it has one. One group, so the layer's opacity applies once.
+private struct GlyphLayerView: View {
+    let source: any GlyphSource
+    let layer: GlyphLayer
+    let side: CGFloat
+
+    var body: some View {
+        let shape = GlyphShape(glyph: source, layer: layer)
+        ZStack {
+            shape.fill(style: FillStyle(eoFill: source.evenOdd(layer)))
+            if source.outlineWidth > 0 {
+                shape.stroke(style: StrokeStyle(lineWidth: source.outlineWidth * side / GlyphBox.side, lineJoin: .round))
+            }
+        }
+        .compositingGroup()
     }
 }
 
@@ -114,7 +171,7 @@ struct Chevron: View {
     }
 
     var body: some View {
-        let scale = size.points / ReinsGlyph.box
+        let scale = size.points / GlyphBox.side
         ChevronShape(direction: direction)
             .stroke(style: StrokeStyle(lineWidth: Metrics.chevronStroke * scale, lineCap: .round, lineJoin: .round))
             .frame(width: size.points, height: size.points)
@@ -138,7 +195,7 @@ private struct ChevronShape: Shape {
         }
         for line in points { path.addLines(line) }
         let side = min(rect.width, rect.height)
-        let scale = side / ReinsGlyph.box
+        let scale = side / GlyphBox.side
         return path.applying(CGAffineTransform(translationX: rect.midX - side / 2, y: rect.midY - side / 2).scaledBy(x: scale, y: scale))
     }
 }
