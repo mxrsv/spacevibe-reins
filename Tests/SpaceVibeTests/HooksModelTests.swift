@@ -126,7 +126,7 @@ struct HooksModelTests {
 
     @Test("the logos: a CLI that cannot take the hook has no toggle at all; the only copy and a plugin's are not toggles")
     func logos() {
-        let model = HooksModel(loadout: LoadoutModel(env: .shared, data: data(rows([
+        let model = HooksModel(loadout: LoadoutModel(env: AppEnvironment(toasts: ToastCenter(announce: false)), data: data(rows([
             spec("pre", "PreToolUse", [.codex]), spec("stop", "Stop"), spec("shared", "Stop", both), spec("plug", "Stop", plugin: "neon")]))))
         model.limitsResults = { [] }
         func row(_ name: String) -> LoadoutRow { model.rows.first { $0.hookTitle == "\(name).sh" }! }
