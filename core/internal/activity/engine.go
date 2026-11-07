@@ -18,6 +18,8 @@ const (
 	dayMs           = 86_400_000.0
 	noCostEstimate  = "The log is too large to read in full, so no estimate."
 	noTranscript    = "No transcript found for this session."
+	// transcriptUnreadable is the cost note of a Claude session whose transcript exists but could not be read.
+	transcriptUnreadable = "The transcript of this session exists but could not be read."
 )
 
 type cacheEntry struct {
@@ -39,7 +41,7 @@ func NewEngine() *Engine { return &Engine{cache: map[string]*cacheEntry{}} }
 
 // advance folds what was appended to a log since the last read. It returns nil for a log that is missing or that
 // cannot be read; an unreadable log stays out of the lists but keeps its cache entry, as in Swift.
-func (e *Engine) advance(f logFile, maxBytes int64) *cacheEntry {
+func (e *Engine) advance(f logFile, maxBytes int64) (entry *cacheEntry, unreadable bool) {
 	entry, ok := e.cache[f.path]
 	if !ok {
 		var reader logs.LogReader
@@ -56,14 +58,14 @@ func (e *Engine) advance(f logFile, maxBytes int64) *cacheEntry {
 		func() { entry.state = newLogState(f.cli) },
 	)
 	if err != nil {
-		return nil
+		return nil, true
 	}
 	if result.Missing {
 		delete(e.cache, f.path)
-		return nil
+		return nil, false
 	}
 	entry.truncated = result.Truncated
-	return entry
+	return entry, false
 }
 
 type foldedLog struct {
@@ -80,7 +82,9 @@ type readContext struct {
 	memo         projectMemo
 	index        logIndex
 	foldedByPath map[string]*cacheEntry
-	codexPids    map[int]bool
+	// unreadable holds the logs that exist but could not be read (not the ones that are gone).
+	unreadable map[string]bool
+	codexPids  map[int]bool
 }
 
 // Read builds the report: roots are where the logs live, now is the clock every age is computed against, and
@@ -140,6 +144,7 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 	targets = append(targets, recent...)
 	var folded []foldedLog
 	foldedByPath := map[string]*cacheEntry{}
+	unreadable := map[string]bool{}
 	for _, f := range targets {
 		if err := ctx.Err(); err != nil {
 			return Report{}, err
@@ -148,9 +153,12 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 		if live[f.path] {
 			maxBytes = opts.LiveTailBytes
 		}
-		if entry := e.advance(f, maxBytes); entry != nil {
+		entry, failed := e.advance(f, maxBytes)
+		if entry != nil {
 			folded = append(folded, foldedLog{f, entry})
 			foldedByPath[f.path] = entry
+		} else if failed {
+			unreadable[f.path] = true
 		}
 	}
 	wanted := map[string]bool{}
@@ -164,7 +172,7 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 	}
 
 	// 3. Sessions.
-	rc := &readContext{roots: r, nowMs: nowMs, opts: opts, proc: adapter, memo: memo, index: index, foldedByPath: foldedByPath, codexPids: codexPids}
+	rc := &readContext{roots: r, nowMs: nowMs, opts: opts, proc: adapter, memo: memo, index: index, foldedByPath: foldedByPath, unreadable: unreadable, codexPids: codexPids}
 	sessions := append(claudeSessions(claudeLive, rc), codexSessions(ctx, threads, rc)...)
 	sort.SliceStable(sessions, func(i, j int) bool {
 		a, b := sessions[i], sessions[j]

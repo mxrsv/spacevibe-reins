@@ -39,12 +39,28 @@ func Install(cfg config.Config, r roots.Roots, binary string) (*mutate.Entry, er
 	if err != nil {
 		return nil, err
 	}
-	if err := fsx.MkdirAll(folder, 0o700); err != nil {
+	// Everything that can be refused is checked before the first write: the source is read now, the settings edit
+	// runs next, and the copy is written only after the edit has succeeded.
+	payload, err := readExecutable(binary, Executable(r))
+	if err != nil {
 		return nil, err
 	}
-	if err := copyExecutable(binary, Executable(r)); err != nil {
+	entry, err := editSettings(r)
+	if err != nil {
 		return nil, err
 	}
+	if err := writeExecutable(folder, Executable(r), payload); err != nil {
+		// The settings must never point at a copy that is not there: put them back.
+		if entry != nil {
+			_ = Undo(r, entry.ID)
+		}
+		return nil, err
+	}
+	return entry, nil
+}
+
+// editSettings is the settings.json half of Install.
+func editSettings(r roots.Roots) (*mutate.Entry, error) {
 	return mutate.EditJSON(r, r.Claude.HookFile, InstallLabel, nil, func(doc *ojson.Document) (*ojson.Document, error) {
 		current, present := doc.Root().Member("statusLine")
 		command := ""
@@ -81,15 +97,27 @@ func Undo(r roots.Roots, id string) error {
 	return err
 }
 
-// copyExecutable writes the executable to destination through a temp file and a rename, never in place: a capture
-// that Claude started a moment ago may be running the old copy. Copying the destination onto itself is skipped.
-func copyExecutable(source, destination string) error {
+// readExecutable reads the executable to install. It is nil when source and destination are the same file: the copy
+// is skipped.
+func readExecutable(source, destination string) ([]byte, error) {
 	if roots.ResolvedPath(source) == roots.ResolvedPath(destination) {
-		return nil
+		return nil, nil
 	}
 	data, err := os.ReadFile(source)
 	if err != nil {
-		return coreerr.NewStatus("The "+identity.Name+" executable could not be read to install it.", coreerr.StatusInternalFailure)
+		return nil, coreerr.NewStatus("The "+identity.Name+" executable could not be read to install it.", coreerr.StatusInternalFailure)
 	}
-	return fsx.AtomicWrite(destination, data, 0o700, fsx.AtomicWriteOptions{})
+	return data, nil
+}
+
+// writeExecutable writes the executable through a temp file and a rename, never in place: a capture that Claude
+// started a moment ago may be running the old copy. A nil payload (installing from the installed copy) writes nothing.
+func writeExecutable(folder, destination string, payload []byte) error {
+	if payload == nil {
+		return nil
+	}
+	if err := fsx.MkdirAll(folder, 0o700); err != nil {
+		return err
+	}
+	return fsx.AtomicWrite(destination, payload, 0o700, fsx.AtomicWriteOptions{})
 }

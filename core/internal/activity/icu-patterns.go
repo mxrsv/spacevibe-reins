@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"unicode"
 	"unicode/utf8"
+
+	"spacevibe.dev/core/internal/textjs"
 )
 
 // The patterns of ActivityFold.swift and SessionTitles.swift ran on ICU (NSRegularExpression). Go's RE2 differs in
@@ -19,10 +21,10 @@ import (
 //
 // icu-patterns_test.go runs every pattern against the recorded output of NSRegularExpression (testdata/icu-oracle.json).
 const (
-	icuSpaceSet = `\t\n\x0B\x0C\r \x{85}\x{A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}`
+	icuSpaceSet = textjs.ICUSpaceSet
 	icuSpace    = `[` + icuSpaceSet + `]`
 	icuNotSpace = `[^` + icuSpaceSet + `]`
-	icuTermSet  = `\n\x0B\x0C\r\x{85}\x{2028}\x{2029}`
+	icuTermSet  = textjs.ICUTermSet
 	icuDot      = `[^` + icuTermSet + `]`
 	// icuEnd is $ without the multiline flag: the end, or before one final line terminator.
 	icuEnd = `(?:\r\n|[` + icuTermSet + `])?\z`

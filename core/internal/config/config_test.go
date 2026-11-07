@@ -21,6 +21,10 @@ func TestLoadFrom(t *testing.T) {
 		{"cli folders", map[string]string{"HOME": "/h", "CLAUDE_CONFIG_DIR": "/c", "CODEX_HOME": "/x"}, Config{UserHome: "/h", ClaudeConfigDir: "/c", CodexHome: "/x"}, false},
 		{"proc fixture", map[string]string{"SPACEVIBE_PROC_FIXTURE": "/tmp/p.json"}, Config{ProcFixture: "/tmp/p.json"}, false},
 		{"relative home fails closed", map[string]string{"SPACEVIBE_HOME": "x"}, Config{}, true},
+		{"relative HOME fails closed", map[string]string{"HOME": "h"}, Config{}, true},
+		{"relative CLAUDE_CONFIG_DIR fails closed", map[string]string{"CLAUDE_CONFIG_DIR": "./c"}, Config{}, true},
+		{"relative CODEX_HOME fails closed", map[string]string{"CODEX_HOME": "../x"}, Config{}, true},
+		{"empty folders count as unset", map[string]string{"HOME": "", "CLAUDE_CONFIG_DIR": "", "CODEX_HOME": ""}, Config{}, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -32,5 +36,15 @@ func TestLoadFrom(t *testing.T) {
 				t.Fatalf("got %+v, want %+v", got, c.want)
 			}
 		})
+	}
+}
+
+// The error names the variable and never quotes its value.
+func TestRelativeCLIFolderErrorIsAFixedSentence(t *testing.T) {
+	for _, name := range []string{"HOME", "CLAUDE_CONFIG_DIR", "CODEX_HOME"} {
+		_, err := LoadFrom(fake(map[string]string{name: "relative/SECRET"}))
+		if err == nil || err.Error() != name+" must be an absolute path" {
+			t.Errorf("%s: err = %v", name, err)
+		}
 	}
 }

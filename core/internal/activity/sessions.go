@@ -197,6 +197,8 @@ func claudeSessions(live []claudeLiveSession, rc *readContext) []Session {
 		var costNote *string
 		if entry != nil {
 			cost, costNote = costFor(append([]*cacheEntry{entry}, subEntries...))
+		} else if c.main != nil && rc.unreadable[c.main.path] {
+			costNote = strPtr(transcriptUnreadable)
 		} else {
 			costNote = strPtr(noTranscript)
 		}
@@ -284,7 +286,11 @@ func codexSessions(ctx context.Context, threads []proc.Thread, rc *readContext) 
 			continue
 		}
 		if file == nil || entry == nil {
-			sessions = append(sessions, codexWithoutRollout(ctx, t, names, rc))
+			row := codexWithoutRollout(ctx, t, names, rc)
+			if file != nil && rc.unreadable[file.path] {
+				row = codexUnreadableRollout(row)
+			}
+			sessions = append(sessions, row)
 			continue
 		}
 		lastWriteAgoMs := math.Max(0, rc.nowMs-file.mtimeMs)
@@ -348,6 +354,14 @@ func codexWithoutRollout(ctx context.Context, t proc.Thread, names map[string]st
 		Pid: t.Pid, State: StateUnmeasurable, StateReason: reason.Text(), ReasonCode: &reason,
 		AgeMs: age, CostNote: strPtr(reason.Text()),
 	}
+}
+
+// codexUnreadableRollout turns the no-rollout row of a thread whose rollout exists into the unreadable one: same id,
+// title and clock, its own reason.
+func codexUnreadableRollout(row Session) Session {
+	reason := ReasonCodexRolloutUnreadable
+	row.StateReason, row.ReasonCode, row.CostNote = reason.Text(), &reason, strPtr(reason.Text())
+	return row
 }
 
 func isCompressedLog(path string) bool {

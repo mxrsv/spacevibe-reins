@@ -4,14 +4,17 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"spacevibe.dev/core/internal/textjs"
 )
 
 // ICU (NSRegularExpression) and Go differ on three things these patterns touch: \s is the Unicode
-// White_Space set, `.` stops at any line terminator, and `$` also matches before one final line
-// terminator. The classes below spell the ICU sets out and finalTerminator handles `$`.
+// White_Space set, `.` stops at any line terminator (\n \v \f \r U+0085 U+2028 U+2029), and `$` also matches
+// before one final line terminator. The classes below take the ICU sets from textjs (the same ones activity
+// uses) and finalTerminator handles `$`.
 const (
-	icuSpace = `\t\n\v\f\r \x{85}\x{A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}`
-	icuDot   = `[^\n\r\x{85}\x{2028}\x{2029}]`
+	icuSpace = textjs.ICUSpaceSet
+	icuDot   = `[^` + textjs.ICUTermSet + `]`
 )
 
 var (
@@ -27,7 +30,7 @@ func finalTerminator(s string) string {
 	if strings.HasSuffix(s, "\r\n") {
 		return s[:len(s)-2]
 	}
-	for _, t := range []string{"\n", "\r", "\u0085", " ", " "} {
+	for _, t := range []string{"\n", "\v", "\f", "\r", "\u0085", "\u2028", "\u2029"} {
 		if strings.HasSuffix(s, t) {
 			return s[:len(s)-len(t)]
 		}

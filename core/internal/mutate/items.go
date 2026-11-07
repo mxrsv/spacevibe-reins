@@ -1,6 +1,7 @@
 package mutate
 
 import (
+	"context"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -119,7 +120,11 @@ func requireRemovable(removable bool, scope inventory.Scope) error {
 
 // RemoveItem removes a skill, an agent or a hook. Plugin-owned and project-scoped items are read-only (403).
 func RemoveItem(r roots.Roots, id string) (Entry, error) {
-	return locked(r, func(tx *Tx) (Entry, error) {
+	return removeItem(context.Background(), r, id)
+}
+
+func removeItem(ctx context.Context, r roots.Roots, id string) (Entry, error) {
+	return lockedContext(ctx, r, func(tx *Tx) (Entry, error) {
 		f, err := tx.find(id)
 		if err != nil {
 			return Entry{}, err
@@ -142,7 +147,11 @@ func RemoveItem(r roots.Roots, id string) (Entry, error) {
 // SpaceVibe wrote is unverified (spec, "To verify"), and the approved Loadout mock offers no such copy. The Node core throws
 // a TypeError for every hook copy, so there is nothing to mirror.
 func CopyToOther(r roots.Roots, id string) (Entry, error) {
-	return locked(r, func(tx *Tx) (Entry, error) {
+	return copyToOther(context.Background(), r, id)
+}
+
+func copyToOther(ctx context.Context, r roots.Roots, id string) (Entry, error) {
+	return lockedContext(ctx, r, func(tx *Tx) (Entry, error) {
 		f, err := tx.find(id)
 		if err != nil {
 			return Entry{}, err

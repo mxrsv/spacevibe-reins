@@ -13,8 +13,9 @@ import (
 // loadout.removeDeadHooks, journal.undo and journal.history (docs/internals/core-protocol.md). A later wiring step
 // registers them. AddSkill, AddAgent and AddHook are not methods (see the package comment).
 //
-// A write is short and ends in a journal entry, so ctx is looked at once, before the write lock is taken: a
-// cancelled request never starts, and one that has started is never stopped half way.
+// A write is short and ends in a journal entry, so ctx is looked at twice and never in between: before the write lock
+// is queued for, and again as the first step inside the lock. A cancelled request never starts, even when it waited
+// for the lock; one that has started is never stopped half way.
 type Service struct {
 	roots roots.Roots
 }
@@ -52,7 +53,7 @@ func (s *Service) CopyToOther(ctx context.Context, p IDParams) (EntryResult, err
 	if err := ctx.Err(); err != nil {
 		return EntryResult{}, err
 	}
-	entry, err := CopyToOther(s.roots, p.ID)
+	entry, err := copyToOther(ctx, s.roots, p.ID)
 	return EntryResult{Entry: entry.Ref()}, err
 }
 
@@ -61,7 +62,7 @@ func (s *Service) RemoveItem(ctx context.Context, p IDParams) (EntryResult, erro
 	if err := ctx.Err(); err != nil {
 		return EntryResult{}, err
 	}
-	entry, err := RemoveItem(s.roots, p.ID)
+	entry, err := removeItem(ctx, s.roots, p.ID)
 	return EntryResult{Entry: entry.Ref()}, err
 }
 
@@ -73,7 +74,7 @@ func (s *Service) RemoveDeadHooks(ctx context.Context, p CLIParams) (EntryResult
 	if p.CLI != inventory.Claude && p.CLI != inventory.Codex {
 		return EntryResult{}, coreerr.New("cli must be claude or codex.")
 	}
-	entry, err := RemoveDeadHooks(s.roots, p.CLI)
+	entry, err := removeDeadHooks(ctx, s.roots, p.CLI)
 	return EntryResult{Entry: entry.Ref()}, err
 }
 
@@ -82,7 +83,7 @@ func (s *Service) Undo(ctx context.Context, p IDParams) (UndoResult, error) {
 	if err := ctx.Err(); err != nil {
 		return UndoResult{}, err
 	}
-	label, err := Undo(s.roots, p.ID)
+	label, err := undo(ctx, s.roots, p.ID)
 	return UndoResult{Label: label}, err
 }
 

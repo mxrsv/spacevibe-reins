@@ -14,6 +14,10 @@ import (
 const (
 	envTest = identity.EnvPrefix + "TEST"
 	envHome = identity.EnvPrefix + "HOME"
+	// The folders of the CLIs, as the CLIs read them.
+	envUserHome        = "HOME"
+	envClaudeConfigDir = "CLAUDE_CONFIG_DIR"
+	envCodexHome       = "CODEX_HOME"
 	// envProcFixture is the same name as proc.EnvProcFixture; config cannot import proc (proc imports config).
 	envProcFixture = identity.EnvPrefix + "PROC_FIXTURE"
 )
@@ -40,7 +44,7 @@ type Config struct {
 func Load() (Config, error) { return LoadFrom(os.Getenv) }
 
 // LoadFrom reads through getenv, so a test can fake the environment. It fails closed: an unknown
-// SPACEVIBE_TEST value or a relative SPACEVIBE_HOME is an error, never a guess.
+// SPACEVIBE_TEST value, or a relative SPACEVIBE_HOME, HOME, CLAUDE_CONFIG_DIR or CODEX_HOME, is an error, never a guess.
 func LoadFrom(getenv func(string) string) (Config, error) {
 	var c Config
 	switch v := getenv(envTest); v {
@@ -56,9 +60,16 @@ func LoadFrom(getenv func(string) string) (Config, error) {
 		}
 		c.Home = filepath.Clean(v)
 	}
-	c.UserHome = getenv("HOME")
-	c.ClaudeConfigDir = getenv("CLAUDE_CONFIG_DIR")
-	c.CodexHome = getenv("CODEX_HOME")
+	for _, folder := range []struct {
+		name string
+		into *string
+	}{{envUserHome, &c.UserHome}, {envClaudeConfigDir, &c.ClaudeConfigDir}, {envCodexHome, &c.CodexHome}} {
+		v := getenv(folder.name)
+		if v != "" && !filepath.IsAbs(v) {
+			return Config{}, fmt.Errorf("%s must be an absolute path", folder.name)
+		}
+		*folder.into = v
+	}
 	c.ProcFixture = getenv(envProcFixture)
 	return c, nil
 }

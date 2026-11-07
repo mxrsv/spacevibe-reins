@@ -43,11 +43,13 @@ type Reason string
 
 // The reasons a state cannot be known.
 const (
-	ReasonCodexNoRollout      Reason = "codex-no-rollout"
-	ReasonCodexToolSilent     Reason = "codex-tool-silent"
-	ReasonClaudePromptVsBusy  Reason = "claude-prompt-vs-busy"
-	ReasonClaudeUnknownStatus Reason = "claude-unknown-status"
-	ReasonCodexHookRuns       Reason = "codex-hook-runs"
+	ReasonCodexNoRollout Reason = "codex-no-rollout"
+	// ReasonCodexRolloutUnreadable is a rollout that exists but could not be read (permission, corruption).
+	ReasonCodexRolloutUnreadable Reason = "codex-rollout-unreadable"
+	ReasonCodexToolSilent        Reason = "codex-tool-silent"
+	ReasonClaudePromptVsBusy     Reason = "claude-prompt-vs-busy"
+	ReasonClaudeUnknownStatus    Reason = "claude-unknown-status"
+	ReasonCodexHookRuns          Reason = "codex-hook-runs"
 	// ReasonCodexProcessUnknown is a failed ps or lsof reading. It is on a row (or one extra limit) only while the
 	// failure lasts and is never in the fixed limit list.
 	ReasonCodexProcessUnknown Reason = "codex-process-unknown"
@@ -58,6 +60,8 @@ func (r Reason) Text() string {
 	switch r {
 	case ReasonCodexNoRollout:
 		return "Codex writes no log until the first prompt is sent, so this session cannot be read yet."
+	case ReasonCodexRolloutUnreadable:
+		return "The log of this Codex session exists but could not be read, so the session cannot be measured."
 	case ReasonCodexToolSilent:
 		return "Codex logs nothing while a tool runs and does not record approval waits, so a long command and a wait for approval look the same."
 	case ReasonClaudePromptVsBusy:

@@ -164,3 +164,27 @@ func TestLsofUsable(t *testing.T) {
 		}
 	}
 }
+
+// ICU line terminators include \v (U+000B) and \f (U+000C): `.` stops at them and `$` accepts one before the end.
+// Confirmed against NSRegularExpression (finding 9).
+func TestPsLineVerticalTabAndFormFeed(t *testing.T) {
+	cases := []struct {
+		name, line string
+		want       []int
+	}{
+		{"FF in the arguments ends the match", "123 codex a\f b", nil},
+		{"FF between two arguments", "123 codex a\fb", nil},
+		{"VT in the arguments ends the match", "123 codex a\v b", nil},
+		{"VT between two arguments", "123 codex a\vb", nil},
+		{"trailing FF is ICU's $", "123 codex a\f", []int{123}},
+		{"trailing VT is ICU's $", "123 codex --flag\v", []int{123}},
+		{"trailing VT after the bare name", "123 codex\v", []int{123}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := CodexPids(c.line); !reflect.DeepEqual(got, c.want) {
+				t.Fatalf("CodexPids(%q) = %v, want %v", c.line, got, c.want)
+			}
+		})
+	}
+}

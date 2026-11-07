@@ -195,6 +195,10 @@ func TestInstallStatusLineShapes(t *testing.T) {
 				if h.text(".claude/settings.json") != c.settings {
 					t.Fatal("settings changed")
 				}
+				// A refused install leaves no copy of the executable and no journal entry behind.
+				if h.exists(".spacevibe/bin/spacevibe") || h.exists(".spacevibe/journal.json") {
+					t.Fatal("a refused install left a copy or a journal behind")
+				}
 				return
 			}
 			if err != nil || entry == nil {
@@ -245,5 +249,34 @@ func TestQuoteRoundTrip(t *testing.T) {
 	}
 	if Quote("it's") != `'it'\''s'` {
 		t.Errorf("Quote(it's) = %s", Quote("it's"))
+	}
+}
+
+// A copy that cannot be written (a folder sits where the executable goes) puts the settings back, so they never
+// point at a missing executable.
+func TestInstallRollsBackSettingsWhenTheCopyFails(t *testing.T) {
+	h := newTempHome(t)
+	const settings = `{"keep":1}`
+	h.write(".claude/settings.json", settings)
+	if err := os.MkdirAll(h.path(".spacevibe/bin/spacevibe/blocker"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Install(h.cfg(), h.roots(), h.write("bin", "x")); err == nil {
+		t.Fatal("the copy onto a folder succeeded")
+	}
+	if got := h.text(".claude/settings.json"); got != settings {
+		t.Fatalf("settings not restored: %s", got)
+	}
+}
+
+func TestInstallUnreadableSourceChangesNothing(t *testing.T) {
+	h := newTempHome(t)
+	const settings = `{"keep":1}`
+	h.write(".claude/settings.json", settings)
+	if _, err := Install(h.cfg(), h.roots(), h.path("missing")); err == nil {
+		t.Fatal("no error")
+	}
+	if h.text(".claude/settings.json") != settings || h.exists(".spacevibe/bin") || h.exists(".spacevibe/journal.json") {
+		t.Fatal("a failed install left something behind")
 	}
 }

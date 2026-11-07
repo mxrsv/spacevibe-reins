@@ -7,8 +7,12 @@ import (
 	"time"
 
 	"spacevibe.dev/core/internal/activity"
+	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/rpc"
 )
+
+// errClosed answers a subscribe that arrives after Close; never (nil, nil), which would read as a null result.
+var errClosed = coreerr.NewStatus("The core is shutting down.", coreerr.StatusInternalFailure)
 
 // watch is the one activity subscription of the connection.
 type watch struct {
@@ -53,7 +57,7 @@ func (s *Services) activitySubscribe(ctx context.Context, call rpc.Call) (any, e
 	defer s.watchMu.Unlock()
 	if s.closed {
 		cancel()
-		return nil, ctx.Err()
+		return nil, errClosed
 	}
 	s.watching.stop()
 	s.watching = w

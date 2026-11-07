@@ -18,8 +18,9 @@ import (
 // The undo journal: <data>/journal.json, a JSON array, newest first, at most JournalLimit entries (Journal.swift).
 // Same file and entry shape as the Node core and the Swift engine, so any of them can read what another wrote.
 //
-// One deliberate break from the Node core: a journal.json that exists but is not a JSON array makes every write
-// path refuse (409) instead of reading it as empty, so a corrupt undo history is never replaced by a fresh one.
+// One deliberate break from the Node core: a journal.json that exists but is not a JSON array of entries makes every
+// write path refuse (409) instead of reading it as empty or dropping elements, so a corrupt undo history is never
+// replaced by a fresh one.
 //
 // Labels are written verbatim: callers pass a sentence about what changed (a rule name, an item name), never file
 // content.
@@ -37,7 +38,8 @@ func journalPath(r roots.Roots) string { return filepath.Join(r.Data, journalNam
 func unreadable() error { return fail(UnreadableMessage, coreerr.StatusConflict) }
 
 // entriesForWriting reads the journal for a write. A missing file is empty. A file that exists but cannot be read,
-// or is not a JSON array, is refused, so a corrupt journal is never replaced by a fresh one. Any lookup failure
+// or is not a JSON array of entries (an element without a string id counts as corrupt; Swift dropped it), is refused,
+// so a corrupt journal is never replaced by a fresh one. Any lookup failure
 // other than "absent" also refuses (fail closed).
 func entriesForWriting(r roots.Roots) ([]Entry, error) {
 	path := journalPath(r)
@@ -61,9 +63,11 @@ func entriesForWriting(r roots.Roots) ([]Entry, error) {
 	}
 	entries := make([]Entry, 0, len(items))
 	for _, item := range items {
-		if e, ok := entryFromValue(item); ok {
-			entries = append(entries, e)
+		e, ok := entryFromValue(item)
+		if !ok {
+			return nil, unreadable() // an element that is not an entry is never dropped by the next write
 		}
+		entries = append(entries, e)
 	}
 	return entries, nil
 }

@@ -1,6 +1,7 @@
 package mutate
 
 import (
+	"context"
 	"errors"
 	"os"
 	"slices"
@@ -81,8 +82,10 @@ func (tx *Tx) rollbackOp(op Op, restored *[]Op) error {
 // Undo reverses an entry's ops, last first, and marks it undone; it returns the entry's label. All or nothing: if one
 // op refuses or fails, the ones already reversed are put back and the entry stays undoable. If a put-back itself fails,
 // the error says the entry is partly undone (G-fix.9).
-func Undo(r roots.Roots, id string) (string, error) {
-	return locked(r, func(tx *Tx) (string, error) { return tx.Undo(id) })
+func Undo(r roots.Roots, id string) (string, error) { return undo(context.Background(), r, id) }
+
+func undo(ctx context.Context, r roots.Roots, id string) (string, error) {
+	return lockedContext(ctx, r, func(tx *Tx) (string, error) { return tx.Undo(id) })
 }
 
 // Undo is the package function Undo with the lock already held.

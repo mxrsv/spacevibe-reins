@@ -25,6 +25,7 @@ type sandbox struct {
 }
 
 func newSandbox(t *testing.T) sandbox {
+	t.Setenv("SPACEVIBE_TEST", "1") // the sandbox says it runs under test itself; a plain `go test ./...` needs no export
 	h := newHome(t)
 	r := h.roots()
 	return sandbox{h, r, NewStore(r, nil)}

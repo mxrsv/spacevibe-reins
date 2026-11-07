@@ -1,6 +1,8 @@
 package mutate
 
 import (
+	"context"
+
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/roots"
 )
@@ -24,3 +26,15 @@ func locked[T any](r roots.Roots, fn func(tx *Tx) (T, error)) (T, error) {
 
 // Roots are the roots the handle works on.
 func (tx *Tx) Roots() roots.Roots { return tx.r }
+
+// lockedContext is locked for a request that can be cancelled. ctx is looked at again as the first step inside the
+// lock, so a request that was cancelled while it waited for the lock never changes anything.
+func lockedContext[T any](ctx context.Context, r roots.Roots, fn func(tx *Tx) (T, error)) (T, error) {
+	return locked(r, func(tx *Tx) (T, error) {
+		if err := ctx.Err(); err != nil {
+			var zero T
+			return zero, err
+		}
+		return fn(tx)
+	})
+}

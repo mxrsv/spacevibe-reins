@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/goldentest"
 	"spacevibe.dev/core/internal/limits"
 )
@@ -348,5 +349,34 @@ func TestSeconds(t *testing.T) {
 	}
 	if bytes.Contains([]byte(seconds(at(1))), []byte("e")) {
 		t.Error("exponent")
+	}
+}
+
+// A concurrent capture may prune the same old snapshot first: the file is gone, which is what pruning wanted, so
+// the capture succeeds (finding 4).
+func TestCapturePruneTreatsAGoneFileAsDone(t *testing.T) {
+	h := newTempHome(t)
+	h.account("synthetic-account")
+	for i := 0; i < limits.MaxSessions; i++ {
+		if err := h.capture(input(10, fmt.Sprintf("s%03d", i), reset), statusNow+float64(i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	real := removeSnapshot
+	removeSnapshot = func(path string) error {
+		_ = os.Remove(path) // the other capture got there first
+		return real(path)   // so this one meets a 404
+	}
+	defer func() { removeSnapshot = real }()
+	if err := h.capture(input(10, "newest", reset), statusNow+1000); err != nil {
+		t.Fatalf("capture failed on an already pruned file: %v", err)
+	}
+	if h.exists(".spacevibe/claude-limits/s000.json") || !h.exists(".spacevibe/claude-limits/newest.json") {
+		t.Fatal("pruning did not leave the newest sessions")
+	}
+	// Any other removal failure is still a failed capture.
+	removeSnapshot = func(string) error { return coreerr.NewStatus("no", coreerr.StatusInternalFailure) }
+	if err := h.capture(input(10, "newer", reset), statusNow+2000); err == nil {
+		t.Fatal("a failed removal was swallowed")
 	}
 }

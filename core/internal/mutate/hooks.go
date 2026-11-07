@@ -1,6 +1,7 @@
 package mutate
 
 import (
+	"context"
 	"os"
 	"slices"
 
@@ -101,7 +102,11 @@ func (tx *Tx) removeHook(hook inventory.Hook) (Entry, error) {
 
 // RemoveDeadHooks removes every dead, user-level hook of one CLI in one file write and one journal entry.
 func RemoveDeadHooks(r roots.Roots, cli usage.CLI) (Entry, error) {
-	return locked(r, func(tx *Tx) (Entry, error) { return tx.removeDeadHooks(cli) })
+	return removeDeadHooks(context.Background(), r, cli)
+}
+
+func removeDeadHooks(ctx context.Context, r roots.Roots, cli usage.CLI) (Entry, error) {
+	return lockedContext(ctx, r, func(tx *Tx) (Entry, error) { return tx.removeDeadHooks(cli) })
 }
 
 func (tx *Tx) removeDeadHooks(cli usage.CLI) (Entry, error) {

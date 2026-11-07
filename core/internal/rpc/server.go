@@ -188,13 +188,22 @@ func (s *Server) handleLine(ctx context.Context, line []byte) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		defer func() {
+		released := false
+		// release frees the id once, so a deferred call after the early one cannot drop a request that reused the id.
+		release := func() {
+			if released {
+				return
+			}
+			released = true
 			s.mu.Lock()
 			delete(s.inflight, key)
 			s.mu.Unlock()
 			cancel()
-		}()
+		}
+		defer release()
 		res, err := s.invoke(rctx, method, h, call)
+		// The id is free before the reply leaves: a client that reuses it right after the answer must not be refused.
+		release()
 		s.reply(req.ID, res, err)
 	}()
 }

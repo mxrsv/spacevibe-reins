@@ -11,8 +11,10 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"spacevibe.dev/core/internal/coreerr"
+	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/inventory"
 	"spacevibe.dev/core/internal/ojson"
 	"spacevibe.dev/core/internal/roots"
@@ -410,5 +412,81 @@ func TestTomlEscapesDelete(t *testing.T) {
 	// The markdown header keeps JSON quoting, which YAML reads.
 	if got := quote("a\x7fb"); got != "\"a\x7fb\"" {
 		t.Errorf("quote %q", got)
+	}
+}
+
+// flipCtx reports no error on its first Err call (the service's own early check) and Canceled on every later one, so a
+// test can cancel a request exactly while it is queued for the write lock.
+type flipCtx struct {
+	context.Context
+	calls atomic.Int32
+}
+
+func (c *flipCtx) Err() error {
+	if c.calls.Add(1) == 1 {
+		return nil
+	}
+	return context.Canceled
+}
+
+// A write that is cancelled while it waits for the write lock must not run once it gets the lock (finding 3).
+func TestCancelledWhileQueuedChangesNothing(t *testing.T) {
+	h := newHome(t)
+	r := h.roots()
+	skill := h.write(".claude/skills/wire/SKILL.md", skillMd("wire", "d"))
+	id := idOf(t, r, "wire", inventory.KindSkill, inventory.Claude)
+	done := must(CopyToOther(r, id)) // an entry to undo, recorded before the cancelled calls
+	journalBefore := h.read(".spacevibe/journal.json")
+	svc := NewService(r)
+	calls := map[string]func(ctx context.Context) error{
+		"CopyToOther": func(ctx context.Context) error { _, err := svc.CopyToOther(ctx, IDParams{ID: id}); return err },
+		"RemoveItem":  func(ctx context.Context) error { _, err := svc.RemoveItem(ctx, IDParams{ID: id}); return err },
+		"RemoveDeadHooks": func(ctx context.Context) error {
+			_, err := svc.RemoveDeadHooks(ctx, CLIParams{CLI: inventory.Claude})
+			return err
+		},
+		"Undo": func(ctx context.Context) error { _, err := svc.Undo(ctx, IDParams{ID: done.ID}); return err },
+	}
+	for name, call := range calls {
+		t.Run(name, func(t *testing.T) {
+			err := call(&flipCtx{Context: context.Background()})
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("err = %v, want context.Canceled", err)
+			}
+			if !exists(skill) || h.read(".spacevibe/journal.json") != journalBefore {
+				t.Fatal("a cancelled write changed a file or the journal")
+			}
+		})
+	}
+}
+
+// The same with a really held lock: the request is cancelled while it waits, the lock is released, nothing happens.
+func TestCancelledOnAHeldLockChangesNothing(t *testing.T) {
+	h := newHome(t)
+	r := h.roots()
+	skill := h.write(".claude/skills/wire/SKILL.md", skillMd("wire", "d"))
+	id := idOf(t, r, "wire", inventory.KindSkill, inventory.Claude)
+	svc := NewService(r)
+	ctx, cancel := context.WithCancel(context.Background())
+	held := make(chan struct{})
+	release := make(chan struct{})
+	holderDone := make(chan error, 1)
+	go func() {
+		holderDone <- fsx.WithWriteLock(r.Data, func() error { close(held); <-release; return nil })
+	}()
+	<-held
+	result := make(chan error, 1)
+	go func() { _, err := svc.RemoveItem(ctx, IDParams{ID: id}); result <- err }()
+	time.Sleep(100 * time.Millisecond) // the call is parked on the lock
+	cancel()
+	close(release)
+	if err := <-holderDone; err != nil {
+		t.Fatal(err)
+	}
+	if err := <-result; !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, want context.Canceled", err)
+	}
+	if !exists(skill) || exists(h.path(".spacevibe/journal.json")) {
+		t.Fatal("a write cancelled while queued still ran")
 	}
 }

@@ -15,6 +15,9 @@ import (
 	"spacevibe.dev/core/internal/roots"
 )
 
+// removeSnapshot deletes an old snapshot; a variable so a test can race it with another capture.
+var removeSnapshot = fsx.RemoveFile
+
 // maxSessionIDBytes is the longest session id a snapshot file may be named after.
 const maxSessionIDBytes = 128
 
@@ -117,7 +120,8 @@ func Capture(cfg config.Config, r roots.Roots, data []byte, now time.Time) error
 		for _, old := range files[limits.MaxSessions:] {
 			if snapshot, ok := limits.ReadSnapshot(old); ok {
 				if _, isOurs := stringMember(snapshot, "account"); isOurs {
-					if err := fsx.RemoveFile(old); err != nil {
+					// A 404 means a concurrent capture pruned it first, which is what this loop wanted.
+					if err := removeSnapshot(old); err != nil && !isNotFound(err) {
 						return &Failure{Reason: ReasonWriteFailed, Err: asCoreError(err)}
 					}
 				}
@@ -160,4 +164,10 @@ func objectMember(v ojson.Value, key string) (ojson.Value, bool) {
 		return ojson.Value{}, false
 	}
 	return value, true
+}
+
+// isNotFound is true for the 404 fsx.RemoveFile gives a path that is already gone.
+func isNotFound(err error) bool {
+	e, ok := coreerr.As(err)
+	return ok && e.Status == coreerr.StatusNotFound
 }

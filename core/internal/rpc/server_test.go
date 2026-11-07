@@ -154,3 +154,73 @@ func TestCallSessionEndsWithInput(t *testing.T) {
 	}
 	<-done
 }
+
+// lineChan is an output whose every Write (the server writes one whole line at a time) lands on a channel.
+type lineChan chan string
+
+func (c lineChan) Write(b []byte) (int, error) { c <- string(b); return len(b), nil }
+
+func startPipeServer(t *testing.T, register func(*Registry)) (srv *Server, feed *io.PipeWriter, lines lineChan) {
+	t.Helper()
+	reg := NewRegistry()
+	register(reg)
+	srv = NewServer(reg, Options{})
+	in, feed := io.Pipe()
+	lines = make(lineChan, 1024)
+	done := make(chan struct{})
+	go func() { _ = srv.Serve(context.Background(), in, lines); close(done) }()
+	t.Cleanup(func() { feed.Close(); <-done })
+	io.WriteString(feed, initLine)
+	if l := nextLine(t, lines); !strings.Contains(l, `"id":0`) {
+		t.Fatalf("initialize reply %q", l)
+	}
+	return srv, feed, lines
+}
+
+func nextLine(t *testing.T, lines lineChan) string {
+	t.Helper()
+	select {
+	case l := <-lines:
+		return l
+	case <-time.After(5 * time.Second):
+		t.Fatal("no reply")
+		return ""
+	}
+}
+
+// The id of a request is free again before its reply leaves, so a client that reuses the id right after the answer
+// never meets a spurious "already in use" (-32600). Held here by taking the server's lock while the handler returns:
+// the reply must wait for the release.
+func TestInflightIDIsReleasedBeforeTheReply(t *testing.T) {
+	started := make(chan struct{})
+	gate := make(chan struct{})
+	srv, feed, lines := startPipeServer(t, func(r *Registry) {
+		r.Register("t.gate", func(context.Context, Call) (any, error) { close(started); <-gate; return "ok", nil })
+	})
+	io.WriteString(feed, `{"jsonrpc":"2.0","id":1,"method":"t.gate"}`+"\n")
+	<-started
+	srv.mu.Lock()
+	close(gate)
+	select {
+	case l := <-lines:
+		srv.mu.Unlock()
+		t.Fatalf("replied while the id was still registered: %s", l)
+	case <-time.After(200 * time.Millisecond):
+	}
+	srv.mu.Unlock()
+	if l := nextLine(t, lines); !strings.Contains(l, `"result":"ok"`) {
+		t.Fatalf("reply %s", l)
+	}
+}
+
+func TestClientMayReuseAnIDRightAfterTheAnswer(t *testing.T) {
+	_, feed, lines := startPipeServer(t, func(r *Registry) {
+		r.Register("t.echo", func(context.Context, Call) (any, error) { return "ok", nil })
+	})
+	for i := 0; i < 500; i++ {
+		io.WriteString(feed, `{"jsonrpc":"2.0","id":7,"method":"t.echo"}`+"\n")
+		if l := nextLine(t, lines); !strings.Contains(l, `"result":"ok"`) {
+			t.Fatalf("round %d: %s", i, l)
+		}
+	}
+}

@@ -4,10 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"spacevibe.dev/core/internal/coreerr"
+	"spacevibe.dev/core/internal/fsx"
 )
 
 // swiftCache is usage-cache.json as the Swift engine's UsageScanCache.save wrote it (JSONEncoder, no
@@ -163,5 +167,23 @@ func TestCacheEntryValidation(t *testing.T) {
 		if got := loadCacheFromBytes(t, h.data(), bad); len(got) != 0 {
 			t.Errorf("%q gave %d entries", bad, len(got))
 		}
+	}
+}
+
+// The cache folder is created through the guarded fsx.MkdirAll, so the write guard sees it (finding 7).
+func TestSaveCacheCreatesItsFolderThroughTheWriteGuard(t *testing.T) {
+	data := filepath.Join(t.TempDir(), "data")
+	var asked []string
+	fsx.SetWriteGuard(func(path string) error {
+		asked = append(asked, path)
+		return coreerr.NewStatus("refused by the test guard", coreerr.StatusForbidden)
+	})
+	defer fsx.SetWriteGuard(nil)
+	saveCache(map[string]cachedFile{}, data)
+	if _, err := os.Lstat(data); err == nil {
+		t.Fatal("the cache folder was created although the write guard refused it")
+	}
+	if len(asked) == 0 {
+		t.Fatal("the write guard was not asked")
 	}
 }

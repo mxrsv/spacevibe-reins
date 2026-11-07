@@ -423,3 +423,32 @@ func TestObjectJournalRefusesRecordAndUndo(t *testing.T) {
 	}
 	_ = coreerr.StatusConflict
 }
+
+// A journal element that is not an entry (no string id) is refused like a corrupt journal, never dropped on the next
+// write. Swift's compactMap dropped it silently; that contradicted the fail-closed rule above (finding 2).
+func TestJournalElementWithoutIDRefuses(t *testing.T) {
+	for name, text := range map[string]string{
+		"object without id": `[{"label":"no id","ops":[]}]`,
+		"number":            `[1]`,
+		"null":              `[null]`,
+		"numeric id":        `[{"id":7,"label":"x"}]`,
+		"after a good one":  `[{"id":"a","at":"t","label":"ok","ops":[]},"stray"]`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			home := newHome(t)
+			r := home.roots()
+			home.write(".spacevibe/journal.json", text)
+			_, err := Record(r, "later", nil)
+			if m := wantErr(t, err, 409); m != UnreadableMessage {
+				t.Errorf("Record message %q", m)
+			}
+			_, err = Undo(r, "a")
+			wantErr(t, err, 409)
+			_, err = History(r)
+			wantErr(t, err, 409)
+			if home.read(".spacevibe/journal.json") != text {
+				t.Error("the journal was rewritten")
+			}
+		})
+	}
+}

@@ -101,7 +101,7 @@ func (e Entry) value() ojson.Value {
 	return ojson.Object(members...)
 }
 
-// entryFromValue is false when the value is not an entry (no string id); such a value is dropped on the next write.
+// entryFromValue is false when the value is not an entry (no string id); the journal reader refuses such a journal (409).
 func entryFromValue(v ojson.Value) (Entry, bool) {
 	idv, _ := v.Member("id")
 	id, ok := idv.StringValue()

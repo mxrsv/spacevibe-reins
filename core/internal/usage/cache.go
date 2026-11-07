@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -142,7 +141,7 @@ func encodeCache(cache map[string]cachedFile) ([]byte, error) {
 // created 0700 and the file is 0600.
 func saveCache(cache map[string]cachedFile, dataDir string) {
 	data, err := encodeCache(cache)
-	if err != nil || os.MkdirAll(dataDir, 0o700) != nil {
+	if err != nil || fsx.MkdirAll(dataDir, 0o700) != nil {
 		return
 	}
 	_ = fsx.AtomicWrite(CachePath(dataDir), data, 0o600, fsx.AtomicWriteOptions{})
