@@ -1,5 +1,5 @@
 import { FOOTER, type NavLink } from "./content";
-import { ReinsMark } from "./reins-mark";
+import { SpaceVibeMark } from "./spacevibe-mark";
 
 /** One row: brand and the four anchors left, GitHub and the year right. */
 export function SiteFooter({ nav = FOOTER.nav }: { readonly nav?: readonly NavLink[] }) {
@@ -8,7 +8,7 @@ export function SiteFooter({ nav = FOOTER.nav }: { readonly nav?: readonly NavLi
     <footer className="border-t border-edge py-8">
       <div className="shell flex flex-wrap items-center gap-x-8 gap-y-3">
         <span translate="no" className="inline-flex items-center gap-2 text-sec font-medium text-ink-1">
-          <ReinsMark className="size-4" />
+          <SpaceVibeMark className="size-4" />
           {FOOTER.brand}
         </span>
         <nav className="flex gap-6 max-md:order-3 max-md:w-full md:mr-auto" aria-label="Sections (footer)">

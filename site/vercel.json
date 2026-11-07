@@ -1,0 +1,130 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/live",
+      "destination": "https://active.spacevibe.dev/",
+      "permanent": true
+    },
+    {
+      "source": "/en/live",
+      "destination": "https://active.spacevibe.dev/",
+      "permanent": true
+    },
+    {
+      "source": "/vi/live",
+      "destination": "https://active.spacevibe.dev/",
+      "permanent": true
+    },
+    {
+      "source": "/live/:slug*",
+      "destination": "https://active.spacevibe.dev/:slug*",
+      "permanent": true
+    },
+    {
+      "source": "/en/live/:slug*",
+      "destination": "https://active.spacevibe.dev/:slug*",
+      "permanent": true
+    },
+    {
+      "source": "/vi/live/:slug*",
+      "destination": "https://active.spacevibe.dev/:slug*",
+      "permanent": true
+    },
+    {
+      "source": "/deck",
+      "destination": "https://kyant.dev/deck",
+      "permanent": true
+    },
+    {
+      "source": "/free-tier",
+      "destination": "https://kyant.dev/free-tier",
+      "permanent": true
+    },
+    {
+      "source": "/vote",
+      "destination": "https://kyant.dev/vote",
+      "permanent": true
+    },
+    {
+      "source": "/vote/privacy",
+      "destination": "https://kyant.dev/vote/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/vote/opengraph-image",
+      "destination": "https://kyant.dev/vote/opengraph-image",
+      "permanent": true
+    },
+    {
+      "source": "/en/deck",
+      "destination": "https://kyant.dev/en/deck",
+      "permanent": true
+    },
+    {
+      "source": "/en/free-tier",
+      "destination": "https://kyant.dev/en/free-tier",
+      "permanent": true
+    },
+    {
+      "source": "/en/vote",
+      "destination": "https://kyant.dev/en/vote",
+      "permanent": true
+    },
+    {
+      "source": "/en/vote/privacy",
+      "destination": "https://kyant.dev/en/vote/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/en/vote/opengraph-image",
+      "destination": "https://kyant.dev/en/vote/opengraph-image",
+      "permanent": true
+    },
+    {
+      "source": "/vi/deck",
+      "destination": "https://kyant.dev/vi/deck",
+      "permanent": true
+    },
+    {
+      "source": "/vi/free-tier",
+      "destination": "https://kyant.dev/vi/free-tier",
+      "permanent": true
+    },
+    {
+      "source": "/vi/vote",
+      "destination": "https://kyant.dev/vi/vote",
+      "permanent": true
+    },
+    {
+      "source": "/vi/vote/privacy",
+      "destination": "https://kyant.dev/vi/vote/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/vi/vote/opengraph-image",
+      "destination": "https://kyant.dev/vi/vote/opengraph-image",
+      "permanent": true
+    },
+    {
+      "source": "/en",
+      "destination": "https://kyant.dev/en",
+      "permanent": true
+    },
+    {
+      "source": "/vi",
+      "destination": "https://kyant.dev/vi",
+      "permanent": true
+    },
+    {
+      "source": "/api/auth/:path*",
+      "destination": "https://kyant.dev/api/auth/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/api/vote/:path*",
+      "destination": "https://kyant.dev/api/vote/:path*",
+      "permanent": true
+    }
+  ]
+}

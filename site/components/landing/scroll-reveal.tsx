@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export const LANDING_ROOT_ID = "reins-landing";
+export const LANDING_ROOT_ID = "spacevibe-landing";
 
 /**
  * Adds `.in` to every `[data-reveal]` as it enters the viewport. Renders nothing

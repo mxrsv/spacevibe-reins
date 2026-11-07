@@ -4,13 +4,13 @@ import type { ShotKey } from "../shots";
 /**
  * Copy for the three landing directions (mock stage, 2026-11-05). Every claim below is one the shipped
  * app shows on its own screen or PRODUCT.md states; nothing here is a number about real users.
- * The bands follow decision L13 of `docs/specs/2026-11-05-reins-landing.md`. When the owner picks a
+ * The bands follow decision L13 of the 2026-11-05 landing spec in `docs/specs/`. When the owner picks a
  * direction, this moves into `../content.ts` and the unpicked directions are deleted.
  */
 
 export const HERO_NEXT = {
   headingLines: ["Which of your skills", "actually run?"] as const,
-  lede: "Reins is a local Mac app for Claude\u00A0Code and Codex\u00A0CLI. It counts, from your own session logs, how often every skill, subagent and hook ran, and says plainly when a CLI logs nothing to count.",
+  lede: "SpaceVibe is a local Mac app for Claude\u00A0Code and Codex\u00A0CLI. It counts, from your own session logs, how often every skill, subagent and hook ran, and says plainly when a CLI logs nothing to count.",
   cta: { note: "macOS\u00A015 or later · Apple\u00A0silicon", label: "Download for macOS", href: DOWNLOAD_URL },
 } as const;
 
@@ -46,7 +46,7 @@ export const BANDS: readonly Band[] = [
     label: "Limits",
     question: "How much of my Claude and Codex limit is left?",
     answer:
-      "Read from Claude\u00A0Code’s status-line snapshots and Codex’s session logs, with no login and no API call. A CLI that keeps no usage file reads as not measurable; Reins never guesses.",
+      "Read from Claude\u00A0Code’s status-line snapshots and Codex’s session logs, with no login and no API call. A CLI that keeps no usage file reads as not measurable; SpaceVibe never guesses.",
     shot: "limitsDetail",
     tab: "tabLimits",
     caption: `Limits · ${DEMO}`,
@@ -56,7 +56,7 @@ export const BANDS: readonly Band[] = [
     label: "Activity",
     question: "What is running, what failed, and what did it cost?",
     answer:
-      "One lane per CLI: running sessions with their current tool and estimated cost, and failed commands grouped with a count. Stop a session from here. Where a CLI cannot be read, Reins says so instead of guessing.",
+      "One lane per CLI: running sessions with their current tool and estimated cost, and failed commands grouped with a count. Stop a session from here. Where a CLI cannot be read, SpaceVibe says so instead of guessing.",
     shot: "activityLanes",
     tab: "tabActivity",
     caption: `Activity · ${DEMO}`,

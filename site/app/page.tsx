@@ -12,7 +12,7 @@ import { SiteHeader } from "@/components/landing/site-header";
 import { TokensVisual } from "@/components/landing/tokens-visual";
 
 /**
- * reins.spacevibe.dev — one page. Hero with the planet scene, one band per tab
+ * spacevibe.dev — one page. Hero with the planet scene, one band per tab
  * (Loadout, Rules, Activity, Tokens), the privacy guarantees, the download band.
  */
 export default function LandingPage() {

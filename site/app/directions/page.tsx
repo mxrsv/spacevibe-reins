@@ -3,13 +3,13 @@ import Link from "next/link";
 
 import { DIRECTIONS } from "@/components/landing/directions/copy";
 
-export const metadata: Metadata = { title: "Landing directions · Reins", robots: { index: false } };
+export const metadata: Metadata = { title: "Landing directions · SpaceVibe", robots: { index: false } };
 
 /** Review scaffolding for the mock round (ledger L10): pick one. Deleted with the two that lose. */
 export default function DirectionsIndexPage() {
   return (
     <main id="main" className="shell grid min-h-dvh content-center gap-10 py-20">
-      <h1 className="max-w-[640px] text-h2 font-medium text-ink-0">Three directions for the Reins landing page</h1>
+      <h1 className="max-w-[640px] text-h2 font-medium text-ink-0">Three directions for the SpaceVibe landing page</h1>
       <ul className="grid gap-3 md:grid-cols-3">
         {DIRECTIONS.map((direction) => (
           <li key={direction.key}>

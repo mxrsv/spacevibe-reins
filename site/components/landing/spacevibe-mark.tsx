@@ -1,10 +1,10 @@
 /**
- * The Reins mark from `spacevibe-hub/public/reins/icon.svg`, without its black
+ * The SpaceVibe mark (the shape the Hub shipped as its product icon), without its black
  * plate: two bars and a ring, rotated 45°, filled with `currentColor` so the
  * header and footer tint it from the text colour. Change the shape in the hub
  * first, then copy it here.
  */
-export function ReinsMark({ className }: { readonly className?: string }) {
+export function SpaceVibeMark({ className }: { readonly className?: string }) {
   return (
     <svg className={className} viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
       <g transform="translate(128 128) scale(0.9) rotate(45) translate(-128 -128)">

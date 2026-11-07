@@ -1,18 +1,20 @@
 /**
  * Every word and number on the landing page. Product truth comes from
- * `../../PRODUCT.md` and `docs/specs/2026-11-02-reins.md`; nothing here claims a
+ * `../../PRODUCT.md` and the 2026-11-02 product spec in `docs/specs/`; nothing here claims a
  * feature the spec does not. The example rows mirror the synthetic fixture home the
  * app's own tests run against (`core/testdata/fixtures`), so every value is
  * one the engine really produced, and every panel that shows them says "demo data".
  */
 
-export const GITHUB_URL = "https://github.com/mxrsv/spacevibe-reins";
+// Working value (D-1, not yet approved by the owner): the same `mxrsv/spacevibe` as GITHUB_REPO in
+// scripts/release.sh, the single constant there. Change both together once GH1 settles the repo name.
+export const GITHUB_URL = "https://github.com/mxrsv/spacevibe";
 export const DOWNLOAD_URL = `${GITHUB_URL}/releases/latest`;
 
 export const SITE = {
-  brand: "Reins",
-  url: "https://reins.spacevibe.dev",
-  title: "Reins — take the reins of Claude Code and Codex",
+  brand: "SpaceVibe",
+  url: "https://spacevibe.dev",
+  title: "SpaceVibe — see what Claude Code and Codex carry",
   description:
     "A local Mac app that shows every skill, subagent and hook Claude Code and Codex carry, how often each ran, what each may do, and what it cost. Nothing leaves the machine.",
 } as const;
@@ -42,7 +44,7 @@ export const HEADER = {
 } as const;
 
 export const HERO = {
-  headingLines: ["Take the reins", "of your agents."] as const,
+  headingLines: ["Know what your", "agents carry."] as const,
   lede:
     "A local Mac app for Claude Code and Codex CLI. See every skill, subagent and hook each one carries, how often it actually ran and what it may do — then add or remove one in seconds.",
   cta: { note: "macOS\u00A015 or later · Apple\u00A0silicon", label: "Download for macOS", href: DOWNLOAD_URL },
@@ -172,7 +174,7 @@ export interface SessionRow {
 export const ACTIVITY = {
   id: "activity",
   heading: "What is running, what failed, and which files were touched.",
-  body: "One lane per CLI: running sessions with their current tool and estimated cost, failed commands grouped with a count, and a file history that names the CLI on every row. Stop a session from here. When a CLI cannot be read, Reins says so instead of guessing.",
+  body: "One lane per CLI: running sessions with their current tool and estimated cost, failed commands grouped with a count, and a file history that names the CLI on every row. Stop a session from here. When a CLI cannot be read, SpaceVibe says so instead of guessing.",
   sessions: [
     { cli: "claude", title: "Fix leaderboard rank tie", project: "spacevibe-bench", state: "running", tool: "Bash · pnpm test", usd: 0.886 },
     { cli: "claude", title: "Add rate limit to /v1/votes", project: "spacevibe-api", state: "idle", tool: null, usd: 1.329 },
@@ -252,14 +254,14 @@ export const PRIVATE = {
 
 export const DOWNLOAD = {
   id: "download",
-  heading: "Download Reins for macOS",
-  body: "Free. macOS\u00A015 or later on Apple\u00A0silicon. Reins checks for updates once a day; installing one takes a click.",
+  heading: "Download SpaceVibe for macOS",
+  body: "Free. macOS\u00A015 or later on Apple\u00A0silicon. SpaceVibe checks for updates once a day; installing one takes a click.",
   cta: { href: DOWNLOAD_URL, label: "Download for macOS" },
   secondary: { href: GITHUB_URL, label: "GitHub" },
 } as const;
 
 export const FOOTER = {
-  brand: "Reins",
+  brand: "SpaceVibe",
   by: "SpaceVibe",
   nav: NAV,
   github: { href: GITHUB_URL, label: "GitHub" },

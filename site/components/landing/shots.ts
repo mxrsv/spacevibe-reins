@@ -17,7 +17,7 @@ export const SHOTS = {
     src: "/landing/app/loadout.webp",
     width: 2200,
     height: 1375,
-    alt: "Reins Loadout: skills listed with a bar and run count for Claude Code and for Codex, items that never ran at zero, and Add to Codex where a skill is missing.",
+    alt: "SpaceVibe Loadout: skills listed with a bar and run count for Claude Code and for Codex, items that never ran at zero, and Add to Codex where a skill is missing.",
   },
   loadoutRows: {
     src: "/landing/app/loadout-rows.webp",

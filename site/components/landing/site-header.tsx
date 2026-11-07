@@ -1,6 +1,6 @@
 import { ButtonLink } from "./button-link";
 import { HEADER, NAV, SITE, type NavLink } from "./content";
-import { ReinsMark } from "./reins-mark";
+import { SpaceVibeMark } from "./spacevibe-mark";
 
 /**
  * A thin 60px band across the full width, split from the page by a hairline.
@@ -11,7 +11,7 @@ export function SiteHeader({ nav = NAV }: { readonly nav?: readonly NavLink[] })
     <header className="sticky top-0 z-20 border-b border-edge bg-[rgb(13_15_18/78%)] backdrop-blur-[16px]">
       <div className="shell grid h-[60px] grid-cols-[auto_auto] items-center justify-between gap-8 md:grid-cols-[auto_1fr_auto]">
         <a href="#top" className="inline-flex items-center gap-2.5 text-sec font-medium tracking-[-0.01em] text-ink-0 no-underline" aria-label={SITE.brand}>
-          <ReinsMark className="size-[22px] shrink-0" />
+          <SpaceVibeMark className="size-[22px] shrink-0" />
           <span aria-hidden="true" translate="no">
             {SITE.brand}
           </span>

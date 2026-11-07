@@ -6,7 +6,7 @@ import { BANDS, MANUAL } from "./copy";
 /**
  * Direction "Manual": a reference page for a tool you keep open beside the editor. A sticky rail of
  * the four screens on the left; each chapter is the same four beats: the question, the real screen,
- * what Reins does there, and the one thing it cannot see, drawn dashed like an unmeasurable cell in
+ * what SpaceVibe does there, and the one thing it cannot see, drawn dashed like an unmeasurable cell in
  * the app. No terminal chrome and no monospace: the reading order is the costume.
  */
 export function Manual() {
@@ -38,7 +38,7 @@ export function Manual() {
 
             <div className="grid gap-6 md:grid-cols-2">
               <div className="grid content-start gap-3">
-                <h3 className="text-sec font-medium text-ink-0">What Reins does here</h3>
+                <h3 className="text-sec font-medium text-ink-0">What SpaceVibe does here</h3>
                 <ul className="grid gap-2.5">
                   {MANUAL[band.id].does.map((line) => (
                     <li key={line} className="flex items-start gap-2.5 text-sec text-ink-1">
