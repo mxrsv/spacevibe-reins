@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"spacevibe.dev/core/internal/identity"
+	"spacevibe.dev/core/internal/statusline"
 )
 
 func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
@@ -22,6 +23,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 	if args[0] == "rpc" {
 		return runRPC(args[1:], stderr)
+	}
+	if args[0] == "statusline" { // the collector Claude runs; os.Stdin/Stdout/Stderr go to the original command as they are
+		return statusline.Run(args[1:], os.Stdin, os.Stdout, os.Stderr)
 	}
 	fmt.Fprintf(stderr, "%s: unknown command %q\n", identity.Name, args[0])
 	return 2

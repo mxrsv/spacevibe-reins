@@ -30,6 +30,9 @@ const (
 	MaxSessions = 64
 	// MaxAgeSeconds: only readings this close to the newest one are merged.
 	MaxAgeSeconds = 3600
+	// LastErrorFile is the name, inside SnapshotDir, of the one-line file in which the collector records why its
+	// last capture failed (G-fix.19). It has no ".json" suffix, so SnapshotFiles never lists it as a session.
+	LastErrorFile = "last-error"
 
 	maxStateBytes = 16 << 20 // InventoryFileIO.maxJSONBytes: the state file read for the account key
 )
