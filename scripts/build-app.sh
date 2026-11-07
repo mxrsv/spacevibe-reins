@@ -51,10 +51,13 @@ BINARY="${BINARY_DIR}/${EXECUTABLE_NAME}"
 
 echo "==> assembling ${APP_BUNDLE}"
 rm -rf "${APP_BUNDLE}"
-mkdir -p "${APP_BUNDLE}/Contents/MacOS" "${APP_BUNDLE}/Contents/Resources" "${APP_BUNDLE}/Contents/Frameworks"
+mkdir -p "${APP_BUNDLE}/Contents/MacOS" "${APP_BUNDLE}/Contents/Resources" "${APP_BUNDLE}/Contents/Frameworks" "${APP_BUNDLE}/Contents/Helpers"
 cp "${BINARY}" "${APP_BUNDLE}/Contents/MacOS/${EXECUTABLE_NAME}"
 cp "${BINARY_DIR}/ReinsStatusline" "${APP_BUNDLE}/Contents/MacOS/ReinsStatusline"
 cp Resources/Info.plist "${APP_BUNDLE}/Contents/Info.plist"
+# The Go core, in Helpers/ and not MacOS/: `spacevibe` and the app's executable would collide on a case-insensitive volume.
+APP_VERSION="$(plutil -extract CFBundleShortVersionString raw "${APP_BUNDLE}/Contents/Info.plist")"
+scripts/build-core.sh "${APP_BUNDLE}/Contents/Helpers/spacevibe" "${APP_VERSION}"
 if [[ -n "${UPDATE_FEED_URL}" ]]; then
   plutil -insert SUFeedURL -string "${UPDATE_FEED_URL}" "${APP_BUNDLE}/Contents/Info.plist"
   echo "    update feed: ${UPDATE_FEED_URL}"
@@ -79,6 +82,8 @@ iconutil -c icns "${ICON_WORK_DIR}/AppIcon.iconset" -o "${APP_BUNDLE}/Contents/R
 echo "==> deployment target"
 # Guards the -10825 failure: a binary built for a newer macOS than the host will not launch.
 vtool -show-build-version "${APP_BUNDLE}/Contents/MacOS/${EXECUTABLE_NAME}" | sed -n '2,6p'
+echo "    helper:"
+vtool -show-build-version "${APP_BUNDLE}/Contents/Helpers/spacevibe" | sed -n '2,6p'
 
 echo "==> codesign"
 if security find-identity -v -p codesigning | grep -qF "\"${SIGNING_IDENTITY}\""; then
@@ -102,6 +107,7 @@ for component in \
   codesign --force --preserve-metadata=identifier,entitlements "${SIGN_ARGS[@]}" "${component}"
 done
 codesign --force "${SIGN_ARGS[@]}" "${APP_BUNDLE}/Contents/MacOS/ReinsStatusline"
+codesign --force "${SIGN_ARGS[@]}" "${APP_BUNDLE}/Contents/Helpers/spacevibe"
 codesign --force "${SIGN_ARGS[@]}" "${APP_BUNDLE}"
 codesign --verify --deep --strict --verbose=2 "${APP_BUNDLE}"
 

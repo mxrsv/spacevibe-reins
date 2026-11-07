@@ -20,7 +20,9 @@ Stack: SwiftPM, swift-tools 6.0, Swift 5 language mode, macOS 15+, Command Line 
 
 | Command                       | Purpose                                                                                                   |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `scripts/test.sh`             | All Swift tests against temporary folders. Look for `Test run with N tests ... passed`: N must be above 0 |
+| `cd core && go vet ./... && SPACEVIBE_TEST=1 go test -count=1 ./...` | Go core tests (module `spacevibe.dev/core`, `CGO_ENABLED=0`). `scripts/test.sh` runs them first |
+| `scripts/build-core.sh <out> [version]` | Builds the Go core `spacevibe` for the host arch with `-trimpath` and the version stamped in. `build-app.sh` puts it at `Contents/Helpers/spacevibe`; `test.sh` and `dev-fixture.sh` export `SPACEVIBE_CORE_BINARY` |
+| `scripts/test.sh`             | Go tests, then all Swift tests against temporary folders. Look for `Test run with N tests ... passed`: N must be above 0 |
 | `scripts/build-app.sh [--distribution]` | Release build, `build/Reins.app` with the icon rendered from `Resources/AppIcon.svg`, signature, `vtool` deployment-target print. `--distribution`: Developer ID required, secure timestamp, `SPACEVIBE_UPDATE_FEED_URL` required |
 | `scripts/dev.sh`              | Build, sign, relaunch. Opens a window and reads the real `~/.claude` and `~/.codex` unless the env points elsewhere |
 | `scripts/test-update.sh`      | End-to-end update test through a feed on 127.0.0.1: a wrong signature is refused, the right one installs. Needs the Developer ID identity and no running Reins |

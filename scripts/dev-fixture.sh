@@ -38,6 +38,9 @@ SCRATCH="${SPACEVIBE_BUILD_PATH:-/tmp/reins-build-dev-fixture}"
 echo "==> swift build (scratch ${SCRATCH})"
 swift build --scratch-path "${SCRATCH}"
 BIN="$(swift build --scratch-path "${SCRATCH}" --show-bin-path)/Reins"
+# The raw binary is not a bundle, so the Go core goes next to it and SPACEVIBE_CORE_BINARY names it.
+export SPACEVIBE_CORE_BINARY="${SCRATCH}/spacevibe-core/spacevibe"
+scripts/build-core.sh "${SPACEVIBE_CORE_BINARY}"
 
 # Build first, then write the fixture: its ages are relative to the moment it is written.
 REAL_HOME="$(node -e 'process.stdout.write(require("os").userInfo().homedir)')"
@@ -62,7 +65,7 @@ export SPACEVIBE_PROC_FIXTURE="${FIX}/.reins/activity-proc.json"
 
 case "${MODE}" in
   prepare)
-    for v in HOME CLAUDE_CONFIG_DIR CODEX_HOME SPACEVIBE_HOME SPACEVIBE_TEST SPACEVIBE_PROC_FIXTURE; do printf "export %s='%s'\n" "$v" "${!v}"; done
+    for v in HOME CLAUDE_CONFIG_DIR CODEX_HOME SPACEVIBE_HOME SPACEVIBE_TEST SPACEVIBE_PROC_FIXTURE SPACEVIBE_CORE_BINARY; do printf "export %s='%s'\n" "$v" "${!v}"; done
     echo "# binary: ${BIN}" ;;
   shots)
     SPACEVIBE_SHOT_DIR="${SHOT_DIR}" "${BIN}" ;;

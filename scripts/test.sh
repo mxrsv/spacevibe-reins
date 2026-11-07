@@ -8,6 +8,7 @@
 # what let the built test bundle find `Testing.framework` and `lib_TestingInterop.dylib` at
 # run time. With a full Xcode installed none of this applies and the flags are skipped.
 #
+# The Go core is vetted, tested and built first; SPACEVIBE_CORE_BINARY points Swift tests at the build.
 # Tests build their own temporary HOME. SPACEVIBE_TEST=1 turns on the real-home guard in `Roots`.
 set -euo pipefail
 
@@ -30,6 +31,10 @@ else
 fi
 
 export SPACEVIBE_TEST=1
+# Go first: vet and test the core, then build the binary Swift tests spawn.
+(cd core && go vet ./... && go test -count=1 ./...)
+export SPACEVIBE_CORE_BINARY="${PWD}/.build/spacevibe-core/spacevibe"
+scripts/build-core.sh "${SPACEVIBE_CORE_BINARY}"
 # The frozen goldens (SV5) must be byte-identical to the committed hashes.
 (cd core/testdata/fixtures && shasum -a 256 -c --quiet SHA256SUMS)
 # The `+` form: bash 3.2 with `set -u` treats an empty array as unbound, which is the Xcode case above.
