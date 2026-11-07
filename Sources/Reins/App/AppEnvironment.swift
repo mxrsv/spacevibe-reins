@@ -51,7 +51,7 @@ final class AppEnvironment {
         routing.service(for: screen, inProcess: core, core: { coreClient })
     }
 
-    /// The Go core, the only engine of a screen that has cut over (Activity and Stop, Limits). It starts on the first call.
+    /// The Go core, the only engine of a screen that has cut over (Activity and Stop, Limits, the Loadout reads). It starts on the first call.
     var goCore: any CoreService { coreClient }
 
     static func live(environment: [String: String] = ProcessInfo.processInfo.environment, toasts: ToastCenter? = nil) -> AppEnvironment {

@@ -2,6 +2,36 @@ import Foundation
 import Testing
 @testable import Reins
 
+/// Holds a fake write at the core until the test opens the gate, so a test can look at the model while the write runs
+/// instead of racing it.
+private final class WriteGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var isOpen = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func wait() async {
+        await withCheckedContinuation { continuation in
+            lock.lock()
+            if isOpen {
+                lock.unlock()
+                continuation.resume()
+            } else {
+                waiters.append(continuation)
+                lock.unlock()
+            }
+        }
+    }
+
+    func open() {
+        lock.lock()
+        isOpen = true
+        let held = waiters
+        waiters = []
+        lock.unlock()
+        for continuation in held { continuation.resume() }
+    }
+}
+
 /// A core that serves the Loadout calls from canned rows. Counts what the screen asked and answers the writes with what the
 /// test sets, so the model is tested on DTOs alone (plan S.1d).
 private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
@@ -14,6 +44,7 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
     private var _writeFailure: Error?
     private var _undoFailure: Error?
     private var _scanFailure: Error?
+    private var _writeGate: WriteGate?
 
     init(rows: CoreLoadoutRows) { _rows = rows }
 
@@ -23,6 +54,8 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
     var writeFailure: Error? { get { lock.withLock { _writeFailure } } set { lock.withLock { _writeFailure = newValue } } }
     var undoFailure: Error? { get { lock.withLock { _undoFailure } } set { lock.withLock { _undoFailure = newValue } } }
     var scanFailure: Error? { get { lock.withLock { _scanFailure } } set { lock.withLock { _scanFailure = newValue } } }
+    /// While set, `loadoutCopyToOther` waits at the gate after it is recorded.
+    var writeGate: WriteGate? { get { lock.withLock { _writeGate } } set { lock.withLock { _writeGate = newValue } } }
 
     private func record(_ call: String) { lock.withLock { _calls.append(call) } }
 
@@ -58,6 +91,7 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
 
     override func loadoutCopyToOther(id: String) async throws -> CoreEntryResult {
         record("copy \(id)")
+        if let gate = writeGate { await gate.wait() }
         if let failure = writeFailure { throw failure }
         return Self.entry("Copied skill one to Codex")
     }
@@ -119,10 +153,12 @@ struct LoadoutModelTests {
         )
     }
 
+    /// The reads and the scan go to the Go core (`reads`); the writes still go to the in-process core (`writes`, or `reads` when
+    /// one fake serves both) until they cut over.
     private func model(_ reads: FakeLoadoutCore, writes: FakeLoadoutCore? = nil) -> LoadoutModel {
         let env = AppEnvironment(
-            roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false), core: reads,
-            routing: CoreRouting(viaCore: writes == nil ? [] : [.loadoutWrites]), makeCoreClient: { writes ?? reads }
+            roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false), core: writes ?? reads,
+            makeCoreClient: { reads }
         )
         return LoadoutModel(env: env)
     }
@@ -194,13 +230,14 @@ struct LoadoutModelTests {
         #expect(model.readFailure == nil && model.data != nil)
     }
 
-    @Test("with no config folders the in-process core's startup sentence is the failure")
-    func startupProblem() async throws {
-        let env = AppEnvironment(roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false))
-        let model = LoadoutModel(env: env)
+    @Test("when the helper is missing, the screen shows the fixed startup sentence and no rows")
+    func helperMissing() async throws {
+        let client = CoreClient(binary: URL(fileURLWithPath: "/nonexistent/spacevibe"))
+        let model = LoadoutModel(env: AppEnvironment(roots: nil, toasts: ToastCenter(announce: false), makeCoreClient: { client }))
         model.start()
         try await settle("the failure") { model.readFailure != nil }
-        #expect(model.readFailure == "No home here.")
+        #expect(model.readFailure == CoreWire.startFailedMessage)
+        #expect(model.data == nil)
     }
 
     // MARK: Writes
@@ -253,13 +290,21 @@ struct LoadoutModelTests {
         let core = FakeLoadoutCore(rows: Self.rows())
         let model = try await started(core)
         let one = try row(model, "one")
+        // The write waits at the gate, so the guard is held for as long as the test looks at it: nothing here depends on timing.
+        let gate = WriteGate()
+        core.writeGate = gate
+        let clicked = ContinuousClock.now
         model.add(one, to: .codex)
         model.add(one, to: .codex)
+        try await settle("the write reaching the core") { core.calls.contains { $0.hasPrefix("copy") } }
         #expect(model.guardedWrites == 1)
-        try await settle("the toast") { model.env.toasts.current != nil }
         #expect(core.calls.filter { $0.hasPrefix("copy") }.count == 1)
-        #expect(model.guardedWrites == 1)
+        gate.open()
+        try await settle("the toast") { model.env.toasts.current != nil }
         try await settle("the guard release") { model.guardedWrites == 0 }
+        // Released no sooner than `writeGuard` after the click, however fast the write was.
+        #expect(ContinuousClock.now - clicked >= LoadoutModel.writeGuard)
+        #expect(core.calls.filter { $0.hasPrefix("copy") }.count == 1)
     }
 
     @Test("a refusal shows the core's own sentence in a danger toast, releases the guard and does not read again",
@@ -308,7 +353,7 @@ struct LoadoutModelTests {
 
     // MARK: Routing
 
-    @Test("reads and the scan use the loadout core; writes and Undo use the loadoutWrites core")
+    @Test("reads and the scan use the Go core; writes and Undo use the loadoutWrites core")
     func routing() async throws {
         let reads = FakeLoadoutCore(rows: Self.rows())
         let writes = FakeLoadoutCore(rows: Self.rows())

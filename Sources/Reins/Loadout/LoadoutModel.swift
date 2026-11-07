@@ -12,8 +12,8 @@ struct LoadoutView {
 
 /// The Loadout screen's state: the inventory, the usage scan, the chip and scope choice, and every write.
 ///
-/// Everything goes through the core (`env.core(for: .loadout)` for reads and the scan, `.loadoutWrites` for writes; in process
-/// until the screen cuts over). The rows are read first and shown with pending cells; the scan then runs and the rows are read
+/// Everything goes through the core: reads and the scan through the Go core (`env.goCore`), writes through
+/// `env.core(for: .loadoutWrites)` (in process until the writes cut over). The rows are read first and shown with pending cells; the scan then runs and the rows are read
 /// again with its counts attached. After every write (and every Undo) the rows are read again; the core keeps the usage totals,
 /// because a write cannot change what the logs say. A newer read or build replaces an older one, so a slow one never
 /// overwrites a fresh one.
@@ -72,7 +72,7 @@ final class LoadoutModel {
 
     var badge: Int? { data?.globalCount }
 
-    private var reads: any CoreService { env.core(for: .loadout) }
+    private var reads: any CoreService { env.goCore }
     private var writes: any CoreService { env.core(for: .loadoutWrites) }
 
     // MARK: Reading

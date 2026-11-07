@@ -2,20 +2,20 @@ import Foundation
 import Testing
 @testable import Reins
 
-/// The Loadout screen gives the same answers through the in-process engine and the Go core (plan S.1d, cut-over readiness).
-/// Every test runs on a private copy of the synthetic fixture home (S-R1: never the real one); a write test uses a fresh copy per
-/// engine, so the byte comparison is the whole home outside Reins' own folder.
-@Suite("Loadout, both engines")
+/// The Loadout screen reads through the Go core (plan S.5); its writes still run in process or through the core until S.6. Every
+/// test runs on a private copy of the synthetic fixture home (S-R1: never the real one); a write test uses a fresh copy per
+/// route, so the byte comparison is the whole home outside Reins' own folder.
+@Suite("Loadout, Go core")
 @MainActor
 struct LoadoutModelEngineTests {
     /// The home a claude-only skill and a plugin skill live in, and a skill present in both CLIs.
     private static let removable = "claude:agent:local:architect.md"
 
-    private func model(_ fixture: CoreFixtureHome, viaCore: Bool, screens: Set<CoreScreen> = [.loadout, .loadoutWrites]) throws -> (LoadoutModel, CoreClient?) {
-        let client = viaCore ? try fixture.client() : nil
+    private func model(_ fixture: CoreFixtureHome, screens: Set<CoreScreen> = []) throws -> (LoadoutModel, CoreClient) {
+        let client = try fixture.client()
         let env = AppEnvironment(
             roots: try fixture.roots(), toasts: ToastCenter(announce: false),
-            routing: CoreRouting(viaCore: viaCore ? screens : []), makeCoreClient: { client ?? CoreClient() }
+            routing: CoreRouting(viaCore: screens), makeCoreClient: { client }
         )
         return (LoadoutModel(env: env), client)
     }
@@ -35,62 +35,71 @@ struct LoadoutModelEngineTests {
 
     // MARK: Reads
 
-    @Test("loadout.rows is the same before a scan (all cells pending) and after it, through both engines")
-    func sameRows() async throws {
+    @Test("loadout.rows is scanning until a scan finishes, then ready with cells, counts and row flags")
+    func rowsBeforeAndAfterScan() async throws {
         let fixture = try CoreFixtureHome()
         defer { fixture.remove() }
-        let inProcess = InProcessCore(roots: try fixture.roots())
         let client = try fixture.client()
         defer { client.shutdown() }
 
-        let beforeA = try await inProcess.loadoutRows()
-        let beforeB = try await client.loadoutRows()
-        #expect(beforeA.usage == .scanning && beforeB.usage == .scanning)
-        #expect(beforeB == beforeA)
+        let before = try await client.loadoutRows()
+        #expect(before.usage == .scanning)
+        #expect(before.items.allSatisfy { $0.cells != nil })
 
-        let scanA = try await inProcess.usageScan(progress: nil)
-        let scanB = try await client.usageScan(progress: nil)
-        #expect(scanB == scanA)
-        let afterA = try await inProcess.loadoutRows()
-        let afterB = try await client.loadoutRows()
-        #expect(afterA.usage == .ready && afterB.usage == .ready)
-        #expect(afterA.items.contains { $0.cells.map { cells in cells.claude != .missing } ?? false })
-        #expect(afterB == afterA)
+        let scan = try await client.usageScan(progress: nil)
+        #expect(scan.files > 100)
+        let after = try await client.loadoutRows()
+        #expect(after.usage == .ready)
+        #expect(after.items.contains { $0.cells.map { cells in cells.claude != .missing } ?? false })
+        #expect(after.countsByScope["global"]?.all ?? 0 > 0)
+        #expect(after.rowFlags.count == Set(after.items.map(\.key) + after.hooks.map(\.key)).count)
+        #expect(after.hooks.contains { $0.usage != nil })
     }
 
-    @Test("the screen shows the same rows, scopes, counts, problems and usage note through both engines")
-    func sameScreen() async throws {
+    @Test("a second scan while one runs is refused with 409")
+    func overlappingScan() async throws {
         let fixture = try CoreFixtureHome()
         defer { fixture.remove() }
-        let (inProcess, _) = try model(fixture, viaCore: false)
-        let (viaCore, client) = try model(fixture, viaCore: true)
-        defer { client?.shutdown() }
-        try await settled(inProcess)
-        try await settled(viaCore)
-        let expected = try #require(inProcess.data)
-        let actual = try #require(viaCore.data)
-        #expect(!expected.rows.isEmpty && expected.scopes.count > 1)
-        #expect(actual.rows == expected.rows)
-        #expect(actual.scopes == expected.scopes)
-        #expect(actual.countsByScope == expected.countsByScope)
-        #expect(actual.problems == expected.problems)
-        #expect(actual.events == expected.events)
-        #expect(actual.globalCount == expected.globalCount)
-        #expect(viaCore.usageNote == inProcess.usageNote)
-        #expect(viaCore.deadHookCount(cli: .claude) == inProcess.deadHookCount(cli: .claude))
+        let client = try fixture.client()
+        defer { client.shutdown() }
+        let first = Task { try await client.usageScan(progress: nil) }
+        let second = Task { try await client.usageScan(progress: nil) }
+        let outcomes = [await first.result, await second.result]
+        let failures = outcomes.compactMap { outcome -> CoreError? in
+            if case .failure(let error) = outcome { return error as? CoreError }
+            return nil
+        }
+        // Whichever started second is refused; if the first was already done, both succeed.
+        #expect(failures.allSatisfy { $0.status == 409 })
+        #expect(outcomes.contains { if case .success = $0 { true } else { false } })
+    }
+
+    @Test("the screen shows the fixture's rows, scopes, counts, problems and usage note")
+    func screen() async throws {
+        let fixture = try CoreFixtureHome()
+        defer { fixture.remove() }
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
+        try await settled(model)
+        let data = try #require(model.data)
+        #expect(!data.rows.isEmpty && data.scopes.count > 1)
+        #expect(data.countsByScope.count == data.scopes.count)
+        #expect(data.globalCount > 0 && model.badge == data.globalCount)
+        #expect(model.usageNote.hasPrefix("Counted from"))
+        #expect(model.deadHookCount(cli: .claude) > 0)
     }
 
     // MARK: Writes
 
-    @Test("Remove then Undo from the screen puts the home back, byte for byte, in process, through the core, and with reads and writes split between them")
+    @Test("Remove then Undo from the screen puts the home back, byte for byte, with the writes in process and through the core")
     func removeAndUndoFromTheScreen() async throws {
-        // Both screens switched together, then each alone: reads in process with writes in Go, and the reverse.
-        let routes: [(viaCore: Bool, screens: Set<CoreScreen>)] = [(false, []), (true, [.loadout, .loadoutWrites]), (true, [.loadoutWrites]), (true, [.loadout])]
-        for (viaCore, screens) in routes {
+        // Reads are always the Go core's; the writes run in process, then through the core.
+        let routes: [Set<CoreScreen>] = [[], [.loadoutWrites]]
+        for screens in routes {
             let fixture = try CoreFixtureHome()
             defer { fixture.remove() }
-            let (model, client) = try model(fixture, viaCore: viaCore, screens: screens)
-            defer { client?.shutdown() }
+            let (model, client) = try model(fixture, screens: screens)
+            defer { client.shutdown() }
             try await settled(model)
             let before = try fixture.tree()
 
@@ -118,12 +127,12 @@ struct LoadoutModelEngineTests {
         for viaCore in [false, true] {
             let fixture = try CoreFixtureHome()
             defer { fixture.remove() }
-            let client = viaCore ? try fixture.client() : nil
-            defer { client?.shutdown() }
+            let client = try fixture.client()
+            defer { client.shutdown() }
             let inProcess = InProcessCore(roots: try fixture.roots())
-            let service: any CoreService = client.map { $0 as any CoreService } ?? inProcess
+            let service: any CoreService = viaCore ? client : inProcess
             let before = try fixture.tree()
-            let rows = try await service.loadoutRows()
+            let rows = try await client.loadoutRows()
             let copy = try #require(rows.items.first { $0.cli == .claude && $0.kind == .skill && !$0.inOther && $0.scope == .global && $0.removable })
             let dead = rows.hooks.filter { $0.cli == .claude && $0.dead && $0.removable }
             #expect(!dead.isEmpty)
@@ -182,7 +191,7 @@ struct LoadoutModelEngineTests {
         let inProcess = InProcessCore(roots: try fixture.roots())
         let client = try fixture.client()
         defer { client.shutdown() }
-        let rows = try await inProcess.loadoutRows()
+        let rows = try await client.loadoutRows()
         let swift = await refusals(inProcess, rows: rows)
         let go = await refusals(client, rows: rows)
         #expect(swift.count == 7 && swift.allSatisfy { !$0.hasSuffix("accepted") })

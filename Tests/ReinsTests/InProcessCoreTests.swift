@@ -37,57 +37,6 @@ struct InProcessCoreTests {
         func remove() { try? FileManager.default.removeItem(at: home) }
     }
 
-    @Test("inventoryRead lists the fixture's skills, agents and hooks, without cells")
-    func inventory() async throws {
-        let fixture = try Fixture()
-        defer { fixture.remove() }
-        let snapshot = try await fixture.core.inventoryRead()
-        #expect(snapshot.items.count > 20)
-        #expect(snapshot.hooks.count == 9)
-        #expect(snapshot.items.allSatisfy { $0.cells == nil })
-        #expect(snapshot.hooks.allSatisfy { $0.cells == nil && $0.usage == nil })
-        #expect(snapshot.roots["claude"] == fixture.home.appendingPathComponent(".claude").path)
-        #expect(snapshot.events["claude"]?.contains("PreToolUse") == true)
-    }
-
-    @Test("loadoutRows is scanning until a scan finishes, then ready with cells, counts and row flags")
-    func loadoutRows() async throws {
-        let fixture = try Fixture()
-        defer { fixture.remove() }
-        let before = try await fixture.core.loadoutRows()
-        #expect(before.usage == .scanning)
-        #expect(before.items.allSatisfy { $0.cells != nil })
-
-        let progress = ProgressLog()
-        let scan = try await fixture.core.usageScan(progress: { progress.add($0) })
-        #expect(scan.files > 100)
-        #expect(progress.last?.done == scan.files)
-
-        let after = try await fixture.core.loadoutRows()
-        #expect(after.usage == .ready)
-        #expect(!after.items.isEmpty)
-        #expect(after.countsByScope["global"]?.all ?? 0 > 0)
-        #expect(after.rowFlags.count == Set(after.items.map(\.key) + after.hooks.map(\.key)).count)
-        #expect(after.hooks.contains { $0.usage != nil })
-    }
-
-    @Test("a second scan while one runs is refused with 409")
-    func overlappingScan() async throws {
-        let fixture = try Fixture()
-        defer { fixture.remove() }
-        let core = fixture.core
-        let first = Task { try await core.usageScan(progress: nil) }
-        let second = Task { try await core.usageScan(progress: nil) }
-        let outcomes = [await first.result, await second.result]
-        let failures = outcomes.compactMap { outcome -> CoreError? in
-            if case .failure(let error) = outcome { return error as? CoreError }
-            return nil
-        }
-        // Whichever started second is refused; if the first was already done, both succeed.
-        #expect(failures.allSatisfy { $0.status == 409 })
-        #expect(outcomes.contains { if case .success = $0 { true } else { false } })
-    }
-
     @Test("a rule is added with an Undo entry, a duplicate is refused with 409, and Undo puts the file back")
     func rulesWriteAndUndo() async throws {
         let fixture = try Fixture()
@@ -232,8 +181,6 @@ struct InProcessCoreTests {
     func startupProblem() async {
         let core = InProcessCore(roots: nil, startupProblem: "SPACEVIBE_TEST must be 1 or 0, got \"banana\"")
         let expected = CoreError("SPACEVIBE_TEST must be 1 or 0, got \"banana\"", status: 500)
-        await expectFailure(expected) { _ = try await core.inventoryRead() }
-        await expectFailure(expected) { _ = try await core.usageScan(progress: nil) }
         await expectFailure(expected) { _ = try await core.rulesCheck(rule: "Bash") }
         await expectFailure(expected) { _ = try await core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false) }
         await expectFailure(expected) { _ = try await core.loadoutRemoveItem(id: "x") }
@@ -258,7 +205,7 @@ struct InProcessCoreTests {
     func environment() async throws {
         let env = AppEnvironment(roots: nil, startupProblem: "No folders.")
         #expect(try await env.core.initialize().identity.envPrefix == ReinsCore.envPrefix)
-        await expectFailure(CoreError("No folders.", status: 500)) { _ = try await env.core.inventoryRead() }
+        await expectFailure(CoreError("No folders.", status: 500)) { _ = try await env.core.rulesCheck(rule: "Bash") }
         #expect(AppEnvironment.message(CoreError("Gone.", status: 404)) == "Gone.")
         // The core turns an engine ReinsError into a CoreError; a screen never gets the raw one.
         #expect(AppEnvironment.message(ReinsError("Refused.", status: 403)) == CoreError.unexpectedMessage)
@@ -275,13 +222,4 @@ struct InProcessCoreTests {
             Issue.record("expected a CoreError, got \(error)")
         }
     }
-}
-
-/// The progress callbacks of a scan arrive off the main actor; this keeps the last one.
-private final class ProgressLog: @unchecked Sendable {
-    private let lock = NSLock()
-    private var latest: CoreUsageProgress?
-
-    var last: CoreUsageProgress? { lock.withLock { latest } }
-    func add(_ progress: CoreUsageProgress) { lock.withLock { latest = progress } }
 }

@@ -4,17 +4,16 @@ import ReinsCore
 /// `CoreService` over the Swift engine (`ReinsCore`), for as long as a screen has not cut over to the Go core (plan S.1).
 /// It is the only file under `Sources/Reins/Core` that imports ReinsCore: engine types go in, DTOs come out, and no
 /// screen sees the difference. Behavior is the engine's own, including what the models did around it today:
-/// Rules errors and problems come back with the settings file's path replaced by the scope's label, and
-/// `loadoutRows` returns the problem sentences unshortened (the shell shortens them).
+/// Rules errors and problems come back with the settings file's path replaced by the scope's label.
 ///
-/// Not an actor: a blocking inventory read must not queue behind a usage scan. The state the core owns in a process
-/// (the discovered projects, the last scan, whether one runs) sits behind a lock.
+/// Not an actor: a blocking engine call must not queue behind another. The state the core owns in a process (the discovered
+/// projects) sits behind a lock.
 ///
-/// Activity, Stop (S.3) and Limits (S.4) have cut over: they live in the Go core only and this adapter no longer serves them.
+/// Activity, Stop (S.3), Limits (S.4) and the Loadout reads (S.5) have cut over: they live in the Go core only and this adapter no longer serves them.
 ///
 /// Two things differ from the Go core, none a behavior change for today's screens:
-/// - `inventoryRead` does not refresh the discovered-project list (the engine's read does not expose it); `rulesSnapshot`
-///   with `refreshProjects` does, and every other rules call discovers once when the list is empty.
+/// - `rulesSnapshot` with `refreshProjects` discovers the projects again, and every other rules call discovers once when the
+///   list is empty.
 /// - The Go-only members (`notReadable`, `globalNotReadable`, `skippedLines`, `unreadable`, `folderNotReadable`) are
 ///   false or 0: the engine has no source for them.
 final class InProcessCore: CoreService, @unchecked Sendable {
@@ -22,22 +21,14 @@ final class InProcessCore: CoreService, @unchecked Sendable {
     static let version = "in-process"
     /// Every method this adapter still serves; the Go core serves these and the ones that cut over.
     static let methods = [
-        "initialize", "inventory.read", "journal.history", "journal.undo", "loadout.copyToOther", "loadout.removeDeadHooks",
-        "loadout.removeItem", "loadout.rows", "rules.add", "rules.changeVerdict", "rules.check", "rules.preview", "rules.remove",
-        "rules.setCapability", "rules.snapshot", "usage.scan",
+        "initialize", "journal.history", "journal.undo", "loadout.copyToOther", "loadout.removeDeadHooks", "loadout.removeItem",
+        "rules.add", "rules.changeVerdict", "rules.check", "rules.preview", "rules.remove", "rules.setCapability", "rules.snapshot",
     ]
 
     private final class State: @unchecked Sendable {
         private let lock = NSLock()
-        private var usage: UsageResult?
-        private var scanning = false
         private var projects: [String] = []
 
-        var lastUsage: UsageResult? { lock.withLock { usage } }
-        func setUsage(_ result: UsageResult) { lock.withLock { usage = result } }
-        /// False when a scan already runs.
-        func beginScan() -> Bool { lock.withLock { if scanning { return false }; scanning = true; return true } }
-        func endScan() { lock.withLock { scanning = false } }
         func knownProjects() -> [String] { lock.withLock { projects } }
         func setProjects(_ dirs: [String]) { lock.withLock { projects = dirs } }
     }
@@ -91,15 +82,6 @@ final class InProcessCore: CoreService, @unchecked Sendable {
         }
     }
 
-    /// The engine's Codable types write the core's JSON (the goldens hold them to it), so the DTO is read from it.
-    private static func bridge<DTO: Decodable>(_ value: some Encodable) throws -> DTO {
-        do {
-            return try JSONDecoder().decode(DTO.self, from: JSONEncoder().encode(value))
-        } catch {
-            throw CoreError(CoreError.unexpectedMessage, status: 500)
-        }
-    }
-
     /// The same case in a DTO enum of the same raw values.
     private static func same<From: RawRepresentable, To: RawRepresentable>(_ value: From, as _: To.Type) -> To where From.RawValue == String, To.RawValue == String {
         guard let converted = To(rawValue: value.rawValue) else { preconditionFailure("\(To.self) has no case \(value.rawValue)") }
@@ -121,61 +103,7 @@ final class InProcessCore: CoreService, @unchecked Sendable {
         )
     }
 
-    // MARK: Inventory, usage, loadout
-
-    func inventoryRead() async throws -> CoreInventorySnapshot {
-        try await run { roots in try Self.bridge(Inventory.read(roots: roots)) }
-    }
-
-    func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult {
-        try Task.checkCancellation()
-        let roots = try requireRoots()
-        guard state.beginScan() else { throw CoreError("A usage scan is already running.", status: 409) }
-        defer { state.endScan() }
-        do {
-            let forward: (@Sendable (UsageProgress) -> Void)? = progress.map { report in { @Sendable (p: UsageProgress) in report(CoreUsageProgress(done: p.done, total: p.total)) } }
-            let result = try await UsageScanner(roots: roots).scan(progress: forward)
-            state.setUsage(result)
-            return try Self.bridge(result)
-        } catch {
-            throw Self.coreError(error)
-        }
-    }
-
-    func loadoutRows() async throws -> CoreLoadoutRows {
-        let usage = state.lastUsage
-        return try await run { roots in
-            let input = usage.map(UsageInput.ready) ?? .scanning
-            let attached = Inventory.attachUsage(Inventory.read(roots: roots), usage: input)
-            let snapshot: CoreInventorySnapshot = try Self.bridge(attached)
-
-            let projects = Set(attached.items.compactMap(\.project) + attached.hooks.compactMap(\.project)).sorted()
-            var counts: [String: CoreFilterCounts] = [:]
-            for scope in ["global"] + projects {
-                let project: String? = scope == "global" ? nil : scope
-                let filtered = Inventory.filterCounts(
-                    items: attached.items.filter { $0.project == project },
-                    hooks: attached.hooks.filter { $0.project == project }
-                )
-                counts[scope] = try Self.bridge(filtered)
-            }
-
-            var rows: [String: [FilterRow]] = [:]
-            for item in attached.items { rows[item.key, default: []].append(FilterRow(item)) }
-            for hook in attached.hooks { rows[hook.key, default: []].append(FilterRow(hook)) }
-            let flags = rows.mapValues { group -> CoreRowFlags in
-                let c = Inventory.filterCounts(group)
-                return CoreRowFlags(one: c.only.claude + c.only.codex > 0, neverRan: c.neverRan > 0, dead: c.dead > 0)
-            }
-
-            return CoreLoadoutRows(
-                usage: usage == nil ? .scanning : .ready, items: snapshot.items, hooks: snapshot.hooks, problems: snapshot.problems,
-                events: snapshot.events, roots: snapshot.roots, countsByScope: counts, rowFlags: flags
-            )
-        }
-    }
-
-    // MARK: Served by the Go core only (S.3 Activity and Stop, S.4 Limits)
+    // MARK: Served by the Go core only (S.3 Activity and Stop, S.4 Limits, S.5 Loadout reads)
 
     /// The screens that cut over have no path here: `AppEnvironment.goCore` is their only service. These exist because
     /// `CoreService` lists them; S.8 deletes this file.
@@ -183,6 +111,9 @@ final class InProcessCore: CoreService, @unchecked Sendable {
     func activitySubscribe() -> AsyncThrowingStream<CoreActivityReport, Error> { AsyncThrowingStream { $0.finish(throwing: Self.goCoreOnly) } }
     func activityStop(cli: CoreCLI, id: String) async throws -> CoreStopResult { throw Self.goCoreOnly }
     func limitsRead() async throws -> CoreLimitsResult { throw Self.goCoreOnly }
+    func inventoryRead() async throws -> CoreInventorySnapshot { throw Self.goCoreOnly }
+    func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult { throw Self.goCoreOnly }
+    func loadoutRows() async throws -> CoreLoadoutRows { throw Self.goCoreOnly }
 
     private static let goCoreOnly = CoreError("This is served by the Go core only.", status: 500)
 
