@@ -1,4 +1,4 @@
-# Reins design language
+# SpaceVibe design language
 
 How the SwiftUI app looks, and the one rule that keeps it consistent. Decisions and their reasons:
 [the design-language spec](specs/2026-11-03-reins-design-language.md).
@@ -65,7 +65,7 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
 
 ## Icons
 
-- **Three generated sets and Reins's own verdict glyphs** (V5-R9, V5-R10, V5-R12, V5-R14 to V5-R16): MingCute Line for the
+- **Three generated sets and SpaceVibe's own verdict glyphs** (V5-R9, V5-R10, V5-R12, V5-R14 to V5-R16): MingCute Line for the
   category glyphs ([`CategoryGlyph`](../Sources/SpaceVibe/Components/CategoryIconData.swift): Skills `flash-line`, Subagents
   `robot-line`, Hooks `fish-symbol-line`), Phosphor Duotone for the sidebar and content glyphs
   ([`ContentGlyph`](../Sources/SpaceVibe/Components/ContentIconData.swift), Rules is its checklist glyph), and Solar Bold
@@ -104,7 +104,7 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
 | Icons | `SpaceVibeIcon` (a `SpaceVibeGlyph` at an `IconSize`), `Chevron` |
 | Controls | `SpaceVibeButtonStyle` kinds (normal, primary, danger, ghost, icon, plainIcon, inverse), `RowActionButton` (with a CLI badge), `SegmentedControl` (a segment may carry a CLI glyph and a shortcut), [`SegmentReadout`](../Sources/SpaceVibe/Components/SegmentedControl.swift) (the same frame for a value that is shown, not set: every option written out, the real one filled with `track`, or the warn tint), `FilterChip` (and its dismissible form), `ScopePicker`, `SearchField`, `TextInputField` |
 | Messages | `Banner`, `EmptyState`, `NoteRegion`, `InsetBox`, `WarningNote`, `UsageLegend`, `ToastView`, `ConfirmationDialog`; [`StatusLead`](../Sources/SpaceVibe/Components/StatusLead.swift) (a page's one plain sentence on a `surface` block, led by a 40 pt tile in the tone's tint: neutral, success, warn) and [`CLISummaryBar`](../Sources/SpaceVibe/Components/CLISummaryBar.swift) (a 48 pt `surface` block on how the other CLI stands, on a page that shows one) |
-| Settings | [`RailTab`](../Sources/SpaceVibe/Components/RailTab.swift) (96 x 60, 24 pt icon over the `label` name, the chosen one filled with `surface`), [`ThemeTile`](../Sources/SpaceVibe/Components/ThemeTile.swift) (a small Reins window drawn from the tokens with the appearance forced, System half and half; the chosen tile takes `selection`), [`SpaceVibeSwitch`](../Sources/SpaceVibe/Components/SpaceVibeSwitch.swift) (drawn, 32 x 20, `accentSolid` when on: AppKit's switch does not render in the screenshots), [`SpaceVibeMark`](../Sources/SpaceVibe/Components/SpaceVibeMark.swift) (the app mark from `Resources/AppIcon.svg` as shapes), [`RaisedBlock`](../Sources/SpaceVibe/Components/InsetBox.swift) (a borderless `surfaceRaised` block inside a card, like `FactTile`) |
+| Settings | [`RailTab`](../Sources/SpaceVibe/Components/RailTab.swift) (96 x 60, 24 pt icon over the `label` name, the chosen one filled with `surface`), [`ThemeTile`](../Sources/SpaceVibe/Components/ThemeTile.swift) (a small SpaceVibe window drawn from the tokens with the appearance forced, System half and half; the chosen tile takes `selection`), [`SpaceVibeSwitch`](../Sources/SpaceVibe/Components/SpaceVibeSwitch.swift) (drawn, 32 x 20, `accentSolid` when on: AppKit's switch does not render in the screenshots), [`SpaceVibeMark`](../Sources/SpaceVibe/Components/SpaceVibeMark.swift) (the app mark from `Resources/AppIcon.svg` as shapes), [`RaisedBlock`](../Sources/SpaceVibe/Components/InsetBox.swift) (a borderless `surfaceRaised` block inside a card, like `FactTile`) |
 | Page and shell | `PageLayout` (or `.pageTools()`, `.pageContent()`, `.pageBackground()`), `HintBar` (`shellKeys: false` drops `⌘K` and `Esc Close`), `SidebarItem` (48, `title` role in every state, the active one changes only its fill to `surface`) with `.sidebarSurface()`, `PaletteCard` and its parts, `Scrim` |
 
 ## Traps

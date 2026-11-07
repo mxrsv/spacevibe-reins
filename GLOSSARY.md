@@ -1,8 +1,18 @@
-# Reins
+# SpaceVibe
 
-Reins is a local macOS app that shows what Claude Code and Codex are equipped with, what they are allowed to do, and what they did. Terms below follow decisions D39, D43 and D46 in the [identity decisions](docs/specs/2026-11-06-reins-linear-identity-decisions.md).
+SpaceVibe is a local macOS app that shows what Claude Code and Codex are equipped with, what they are allowed to do, and what they did. Terms below follow decisions D39, D43 and D46 in the [identity decisions](docs/specs/2026-11-06-reins-linear-identity-decisions.md).
 
 ## Language
+
+### Parts of the app
+
+**Core**:
+The Go engine in `core/` (binary `spacevibe`). Reads the CLIs' files, counts usage, watches sessions and makes every write. Names the engine only, never the whole app.
+_Avoid_: backend, helper, engine (in labels and docs), daemon
+
+**Shell**:
+The SwiftUI app in `Sources/SpaceVibe`. Draws what the core reports and asks it for changes; holds no engine logic.
+_Avoid_: frontend, client (the shell's `CoreClient` is one class inside it)
 
 ### Tools and pages
 
@@ -25,7 +35,7 @@ A delegated worker a CLI can spawn, defined by its own file.
 _Avoid_: agent
 
 **Hook**:
-A command a CLI runs on a lifecycle event. Reins shows and writes hooks, never runs them.
+A command a CLI runs on a lifecycle event. SpaceVibe shows and writes hooks, never runs them.
 _Avoid_: trigger, script
 
 **Rule**:
@@ -50,7 +60,7 @@ An item that appears in no scanned log. A state to act on. A newly added item ca
 _Avoid_: unused, dead, pending, not counted yet (in labels)
 
 **Unmeasurable**:
-Reins cannot know it from what the CLI or model provides: Codex hooks, a session whose state is unreadable, a model with no price. Never shown as 0 or guessed.
+SpaceVibe cannot know it from what the CLI or model provides: Codex hooks, a session whose state is unreadable, a model with no price. Never shown as 0 or guessed.
 
 **Missing**:
 Not installed in that CLI. About installation, not usage.
@@ -89,7 +99,7 @@ _Avoid_: kill, terminate (in labels)
 ### Changes
 
 **Journal**:
-Reins's record of every write to a CLI's configuration, holding the old bytes as a restorable copy so the write can be undone.
+SpaceVibe's record of every write to a CLI's configuration, holding the old bytes as a restorable copy so the write can be undone.
 _Avoid_: history, log (a log is what a CLI writes)
 
 **Undo**:

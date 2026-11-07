@@ -6,7 +6,7 @@ What is installed for Claude Code and Codex: skills, subagents and hooks, read f
 
 | Part | Responsibility | Source |
 | --- | --- | --- |
-| Roots | Where each CLI's config, logs and Reins's own data live; refuses a real home under `SPACEVIBE_TEST=1` (S-R1) | [roots.go](../../core/internal/roots/roots.go) `Resolve` |
+| Roots | Where each CLI's config, logs and SpaceVibe's own data live; refuses a real home under `SPACEVIBE_TEST=1` (S-R1) | [roots.go](../../core/internal/roots/roots.go) `Resolve` |
 | Read | Walk both CLIs, enabled Claude plugins and discovered projects into one `InventorySnapshot` | [reader.go](../../core/internal/inventory/reader.go) |
 | Frontmatter | `name` and `description` of a `SKILL.md` or subagent `.md`; flat `key: value` only, not YAML | [frontmatter.go](../../core/internal/inventory/frontmatter.go) |
 | Project discovery | Find projects that have their own `.claude` folder | [projects.go](../../core/internal/inventory/projects.go) |
@@ -40,7 +40,7 @@ Settings are read only for hooks, plugin flags and skill overrides. No other val
 
 - **Row identity.** An item's `key` is kind, project and bare name, so the same skill in both CLIs is one matrix row. A hook's `key` is project and hash. Its `id` differs: a global hook id hashes owner, event, matcher and command; a project hook id also hashes its file, so the same hook in two files has two ids but one `key`.
 - **Hook hash is event plus command.** Hashing the command alone inflates run counts, because the same command is often wired to several events ([hashes.go](../../core/internal/hashes/hashes.go)). The logs do not say which file a hook came from, so a hook in a global and a project file shares one count.
-- **Dead hook.** A hook is dead only when its command names at least one script path and every path is missing. A path Reins cannot stat is not "missing": the hook is not marked dead and a problem sentence says so.
+- **Dead hook.** A hook is dead only when its command names at least one script path and every path is missing. A path SpaceVibe cannot stat is not "missing": the hook is not marked dead and a problem sentence says so.
 - **Plugin names.** A plugin-qualified name (`plugin:skill`) is matched by its part after the last `:` (`Inventory.bare`).
 - **Project discovery is bounded.** At most `Inventory.maxProjects` folders, newest first, 3 logs per folder, 64 KB per log. A project never opened with either CLI is not found, and a `cwd` that falls outside the first 64 KB is missed. The home folder and paths under `.claude/worktrees/` are skipped.
 - **Unreadable is not empty.** An unreadable CLI root, folder or settings file adds a sentence to `problems` and keeps going; it never reads as "nothing installed". The UI shows `problems`.
