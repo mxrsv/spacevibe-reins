@@ -1,5 +1,4 @@
 import Foundation
-import ReinsCore
 
 /// How this process was started, decided once from the environment.
 ///
@@ -14,15 +13,15 @@ enum LaunchMode {
     case shots(directory: URL)
 
     static func current(environment: [String: String] = ProcessInfo.processInfo.environment) -> LaunchMode {
-        if let path = environment[ReinsCore.env("SHOT_DIR")], !path.isEmpty {
+        if let path = environment[CoreEnvironment.variable("SHOT_DIR")], !path.isEmpty {
             return .shots(directory: URL(fileURLWithPath: (path as NSString).expandingTildeInPath, isDirectory: true))
         }
-        if environment[ReinsCore.env("GALLERY")] == "1" { return .gallery }
+        if environment[CoreEnvironment.variable("GALLERY")] == "1" { return .gallery }
         return .normal
     }
 
     /// The one name of the v5 switch. Every read goes through `uiV5Enabled`.
-    static let uiV5SwitchName = ReinsCore.env("UI_V5")
+    static let uiV5SwitchName = CoreEnvironment.variable("UI_V5")
 
     /// True in a debug build and in a bundle `scripts/build-app.sh` made without `--distribution` (it passes
     /// `-DSPACEVIBE_DEV_BUILD`); false in a distribution build.

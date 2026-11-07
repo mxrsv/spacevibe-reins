@@ -1,6 +1,5 @@
 import Foundation
 import Testing
-import ReinsCore
 @testable import Reins
 
 /// The Codex page of Rules: what it says about a config, and that no secret-looking string from `config.toml` reaches the
@@ -9,8 +8,8 @@ import ReinsCore
 struct CodexWordingTests {
     private static let canary = "http://user:CANARY-sk-live-0123456789@proxy.example.com:8080"
 
-    /// Reads a config.toml (and rules files) from a throwaway home, the way the Rules screen does.
-    private func permissions(_ toml: String?, rules: String? = nil) throws -> CodexPermissions {
+    /// Reads a config.toml (and rules files) from a throwaway home through the core, the way the Rules screen does.
+    private func permissions(_ toml: String?, rules: String? = nil) async throws -> CoreCodexPermissions {
         let base = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
         let root = base.appendingPathComponent("reins-codex-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -25,11 +24,11 @@ struct CodexWordingTests {
             "SPACEVIBE_HOME": root.appendingPathComponent(".spacevibe").path,
             "SPACEVIBE_TEST": "1",
         ]
-        return CodexPermissions.read(roots: try Roots.resolve(env: env))
+        return try await InProcessCore.live(environment: env).core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false).codex
     }
 
     /// Every string the page would draw for this config.
-    private func shown(_ codex: CodexPermissions) -> String {
+    private func shown(_ codex: CoreCodexPermissions) -> String {
         let status = CodexWording.status(codex)
         let rows = CodexWording.rows(codex).map { row -> String in
             switch row.value {
@@ -41,8 +40,8 @@ struct CodexWordingTests {
     }
 
     @Test("a URL, a token or any other free text under the network table is not shown; flags and mode words are")
-    func networkFlagsHideText() throws {
-        let codex = try permissions("""
+    func networkFlagsHideText() async throws {
+        let codex = try await permissions("""
         default_permissions = "dev"
 
         [permissions.dev.network]
@@ -64,8 +63,8 @@ struct CodexWordingTests {
     }
 
     @Test("a profile name, a reviewer or a mode that is not a plain word is not shown")
-    func freeTextValuesAreHidden() throws {
-        let codex = try permissions("""
+    func freeTextValuesAreHidden() async throws {
+        let codex = try await permissions("""
         default_permissions = "CANARY-sk-live-0123456789"
         approvals_reviewer = "\(Self.canary)"
         approval_policy = "CANARY-token-value-0123"
@@ -75,8 +74,8 @@ struct CodexWordingTests {
     }
 
     @Test("no sandbox and never asking reads as a warning, and every option of both keys is written out")
-    func unrestricted() throws {
-        let codex = try permissions("""
+    func unrestricted() async throws {
+        let codex = try await permissions("""
         approval_policy = "never"
         sandbox_mode = "danger-full-access"
         """, rules: #"prefix_rule(pattern=["git", "push"], decision="allow")"#)
@@ -91,8 +90,8 @@ struct CodexWordingTests {
     }
 
     @Test("command rules that forbid or prompt are named in the warning, since they still hold Codex back")
-    func unrestrictedWithRules() throws {
-        let codex = try permissions("""
+    func unrestrictedWithRules() async throws {
+        let codex = try await permissions("""
         approval_policy = "never"
         sandbox_mode = "danger-full-access"
         """, rules: """
@@ -100,13 +99,13 @@ struct CodexWordingTests {
         prefix_rule(pattern=["git", "push"], decision="prompt")
         """)
         #expect(CodexWording.status(codex).sentence == "Has no sandbox and never asks, except for 2 command rules")
-        let asking = try permissions("approval_policy = \"on-request\"\nsandbox_mode = \"danger-full-access\"\n")
+        let asking = try await permissions("approval_policy = \"on-request\"\nsandbox_mode = \"danger-full-access\"\n")
         #expect(CodexWording.status(asking) == CodexStatus(tone: .warn, sentence: "Has no sandbox and asks when it needs more", detail: #"sandbox_mode = "danger-full-access" · approval_policy = "on-request""#))
     }
 
     @Test("the workspace sandbox that asks when needed reads as safe; network and folders come from its table")
-    func workspace() throws {
-        let codex = try permissions("""
+    func workspace() async throws {
+        let codex = try await permissions("""
         approval_policy = "on-failure"
         sandbox_mode = "workspace-write"
 
@@ -126,16 +125,16 @@ struct CodexWordingTests {
     }
 
     @Test("a missing config says Codex runs on its defaults and shows no setting rows")
-    func missing() throws {
-        let codex = try permissions(nil)
+    func missing() async throws {
+        let codex = try await permissions(nil)
         #expect(CodexWording.status(codex).tone == .neutral)
         #expect(CodexWording.status(codex).sentence.contains("there is no ~/.codex/config.toml"))
         #expect(CodexWording.rows(codex).isEmpty)
     }
 
     @Test("command rules are counted per decision, strictest first, with no pattern")
-    func ruleCounts() throws {
-        let codex = try permissions("approval_policy = \"on-request\"\n", rules: """
+    func ruleCounts() async throws {
+        let codex = try await permissions("approval_policy = \"on-request\"\n", rules: """
         prefix_rule(pattern=["git", "push"], decision="allow")
         prefix_rule(pattern=["curl", "-H", "Authorization: Bearer CANARY-sk-live-0123456789"], decision="prompt")
         prefix_rule(pattern=["rm"], decision="forbidden")

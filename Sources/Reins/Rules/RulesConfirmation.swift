@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// The confirmation in front of a grid write. A scrim over the page and a card in the palette's style, like the Stop
@@ -25,7 +24,7 @@ struct RulesConfirmation: View {
         }
     }
 
-    private func group(_ title: String, rules: [VerdictRule], empty: String) -> some View {
+    private func group(_ title: String, rules: [CoreVerdictRule], empty: String) -> some View {
         VStack(alignment: .leading, spacing: Space.s6) {
             Text(title).reinsText(.captionStrong, tone: .secondary).padding(.top, Space.s6)
             InsetBox {

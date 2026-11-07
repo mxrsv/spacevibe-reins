@@ -32,7 +32,7 @@ The contract between the Go core (`spacevibe`) and the SwiftUI shell: how they t
 
 **`status` follows HTTP** ([`coreerr`](../../core/internal/coreerr/coreerr.go)): 400 bad input, 403 refused, 404 gone, 409 conflicts with the current state, 413 too large, 500 the write failed. `message` equals the JSON-RPC `message` and is safe to show: it may name a path or a rule, never file content (S-R3). A parse failure of a settings file becomes a fixed sentence; Go's `encoding/json` and TOML errors quote input and must never be forwarded.
 
-**Settings-file paths are scrubbed by the core** `(new)`. Rules messages and `problems` name the absolute settings file (`RulesStore` 409s do). Today `RulesScopes.scrub` in the Swift app swaps that path for the scope's label. After cut-over the core does it for every `rules.*` message and problem, using `scopeLabel`, because otherwise nothing is left to do it and paths reach the UI. Journal labels for rules writes still contain the project folder (`global` or `project <dir>`) and are shown in the Undo toast; that is existing behavior.
+**Settings-file paths are scrubbed by the core** `(new)`. Rules messages and `problems` name the absolute settings file (`RulesStore` 409s do). `InProcessCore.scrub` swaps that path for the scope's label in process (the Rules screen no longer does it). The Go core does it for every `rules.*` message and problem, using `scopeLabel`, because otherwise nothing is left to do it and paths reach the UI. Journal labels for rules writes still contain the project folder (`global` or `project <dir>`) and are shown in the Undo toast; that is existing behavior.
 
 ## Notifications and cancellation
 
@@ -115,8 +115,8 @@ Behavior the table cannot say:
 - **Other process-wide state.** The inventory and rules services share one discovered-project list: every `inventory.read` and `loadout.rows` hands its list to rules, and `refreshProjects` runs discovery again for both.
 - **`usage.scan` owns the usage state.** The core keeps the last `UsageResult` of the process. `loadout.rows` attaches it, or reports `usage: "scanning"` and `pending` cells when no scan has finished in this process. The shell does not send totals back. A core restart forgets the state; `usage-cache.json` makes the next scan fast.
 - **`loadout.rows` replaces three Swift calls** `(new)`: `Inventory.read`, `attachUsage` and `filterCounts` (per scope and per row key). Grouping rows by `key`, sorting and labels stay in Swift. Problems come back unshortened, with absolute paths; the shell applies the existing rule that shortens the home folder before showing them.
-- **`rules.setCapability` returning null is not an error.** The core reports it; the app turns it into the 409 sentence "Nothing to change: the file already holds that." (`RulesModel.write` keeps that today). `rules.add`, `remove` and `changeVerdict` never return null: the engine throws that 409 itself.
-- **`rules.check`** is the live check of `RulesScopes.shapeError`, built on `Rules.checkedRule`: empty text, over 1000 UTF-16 units, a newline, or no `Tool` or `Tool(pattern)` shape. `message` is the same sentence the write would refuse with. The write path checks again; this method is advice.
+- **`rules.setCapability` returning null is not an error.** The core reports it; the app turns it into the 409 sentence "Nothing to change: the file already holds that." (`RulesModel.write` does it, for either engine). `rules.add`, `remove` and `changeVerdict` never return null: the engine throws that 409 itself.
+- **`rules.check`** is the live check of a rule's shape (`InProcessCore.shapeError` in process; the Rules model calls it before every add), built on `Rules.checkedRule`: empty text, over 1000 UTF-16 units, a newline, or no `Tool` or `Tool(pattern)` shape. `message` is the same sentence the write would refuse with. The write path checks again; this method is advice.
 - **Journal ops are not exposed.** `JournalEntryRef` carries `count` only: ops hold absolute paths and trash names, and no Swift caller reads them (`AppEnvironment` uses the id and the label). The journal file format is unchanged and shared with the Swift engine while both exist: `<data>/journal.json`, newest first, 200 entries, and a journal that exists but is not a JSON array makes every write 409.
 - **`addSkill` and `addAgent` are not methods.** The app has no caller.
 - **The pid is never a parameter.** `activity.stop` finds the live process from the id, so a reused pid cannot be signalled. A Codex id before its first prompt is `pid:<n>:<start-ms>`, bound to the process start; an id ending `:unknown` cannot authorize a stop.
@@ -240,7 +240,7 @@ type CodexPermissions = {                         // (new) from CodexPermissions
   notReadable: boolean,                           // (new) config.toml could not be read: every setting above is unknown, not the defaults
   skippedLines: number                            // (new) config.toml lines the reader could not understand; `warnings` says so
 }
-type RulesSnapshot = {                            // (new) from RulesSnapshot / RulesReader.read, minus UI-only fields
+type RulesSnapshot = {                            // (new) from the old RulesSnapshot / RulesReader.read (now `InProcessCore.readRules`), minus UI-only fields
   projectDirs: string[],                          // discovered; display names stay a Swift helper
   globalRuleCount: number,
   scope: Scope, dir: string | null,               // the selection actually read; "global" when the asked project is gone

@@ -1,6 +1,5 @@
 import Foundation
 import Testing
-@testable import ReinsCore
 @testable import Reins
 
 @Suite("Rules scopes and wording")
@@ -8,20 +7,20 @@ struct RulesScopesTests {
     // MARK: RulesPending
 
     private func pending(
-        _ capability: Capability = .run, _ verdict: RuleVerdict = .allow, resulting: CapabilityState,
-        replaces: [VerdictRule] = [], writes: [VerdictRule] = []
+        _ capability: CoreCapability = .run, _ verdict: CoreVerdict = .allow, label: String = "Run commands", resulting: CoreCapabilityState,
+        replaces: [CoreVerdictRule] = [], writes: [CoreVerdictRule] = []
     ) -> RulesPending {
-        let preview = CapabilityPreview(
+        let preview = CoreCapabilityPreview(
             capability: capability, verdict: verdict, scopeLabel: "~/.claude/settings.json", current: .none,
             resulting: resulting, replaces: replaces, writes: writes
         )
-        return RulesPending(preview: preview, scope: .global, scopeTitle: "Global")
+        return RulesPending(preview: preview, scope: .global, scopeTitle: "Global", capabilityLabel: label)
     }
 
     @Test("a write is a no-op when the file already holds the same rules, whatever their order")
     func isNoOp() {
-        let push = VerdictRule(verdict: .deny, rule: "Bash(git push:*)")
-        let publish = VerdictRule(verdict: .deny, rule: "Bash(npm publish:*)")
+        let push = CoreVerdictRule(verdict: .deny, rule: "Bash(git push:*)")
+        let publish = CoreVerdictRule(verdict: .deny, rule: "Bash(npm publish:*)")
         #expect(pending(resulting: .deny, replaces: [push, publish], writes: [publish, push]).isNoOp)
         #expect(!pending(resulting: .deny, replaces: [push], writes: [push, publish]).isNoOp)
         #expect(!pending(resulting: .deny, replaces: [], writes: [push]).isNoOp)
@@ -36,66 +35,10 @@ struct RulesScopesTests {
 
     @Test("when a rule that stays wins, the no-op message names the resulting state, and a warning explains it")
     func noOpMessageWhenAKeptRuleWins() throws {
-        let kept = pending(.push, .allow, resulting: .ask)
+        let kept = pending(.push, .allow, label: "Push and deploy", resulting: .ask)
         #expect(kept.noOpMessage == "Push and deploy stays Ask here: a rule that stays in this file wins.")
         let warning = try #require(kept.warning)
         #expect(warning.contains("Push and deploy will read Ask, not Allow"))
-    }
-
-    // MARK: shapeError
-
-    @Test("an empty or blank rule is refused", arguments: ["", "   ", "\n"])
-    func shapeErrorEmpty(text: String) {
-        #expect(RulesScopes.shapeError(text) != nil)
-    }
-
-    @Test("a rule with a line break inside it is refused")
-    func shapeErrorNewline() {
-        #expect(RulesScopes.shapeError("Bash(npm test\nnpm publish)") != nil)
-    }
-
-    @Test("a rule over the length limit is refused; one exactly at the limit is not")
-    func shapeErrorLength() {
-        let overhead = "Bash()".utf16.count
-        let atLimit = "Bash(" + String(repeating: "a", count: Rules.maxRuleLength - overhead) + ")"
-        #expect(atLimit.utf16.count == Rules.maxRuleLength)
-        #expect(RulesScopes.shapeError(atLimit) == nil)
-        #expect(RulesScopes.shapeError(atLimit + "a") != nil)
-    }
-
-    @Test("text that is not Tool or Tool(pattern) is refused")
-    func shapeErrorNotARule() {
-        #expect(RulesScopes.shapeError("(npm test)") != nil)
-        #expect(RulesScopes.shapeError("Bash(npm test") != nil)
-    }
-
-    @Test("a valid rule passes, with or without surrounding whitespace")
-    func shapeErrorValid() {
-        #expect(RulesScopes.shapeError("Bash(npm test *)") == nil)
-        #expect(RulesScopes.shapeError("  Bash(npm test *)\n") == nil)
-        #expect(RulesScopes.shapeError("WebFetch") == nil)
-    }
-
-    // MARK: scrub
-
-    @Test("scrub replaces the settings file path and its symlink-resolved form with the label")
-    func scrubBothForms() throws {
-        let base = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        let root = base.appendingPathComponent("reins-scrub-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
-        defer { try? FileManager.default.removeItem(at: root) }
-        let real = root.appendingPathComponent("real", isDirectory: true)
-        let link = root.appendingPathComponent("link", isDirectory: true)
-        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
-        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
-        try Data("{}".utf8).write(to: real.appendingPathComponent("settings.json"))
-
-        let given = link.appendingPathComponent("settings.json").path
-        let resolved = real.appendingPathComponent("settings.json").path
-        try #require(given != resolved)
-
-        let text = "\(given) is not valid JSON; also seen as \(resolved)."
-        #expect(RulesScopes.scrub(text, path: given, label: "global") == "global is not valid JSON; also seen as global.")
-        #expect(RulesScopes.scrub("nothing to hide", path: given, label: "global") == "nothing to hide")
     }
 
     // MARK: projects
@@ -132,55 +75,6 @@ struct RulesScopesTests {
         #expect(RulesScopes.title(for: RulesSelection(dir: "/work/gone/old-thing", file: .local), projects: []) == "old-thing (local)")
     }
 
-    // MARK: scrubbed
-
-    private struct Unrelated: Error, Equatable {}
-
-    /// A store over a temporary home, with no project known. The folder is removed by the caller.
-    private func makeStore() throws -> (store: RulesStore, home: URL) {
-        let base = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        let home = base.appendingPathComponent("reins-scrubbed-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
-        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
-        let env = [
-            "HOME": home.path, "CLAUDE_CONFIG_DIR": home.appendingPathComponent(".claude").path,
-            "CODEX_HOME": home.appendingPathComponent(".codex").path, "SPACEVIBE_HOME": home.appendingPathComponent(".spacevibe").path,
-            "SPACEVIBE_TEST": "1",
-        ]
-        return (RulesStore(roots: try Roots.resolve(env: env), projects: { [] }), home)
-    }
-
-    @Test("a ReinsError that names the settings file comes back with the scope's label and the same status")
-    func scrubbedReplacesThePath() throws {
-        let (store, home) = try makeStore()
-        defer { try? FileManager.default.removeItem(at: home) }
-        let path = try store.file(for: .global).path
-        #expect(path.hasPrefix(home.path))
-        let thrown = ReinsError("\(path) is not valid JSON, so Reins left it alone.", status: 409)
-        #expect(throws: ReinsError("~/.claude/settings.json is not valid JSON, so Reins left it alone.", status: 409)) {
-            try RulesScopes.scrubbed(store: store, scope: .global) { () throws -> Void in throw thrown }
-        }
-    }
-
-    @Test("an error that is not a ReinsError passes through unchanged, and a result passes through untouched")
-    func scrubbedPassesOtherThingsThrough() throws {
-        let (store, home) = try makeStore()
-        defer { try? FileManager.default.removeItem(at: home) }
-        #expect(throws: Unrelated()) {
-            try RulesScopes.scrubbed(store: store, scope: .global) { () throws -> Void in throw Unrelated() }
-        }
-        #expect(try RulesScopes.scrubbed(store: store, scope: .global) { 42 } == 42)
-    }
-
-    @Test("when the scope's file cannot be resolved, the original ReinsError is rethrown as it was")
-    func scrubbedKeepsTheErrorWhenThereIsNoPath() throws {
-        let (store, home) = try makeStore()
-        defer { try? FileManager.default.removeItem(at: home) }
-        let original = ReinsError("keep /work/gone/old-thing as written", status: 409)
-        #expect(throws: original) {
-            try RulesScopes.scrubbed(store: store, scope: .project("/work/gone/old-thing")) { () throws -> Void in throw original }
-        }
-    }
-
     // MARK: Rules toolbar scope options
 
     private let discovered = RulesScopes.projects(from: ["/work/a/app", "/work/b/app", "/work/web"])
@@ -215,8 +109,8 @@ struct RulesScopesTests {
 
     // MARK: The Claude Code line on the Codex page
 
-    private func cell(_ capability: Capability, _ state: CapabilityState) -> CapabilityCell {
-        CapabilityCell(capability: capability, label: capability.label, state: state, editable: state != .mixed, rules: [])
+    private func cell(_ capability: CoreCapability, _ state: CoreCapabilityState) -> CoreCapabilityCell {
+        CoreCapabilityCell(capability: capability, label: capability.rawValue, state: state, editable: state != .mixed, rules: [])
     }
 
     @Test("the Claude Code summary names what the file asks before and blocks, and falls back to a count")
@@ -225,5 +119,49 @@ struct RulesScopesTests {
         #expect(RulesWording.summary(grid, ruleCount: 11) == "Asks before network access and push and deploy, blocks secrets (.env)")
         #expect(RulesWording.summary([cell(.run, .mixed)], ruleCount: 2) == "2 rules here, none decides a whole row")
         #expect(RulesWording.summary([cell(.run, .none)], ruleCount: 0) == "No rules in this file")
+    }
+
+    // MARK: Snapshot and notices
+
+    private func dto(scope: CoreRuleScope = .local, dir: String? = "/work/web", globalNotReadable: Bool = false) -> CoreRulesSnapshot {
+        CoreRulesSnapshot(
+            projectDirs: ["/work/web"], globalRuleCount: 2, scope: scope, dir: dir, fileLabel: ".claude/settings.local.json", exists: true,
+            problems: [], rules: [], grid: [cell(.run, .ask), cell(.edit, .mixed)], codex: Self.codex(), notReadable: false,
+            globalNotReadable: globalNotReadable
+        )
+    }
+
+    private static func codex(model: CoreCodexModel = .legacy, warnings: [String] = []) -> CoreCodexPermissions {
+        CoreCodexPermissions(
+            present: true, model: model, unrestricted: false, warnings: warnings, approvalPolicy: nil, sandboxMode: nil, sandboxWorkspaceWrite: nil,
+            defaultPermissions: nil, approvalsReviewer: nil, profiles: [], projects: [],
+            rules: CoreCodexRulesSummary(files: 0, allow: 0, prompt: 0, forbidden: 0, other: 0, unreadable: 0, folderNotReadable: false),
+            notReadable: false, skippedLines: 0
+        )
+    }
+
+    @Test("a snapshot keeps the scope the core read, and a grid is editable only for a plain cell in a file that parses and can be read")
+    func snapshotFromDTO() {
+        let snapshot = RulesSnapshot(dto())
+        #expect(snapshot.selection == RulesSelection(dir: "/work/web", file: .local))
+        #expect(snapshot.selection.scope == .local("/work/web"))
+        #expect(snapshot.title == "web (local)")
+        #expect(snapshot.projects == [RulesProject(dir: "/work/web", name: "web")])
+        #expect(snapshot.isEditable(cell(.run, .ask)) && !snapshot.isEditable(cell(.edit, .mixed)))
+        #expect(RulesSnapshot(dto(scope: .global, dir: nil)).selection == .global)
+
+        var unreadable = dto()
+        unreadable.notReadable = true
+        #expect(!RulesSnapshot(unreadable).isEditable(cell(.run, .ask)))
+    }
+
+    @Test("the Codex banners are the core's warnings, minus the two-models one when that has its own banner")
+    func codexNotices() {
+        let both = "Both default_permissions and sandbox_mode are set. Codex expects only one of them."
+        let skipped = "3 lines of Codex config.toml could not be understood and were skipped, so some settings may be missing."
+        #expect(RulesWording.codexNotices(Self.codex(model: .both, warnings: [both, skipped])) == [skipped])
+        #expect(RulesWording.codexNotices(Self.codex(model: .both, warnings: [both])).isEmpty)
+        #expect(RulesWording.codexNotices(Self.codex(warnings: [skipped])) == [skipped])
+        #expect(RulesWording.codexNotices(Self.codex()).isEmpty)
     }
 }

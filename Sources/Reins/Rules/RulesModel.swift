@@ -1,12 +1,13 @@
 import AppKit
 import Observation
-import ReinsCore
 
 /// The Rules screen's state: the chosen scope, what was read for it, the grid confirmation, the add-rule draft and every write.
 ///
-/// Reads and writes run off the main actor. A read discovers the projects once and keeps that list in the snapshot; a scope
-/// switch reuses it, and every refresh (launch, app activation, after a write or an Undo) discovers again. A newer read
-/// replaces an older one, so a slow read never overwrites a fresh one. Nothing here reads `env` values or logs rule text.
+/// Everything goes through the core (`env.core(for: .rules)`; in process until the screen cuts over), so reads and writes run
+/// off the main actor. A refresh (launch, app activation, after a write or an Undo) asks the core to discover the projects
+/// again; a scope switch reuses the list the core holds. A newer read replaces an older one, so a slow read never overwrites a
+/// fresh one. The core keeps settings-file paths out of its messages and checks a rule's shape (`rules.check`). Nothing here
+/// reads `env` values or logs rule text.
 @MainActor
 @Observable
 final class RulesModel {
@@ -21,13 +22,13 @@ final class RulesModel {
     /// The Codex page lists every project's trust level instead of the first few.
     private(set) var showsAllTrust = false
     /// Grid rows opened to show the rules and Codex keys behind them.
-    private(set) var expanded: Set<Capability> = []
+    private(set) var expanded: Set<CoreCapability> = []
     /// The grid write waiting for Confirm or Cancel.
     private(set) var pending: RulesPending?
     private(set) var isWriting = false
 
     var draft = ""
-    var draftVerdict = RuleVerdict.ask
+    var draftVerdict = CoreVerdict.ask
     /// The engine's (or the shape check's) message about the rule being added, shown next to the field.
     var addError: String?
     /// Bumped by the palette's "Add a Claude Code rule"; the add row takes the focus when it changes.
@@ -45,6 +46,8 @@ final class RulesModel {
     @ObservationIgnored private(set) var readsInFlight = 0
 
     init(env: AppEnvironment) { self.env = env }
+
+    private var service: any CoreService { env.core(for: .rules) }
 
     var isLoading: Bool { snapshot == nil && failure == nil }
 
@@ -73,25 +76,19 @@ final class RulesModel {
         reload()
     }
 
-    /// `rediscover: false` reuses the project list of the last read (a scope switch); a refresh always discovers again.
+    /// `rediscover: false` reuses the project list the core holds (a scope switch); a refresh always discovers again.
     func reload(rediscover: Bool = true) {
-        guard let roots = env.roots else {
-            failure = env.startupProblem ?? "The config folders could not be resolved."
-            return
-        }
         generation += 1
         let mine = generation
-        let wanted = selection
-        let cached = rediscover ? nil : snapshot?.projectDirs
+        let wanted = selection.scope
         readsInFlight += 1
         Task {
-            let outcome = await Task.detached(priority: .userInitiated) {
-                Result { try RulesReader.read(roots: roots, selection: wanted, projects: cached) }
-            }.value
+            let outcome = await attempt { try await service.rulesSnapshot(scope: wanted.kind, dir: wanted.dir, refreshProjects: rediscover) }
             readsInFlight -= 1
             guard mine == generation else { return }
             switch outcome {
-            case .success(let fresh):
+            case .success(let dto):
+                let fresh = RulesSnapshot(dto)
                 snapshot = fresh
                 if selection != fresh.selection { previewEpoch += 1 }
                 selection = fresh.selection
@@ -102,6 +99,10 @@ final class RulesModel {
                 failure = AppEnvironment.message(error)
             }
         }
+    }
+
+    private func attempt<T>(_ work: () async throws -> T) async -> Result<T, Error> {
+        do { return .success(try await work()) } catch { return .failure(error) }
     }
 
     // MARK: Choices
@@ -140,16 +141,23 @@ final class RulesModel {
     /// Selects `~/.codex/config.toml` (or the Codex folder when there is none) in the Finder. Editing stays in the user's
     /// editor; Reins starts no other app (AGENTS.md S-R4).
     func revealCodexConfig() {
-        guard let root = env.roots?.codex.root else { return }
+        let root = Self.codexFolder()
         let file = root.appendingPathComponent("config.toml")
         NSWorkspace.shared.activateFileViewerSelecting([FileManager.default.fileExists(atPath: file.path) ? file : root])
     }
 
-    func toggle(_ capability: Capability) {
+    /// `CODEX_HOME`, else `.codex` in the home folder: where the core reads Codex from.
+    private static func codexFolder(environment: [String: String] = ProcessInfo.processInfo.environment) -> URL {
+        func value(_ key: String) -> String? { environment[key].flatMap { $0.isEmpty ? nil : $0 } }
+        let home = value("HOME") ?? NSHomeDirectory()
+        return URL(fileURLWithPath: value("CODEX_HOME") ?? (home as NSString).appendingPathComponent(".codex"), isDirectory: true)
+    }
+
+    func toggle(_ capability: CoreCapability) {
         if expanded.contains(capability) { expanded.remove(capability) } else { expanded.insert(capability) }
     }
 
-    func setExpanded(_ capabilities: Set<Capability>) { expanded = capabilities }
+    func setExpanded(_ capabilities: Set<CoreCapability>) { expanded = capabilities }
 
     /// From the palette: show a scope and bring the tab forward.
     /// The scope jumps name Claude Code settings files, so they open the Claude Code page.
@@ -167,27 +175,25 @@ final class RulesModel {
 
     // MARK: Grid writes
 
-    /// A click on Allow, Ask or Deny. Nothing is written: this asks the engine what the write would replace, then opens the confirmation.
-    func requestSet(_ capability: Capability, to verdict: RuleVerdict) {
-        guard let snapshot, let roots = env.roots, pending == nil else { return }
+    /// A click on Allow, Ask or Deny. Nothing is written: this asks the core what the write would replace, then opens the confirmation.
+    func requestSet(_ capability: CoreCapability, to verdict: CoreVerdict) {
+        guard let snapshot, pending == nil else { return }
         guard let cell = snapshot.grid.first(where: { $0.capability == capability }), snapshot.isEditable(cell),
-              cell.state != CapabilityState(rawValue: verdict.rawValue) else { return }
+              cell.state != CoreCapabilityState(rawValue: verdict.rawValue) else { return }
         let scope = snapshot.selection.scope
-        let store = snapshot.store(roots: roots)
         let title = snapshot.title
+        let capabilityLabel = cell.label
         previewEpoch += 1
         let epoch = previewEpoch
         previewsInFlight += 1
         Task {
-            let outcome = await Task.detached(priority: .userInitiated) {
-                Result { try RulesScopes.scrubbed(store: store, scope: scope) { try store.previewSetCapability(scope: scope, capability: capability, verdict: verdict) } }
-            }.value
+            let outcome = await attempt { try await service.rulesPreview(scope: scope.kind, dir: scope.dir, capability: capability, verdict: verdict) }
             previewsInFlight -= 1
-            // The user switched scope (or asked again) while the engine was working: this answer is for a different page.
+            // The user switched scope (or asked again) while the core was working: this answer is for a different page.
             guard epoch == previewEpoch, selection.scope == scope else { return }
             switch outcome {
             case .success(let preview):
-                let change = RulesPending(preview: preview, scope: scope, scopeTitle: title)
+                let change = RulesPending(preview: preview, scope: scope, scopeTitle: title, capabilityLabel: capabilityLabel)
                 if change.isNoOp {
                     env.toasts.show(change.noOpMessage)
                 } else {
@@ -207,66 +213,76 @@ final class RulesModel {
         pending = nil
         guard change.scope == selection.scope else { return }
         let (capability, verdict) = (change.capability, change.verdict)
-        write(label: RulesWording.setLabel(capability, verdict), scope: change.scope) { store, scope in
-            try store.setCapability(scope: scope, capability: capability, verdict: verdict)
+        write(label: RulesWording.setLabel(change.capabilityLabel, verdict), scope: change.scope) { core, scope in
+            try await core.rulesSetCapability(scope: scope.kind, dir: scope.dir, capability: capability, verdict: verdict).entry
         }
     }
 
     // MARK: Rule writes
 
-    /// Adds the draft under `draftVerdict`. The shape is checked first; the engine's 400, 404 and 409 messages show next to the field.
+    /// Adds the draft under `draftVerdict`. The core checks the shape first (`rules.check`); its 400, 404 and 409 messages show
+    /// next to the field.
     func submitDraft() {
-        let text = draft
-        if let problem = RulesScopes.shapeError(text) {
-            addError = problem
-            return
-        }
-        addError = nil
+        let rule = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let submitted = draft
         let verdict = draftVerdict
-        let rule = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        write(
-            label: "Added \(rule) to \(RulesWording.groupTitle(verdict))",
-            clears: text,
-            onFailure: { [weak self] in self?.addError = $0 }
-        ) { store, scope in
-            try store.addRule(scope: scope, verdict: verdict, rule: rule)
+        Task {
+            switch await attempt({ try await service.rulesCheck(rule: rule) }) {
+            case .success(let check) where check.valid:
+                addError = nil
+            case .success(let check):
+                addError = check.message ?? Self.invalidRule
+                return
+            case .failure(let error):
+                addError = AppEnvironment.message(error)
+                return
+            }
+            write(
+                label: "Added \(rule) to \(RulesWording.groupTitle(verdict))",
+                clears: submitted,
+                onFailure: { [weak self] in self?.addError = $0 }
+            ) { core, scope in
+                try await core.rulesAdd(scope: scope.kind, dir: scope.dir, verdict: verdict, rule: rule).entry
+            }
         }
     }
 
-    func remove(_ item: RuleItem) {
+    /// The sentence for a check that answers "not valid" with no message of its own.
+    private static let invalidRule = "That is not a valid rule. Use Tool or Tool(pattern) on one line."
+
+    func remove(_ item: CoreRule) {
         let (verdict, rule) = (item.verdict, item.rule)
-        write(label: "Removed \(rule) from \(RulesWording.groupTitle(verdict))") { store, scope in
-            try store.removeRule(scope: scope, verdict: verdict, rule: rule)
+        write(label: "Removed \(rule) from \(RulesWording.groupTitle(verdict))") { core, scope in
+            try await core.rulesRemove(scope: scope.kind, dir: scope.dir, verdict: verdict, rule: rule).entry
         }
     }
 
-    func move(_ item: RuleItem, to verdict: RuleVerdict) {
+    func move(_ item: CoreRule, to verdict: CoreVerdict) {
         let (from, rule) = (item.verdict, item.rule)
-        write(label: "Moved \(rule) from \(RulesWording.groupTitle(from)) to \(RulesWording.groupTitle(verdict))") { store, scope in
-            try store.changeVerdict(scope: scope, rule: rule, from: from, to: verdict)
+        write(label: "Moved \(rule) from \(RulesWording.groupTitle(from)) to \(RulesWording.groupTitle(verdict))") { core, scope in
+            try await core.rulesChangeVerdict(scope: scope.kind, dir: scope.dir, rule: rule, from: from, to: verdict).entry
         }
     }
 
-    /// One write for every control: the scope's store (with the cached project list), a scrubbed error, a toast with Undo,
-    /// and a reload after the write and after an Undo. A nil result from the engine ("nothing to change") is a message,
-    /// never a success toast.
+    /// One write for every control: through the core, a toast with Undo, and a reload after the write and after an Undo. A nil
+    /// result ("nothing to change", `rules.setCapability` only) is a message, never a success toast.
     private func write(
         label: String,
-        scope target: RuleScope? = nil,
+        scope target: RulesScope? = nil,
         clears submitted: String? = nil,
         onFailure: (@MainActor (String) -> Void)? = nil,
-        _ work: @escaping @Sendable (RulesStore, RuleScope) throws -> JournalEntry?
+        _ work: @escaping @Sendable (any CoreService, RulesScope) async throws -> CoreJournalEntry?
     ) {
-        guard let snapshot, let roots = env.roots else {
+        guard let snapshot else {
             env.toasts.show(env.startupProblem ?? "The config folders could not be resolved.", tone: .danger)
             return
         }
         guard !isWriting else { return }
         isWriting = true
         let scope = target ?? snapshot.selection.scope
-        let store = snapshot.store(roots: roots)
         env.performWithUndo(
             label: label,
+            via: service,
             afterChange: { [weak self] in
                 guard let self else { return }
                 isWriting = false
@@ -278,11 +294,9 @@ final class RulesModel {
                 isWriting = false
                 if let onFailure { onFailure(message) } else { env.toasts.show(message, tone: .danger) }
             }
-        ) {
-            try RulesScopes.scrubbed(store: store, scope: scope) {
-                guard let entry = try work(store, scope) else { throw ReinsError("Nothing to change: the file already holds that.", status: 409) }
-                return entry
-            }
+        ) { core in
+            guard let entry = try await work(core, scope) else { throw CoreError("Nothing to change: the file already holds that.", status: 409) }
+            return entry
         }
     }
 }

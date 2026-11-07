@@ -1,6 +1,5 @@
 import AppKit
 import SwiftUI
-import ReinsCore
 
 /// Headless screenshots (`SPACEVIBE_SHOT_DIR=<dir>`). Renders views with `ImageRenderer`: no window is created, no
 /// focus is taken and no Screen Recording permission is needed. Then the process exits.
@@ -24,7 +23,7 @@ enum ShotRenderer {
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let environment = ProcessInfo.processInfo.environment
-            let screen = environment[ReinsCore.env("SHOT_SCREEN")] ?? "shell"
+            let screen = environment[CoreEnvironment.variable("SHOT_SCREEN")] ?? "shell"
             switch screen {
             case "shell": try writeShellStates(into: directory)
             case "loadout": try requireSyntheticHome(environment); try LoadoutShots.run(into: directory)
@@ -43,7 +42,7 @@ enum ShotRenderer {
 
     /// The real screens read config folders, so they run only where `Roots.resolve` refuses a root under the real home.
     private static func requireSyntheticHome(_ environment: [String: String]) throws {
-        guard environment[ReinsCore.env("TEST")] == "1" else {
+        guard environment[CoreEnvironment.variable("TEST")] == "1" else {
             throw ShotHarness.Failure("real-screen shots need SPACEVIBE_TEST=1 and a synthetic home")
         }
     }

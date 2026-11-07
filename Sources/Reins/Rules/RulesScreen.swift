@@ -1,5 +1,4 @@
 import AppKit
-import ReinsCore
 import SwiftUI
 
 /// The Rules tab: loading, failed, or the toolbar over one CLI's page. Claude Code: the grid, the rule list and the add row,
@@ -63,8 +62,18 @@ struct RulesScreen: View {
 
     private static let addRowID = "rules-add-row"
 
+    /// What the banners say besides the failed read, in order. On the Codex page a warning the core adds (an unreadable
+    /// `config.toml`, skipped lines, an unreadable rules folder) is one more banner next to the two-models one.
+    private func notices(_ snapshot: RulesSnapshot) -> [String] {
+        if model.cli == .claude {
+            return snapshot.globalNotReadable && snapshot.selection.dir != nil ? [RulesWording.globalNotReadable] : []
+        }
+        return RulesWording.codexNotices(snapshot.codex)
+    }
+
     private func hasBanner(_ snapshot: RulesSnapshot) -> Bool {
         model.failure != nil || (model.cli == .claude ? !snapshot.problems.isEmpty : snapshot.codex.model == .both)
+            || !notices(snapshot).isEmpty
     }
 
     /// How the other CLI stands, so a page that shows one CLI never hides the other.
@@ -97,6 +106,7 @@ struct RulesScreen: View {
             } else if snapshot.codex.model == .both {
                 Banner(.warn, message: snapshot.codex.warnings.first ?? "Both Codex permission models are set.", detail: "Reins shows both and writes neither.")
             }
+            ForEach(notices(snapshot), id: \.self) { Banner(.warn, message: $0) }
         }
         .padding(.bottom, hasBanner(snapshot) ? Rhythm.cards : 0)
     }

@@ -1,5 +1,4 @@
 import Foundation
-import ReinsCore
 import SwiftUI
 
 /// Headless screenshots of the real Rules screen, read from the synthetic HOME before any frame is drawn (`ImageRenderer`
@@ -21,7 +20,7 @@ import SwiftUI
 enum RulesShots {
     static func run(into directory: URL) throws {
         let env = AppEnvironment.live(toasts: ToastCenter(announce: false))
-        guard env.roots != nil else { throw ShotHarness.Failure(env.startupProblem ?? "no roots") }
+        if let problem = env.startupProblem { throw ShotHarness.Failure(problem) }
         let model = RulesModel(env: env)
         model.start()
         try settle(model)
@@ -170,7 +169,7 @@ enum RulesShots {
               let bench = model.snapshot?.projects.first(where: { $0.name == "spacevibe-bench" }) else { throw ShotHarness.Failure("no academy or bench project") }
         let claudeDir = URL(fileURLWithPath: project.dir).appendingPathComponent(".claude")
         let projectFile = claudeDir.appendingPathComponent("settings.json")
-        let globalFile = URL(fileURLWithPath: env.roots?.claude.root.path ?? "/nonexistent").appendingPathComponent("settings.json")
+        let globalFile = URL(fileURLWithPath: claudeFolder).appendingPathComponent("settings.json")
         let projectBefore = try Data(contentsOf: projectFile)
         let globalBefore = try Data(contentsOf: globalFile)
         defer { try? projectBefore.write(to: projectFile) }
@@ -241,11 +240,17 @@ enum RulesShots {
 
     // MARK: Steps
 
-    private static func state(_ model: RulesModel, _ capability: Capability) -> CapabilityState? {
+    /// Claude Code's folder in the synthetic home: `CLAUDE_CONFIG_DIR`, else `.claude` under `HOME`.
+    private static var claudeFolder: String {
+        let environment = ProcessInfo.processInfo.environment
+        return environment["CLAUDE_CONFIG_DIR"] ?? ((environment["HOME"] ?? "/nonexistent") as NSString).appendingPathComponent(".claude")
+    }
+
+    private static func state(_ model: RulesModel, _ capability: CoreCapability) -> CoreCapabilityState? {
         model.snapshot?.grid.first { $0.capability == capability }?.state
     }
 
-    private static func confirm(_ model: RulesModel, _ capability: Capability, _ verdict: RuleVerdict) throws {
+    private static func confirm(_ model: RulesModel, _ capability: CoreCapability, _ verdict: CoreVerdict) throws {
         model.requestSet(capability, to: verdict)
         try ShotHarness.wait("the confirmation") { model.pending != nil }
     }

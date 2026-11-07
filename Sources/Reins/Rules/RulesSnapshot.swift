@@ -1,5 +1,4 @@
 import Foundation
-import ReinsCore
 
 /// Everything the Rules screen shows for one scope, read in one pass off the main actor.
 struct RulesSnapshot {
@@ -16,48 +15,34 @@ struct RulesSnapshot {
     let exists: Bool
     /// Sentences about files that are not valid settings, with absolute paths replaced by `fileLabel`.
     let problems: [String]
-    let rules: [RuleItem]
-    let grid: [CapabilityCell]
-    let codex: CodexPermissions
+    let rules: [CoreRule]
+    let grid: [CoreCapabilityCell]
+    let codex: CoreCodexPermissions
+    /// The scope's file or folder could not be looked at: its rules are unknown, not empty. The core says so in `problems`.
+    let notReadable: Bool
+    /// The same for the global file, which `globalRuleCount` counts.
+    let globalNotReadable: Bool
 
     var title: String { RulesScopes.title(for: selection, projects: projects) }
 
-    /// A grid is editable only when the file parses; a `mixed` cell never is.
-    func isEditable(_ cell: CapabilityCell) -> Bool { cell.editable && problems.isEmpty }
+    /// A grid is editable only when the file parses and can be read; a `mixed` cell never is.
+    func isEditable(_ cell: CoreCapabilityCell) -> Bool { cell.editable && problems.isEmpty && !notReadable }
 
-    func rules(_ verdict: RuleVerdict) -> [RuleItem] { rules.filter { $0.verdict == verdict } }
+    func rules(_ verdict: CoreVerdict) -> [CoreRule] { rules.filter { $0.verdict == verdict } }
 
-    func store(roots: Roots) -> RulesStore {
-        let dirs = projectDirs
-        return RulesStore(roots: roots, projects: { dirs })
-    }
-}
-
-enum RulesReader {
-    /// Reads the scope, the global rule count and the Codex permissions. Pass `projects` to skip discovery (a scope switch);
-    /// nil discovers once. Throws a `ReinsError` whose message is safe to show.
-    static func read(roots: Roots, selection: RulesSelection, projects cached: [String]?) throws -> RulesSnapshot {
-        let dirs = cached ?? Inventory.discoverProjects(roots: roots)
-        let store = RulesStore(roots: roots, projects: { dirs })
-        let effective = selection.dir.map { dirs.contains($0) } ?? true ? selection : .global
-        let scope = effective.scope
-        return try RulesScopes.scrubbed(store: store, scope: scope) {
-            let global = try store.listRules([.global])
-            let listing = effective == .global ? global : try store.listRules([scope])
-            let file = try store.file(for: scope)
-            let problems = listing.problems.map { RulesScopes.scrub($0, path: file.path, label: scope.fileLabel) }
-            return RulesSnapshot(
-                projectDirs: dirs,
-                projects: RulesScopes.projects(from: dirs),
-                globalRuleCount: global.rules.count,
-                selection: effective,
-                fileLabel: scope.fileLabel,
-                exists: FileManager.default.fileExists(atPath: file.path),
-                problems: problems,
-                rules: listing.rules,
-                grid: Rules.capabilityGrid(listing.rules),
-                codex: CodexPermissions.read(roots: roots)
-            )
-        }
+    /// What `rules.snapshot` read. The selection is the scope the core actually read: global when the asked project is not listed.
+    init(_ dto: CoreRulesSnapshot) {
+        projectDirs = dto.projectDirs
+        projects = RulesScopes.projects(from: dto.projectDirs)
+        globalRuleCount = dto.globalRuleCount
+        selection = RulesSelection(dir: dto.dir, file: dto.scope == .local ? .local : .shared)
+        fileLabel = dto.fileLabel
+        exists = dto.exists
+        problems = dto.problems
+        rules = dto.rules
+        grid = dto.grid
+        codex = dto.codex
+        notReadable = dto.notReadable
+        globalNotReadable = dto.globalNotReadable
     }
 }

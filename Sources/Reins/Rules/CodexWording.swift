@@ -1,5 +1,4 @@
 import Foundation
-import ReinsCore
 
 /// One line of the Codex page's "How Codex runs" card: a plain name, the real key (or why there is none) under it, and the
 /// value, either every option of the key with the real one picked or a single tag.
@@ -48,7 +47,7 @@ enum CodexWording {
     }
 
     /// The `approval_policy` string, `granular` for the table form, nil when unset. `on-failure` stays as written.
-    static func approval(_ codex: CodexPermissions) -> String? {
+    static func approval(_ codex: CoreCodexPermissions) -> String? {
         switch codex.approvalPolicy {
         case .mode(let text): text
         case .granular: "granular"
@@ -58,7 +57,7 @@ enum CodexWording {
 
     // MARK: Status
 
-    static func status(_ codex: CodexPermissions) -> CodexStatus {
+    static func status(_ codex: CoreCodexPermissions) -> CodexStatus {
         guard codex.present else {
             return CodexStatus(tone: .neutral, sentence: "Runs on its defaults: there is no ~/.codex/config.toml", detail: nil)
         }
@@ -97,7 +96,7 @@ enum CodexWording {
         }
     }
 
-    private static func detailLine(_ codex: CodexPermissions) -> String? {
+    private static func detailLine(_ codex: CoreCodexPermissions) -> String? {
         var parts: [String] = []
         if let mode = codex.sandboxMode { parts.append("sandbox_mode = \(quoted(mode))") }
         if let profile = codex.defaultPermissions { parts.append("default_permissions = \(quoted(profile))") }
@@ -116,7 +115,7 @@ enum CodexWording {
 
     // MARK: Rows
 
-    static func rows(_ codex: CodexPermissions) -> [CodexSettingRow] {
+    static func rows(_ codex: CoreCodexPermissions) -> [CodexSettingRow] {
         guard codex.present else { return [] }
         var out = [approvalRow(codex)]
         if codex.sandboxMode != nil || codex.defaultPermissions == nil { out += sandboxRows(codex) }
@@ -127,7 +126,7 @@ enum CodexWording {
         return out
     }
 
-    private static func approvalRow(_ codex: CodexPermissions) -> CodexSettingRow {
+    private static func approvalRow(_ codex: CoreCodexPermissions) -> CodexSettingRow {
         let title = "Asks before acting"
         switch codex.approvalPolicy {
         case nil:
@@ -144,7 +143,7 @@ enum CodexWording {
         }
     }
 
-    private static func sandboxRows(_ codex: CodexPermissions) -> [CodexSettingRow] {
+    private static func sandboxRows(_ codex: CoreCodexPermissions) -> [CodexSettingRow] {
         guard let mode = codex.sandboxMode else {
             return [CodexSettingRow(title: "Sandbox", key: "sandbox_mode is not set, so Codex uses its default", keyIsCode: false, value: .tag("not set", tone: .neutral))]
         }
@@ -180,7 +179,7 @@ enum CodexWording {
         }
     }
 
-    private static func profileRows(_ codex: CodexPermissions, name: String) -> [CodexSettingRow] {
+    private static func profileRows(_ codex: CoreCodexPermissions, name: String) -> [CodexSettingRow] {
         let shown = word(name)
         let path = shown == hiddenText ? "permissions.<profile>" : "permissions.\(shown)"
         let profile = codex.profiles.first { $0.name == name }
@@ -193,21 +192,20 @@ enum CodexWording {
         ]
     }
 
-    /// What a `[permissions.<name>.network]` flag shows. The reader keeps any string there, and a string can be a proxy URL
+    /// What a `[permissions.<name>.network]` flag shows. The core keeps any string there, and a string can be a proxy URL
     /// with a password or a token, so text is shown only when it reads as a word such as "limited".
-    static func networkFlagText(_ value: JSONValue) -> String {
+    static func networkFlagText(_ value: CoreFlagValue) -> String {
         switch value {
         case .bool(let flag): String(flag)
-        case .number(let text): text
+        case .number(let number): number.rounded() == number && abs(number) < 1e15 ? String(Int(number)) : String(number)
         case .string(let text): word(text)
-        default: "set"
         }
     }
 
     // MARK: Command rules and trust
 
     /// The per-decision counts of `~/.codex/rules`, strictest first. The patterns are never read into the app.
-    static func ruleCounts(_ codex: CodexPermissions) -> [(title: String, meaning: String, count: Int)] {
+    static func ruleCounts(_ codex: CoreCodexPermissions) -> [(title: String, meaning: String, count: Int)] {
         let rules = codex.rules
         var out: [(title: String, meaning: String, count: Int)] = [
             ("Forbidden", "Refused without asking", rules.forbidden),

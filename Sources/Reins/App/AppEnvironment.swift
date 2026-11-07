@@ -1,30 +1,27 @@
 import Foundation
 import Observation
-import ReinsCore
 
 /// The services every screen shares: where the config and logs live, the process adapter, the toast, and the way to
 /// run a write with Undo. One instance per run (`AppEnvironment.shared`), injected into the SwiftUI environment by
 /// `reinsRoot` and handed to a tab by its initialiser (`ActivityTab(env: .shared)` style).
 ///
 ///     // a screen model that writes:
-///     env.performWithUndo(label: "Removed Bash(git push:*)", afterChange: { reload() }) {
-///         try removeRule(roots, ...)      // returns the JournalEntry the engine recorded
+///     env.performWithUndo(label: "Removed Bash(git push:*)", via: env.core(for: .rules), afterChange: { reload() }) { core in
+///         try await core.rulesRemove(...).entry      // the CoreJournalEntry the core recorded
 ///     }
 ///
-/// `roots` is nil, with `startupProblem` set, when `Roots.resolve()` throws (under `SPACEVIBE_TEST=1` that is a root under
-/// the real home). A screen shows `startupProblem` instead of reading anything.
+/// `startupProblem` is set when the config folders could not be resolved (under `SPACEVIBE_TEST=1` that is a root under the real
+/// home); the in-process core then refuses every call with it, and a screen shows the refusal instead of reading anything.
 ///
 /// Dev launch (`scripts/dev-fixture.sh`): `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `SPACEVIBE_HOME` come from the
-/// environment. With `SPACEVIBE_TEST=1` the process adapter is never the real one: it replays the file named by
-/// `SPACEVIBE_PROC_FIXTURE`, or an empty list when that is unset, so nothing can signal a real process.
+/// environment (`InProcessCore.live` reads them). With `SPACEVIBE_TEST=1` the process adapter is never the real one: it replays
+/// the file named by `SPACEVIBE_PROC_FIXTURE`, or an empty list when that is unset, so nothing can signal a real process.
 @MainActor
 @Observable
 final class AppEnvironment {
     static let shared = AppEnvironment.live()
 
-    let roots: Roots?
     let startupProblem: String?
-    let proc: any ProcessAdapter
     let toasts: ToastCenter
     /// The engine behind a screen that has moved off `ReinsCore` (plan S.1). In-process until a screen cuts over to the Go core.
     let core: any CoreService
@@ -38,13 +35,10 @@ final class AppEnvironment {
     /// The updater and what Settings > Update shows. `ReinsApp` starts it in a normal launch; elsewhere it never runs.
     @ObservationIgnored lazy var updates = UpdateController(toasts: toasts)
 
-    init(roots: Roots?, startupProblem: String? = nil, proc: any ProcessAdapter, toasts: ToastCenter? = nil, core: (any CoreService)? = nil, routing: CoreRouting = CoreRouting(), makeCoreClient: @escaping () -> any CoreService = { CoreClient() }) {
-        self.roots = roots
-        let problem = roots == nil ? (startupProblem ?? "The config folders could not be resolved.") : startupProblem
-        self.startupProblem = problem
-        self.proc = proc
+    init(startupProblem: String? = nil, toasts: ToastCenter? = nil, core: any CoreService, routing: CoreRouting = CoreRouting(), makeCoreClient: @escaping () -> any CoreService = { CoreClient() }) {
+        self.startupProblem = startupProblem
         self.toasts = toasts ?? ToastCenter()
-        self.core = core ?? InProcessCore(roots: roots, startupProblem: problem, proc: proc)
+        self.core = core
         self.routing = routing
         self.makeCoreClient = makeCoreClient
     }
@@ -55,34 +49,15 @@ final class AppEnvironment {
     }
 
     static func live(environment: [String: String] = ProcessInfo.processInfo.environment, toasts: ToastCenter? = nil) -> AppEnvironment {
-        var problems: [String] = []
-        var roots: Roots?
-        do { roots = try Roots.resolve(env: environment) } catch { problems.append(String(describing: error)) }
-        let proc: any ProcessAdapter
-        if environment[ReinsCore.env("TEST")] == "1" {
-            if let path = environment[ReinsCore.env("PROC_FIXTURE")], !path.isEmpty {
-                do { proc = try FixtureProcessAdapter.load(path: path) } catch {
-                    problems.append(String(describing: error))
-                    proc = FixtureProcessAdapter.empty
-                }
-            } else {
-                proc = FixtureProcessAdapter.empty
-            }
-        } else {
-            proc = SystemProcessAdapter()
-        }
-        return AppEnvironment(roots: roots, startupProblem: problems.isEmpty ? nil : problems.joined(separator: " "), proc: proc, toasts: toasts)
-    }
-
-    /// `roots`, or the reason there are none.
-    func requireRoots() throws -> Roots {
-        guard let roots else { throw ReinsError(startupProblem ?? "The config folders could not be resolved.", status: 500) }
-        return roots
+        let (core, problem) = InProcessCore.live(environment: environment)
+        return AppEnvironment(startupProblem: problem, toasts: toasts, core: core)
     }
 
     /// Runs a write through `service` (the engine the screen's writes route to). On success it shows a toast with `label` and an
-    /// Undo that calls `service.journalUndo` with the entry the write returned; on failure it shows a danger toast with the
-    /// `CoreError` message. `afterChange` and `onFailure` are as for the engine overload below.
+    /// Undo that calls `service.journalUndo` with the entry the write returned, and `afterChange` runs on the main actor after the
+    /// write and again after an Undo, so a screen can reload; it does not run when the write failed. On failure it shows a danger
+    /// toast with the `CoreError` message, or with `onFailure` the message goes there instead (a screen that shows the error next
+    /// to the control, such as the Rules add-rule row).
     func performWithUndo(label: String, via service: any CoreService, afterChange: (@MainActor () -> Void)? = nil, onFailure: (@MainActor (String) -> Void)? = nil, _ work: @escaping @Sendable (any CoreService) async throws -> CoreJournalEntry) {
         Task { [weak self] in
             let outcome: Result<CoreJournalEntry, Error>
@@ -113,47 +88,8 @@ final class AppEnvironment {
         }
     }
 
-    /// Runs a write off the main thread. On success it shows a toast with `label` and an Undo that calls
-    /// `Journal.undo` (also off the main thread); on failure it shows a danger toast with `ReinsError.message`.
-    /// `afterChange` runs on the main actor after the write and again after an undo, so a screen can reload; it does
-    /// not run when the write failed. With `onFailure` the message goes there instead of a toast (a screen that shows the
-    /// error next to the control, such as the Rules add-rule row).
-    // bridge: removed with the Rules migration
-    func performWithUndo(label: String, afterChange: (@MainActor () -> Void)? = nil, onFailure: (@MainActor (String) -> Void)? = nil, _ work: @escaping @Sendable () throws -> JournalEntry) {
-        let roots: Roots
-        do { roots = try requireRoots() } catch {
-            if let onFailure { onFailure(Self.message(error)) } else { toasts.show(Self.message(error), tone: .danger) }
-            return
-        }
-        Task { [weak self] in
-            let outcome = await Task.detached(priority: .userInitiated) { Result { try work() } }.value
-            guard let self else { return }
-            switch outcome {
-            case .success(let entry):
-                self.toasts.show(label, undo: { [weak self] in self?.undo(entry, roots: roots, label: label, afterChange: afterChange) })
-                afterChange?()
-            case .failure(let error):
-                if let onFailure { onFailure(Self.message(error)) } else { self.toasts.show(Self.message(error), tone: .danger) }
-            }
-        }
-    }
-
-    private func undo(_ entry: JournalEntry, roots: Roots, label: String, afterChange: (@MainActor () -> Void)?) {
-        Task { [weak self] in
-            let outcome = await Task.detached(priority: .userInitiated) { Result { try Journal.undo(roots, id: entry.id) } }.value
-            guard let self else { return }
-            switch outcome {
-            case .success(let undone):
-                self.toasts.show("Undid \(undone.isEmpty ? label : undone)")
-                afterChange?()
-            case .failure(let error):
-                self.toasts.show(Self.message(error), tone: .danger)
-            }
-        }
-    }
-
-    /// A `ReinsError` or `CoreError` message is safe to show; any other error gets a fixed sentence, never its description (S-R3).
+    /// A `CoreError` message is safe to show; any other error gets a fixed sentence, never its description (S-R3).
     static func message(_ error: Error) -> String {
-        (error as? ReinsError)?.message ?? (error as? CoreError)?.message ?? CoreError.unexpectedMessage
+        (error as? CoreError)?.message ?? CoreError.unexpectedMessage
     }
 }

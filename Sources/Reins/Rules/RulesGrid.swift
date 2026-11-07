@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// The Claude Code capability grid: an inset grouped table, one row per capability with Allow / Ask / Deny and how many
@@ -25,7 +24,7 @@ struct RulesGrid: View {
 private struct RulesGridRow: View {
     let model: RulesModel
     let snapshot: RulesSnapshot
-    let cell: CapabilityCell
+    let cell: CoreCapabilityCell
     let isOpen: Bool
 
     var body: some View {
@@ -51,7 +50,7 @@ private struct RulesGridRow: View {
 /// it never writes by itself, so the selection only moves once the file says so.
 private struct RulesClaudeCell: View {
     let model: RulesModel
-    let cell: CapabilityCell
+    let cell: CoreCapabilityCell
     let isEditable: Bool
     let problemsInFile: Bool
 
@@ -78,7 +77,7 @@ private struct RulesClaudeCell: View {
         }
     }
 
-    private var verdict: RuleVerdict? {
+    private var verdict: CoreVerdict? {
         switch cell.state {
         case .allow: .allow
         case .ask: .ask
@@ -90,7 +89,7 @@ private struct RulesClaudeCell: View {
 
 /// The concrete rules behind a cell, under the row that was opened, each pattern followed by its verdict.
 private struct RulesGridDetail: View {
-    let cell: CapabilityCell
+    let cell: CoreCapabilityCell
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s6) {

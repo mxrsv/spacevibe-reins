@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// "Claude Code rules at <scope>": the scope's rules grouped Deny, Ask first, Allow, each the rule as code with its
@@ -36,7 +35,7 @@ private extension RulesList {
 
 private struct RulesRuleRow: View {
     let model: RulesModel
-    let item: RuleItem
+    let item: CoreRule
 
     var body: some View {
         // The verdict sits right after its pattern: this card is Claude Code only, so it does not borrow the grid's columns.
@@ -54,8 +53,8 @@ private struct RulesRuleRow: View {
 
 /// Moves a rule to another verdict. A menu in the app; headless screenshots cannot draw one, so they get a plain button.
 private struct RulesVerdictMenu: View {
-    let item: RuleItem
-    let pick: (RuleVerdict) -> Void
+    let item: CoreRule
+    let pick: (CoreVerdict) -> Void
     @Environment(\.isShotRendering) private var isShotRendering
 
     var body: some View {

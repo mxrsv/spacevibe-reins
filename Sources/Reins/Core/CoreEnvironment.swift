@@ -8,6 +8,9 @@ enum CoreEnvironment {
     static let screensOverride = CoreProtocol.envPrefix + "CORE_SCREENS"
     static let testFlag = CoreProtocol.envPrefix + "TEST"
 
+    /// The name of a product variable: `variable("TEST")` is `SPACEVIBE_TEST`.
+    static func variable(_ suffix: String) -> String { CoreProtocol.envPrefix + suffix }
+
     /// The helper inside the bundle. It lives in `Helpers`, not `MacOS`, because `SpaceVibe` and `spacevibe` collide on a
     /// case-insensitive volume (docs/internals/core-protocol.md, "Spawn").
     static let bundledBinaryPath = "Contents/Helpers/spacevibe"

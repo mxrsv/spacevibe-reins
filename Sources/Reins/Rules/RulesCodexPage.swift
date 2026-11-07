@@ -1,5 +1,4 @@
 import Foundation
-import ReinsCore
 import SwiftUI
 
 /// The Codex page of Rules, read only: how Codex runs in one sentence, the settings behind it with every option written
@@ -24,7 +23,7 @@ struct RulesCodexPage: View {
         }
     }
 
-    private func settings(_ codex: CodexPermissions) -> some View {
+    private func settings(_ codex: CoreCodexPermissions) -> some View {
         GroupedList {
             CardHeader("How Codex runs", detail: "~/.codex/config.toml", columns: { Tag("Read only", icon: .lock) })
             if !codex.present {
@@ -39,7 +38,7 @@ struct RulesCodexPage: View {
         }
     }
 
-    private func commandRules(_ codex: CodexPermissions) -> some View {
+    private func commandRules(_ codex: CoreCodexPermissions) -> some View {
         let rules = codex.rules
         return GroupedList {
             CardHeader("Command rules", count: rules.allow + rules.prompt + rules.forbidden + rules.other, detail: "~/.codex/rules")
@@ -56,7 +55,7 @@ struct RulesCodexPage: View {
     }
 
     @ViewBuilder
-    private func trust(_ codex: CodexPermissions) -> some View {
+    private func trust(_ codex: CoreCodexPermissions) -> some View {
         if let dir = snapshot.selection.dir {
             let project = codex.projects.first { $0.path == dir }
             GroupedList {

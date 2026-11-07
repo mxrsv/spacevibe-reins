@@ -14,7 +14,7 @@ import SwiftUI
 enum ActivityShots {
     static func run(into directory: URL) throws {
         let env = AppEnvironment.live(toasts: ToastCenter(announce: false))
-        guard env.roots != nil else { throw ShotHarness.Failure(env.startupProblem ?? "no roots") }
+        if let problem = env.startupProblem { throw ShotHarness.Failure(problem) }
         let loader = ActivityModel(env: env)
         let report = try readBeforeRendering(loader)
         let live = report.sessions.filter { $0.state != .ended }

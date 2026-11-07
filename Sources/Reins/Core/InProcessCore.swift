@@ -59,6 +59,30 @@ final class InProcessCore: CoreService, @unchecked Sendable {
         self.proc = proc
     }
 
+    /// The core the app runs on, and the startup problem when the config folders could not be resolved (every call then fails
+    /// with it). `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `SPACEVIBE_HOME` come from `environment`. Under `SPACEVIBE_TEST=1`
+    /// the process adapter is never the real one: it replays the file named by `SPACEVIBE_PROC_FIXTURE`, or an empty list.
+    static func live(environment: [String: String] = ProcessInfo.processInfo.environment) -> (core: InProcessCore, startupProblem: String?) {
+        var problems: [String] = []
+        var roots: Roots?
+        do { roots = try Roots.resolve(env: environment) } catch { problems.append(String(describing: error)) }
+        let proc: any ProcessAdapter
+        if environment[ReinsCore.env("TEST")] == "1" {
+            if let path = environment[ReinsCore.env("PROC_FIXTURE")], !path.isEmpty {
+                do { proc = try FixtureProcessAdapter.load(path: path) } catch {
+                    problems.append(String(describing: error))
+                    proc = FixtureProcessAdapter.empty
+                }
+            } else {
+                proc = FixtureProcessAdapter.empty
+            }
+        } else {
+            proc = SystemProcessAdapter()
+        }
+        let problem = problems.isEmpty ? nil : problems.joined(separator: " ")
+        return (InProcessCore(roots: roots, startupProblem: problem, proc: proc), problem)
+    }
+
     // MARK: Plumbing
 
     private func requireRoots() throws -> Roots {
@@ -244,17 +268,14 @@ final class InProcessCore: CoreService, @unchecked Sendable {
     func rulesSnapshot(scope: CoreRuleScope, dir: String?, refreshProjects: Bool) async throws -> CoreRulesSnapshot {
         let asked = try Self.ruleScope(scope, dir)
         let dirs = try await projectList(refresh: refreshProjects)
-        let selection = RulesSelection(dir: asked.dir, file: scope == .local ? .local : .shared)
-        return try await run { roots in
-            Self.snapshotDTO(try RulesReader.read(roots: roots, selection: selection, projects: dirs))
-        }
+        return try await run { roots in try Self.readRules(roots: roots, asked: asked, projects: dirs) }
     }
 
     func rulesPreview(scope: CoreRuleScope, dir: String?, capability: CoreCapability, verdict: CoreVerdict) async throws -> CoreCapabilityPreview {
         let target = try Self.ruleScope(scope, dir)
         let store = try await rulesStore()
         return try await run { _ in
-            let preview = try RulesScopes.scrubbed(store: store, scope: target) {
+            let preview = try Self.scrubbed(store: store, scope: target) {
                 try store.previewSetCapability(scope: target, capability: Self.same(capability, as: Capability.self), verdict: Self.same(verdict, as: RuleVerdict.self))
             }
             return Self.preview(preview)
@@ -265,7 +286,7 @@ final class InProcessCore: CoreService, @unchecked Sendable {
         let target = try Self.ruleScope(scope, dir)
         let store = try await rulesStore()
         return try await run { _ in
-            let entry = try RulesScopes.scrubbed(store: store, scope: target) {
+            let entry = try Self.scrubbed(store: store, scope: target) {
                 try store.setCapability(scope: target, capability: Self.same(capability, as: Capability.self), verdict: Self.same(verdict, as: RuleVerdict.self))
             }
             return CoreSetCapabilityResult(entry: entry.map(Self.entry))
@@ -293,15 +314,67 @@ final class InProcessCore: CoreService, @unchecked Sendable {
     func rulesCheck(rule: String) async throws -> CoreRuleCheck {
         try Task.checkCancellation()
         _ = try requireRoots()
-        let problem = RulesScopes.shapeError(rule)
+        let problem = Self.shapeError(rule)
         return CoreRuleCheck(valid: problem == nil, message: problem)
+    }
+
+    /// Reads the asked scope, the global rule count and the Codex permissions. A project the discovered list does not hold
+    /// reads as global, as the Go core does; the DTO's `scope` and `dir` say what was read.
+    private static func readRules(roots: Roots, asked: RuleScope, projects dirs: [String]) throws -> CoreRulesSnapshot {
+        let store = RulesStore(roots: roots, projects: { dirs })
+        let scope: RuleScope = asked.dir.map { dirs.contains($0) } ?? true ? asked : .global
+        return try scrubbed(store: store, scope: scope) {
+            let global = try store.listRules([.global])
+            let listing = scope == .global ? global : try store.listRules([scope])
+            let file = try store.file(for: scope)
+            return CoreRulesSnapshot(
+                projectDirs: dirs, globalRuleCount: global.rules.count,
+                scope: CoreRuleScope(rawValue: scope.kind) ?? .global, dir: scope.dir,
+                fileLabel: scope.fileLabel, exists: FileManager.default.fileExists(atPath: file.path),
+                problems: listing.problems.map { scrub($0, path: file.path, label: scope.fileLabel) }, rules: listing.rules.map(rule),
+                grid: Rules.capabilityGrid(listing.rules).map { cell in
+                    CoreCapabilityCell(
+                        capability: same(cell.capability, as: CoreCapability.self), label: cell.label,
+                        state: same(cell.state, as: CoreCapabilityState.self), editable: cell.editable, rules: cell.rules.map(rule)
+                    )
+                },
+                codex: codex(CodexPermissions.read(roots: roots)), notReadable: false, globalNotReadable: false
+            )
+        }
+    }
+
+    /// The engine's messages name the absolute settings file; the core's callers only see the scope's short label.
+    static func scrub(_ text: String, path: String, label: String) -> String {
+        var out = text.replacingOccurrences(of: path, with: label)
+        let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+        if resolved != path { out = out.replacingOccurrences(of: resolved, with: label) }
+        return out
+    }
+
+    /// Runs `work` and rethrows a `ReinsError` with the settings file's absolute path replaced by its label (status kept).
+    /// Every rules read and write goes through it, because the engine's 409 messages name the file.
+    private static func scrubbed<T>(store: RulesStore, scope: RuleScope, _ work: () throws -> T) throws -> T {
+        do { return try work() } catch let error as ReinsError {
+            guard let path = try? store.file(for: scope).path else { throw error }
+            throw ReinsError(scrub(error.message, path: path, label: scope.fileLabel), status: error.status)
+        }
+    }
+
+    /// The live check of a rule before a write: the engine stays the authority (it also refuses a duplicate with a 409).
+    private static func shapeError(_ text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "Enter a rule such as Bash(npm test *)." }
+        guard trimmed.utf16.count <= Rules.maxRuleLength, !trimmed.contains(where: \.isNewline), Rules.parseRule(trimmed) != nil else {
+            return "That is not a valid rule. Use Tool or Tool(pattern) on one line."
+        }
+        return nil
     }
 
     private func ruleWrite(_ scope: CoreRuleScope, _ dir: String?, _ write: @escaping @Sendable (RulesStore, RuleScope) throws -> JournalEntry) async throws -> CoreEntryResult {
         let target = try Self.ruleScope(scope, dir)
         let store = try await rulesStore()
         return try await run { _ in
-            CoreEntryResult(entry: Self.entry(try RulesScopes.scrubbed(store: store, scope: target) { try write(store, target) }))
+            CoreEntryResult(entry: Self.entry(try Self.scrubbed(store: store, scope: target) { try write(store, target) }))
         }
     }
 
@@ -419,21 +492,6 @@ final class InProcessCore: CoreService, @unchecked Sendable {
         )
     }
 
-    private static func snapshotDTO(_ snapshot: RulesSnapshot) -> CoreRulesSnapshot {
-        CoreRulesSnapshot(
-            projectDirs: snapshot.projectDirs, globalRuleCount: snapshot.globalRuleCount,
-            scope: CoreRuleScope(rawValue: snapshot.selection.scope.kind) ?? .global, dir: snapshot.selection.dir,
-            fileLabel: snapshot.fileLabel, exists: snapshot.exists, problems: snapshot.problems, rules: snapshot.rules.map(rule),
-            grid: snapshot.grid.map { cell in
-                CoreCapabilityCell(
-                    capability: same(cell.capability, as: CoreCapability.self), label: cell.label,
-                    state: same(cell.state, as: CoreCapabilityState.self), editable: cell.editable, rules: cell.rules.map(rule)
-                )
-            },
-            codex: codex(snapshot.codex), notReadable: false, globalNotReadable: false
-        )
-    }
-
     private static func codex(_ codex: CodexPermissions) -> CoreCodexPermissions {
         func flags(_ members: [JSONMember]) -> [CoreFlag] {
             members.compactMap { member in
@@ -465,6 +523,21 @@ final class InProcessCore: CoreService, @unchecked Sendable {
                 other: codex.rules.other, unreadable: 0, folderNotReadable: false
             ),
             notReadable: false, skippedLines: 0
+        )
+    }
+}
+
+extension AppEnvironment {
+    /// An environment over an in-process core for these roots, for the tests and dev tools that build their own (the app
+    /// itself starts from `AppEnvironment.live`). Without roots the core refuses every call with `startupProblem`.
+    convenience init(
+        roots: Roots?, startupProblem: String? = nil, proc: any ProcessAdapter, toasts: ToastCenter? = nil, core: (any CoreService)? = nil,
+        routing: CoreRouting = CoreRouting(), makeCoreClient: @escaping () -> any CoreService = { CoreClient() }
+    ) {
+        let problem = roots == nil ? (startupProblem ?? "The config folders could not be resolved.") : startupProblem
+        self.init(
+            startupProblem: problem, toasts: toasts, core: core ?? InProcessCore(roots: roots, startupProblem: problem, proc: proc),
+            routing: routing, makeCoreClient: makeCoreClient
         )
     }
 }

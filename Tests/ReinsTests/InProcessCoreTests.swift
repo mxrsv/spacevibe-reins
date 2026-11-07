@@ -158,6 +158,74 @@ struct InProcessCoreTests {
         #expect(again.entry == nil)
     }
 
+    @Test("rules.check refuses an empty or blank rule, a line break, an over-long rule and text that is not Tool or Tool(pattern)", arguments: [
+        ("", "Enter a rule such as Bash(npm test *)."), ("   ", "Enter a rule such as Bash(npm test *)."), ("\n", "Enter a rule such as Bash(npm test *)."),
+        ("Bash(npm test\nnpm publish)", "That is not a valid rule. Use Tool or Tool(pattern) on one line."),
+        ("(npm test)", "That is not a valid rule. Use Tool or Tool(pattern) on one line."),
+        ("Bash(npm test", "That is not a valid rule. Use Tool or Tool(pattern) on one line."),
+    ])
+    func ruleCheckRefuses(text: String, message: String) async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        #expect(try await fixture.core.rulesCheck(rule: text) == CoreRuleCheck(valid: false, message: message))
+    }
+
+    @Test("rules.check accepts a rule with or without surrounding whitespace, and one exactly at the length limit but not one over")
+    func ruleCheckAccepts() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let core = fixture.core
+        for text in ["Bash(npm test *)", "  Bash(npm test *)\n", "WebFetch"] {
+            #expect(try await core.rulesCheck(rule: text) == CoreRuleCheck(valid: true, message: nil), "\(text)")
+        }
+        let atLimit = "Bash(" + String(repeating: "a", count: Rules.maxRuleLength - "Bash()".utf16.count) + ")"
+        #expect(atLimit.utf16.count == Rules.maxRuleLength)
+        #expect(try await core.rulesCheck(rule: atLimit).valid)
+        #expect(try await core.rulesCheck(rule: atLimit + "a").valid == false)
+    }
+
+    @Test("a write the engine refuses names the scope's file by its label, never by its path, and keeps the status")
+    func writeRefusalIsScrubbed() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try Data("{ not json".utf8).write(to: fixture.home.appendingPathComponent(".claude/settings.json"))
+        for work in [
+            { _ = try await fixture.core.rulesAdd(scope: .global, dir: nil, verdict: .ask, rule: "Bash") },
+            { _ = try await fixture.core.rulesSetCapability(scope: .global, dir: nil, capability: .run, verdict: .deny) },
+        ] as [() async throws -> Void] {
+            do {
+                try await work()
+                Issue.record("the write was accepted")
+            } catch let error as CoreError {
+                #expect(error.status == 409)
+                #expect(error.message.contains("~/.claude/settings.json"), "\(error.message)")
+                #expect(!error.message.contains(fixture.home.path), "\(error.message)")
+            }
+        }
+        let snapshot = try await fixture.core.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false)
+        #expect(!snapshot.problems.isEmpty && snapshot.problems.allSatisfy { !$0.contains(fixture.home.path) })
+    }
+
+    @Test("scrub replaces the settings file path and its symlink-resolved form with the label")
+    func scrubBothForms() throws {
+        let base = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        let root = base.appendingPathComponent("reins-scrub-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let real = root.appendingPathComponent("real", isDirectory: true)
+        let link = root.appendingPathComponent("link", isDirectory: true)
+        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
+        try Data("{}".utf8).write(to: real.appendingPathComponent("settings.json"))
+
+        let given = link.appendingPathComponent("settings.json").path
+        let resolved = real.appendingPathComponent("settings.json").path
+        try #require(given != resolved)
+
+        let text = "\(given) is not valid JSON; also seen as \(resolved)."
+        #expect(InProcessCore.scrub(text, path: given, label: "global") == "global is not valid JSON; also seen as global.")
+        #expect(InProcessCore.scrub("nothing to hide", path: given, label: "global") == "nothing to hide")
+    }
+
     @Test("a project that discovery did not find falls back to the global snapshot, and a write to it is a 404")
     func unknownProject() async throws {
         let fixture = try Fixture()
@@ -215,7 +283,8 @@ struct InProcessCoreTests {
         #expect(try await env.core.initialize().identity.envPrefix == ReinsCore.envPrefix)
         await expectFailure(CoreError("No folders.", status: 500)) { _ = try await env.core.inventoryRead() }
         #expect(AppEnvironment.message(CoreError("Gone.", status: 404)) == "Gone.")
-        #expect(AppEnvironment.message(ReinsError("Refused.", status: 403)) == "Refused.")
+        // The core turns an engine ReinsError into a CoreError; a screen never gets the raw one.
+        #expect(AppEnvironment.message(ReinsError("Refused.", status: 403)) == CoreError.unexpectedMessage)
         #expect(AppEnvironment.message(CancellationError()) == CoreError.unexpectedMessage)
     }
 

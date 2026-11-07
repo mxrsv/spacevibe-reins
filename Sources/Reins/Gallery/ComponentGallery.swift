@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// Every shared view in every state. Reach it with `SPACEVIBE_GALLERY=1`; the screenshot mode renders the same content, in two

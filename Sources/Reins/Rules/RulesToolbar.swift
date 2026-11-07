@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// The `Claude Code | Codex` switch (⌥⌘1, ⌥⌘2), the scope picker (Global or a discovered project) and what the scope means

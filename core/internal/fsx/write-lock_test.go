@@ -264,10 +264,10 @@ func TestLockedEntryUnlockedBodyPattern(t *testing.T) {
 func TestNestedEntryDoesNotReenter(t *testing.T) {
 	data := tempDir(t)
 	done := make(chan struct{})
+	inner := make(chan struct{})
 	go func() {
 		// Deliberately wrong use: an entry called from inside a body. It must block, not proceed.
 		_ = WithWriteLock(data, func() error {
-			inner := make(chan struct{})
 			go func() { _ = WithWriteLock(data, func() error { return nil }); close(inner) }()
 			select {
 			case <-inner:
@@ -279,6 +279,7 @@ func TestNestedEntryDoesNotReenter(t *testing.T) {
 		close(done)
 	}()
 	<-done
+	<-inner // the blocked entry runs once the outer one lets go; wait so it cannot touch the folder after cleanup
 }
 
 // ---- two processes ---------------------------------------------------------------------------

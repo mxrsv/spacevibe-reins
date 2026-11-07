@@ -15,7 +15,7 @@ import SwiftUI
 enum LoadoutShots {
     static func run(into directory: URL) throws {
         let env = AppEnvironment.live(toasts: ToastCenter(announce: false))
-        guard env.roots != nil else { throw ShotHarness.Failure(env.startupProblem ?? "no roots") }
+        if let problem = env.startupProblem { throw ShotHarness.Failure(problem) }
         let writes = env.core(for: .loadoutWrites)
         let model = LoadoutModel(env: env)
         model.start()
