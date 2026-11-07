@@ -99,7 +99,7 @@ Every task: `git status --porcelain` before the first edit, leave other sessions
   - Verify: Handoff holds the date and the owner's words for G-0, G-1 and G-2.
   - Acceptance: spec "Traceability (W20)".
 
-- [ ] **U1. Dev switch and the style boundary**
+- [x] **U1. Dev switch and the style boundary**
   - Files: [`LaunchMode.swift`](../../Sources/Reins/App/LaunchMode.swift) (the switch and its name constant); [`scripts/build-app.sh`](../../scripts/build-app.sh) (`-Xswiftc -DSPACEVIBE_DEV_BUILD` on both `swift build -c release` lines, only when not `--distribution`); [`scripts/dev.sh`](../../scripts/dev.sh) (pass `SPACEVIBE_UI_V5` to `open --env` when set); [`StyleBoundaryTests.swift`](../../Tests/ReinsTests/StyleBoundaryTests.swift); new `Tests/ReinsTests/LaunchModeTests.swift`.
   - Depends on: U0.
   - Build:
@@ -275,14 +275,23 @@ Every task: `git status --porcelain` before the first edit, leave other sessions
 - G-0 check: no `Sources/Reins/Core/` (go-core S.1 not started); last `Sources/Reins` commit is 416f512 (G1.4). H2: `ls Sources` → CZstd, Reins, ReinsCore, ReinsStatusline; `grep -c SPACEVIBE_ scripts/test.sh` → 5; bundle id `dev.spacevibe.reins`.
 - Mock reference set: `/tmp/reins-v5/mock/<skills|subagents|hooks|rules|activity|limits|components>-<dark|light>.png` from `capture.sh`.
 
+### U1 (2026-11-07)
+
+- `scripts/test.sh` (full, green) → `Test run with 426 tests in 47 suites passed`. N 416 → 426: +7 `LaunchModeTests` (name, on, off with 6 values, ignored in a distribution build, mode unchanged, debug counts as dev, build-flag check of `build-app.sh` and `release.sh`) and +3 `StyleBoundaryTests` (every folder known, lists consistent with no v5 allowlist entry, V5-R8 patterns).
+- Noise of the new patterns on today's screens (`grep -nE` over Loadout, Rules, Activity, Shell, Limits, Settings for `.background(`, `.border(`, `.shadow(`, `.overlay(`, gradients, `repeatForever`) → 0 hits, so no allowlist entry; `allowed` stays empty.
+- `grep -n 'DSPACEVIBE_DEV_BUILD' scripts/build-app.sh` → one line, `"") BUILD_FLAGS=(-Xswiftc -DSPACEVIBE_DEV_BUILD) ;;`, the no-argument (development) branch; `--distribution)` sets no flag. `scripts/release.sh:81` still calls `build-app.sh --distribution` (H9); `LaunchModeTests` asserts both.
+- `scripts/build-app.sh` → exit 0, `minos 15.0` (app), `minos 12.0` (helper), log `/tmp/reins-v5/U1/build.log`.
+- RUN without the switch (the RUN block minus `--env SPACEVIBE_UI_V5=1`) → `lsappinfo` shows `type="Foreground"`, bundle id `dev.spacevibe.reins`; `ps eww` shows the synthetic HOME and no `SPACEVIBE_UI_V5`. Nothing reads the switch yet, so the window is today's app by construction. Quit, synthetic home removed.
+- Not run: a build carrying the flag was not launched with `SPACEVIBE_UI_V5=1`, because no surface consumes `LaunchMode.uiV5Enabled` until U6.
+
 ## Handoff
 
 - Date: 2026-11-07
-- Progress (task, commit): U0 closed (this commit).
+- Progress (task, commit): U0 closed (6fd9f45); U1 done (this commit).
 - Checkout, branch, PR: `spacevibe-reins` on `main`, shared with the go-core session (uncommitted `core/` work); no PR.
-- Observed verification (N tests before and after, shot folders, trace tables): baseline N = 416 (Swift half; see "Baseline").
-- Remaining work: U1 to U13, then U14.
-- Blockers: none for U1. `test.sh` stays red while the go-core session's WIP under `core/internal/` does not vet; tasks use the TEST fallback until it does.
+- Observed verification (N tests before and after, shot folders, trace tables): baseline N = 416 (Swift half; see "Baseline"); after U1 N = 426 (`scripts/test.sh`, full).
+- Remaining work: U2 to U13, then U14.
+- Blockers: none. `scripts/test.sh` was green at U1 (the go-core WIP vetted); if it goes red again from `core/internal/`, use the TEST fallback.
 - Owner decisions recorded (G-0, G-1, G-2, OQ1 to OQ9, per-surface approval):
   - G-0 (2026-11-07): "G-0 làm UI trước go-core S.1 hoặc sau S.8, không chạy song song". S.1 had not started, so this track runs now and go-core S.1 waits until it ends.
   - G-1 (2026-11-07): "G-1 đã xem bảng truy vết".

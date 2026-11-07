@@ -8,8 +8,19 @@ import Testing
 /// it is now empty, so any literal in a screen folder fails. A count that differs from an entry in either direction fails too.
 @Suite("Style boundary: screens compose components")
 struct StyleBoundaryTests {
-    /// Folders that are screens. `Gallery/` lays out specimens and is exempt; `TokenUsage/` joins when it exists.
-    static let screenFolders = ["Loadout", "Rules", "Activity", "Shell", "TokenUsage", "Limits", "Settings"]
+    /// Folders that are screens. A listed folder need not exist yet: `measured()` skips a missing one and checks it the day it
+    /// appears. `Loadout` goes at the v5 cut-over (X1); `TokenUsage/` joins when it exists.
+    static let screenFolders = [
+        "Loadout", "Rules", "Activity", "Shell", "TokenUsage", "Limits", "Settings",
+        "Agents", "Skills", "Subagents", "Hooks",
+    ]
+
+    /// Folders under `Sources/Reins` that are not screens: tokens and components own the look, `Gallery/` lays out specimens,
+    /// `App/` is the entry point.
+    static let exemptFolders = ["Tokens", "Components", "Gallery", "App"]
+
+    /// New v5 screen folders (V5-A3): none of them may ever sit in `allowed`.
+    static let v5Folders = ["Agents", "Skills", "Subagents", "Hooks"]
 
     /// What only `Tokens/` and `Components/` may contain.
     static let forbidden: [(name: String, pattern: String)] = [
@@ -22,10 +33,19 @@ struct StyleBoundaryTests {
         ("padding literal", #"\.padding\([^)]*?\b[1-9][0-9]*(\.[0-9]+)?\s*\)"#),
         ("spacing literal", #"spacing:\s*[1-9]"#),
         ("frame literal", #"\.frame\([^)]*?\b(width|height|minWidth|minHeight|maxWidth|maxHeight):\s*[1-9]"#),
+        // V5-R8: a screen never paints its own ground, edge, shadow, gradient or looping motion; a component does.
+        ("background", #"\.background\s*(\{|\([^)]*?(Color|Rectangle|Capsule|Circle|Ellipse|\.fill|Material|\.(clear|white|black|gray|red|green|blue|orange|yellow|primary|secondary)\b))"#),
+        ("border", #"\.border\("#),
+        ("shadow", #"\.shadow\("#),
+        ("overlay shape", #"\.overlay\s*(\{|\([^)]*?(Rectangle|Capsule|Circle|Ellipse|stroke|\.fill|Color|Gradient))"#),
+        ("gradient", #"\b(Linear|Radial|Angular|Elliptical)Gradient\b"#),
+        ("looping animation", #"repeatForever"#),
     ]
 
     /// Empty since 2026-11-03 (design-language plan T6): no screen file may hold a style literal. A file that truly needs an
-    /// exception gets an entry here with a comment saying why, and a reviewer has to agree.
+    /// exception gets an entry here with a comment saying why, and a reviewer has to agree. An old screen file that hits only
+    /// a V5-R8 pattern may sit here marked "removed at X1"; a file in `v5Folders` never does (V5-A3). Measured on 2026-11-07:
+    /// the V5-R8 patterns hit no file in today's screen folders, so nothing was needed.
     static let allowed: [String: Int] = [:]
 
     static var appSources: URL {
@@ -78,6 +98,46 @@ struct StyleBoundaryTests {
             if found < allowed { problems.append("\(file): \(found) style literals, the list says \(allowed). Lower its entry.") }
         }
         #expect(problems.isEmpty, "\(problems.joined(separator: "\n"))")
+    }
+
+    @Test("every folder under Sources/Reins is a listed screen folder or exempt")
+    func everyFolderIsKnown() throws {
+        let entries = try FileManager.default.contentsOfDirectory(atPath: Self.appSources.path)
+        var isDirectory: ObjCBool = false
+        let folders = entries.filter {
+            FileManager.default.fileExists(atPath: Self.appSources.appendingPathComponent($0).path, isDirectory: &isDirectory)
+                && isDirectory.boolValue
+        }
+        #expect(folders.contains("Components"), "found no folders under \(Self.appSources.path)")
+        let unknown = folders.filter { !Self.screenFolders.contains($0) && !Self.exemptFolders.contains($0) }.sorted()
+        #expect(unknown.isEmpty, "unknown folders \(unknown): list each in screenFolders (a screen) or exemptFolders (not a screen)")
+    }
+
+    @Test("a folder is a screen or exempt, never both, and v5 folders have no allowlist entry")
+    func listsAreConsistent() {
+        #expect(Set(Self.screenFolders).isDisjoint(with: Self.exemptFolders))
+        #expect(Set(Self.v5Folders).isSubset(of: Self.screenFolders))
+        let v5Entries = Self.allowed.keys.filter { key in Self.v5Folders.contains { key.hasPrefix($0 + "/") } }
+        #expect(v5Entries.isEmpty, "v5 folders get no allowlist entry: \(v5Entries)")
+    }
+
+    @Test("the V5-R8 patterns catch a screen that paints itself")
+    func paintPatterns() {
+        #expect(Self.violations(in: "x.background(Color.red)") == 1)
+        #expect(Self.violations(in: "x.background(.red)") == 1)
+        #expect(Self.violations(in: "x.background(.regularMaterial)") == 1)
+        #expect(Self.violations(in: "x.background(RoundedRectangle(cornerRadius: Metrics.groupRadius).fill(tone))") == 1)
+        #expect(Self.violations(in: "x.background {") == 1)
+        #expect(Self.violations(in: "x.background(model.ground)") == 0)
+        #expect(Self.violations(in: "x.border(tone, width: 1)") == 1)
+        #expect(Self.violations(in: "x.shadow(radius: 4)") == 1)
+        #expect(Self.violations(in: "x.overlay(Circle().stroke(tone))") == 1)
+        #expect(Self.violations(in: "x.overlay(RoundedRectangle(cornerRadius: Metrics.row).strokeBorder(tone))") == 1)
+        #expect(Self.violations(in: "x.overlay(alignment: .top) { Hairline() }") == 0)
+        #expect(Self.violations(in: "let g = LinearGradient(colors: stops, startPoint: .top, endPoint: .bottom)") == 1)
+        #expect(Self.violations(in: "RadialGradient(") == 1)
+        #expect(Self.violations(in: "withAnimation(.linear.repeatForever()) { on = true }") == 1)
+        #expect(Self.violations(in: "// .shadow(radius: 4) in a comment") == 0)
     }
 
     @Test("the patterns catch what they name and skip comments")

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Builds, assembles and signs `Reins.app` into build/.
 #
-#   scripts/build-app.sh                 development build: Developer ID when present, else ad-hoc; no timestamp
+#   scripts/build-app.sh                 development build: Developer ID when present, else ad-hoc; no timestamp; compiled
+#                                        with SPACEVIBE_DEV_BUILD, so the SPACEVIBE_UI_V5 switch works
 #   scripts/build-app.sh --distribution  release candidate: Developer ID required, secure timestamp (notarization
 #                                        rejects a signature without one), SPACEVIBE_UPDATE_FEED_URL required
 #
@@ -18,8 +19,10 @@ cd "$(dirname "$0")/.."
 
 DISTRIBUTION=0
 TIMESTAMP_OPTION="--timestamp=none"
+BUILD_FLAGS=()
 case "${1:-}" in
-  "") ;;
+  # Only a development build honours SPACEVIBE_UI_V5 (LaunchMode.uiV5Enabled); a distribution build never gets the flag.
+  "") BUILD_FLAGS=(-Xswiftc -DSPACEVIBE_DEV_BUILD) ;;
   --distribution) DISTRIBUTION=1; TIMESTAMP_OPTION="--timestamp" ;;
   --help) echo "Usage: scripts/build-app.sh [--distribution]"; exit 0 ;;
   *) echo "Unknown build option: $1" >&2; exit 2 ;;
@@ -45,8 +48,8 @@ if [[ "${DISTRIBUTION}" == 1 ]]; then
 fi
 
 echo "==> swift build -c release"
-swift build -c release
-BINARY_DIR="$(swift build -c release --show-bin-path)"
+swift build -c release ${BUILD_FLAGS[@]+"${BUILD_FLAGS[@]}"}
+BINARY_DIR="$(swift build -c release ${BUILD_FLAGS[@]+"${BUILD_FLAGS[@]}"} --show-bin-path)"
 BINARY="${BINARY_DIR}/${EXECUTABLE_NAME}"
 
 echo "==> assembling ${APP_BUNDLE}"
