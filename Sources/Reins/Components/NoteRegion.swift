@@ -9,6 +9,14 @@ struct NoteRegion: View {
         let cli: InventoryCLI
         let notes: [String]
         var id: InventoryCLI { cli }
+
+        // bridge: removed with the Loadout migration
+        init(core cli: CoreCLI, notes: [String]) { self.init(cli: InventoryCLI(cli), notes: notes) }
+
+        init(cli: InventoryCLI, notes: [String]) {
+            self.cli = cli
+            self.notes = notes
+        }
     }
 
     let title: String

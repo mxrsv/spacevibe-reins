@@ -1,35 +1,36 @@
 import Foundation
 import Observation
-import ReinsCore
 
-/// The Activity screen's state: the latest report, the read loop, and the Stop flow.
+/// The Activity screen's state: the latest report, the live feed, and the Stop flow.
 ///
-/// Reads run in `ActivityEngine`, an actor, so no log is touched on the main actor. The engine keeps read offsets, so after
-/// the first (possibly slow) read a repeat only reads appended bytes. The loop is driven by the view's `.task(id:)`:
-/// every `liveInterval` while the Activity tab is the active one, every `firstReadInterval` until the first report has
-/// landed (the sidebar badge needs it even when the tab is hidden), and not at all otherwise.
+/// Reads go through the core `env.core(for: .activity)` picks (in process until the screen cuts over). The live page
+/// follows `activitySubscribe`: a full snapshot first, then a full report whenever it changed (the core polls every 3 s,
+/// so nothing here does). The loop is driven by the view's `.task(id:)`: subscribed while the Activity tab is the active one,
+/// subscribed until the first report has landed otherwise (the sidebar badge needs it even when the tab is hidden), and not
+/// at all after that. `readOnce` is a single `activity.read` for Refresh, Try again and the shots.
 @MainActor
 @Observable
 final class ActivityModel {
+    /// The wait before subscribing again after a failed or ended subscription.
     static let liveInterval: Duration = .seconds(3)
     static let firstReadInterval: Duration = .milliseconds(500)
-    /// What `ActivityOptions` reads by default; the empty states name it.
-    static let historyDays = ActivityOptions().historyDays
+    /// What the engine reads by default (the core's `HistoryDays`); the empty states name it.
+    static let historyDays = 14
+    private static let unreadable = "The session logs could not be read."
 
     let env: AppEnvironment
 
-    private(set) var report: ActivityReport?
-    /// When `report` was read. Ages in the report were computed then, so the screen adds the time since.
+    private(set) var report: CoreActivityReport?
+    /// When `report` arrived. Ages in the report were computed then, so the screen adds the time since.
     private(set) var readAt: Date?
     /// A read that could not run. Cleared by the next successful read.
     private(set) var failure: String?
     /// The session whose Stop confirmation is open.
-    var pendingStop: ActivitySession?
+    var pendingStop: CoreActivitySession?
     private(set) var isStopping = false
     /// Screenshots only: show row actions without hover.
     var revealRowActions = false
 
-    @ObservationIgnored private let engine = ActivityEngine()
     @ObservationIgnored private var isReading = false
 
     init(env: AppEnvironment) { self.env = env }
@@ -38,30 +39,58 @@ final class ActivityModel {
 
     var recentFailures: Int { ActivityRows.recentFailureCount(report, now: Date()) }
 
+    private var core: any CoreService { env.core(for: .activity) }
+
     // MARK: Reading
 
-    /// One read, unless one is already running. Never throws: the engine reports what it could not read inside the report.
+    /// One `activity.read`, unless one is already running. Never throws: a failure is shown as the banner.
     func readOnce() async {
         guard !isReading else { return }
-        guard let roots = env.roots else {
-            failure = env.startupProblem ?? "The config folders could not be resolved."
-            return
-        }
         isReading = true
         defer { isReading = false }
-        let fresh = await engine.readActivity(roots: roots, now: Date(), proc: env.proc)
+        do {
+            apply(try await core.activityRead())
+        } catch is CancellationError {
+            // The tab went away mid-read: keep what is shown.
+        } catch {
+            failure = Self.message(error)
+        }
+    }
+
+    /// The live loop. SwiftUI cancels it when the tab stops being active; a cancelled run ends without a further read.
+    func run(active: Bool) async {
+        while !Task.isCancelled {
+            if report != nil || failure != nil, !active { return }
+            await follow(active: active)
+            guard !Task.isCancelled else { return }
+            try? await Task.sleep(for: report == nil ? Self.firstReadInterval : Self.liveInterval)
+        }
+    }
+
+    /// One subscription. Leaving the loop ends the stream, which unsubscribes.
+    private func follow(active: Bool) async {
+        do {
+            for try await fresh in core.activitySubscribe() {
+                apply(fresh)
+                // Hidden tab: the first report was all the badge needed.
+                if !active { return }
+            }
+        } catch is CancellationError {
+            // Cancelled with the tab: nothing to show.
+        } catch {
+            failure = Self.message(error)
+        }
+    }
+
+    private func apply(_ fresh: CoreActivityReport) {
         report = fresh
         readAt = Date()
         failure = nil
     }
 
-    /// The read loop. SwiftUI cancels it when the tab stops being active; a cancelled run ends without a further read.
-    func run(active: Bool) async {
-        while !Task.isCancelled {
-            if report != nil || failure != nil, !active { return }
-            await readOnce()
-            try? await Task.sleep(for: report == nil ? Self.firstReadInterval : Self.liveInterval)
-        }
+    /// The core's own sentence when it sent one, a fixed one otherwise (S-R3: never an error's description).
+    private static func message(_ error: Error) -> String {
+        (error as? CoreError)?.message ?? unreadable
     }
 
     func refreshNow() { Task { await readOnce() } }
@@ -75,32 +104,27 @@ final class ActivityModel {
     // MARK: Stop
 
     /// Opens the confirmation. Stop never runs without it.
-    func requestStop(_ session: ActivitySession) { pendingStop = session }
+    func requestStop(_ session: CoreActivitySession) { pendingStop = session }
 
     func cancelStop() {
         guard !isStopping else { return }
         pendingStop = nil
     }
 
-    /// The only caller of `stopSession`, and only for the session the confirmation names. The engine looks the pid up again.
+    /// The only caller of `activityStop`, and only for the session the confirmation names. The core looks the pid up again.
     func confirmStop() {
         guard let session = pendingStop, !isStopping else { return }
-        guard let roots = env.roots else {
-            pendingStop = nil
-            env.toasts.show(env.startupProblem ?? "The config folders could not be resolved.", tone: .danger)
-            return
-        }
         isStopping = true
-        let proc = env.proc
         Task {
             let message: String
             var tone = ToastTone.info
             do {
-                let result = try await stopSession(roots: roots, cli: session.cli, id: session.id, proc: proc)
+                let result = try await core.activityStop(cli: session.cli, id: session.id)
                 message = result.exited ? "Stopped \(session.title)" : "The process ignored the signal"
                 if !result.exited { tone = .danger }
             } catch {
-                message = (error as? ReinsError)?.message ?? "The session could not be stopped."
+                // The core's sentence (404, 403, 409 "could not be verified", 500) is shown as it is.
+                message = (error as? CoreError)?.message ?? "The session could not be stopped."
                 tone = .danger
             }
             isStopping = false
@@ -113,7 +137,7 @@ final class ActivityModel {
     // MARK: Screenshots
 
     /// Puts a prepared report on screen without reading, for the headless shots.
-    func preview(report: ActivityReport?, readAt: Date = Date()) {
+    func preview(report: CoreActivityReport?, readAt: Date = Date()) {
         self.report = report
         self.readAt = report == nil ? nil : readAt
         failure = nil

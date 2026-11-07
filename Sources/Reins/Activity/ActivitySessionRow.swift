@@ -1,10 +1,9 @@
-import ReinsCore
 import SwiftUI
 
 /// One live session: title, project and current tool, the state tag in its fixed column (the engine's reason is its help
 /// text), the estimated cost, and Stop.
 struct ActivitySessionRow: View {
-    let session: ActivitySession
+    let session: CoreActivitySession
     let elapsedMs: Double
     var revealActions = false
     let onStop: () -> Void
@@ -21,7 +20,7 @@ struct ActivitySessionRow: View {
                 help: session.title
             )
         }
-        .lead { CLIDot(session.cli, decorative: true) }
+        .lead { CLIDot(core: session.cli, decorative: true) }
         .cells {
             StateCell {
                 Tag(wording.tagText, tone: wording.tagTone, icon: wording.tagIcon)

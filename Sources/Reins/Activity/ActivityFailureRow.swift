@@ -1,11 +1,10 @@
-import ReinsCore
 import SwiftUI
 
 /// One failed command (or hook), repeats grouped. One title form: the command, as code. The lines under it say how it
 /// failed and where, the machine's own message as code; a later passing run is stated as a fact and never as a fix. The
 /// repeat count sits in the cost column of the session rows above it, and an empty slot keeps the Stop column.
 struct ActivityFailureRow: View {
-    let failure: ActivityFailure
+    let failure: CoreActivityFailure
     let now: Date
 
     private static let repeatAlert = 5
@@ -25,7 +24,7 @@ struct ActivityFailureRow: View {
             if isHook {
                 ReinsIcon(.hook, size: .row, label: "Hook")
             } else {
-                CLIDot(failure.cli, decorative: true)
+                CLIDot(core: failure.cli, decorative: true)
             }
         }
         .cells {

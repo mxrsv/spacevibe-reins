@@ -1,15 +1,14 @@
-import ReinsCore
 import SwiftUI
 
 /// One CLI: a card of its live sessions and a card of its failed commands. What cannot be measured is one region under
 /// both lanes (`ActivityScreen`), so the two lanes end on the same line.
 struct ActivityLane: View {
-    let cli: InventoryCLI
-    let report: ActivityReport
+    let cli: CoreCLI
+    let report: CoreActivityReport
     let now: Date
     let elapsedMs: Double
     var revealActions = false
-    let onStop: (ActivitySession) -> Void
+    let onStop: (CoreActivitySession) -> Void
 
     @State private var failureLimit = ActivityRows.failurePage
 
@@ -21,7 +20,7 @@ struct ActivityLane: View {
                 CardHeader(
                     cli.label, count: sessions.isEmpty ? nil : sessions.count,
                     detail: sessions.isEmpty ? nil : (sessions.count == 1 ? "session" : "sessions"),
-                    lead: { CLIDot(cli, decorative: true) }
+                    lead: { CLIDot(core: cli, decorative: true) }
                 )
                 if sessions.isEmpty { EmptyRow("No \(cli.label) session is running.") }
                 ForEach(sessions) { session in

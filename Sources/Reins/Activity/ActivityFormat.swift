@@ -1,5 +1,4 @@
 import Foundation
-import ReinsCore
 
 /// Wording and time formatting for the Activity screen. Pure functions: every time is an argument, so nothing here
 /// reads the clock. Wording rules from the spec: cost always carries `~`, and a later passing run is a fact about the log,
@@ -60,7 +59,7 @@ enum ActivityFormat {
     }
 
     /// Neutral on purpose: a later pass of the same command is a fact about the log, not proof of a fix.
-    static func laterPass(_ failure: ActivityFailure, now: Date) -> String? {
+    static func laterPass(_ failure: CoreActivityFailure, now: Date) -> String? {
         guard let pass = failure.laterPass else { return nil }
         let times = failure.count == 1 ? "1 failure" : "\(failure.count) failures"
         return "passed once at \(clock(pass, now: now)) after \(times); one pass is not proof"

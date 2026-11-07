@@ -1,10 +1,9 @@
-import ReinsCore
 import SwiftUI
 
 /// One list for both CLIs: the dots on each row say who edited the file. The engine's `label` is the shortest path tail
 /// that tells two files apart, so the folder part is muted and the file name stronger; the full path is the help text.
 struct ActivityFileHistory: View {
-    let files: [ActivityFileRow]
+    let files: [CoreActivityFile]
     let now: Date
     @State private var limit = ActivityRows.filePage
 
@@ -25,7 +24,7 @@ struct ActivityFileHistory: View {
 }
 
 private struct ActivityFileRowView: View {
-    let file: ActivityFileRow
+    let file: CoreActivityFile
     let now: Date
 
     var body: some View {
@@ -39,7 +38,7 @@ private struct ActivityFileRowView: View {
         .lead { ReinsIcon(.file, size: .row) }
         .cells {
             HStack(spacing: Space.s4) {
-                ForEach(file.clis, id: \.rawValue) { CLIDot($0) }
+                ForEach(file.clis, id: \.rawValue) { CLIDot(core: $0) }
             }
             .frame(width: Metrics.fileCLIsWidth, alignment: .trailing)
             Text([ActivityFormat.plural(file.edits, "edit"), ActivityFormat.plural(file.sessions, "session"), ActivityFormat.ago(file.last, now: now)].joined(separator: " \u{00B7} "))

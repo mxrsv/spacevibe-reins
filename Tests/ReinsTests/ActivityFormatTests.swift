@@ -1,6 +1,5 @@
 import Foundation
 import Testing
-@testable import ReinsCore
 @testable import Reins
 
 @Suite("Activity wording")
@@ -48,17 +47,17 @@ struct ActivityFormatTests {
     }
 
     private func failure(
-        kind: ActivityFailure.Kind = .command, cli: InventoryCLI = .claude, count: Int = 3, reason: String = "", exit: Int? = nil,
-        last: String?, laterPass: String? = nil, hook: ActivityFailure.Hook? = nil
-    ) -> ActivityFailure {
-        ActivityFailure(
+        kind: CoreFailureKind = .command, cli: CoreCLI = .claude, count: Int = 3, reason: String = "", exit: Int? = nil,
+        last: String?, laterPass: String? = nil, hook: CoreActivityHookRef? = nil
+    ) -> CoreActivityFailure {
+        CoreActivityFailure(
             kind: kind, cli: cli, key: "k", title: "demo-check --all", count: count, exit: exit, reason: reason,
             projects: [], sessions: 1, first: last, last: last, laterPass: laterPass, hook: hook
         )
     }
 
-    private func report(_ failures: [ActivityFailure]) -> ActivityReport {
-        ActivityReport(sessions: [], failures: failures, files: [], unmeasurable: [], stats: ActivityStats(logs: 0, truncated: 0))
+    private func report(_ failures: [CoreActivityFailure]) -> CoreActivityReport {
+        CoreActivityReport(sessions: [], failures: failures, files: [], unmeasurable: [], stats: CoreActivityStats(logs: 0, truncated: 0))
     }
 
     @Test("only failures whose last one is under 24 hours old count toward the badge")
@@ -89,7 +88,7 @@ struct ActivityFormatTests {
 
     @Test("a hook failure names the hook event first; a command failure starts with the exit code")
     func howLine() {
-        let hook = failure(kind: .hook, exit: 2, last: iso(hoursAgo: 1), hook: ActivityFailure.Hook(hash: "abc123", event: "Stop"))
+        let hook = failure(kind: .hook, exit: 2, last: iso(hoursAgo: 1), hook: CoreActivityHookRef(hash: "abc123", event: "Stop"))
         #expect(FailureWording(hook, now: now).how.hasPrefix("Stop hook"))
         #expect(FailureWording(hook, now: now).how == "Stop hook \u{00B7} exit 2 \u{00B7} last 1 h ago")
         let command = failure(exit: 2, last: iso(hoursAgo: 1))
@@ -99,24 +98,24 @@ struct ActivityFormatTests {
     // MARK: ActivityRows filters
 
     private func session(
-        _ cli: InventoryCLI = .claude, _ state: ActivitySessionState = .running, id: String = "s1", project: String? = nil,
-        reason: String = "log written 2 s ago", tool: ActivityTool? = nil, age: Double? = nil, lastWrite: Double? = nil
-    ) -> ActivitySession {
-        ActivitySession(
+        _ cli: CoreCLI = .claude, _ state: CoreSessionState = .running, id: String = "s1", project: String? = nil,
+        reason: String = "log written 2 s ago", tool: CoreActivityTool? = nil, age: Double? = nil, lastWrite: Double? = nil
+    ) -> CoreActivitySession {
+        CoreActivitySession(
             cli: cli, id: id, title: "demo task", project: project, pid: 100, state: state, stateReason: reason,
-            currentTool: tool, ageMs: age, lastWriteAgoMs: lastWrite
+            reasonCode: nil, currentTool: tool, ageMs: age, lastWriteAgoMs: lastWrite, cost: nil, costNote: nil
         )
     }
 
     @Test("sessions keeps only the asked CLI and drops ended ones, while idle, waiting and unmeasurable stay")
     func sessionsFilter() {
-        let all = ActivityReport(
+        let all = CoreActivityReport(
             sessions: [
                 session(.claude, .running, id: "a"), session(.claude, .ended, id: "b"), session(.claude, .waiting, id: "c"),
                 session(.claude, .idle, id: "d"), session(.claude, .unmeasurable, id: "e"),
                 session(.codex, .idle, id: "f"), session(.codex, .ended, id: "g"),
             ],
-            failures: [], files: [], unmeasurable: [], stats: ActivityStats(logs: 0, truncated: 0)
+            failures: [], files: [], unmeasurable: [], stats: CoreActivityStats(logs: 0, truncated: 0)
         )
         #expect(ActivityRows.sessions(all, cli: .claude).map(\.id) == ["a", "c", "d", "e"])
         #expect(ActivityRows.sessions(all, cli: .codex).map(\.id) == ["f"])
@@ -124,16 +123,16 @@ struct ActivityFormatTests {
 
     @Test("failures and limits keep only the asked CLI")
     func failuresAndLimitsFilter() {
-        let limit = { (cli: InventoryCLI, code: ActivityReason) in ActivityLimit(cli: cli, code: code, text: code.text) }
-        let all = ActivityReport(
+        let limit = { (cli: CoreCLI, code: String) in CoreActivityLimit(cli: cli, code: code, text: "text of \(code)") }
+        let all = CoreActivityReport(
             sessions: [], failures: [failure(cli: .claude, last: nil), failure(cli: .codex, last: nil), failure(cli: .claude, last: nil)],
-            files: [], unmeasurable: [limit(.claude, .claudePromptVsBusy), limit(.codex, .codexToolSilent), limit(.codex, .codexNoRollout)],
-            stats: ActivityStats(logs: 0, truncated: 0)
+            files: [], unmeasurable: [limit(.claude, "claude-prompt-vs-busy"), limit(.codex, "codex-tool-silent"), limit(.codex, "codex-no-rollout")],
+            stats: CoreActivityStats(logs: 0, truncated: 0)
         )
         #expect(ActivityRows.failures(all, cli: .claude).count == 2)
         #expect(ActivityRows.failures(all, cli: .codex).count == 1)
-        #expect(ActivityRows.limits(all, cli: .claude).map(\.code) == [.claudePromptVsBusy])
-        #expect(ActivityRows.limits(all, cli: .codex).map(\.code) == [.codexToolSilent, .codexNoRollout])
+        #expect(ActivityRows.limits(all, cli: .claude).map(\.code) == ["claude-prompt-vs-busy"])
+        #expect(ActivityRows.limits(all, cli: .codex).map(\.code) == ["codex-tool-silent", "codex-no-rollout"])
     }
 
     // MARK: SessionWording
@@ -155,22 +154,22 @@ struct ActivityFormatTests {
 
     @Test("the help text is the engine's reason, for every state")
     func helpIsTheReason() {
-        for state in [ActivitySessionState.running, .waiting, .idle, .unmeasurable] {
+        for state in [CoreSessionState.running, .waiting, .idle, .unmeasurable] {
             #expect(SessionWording(session(.claude, state, reason: "because of \(state)"), elapsedMs: 0).help == "because of \(state)")
         }
     }
 
     @Test("a running session reads project, tool with its target, then how long ago it wrote")
     func subtitleRunning() {
-        let tool = ActivityTool(name: "Bash", target: "swift test")
+        let tool = CoreActivityTool(name: "Bash", target: "swift test")
         let wording = SessionWording(session(project: "demo-app", tool: tool, lastWrite: 5_000), elapsedMs: 0)
         #expect(wording.subtitle == ["demo-app", "Bash \u{00B7} swift test", "just now"].joined(separator: Self.dot))
-        #expect(SessionWording(session(tool: ActivityTool(name: "Read", target: "")), elapsedMs: 0).subtitle == "Read")
+        #expect(SessionWording(session(tool: CoreActivityTool(name: "Read", target: "")), elapsedMs: 0).subtitle == "Read")
     }
 
     @Test("a waiting session says it needs an answer, even while a tool call is open")
     func subtitleWaiting() {
-        let tool = ActivityTool(name: "Bash", target: "swift test")
+        let tool = CoreActivityTool(name: "Bash", target: "swift test")
         let wording = SessionWording(session(.codex, .waiting, project: "demo-app", tool: tool, lastWrite: 2 * Self.minute), elapsedMs: 0)
         #expect(wording.subtitle == ["demo-app", "needs your answer", "2 min ago"].joined(separator: Self.dot))
     }
@@ -178,7 +177,7 @@ struct ActivityFormatTests {
     @Test("an unmeasurable session says so unless a tool call is known")
     func subtitleUnmeasurable() {
         #expect(SessionWording(session(.claude, .unmeasurable, project: "demo-app"), elapsedMs: 0).subtitle == "demo-app\(Self.dot)state not measurable")
-        let tool = ActivityTool(name: "Edit", target: "a.swift")
+        let tool = CoreActivityTool(name: "Edit", target: "a.swift")
         #expect(SessionWording(session(.claude, .unmeasurable, tool: tool), elapsedMs: 0).subtitle == "Edit \u{00B7} a.swift")
     }
 

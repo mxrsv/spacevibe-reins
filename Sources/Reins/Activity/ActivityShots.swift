@@ -1,5 +1,4 @@
 import Foundation
-import ReinsCore
 import SwiftUI
 
 /// Headless screenshots of the real Activity screen. `ShotRenderer.run` starts it for `SPACEVIBE_SHOT_SCREEN=activity`, which
@@ -21,7 +20,7 @@ enum ActivityShots {
         let live = report.sessions.filter { $0.state != .ended }
 
         for choice in [AppearanceChoice.dark, .light] {
-            func shot(_ name: String, _ report: ActivityReport?, stop: ActivitySession? = nil, reveal: Bool = false) throws {
+            func shot(_ name: String, _ report: CoreActivityReport?, stop: CoreActivitySession? = nil, reveal: Bool = false) throws {
                 let model = ActivityModel(env: env)
                 model.preview(report: report)
                 model.revealRowActions = reveal
@@ -45,14 +44,14 @@ enum ActivityShots {
         }
     }
 
-    private static func with(_ report: ActivityReport, _ change: (inout ActivityReport) -> Void) -> ActivityReport {
+    private static func with(_ report: CoreActivityReport, _ change: (inout CoreActivityReport) -> Void) -> CoreActivityReport {
         var copy = report
         change(&copy)
         return copy
     }
 
     /// Runs the engine read and spins the main run loop until it lands; the engine is an actor, so this does not deadlock.
-    private static func readBeforeRendering(_ model: ActivityModel) throws -> ActivityReport {
+    private static func readBeforeRendering(_ model: ActivityModel) throws -> CoreActivityReport {
         Task { await model.readOnce() }
         try ShotHarness.wait("the Activity read", seconds: ShotHarness.settleSeconds) { model.report != nil || model.failure != nil }
         guard let report = model.report else {

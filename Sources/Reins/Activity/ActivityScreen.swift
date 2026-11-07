@@ -1,4 +1,3 @@
-import ReinsCore
 import SwiftUI
 
 /// The Activity tab: loading, failed, or the two lanes and the file history, with the Stop confirmation over them.
@@ -34,13 +33,13 @@ struct ActivityScreen: View {
                             .padding(.bottom, Rhythm.cards)
                     }
                     HStack(alignment: .top, spacing: Rhythm.cards) {
-                        ForEach(InventoryCLI.allCases, id: \.rawValue) { cli in
+                        ForEach(CoreCLI.allCases, id: \.rawValue) { cli in
                             ActivityLane(cli: cli, report: report, now: now, elapsedMs: elapsedMs, revealActions: model.revealRowActions) { model.requestStop($0) }
                         }
                     }
                     NoteRegion(
                         title: "Cannot be measured",
-                        columns: InventoryCLI.allCases.map { NoteRegion.Column(cli: $0, notes: ActivityRows.limits(report, cli: $0).map(\.text)) },
+                        columns: CoreCLI.allCases.map { NoteRegion.Column(core: $0, notes: ActivityRows.limits(report, cli: $0).map(\.text)) },
                         shared: [ActivityRows.costLimit]
                     )
                     .padding(.top, Rhythm.cards)

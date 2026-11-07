@@ -1,5 +1,4 @@
 import Foundation
-import ReinsCore
 
 /// What the lanes and the badge show, derived from one report. Pure: the screen only lays these out.
 enum ActivityRows {
@@ -11,19 +10,19 @@ enum ActivityRows {
     static let recentFailureMs = 24 * 60 * 60 * 1000.0
 
     /// An ended process is not "running"; the engine keeps it listed for a few minutes only so it does not vanish unexplained.
-    static func sessions(_ report: ActivityReport, cli: InventoryCLI) -> [ActivitySession] {
+    static func sessions(_ report: CoreActivityReport, cli: CoreCLI) -> [CoreActivitySession] {
         report.sessions.filter { $0.cli == cli && $0.state != .ended }
     }
 
-    static func failures(_ report: ActivityReport, cli: InventoryCLI) -> [ActivityFailure] {
+    static func failures(_ report: CoreActivityReport, cli: CoreCLI) -> [CoreActivityFailure] {
         report.failures.filter { $0.cli == cli }
     }
 
-    static func limits(_ report: ActivityReport, cli: InventoryCLI) -> [ActivityLimit] {
+    static func limits(_ report: CoreActivityReport, cli: CoreCLI) -> [CoreActivityLimit] {
         report.unmeasurable.filter { $0.cli == cli }
     }
 
-    static func recentFailureCount(_ report: ActivityReport?, now: Date) -> Int {
+    static func recentFailureCount(_ report: CoreActivityReport?, now: Date) -> Int {
         guard let report else { return 0 }
         return report.failures.filter { f in
             guard let last = ActivityFormat.date(f.last) else { return false }
@@ -48,7 +47,7 @@ struct SessionWording {
     let help: String
     let subtitle: String
 
-    init(_ session: ActivitySession, elapsedMs: Double) {
+    init(_ session: CoreActivitySession, elapsedMs: Double) {
         switch session.state {
         case .running: (tagText, tagTone, tagIcon) = ("running", .success, nil)
         case .waiting: (tagText, tagTone, tagIcon) = ("waiting for you", .warn, nil)
@@ -81,7 +80,7 @@ struct FailureWording {
     let reason: String?
     let laterPass: String?
 
-    init(_ failure: ActivityFailure, now: Date) {
+    init(_ failure: CoreActivityFailure, now: Date) {
         var head: [String] = []
         if failure.kind == .hook, let hook = failure.hook { head.append("\(hook.event) hook") }
         if let exit = failure.exit { head.append("exit \(exit)") }

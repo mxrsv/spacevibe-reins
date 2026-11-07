@@ -14,6 +14,12 @@ struct CLIDot: View {
         self.size = size
     }
 
+    /// For screens that read through `CoreService`. A separate label, not an overload: `CLIDot(.claude)` would be ambiguous.
+    // bridge: removed with the Loadout migration
+    init(core cli: CoreCLI, decorative: Bool = false, size: CGFloat = Space.s8) {
+        self.init(InventoryCLI(cli), decorative: decorative, size: size)
+    }
+
     var body: some View {
         Circle()
             .fill(cli.fill)
