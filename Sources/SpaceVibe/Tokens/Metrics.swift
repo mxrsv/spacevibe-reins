@@ -324,6 +324,8 @@ extension Metrics {
         static let rulesSmallMaxHeight: CGFloat = 304
         /// Subagents' `In one CLI only`: the kit sets no cap, so it takes what the canvas leaves, up to the spine's height.
         static let subagentsSmallMaxHeight: CGFloat = 680
+        /// Hooks' `Missing in Codex` and `Can't copy to Codex`: the kit sets no cap either.
+        static let hooksSmallMaxHeight: CGFloat = 680
     }
 
     enum Band {
@@ -427,6 +429,15 @@ extension Metrics {
     enum Subagents {
         static let sessionsWidth: CGFloat = 96
         /// The "Not listed" note under `In one CLI only`: 8 above it.
+        static let noteTop: CGFloat = 8
+    }
+
+    /// The Hooks spine row: the matcher before the logos (`b-hooks`: 96).
+    enum Hooks {
+        static let matcherWidth: CGFloat = 96
+        /// The Answer's fix rows reach 4 past the card's padding, as the kit's `.fixes` does.
+        static let fixesBleed: CGFloat = 4
+        /// The footnote under the bands: 8 above it.
         static let noteTop: CGFloat = 8
     }
 

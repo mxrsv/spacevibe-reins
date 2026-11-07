@@ -129,14 +129,44 @@ enum LoadoutRows {
     }
 
     /// The id of the item to copy when `to`'s cell is empty, or nil when no copy may be offered: project configuration is
-    /// read-only here, a dead hook is not worth copying, and a hook goes only into Claude Code, never into Codex (Codex
-    /// loading a hook SpaceVibe wrote is unverified), and only when Claude knows the event.
+    /// read-only here, and a hook goes only where `hookCopyBlock` finds nothing in the way.
     static func copyPlan(_ row: LoadoutRow, to: CoreCLI, events: [String: [String]]) -> String? {
         guard row.project == nil, !row.flags.dead, row.cells[to] == .missing, let source = row.members[to.other] else { return nil }
-        if case .hook(let hook) = source {
-            guard to == .claude, events[to.rawValue]?.contains(hook.event) == true else { return nil }
-        }
+        if case .hook = source, hookCopyBlock(row, to: to, events: events) != nil { return nil }
         return source.id
+    }
+
+    /// Whether SpaceVibe writes hooks into Codex. The core refuses it (`loadout.copyToOther`: "SpaceVibe does not copy hooks into
+    /// Codex.", go-core G-fix.16: whether Codex loads a hook SpaceVibe wrote is unverified). Flip this when the core allows it:
+    /// `Missing in Codex`, its Answer row and the Status value come back with it.
+    static let codexTakesHooks = false
+
+    /// What stops a hook from going to a CLI. ONE rule (V5-R66): the logos, `a`, the detail, both small cards and the Answer all
+    /// read it, and `copyPlan` agrees (a block is nil exactly when `copyPlan` offers the copy).
+    enum HookCopyBlock: Equatable, Sendable {
+        /// The CLI is not on this Mac (only when the caller passes the CLIs it detected).
+        case notInstalled(CoreCLI)
+        /// The target's event list does not have the hook's event.
+        case noEvent(CoreCLI, event: String)
+        /// The hook's script is gone, so there is nothing to copy.
+        case scriptGone
+        /// A plugin owns the hook: SpaceVibe does not change it.
+        case plugin(String)
+        /// SpaceVibe does not write hooks into this CLI (`codexTakesHooks`).
+        case notWritten(CoreCLI)
+    }
+
+    /// The handler kind needs no test: the core lists `command` hooks only (the others are counted in one problems line), and
+    /// the inventory carries no handler kind (G2).
+    static func hookCopyBlock(_ row: LoadoutRow, to: CoreCLI, events: [String: [String]], detected: [CoreCLI]? = nil,
+                              codexTakesHooks: Bool = LoadoutRows.codexTakesHooks) -> HookCopyBlock? {
+        guard case .hook(let source) = row.members[to.other] else { return nil }
+        if let detected, !detected.contains(to) { return .notInstalled(to) }
+        if events[to.rawValue]?.contains(source.event) != true { return .noEvent(to, event: source.event) }
+        if source.dead { return .scriptGone }
+        if let plugin = row.plugin { return .plugin(plugin) }
+        if to == .codex && !codexTakesHooks { return .notWritten(to) }
+        return nil
     }
 
     /// Why a row with nothing removable cannot be changed.

@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The Agents page (V5-R49): one sidebar page holding the tabs Skills, Subagents, Hooks and Rules. It owns the models the
 /// tabs read (`LoadoutModel` for the first three, `RulesModel`), so the sidebar's count and each tab's count come from real reads
-/// even while a tab shows "Not built yet" (U10 and U11 replace the last canvases). Building it reads nothing; the page's first
+/// even while a tab shows "Not built yet" (U11 replaces the last canvas). Building it reads nothing; the page's first
 /// appearance starts the reads.
 @MainActor
 @Observable
@@ -15,6 +15,7 @@ final class AgentsPage: SpaceVibeTab {
     let rules: RulesModel
     let skills: SkillsModel
     let subagents: SubagentsModel
+    let hooks: HooksModel
 
     private(set) var selected = AgentsCategory.skills
 
@@ -24,6 +25,7 @@ final class AgentsPage: SpaceVibeTab {
         rules = RulesModel(env: env)
         skills = SkillsModel(loadout: self.loadout)
         subagents = SubagentsModel(loadout: self.loadout)
+        hooks = HooksModel(loadout: self.loadout)
     }
 
     var counts: AgentsCounts { AgentsCounts(loadout: loadout.data, rules: rules.badge) }
@@ -38,7 +40,8 @@ final class AgentsPage: SpaceVibeTab {
         switch selected {
         case .skills: SkillsStatusBar.hints
         case .subagents: SubagentsStatusBar.hints
-        case .hooks, .rules: []
+        case .hooks: HooksStatusBar.hints
+        case .rules: []
         }
     }
 
@@ -46,7 +49,8 @@ final class AgentsPage: SpaceVibeTab {
         switch selected {
         case .skills: SkillsStatusBar.source
         case .subagents: SubagentsStatusBar.source
-        case .hooks, .rules: nil
+        case .hooks: HooksStatusBar.source
+        case .rules: nil
         }
     }
 
@@ -55,7 +59,8 @@ final class AgentsPage: SpaceVibeTab {
         switch selected {
         case .skills: skills.isMenuOpen
         case .subagents: subagents.isMenuOpen
-        case .hooks, .rules: false
+        case .hooks: hooks.isMenuOpen
+        case .rules: false
         }
     }
 
@@ -75,8 +80,8 @@ final class AgentsPage: SpaceVibeTab {
     }
 }
 
-/// The tab head with its four tabs, then the selected tab's chip row and canvas: Skills (U8) and Subagents (U9) are built; the
-/// others show "Not built yet" until U10 and U11 replace them.
+/// The tab head with its four tabs, then the selected tab's chip row and canvas: Skills (U8), Subagents (U9) and Hooks (U10) are built;
+/// Rules shows "Not built yet" until U11 replaces it.
 struct AgentsPageView: View {
     let page: AgentsPage
 
@@ -97,7 +102,8 @@ struct AgentsPageView: View {
                     switch page.selected {
                     case .skills: SkillsHeadActions(model: page.skills)
                     case .subagents: SubagentsHeadActions(model: page.subagents)
-                    case .hooks, .rules: EmptyView()
+                    case .hooks: HooksHeadActions(model: page.hooks)
+                    case .rules: EmptyView()
                     }
                 }
                 switch page.selected {
@@ -107,7 +113,10 @@ struct AgentsPageView: View {
                 case .subagents:
                     if page.subagents.query.filter.isOn { SubagentsChipRow(model: page.subagents) }
                     SubagentsCanvas(model: page.subagents)
-                case .hooks, .rules:
+                case .hooks:
+                    if page.hooks.query.filter.isOn { HooksChipRow(model: page.hooks) }
+                    HooksCanvas(model: page.hooks)
+                case .rules:
                     QuietEmptyState("Not built yet", message: "\(page.selected.title) arrives in a later step of the v5 build.", placement: .list)
                     Spacer(minLength: 0)
                 }
