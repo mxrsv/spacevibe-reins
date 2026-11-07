@@ -136,6 +136,39 @@ private struct ChipPartStyle: ButtonStyle {
     }
 }
 
+/// The kit's `.chip` as a button (V5-R28 `Clear`, V5-R63 `Add to <CLI>`): 24 high, radius 6, 12 pt `fg2` text with an optional
+/// glyph 6 before it; hovered `hover` and `fg`, focused or pressed `sel` (D57).
+///
+///     ChipButton("Add to Codex", glyph: .plus, accessibilityLabel: "Add typescript-reviewer to Codex") { ... }
+struct ChipButton: View {
+    let title: String
+    var glyph: ContentGlyph?
+    var accessibilityLabel: String?
+    let action: () -> Void
+
+    init(_ title: String, glyph: ContentGlyph? = nil, accessibilityLabel: String? = nil, action: @escaping () -> Void) {
+        self.title = title
+        self.glyph = glyph
+        self.accessibilityLabel = accessibilityLabel
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: Metrics.FilterChipRow.glyphSpacing) {
+                if let glyph { SpaceVibeIcon(content: glyph) }
+                Text(title).spaceVibeText(.meta)
+            }
+            .padding(.horizontal, Metrics.FilterChipRow.partPadding)
+            .frame(height: Metrics.FilterChipRow.chipHeight)
+        }
+        .buttonStyle(ChipPartStyle(rest: Palette.fg2))
+        .clipShape(RoundedRectangle(cornerRadius: Metrics.Radius.control, style: Metrics.Radius.cornerStyle))
+        .focusEffectDisabled()
+        .accessibilityLabel(accessibilityLabel ?? title)
+    }
+}
+
 /// The row of applied filters under the tab head (V5-R28): chips 8 apart, wrapping, padding 8 12, a `hair` line under it,
 /// and `Clear` at the end (a 24-high chip in `fg2`). The page shows it only while a filter is on, except Activity, which
 /// keeps it on every tab so filtered counts are explained (V5-R69).
@@ -146,16 +179,7 @@ struct FilterChipRow<Chips: View>: View {
     var body: some View {
         ChipFlow(spacing: Metrics.FilterChipRow.spacing) {
             chips
-            Button(action: onClear) {
-                Text("Clear")
-                    .spaceVibeText(.meta)
-                    .padding(.horizontal, Metrics.FilterChipRow.partPadding)
-                    .frame(height: Metrics.FilterChipRow.chipHeight)
-            }
-            .buttonStyle(ChipPartStyle(rest: Palette.fg2))
-            .clipShape(RoundedRectangle(cornerRadius: Metrics.Radius.control, style: Metrics.Radius.cornerStyle))
-            .focusEffectDisabled()
-            .accessibilityLabel("Clear filters")
+            ChipButton("Clear", accessibilityLabel: "Clear filters", action: onClear)
         }
         .padding(.vertical, Metrics.FilterChipRow.verticalPadding)
         .padding(.horizontal, Metrics.FilterChipRow.horizontalPadding)

@@ -265,6 +265,8 @@ extension Metrics {
         static let closeWidth: CGFloat = 24
         /// The field and the value inside a chip, and the `Clear` chip: 8 at each side.
         static let partPadding: CGFloat = 8
+        /// Between a chip button's glyph and its text.
+        static let glyphSpacing: CGFloat = 6
     }
 
     /// A row in a list or a card, and a band header.
@@ -320,6 +322,8 @@ extension Metrics {
         static let limitsSmallMaxHeight: CGFloat = 380
         static let spineMaxHeight: CGFloat = 680
         static let rulesSmallMaxHeight: CGFloat = 304
+        /// Subagents' `In one CLI only`: the kit sets no cap, so it takes what the canvas leaves, up to the spine's height.
+        static let subagentsSmallMaxHeight: CGFloat = 680
     }
 
     enum Band {
@@ -417,6 +421,13 @@ extension Metrics {
     /// The split canvas (V5-R52): below this width inside its 32 edge, the halves stack.
     enum SplitCanvas {
         static let stackBelow: CGFloat = 700
+    }
+
+    /// The Subagents spine row: the sessions text before the logos.
+    enum Subagents {
+        static let sessionsWidth: CGFloat = 96
+        /// The "Not listed" note under `In one CLI only`: 8 above it.
+        static let noteTop: CGFloat = 8
     }
 
     /// The Limits page's columns and gaps (`b-limits`' page CSS).

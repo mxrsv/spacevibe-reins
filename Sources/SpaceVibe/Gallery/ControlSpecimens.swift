@@ -18,6 +18,7 @@ struct ControlSpecimens: View {
         VStack(alignment: .leading, spacing: Space.s24) {
             SpecimenLayout.panel("Tab head: chips inactive, hover, focus and active per category; Activity's active chip in the accent; toolbar buttons (scope with its caret, Filter, View) at rest, hover and focus. The live gallery opens Filter and View.") { tabHeads }
             SpecimenLayout.panel("Filter chip row: field | value | x, the close hovered and focused, then Clear") { chipRow }
+            SpecimenLayout.panel("Chip button (the kit's chip, also Clear): a glyph and a label, at rest, hover and focus") { chipButtons }
             SpecimenLayout.panel("Menus: Filter with a field open (two levels, the count of picks, a hovered field), Filter with one field (one level), View (radio), a keyboard-highlighted line") { menus }
             SpecimenLayout.panel("Logo toggle and strip: lit, dim, hover on dim, hover on lit (danger badge), pressed, focus, read-only, only copy; a row with the strip and the warning slot") { logos }
             SpecimenLayout.panel("Warning slot (empty, warn, danger, clock, lock, hover, focus) and its popover; the row-detail popover; placement through the overlay host: below, above near the bottom edge, clamped 8 inside") { warnings }
@@ -103,6 +104,18 @@ struct ControlSpecimens: View {
             FilterFieldChip(field: "Rank is", value: "Top 10 most used") {}.specimen(.focus)
         }
         .frame(width: Self.panelWidth)
+        .blockSurface(Palette.bgPanel)
+    }
+
+    /// The chip as a button on its own (`Add to <CLI>` in a card row): at rest, hover and focus.
+    private var chipButtons: some View {
+        HStack(spacing: Metrics.FilterChipRow.spacing) {
+            ChipButton("Add to Codex", glyph: .plus) {}
+            ChipButton("Add to Codex", glyph: .plus) {}.specimen(.hover)
+            ChipButton("Add to Claude Code", glyph: .plus) {}.specimen(.focus)
+        }
+        .padding(Metrics.FilterChipRow.horizontalPadding)
+        .frame(width: Self.panelWidth, alignment: .leading)
         .blockSurface(Palette.bgPanel)
     }
 

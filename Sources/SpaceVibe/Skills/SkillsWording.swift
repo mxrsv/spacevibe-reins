@@ -39,7 +39,7 @@ enum SkillsWording {
         }
     }
 
-    private static func addedPhrase(_ added: SkillCell.Added) -> String {
+    static func addedPhrase(_ added: SkillCell.Added) -> String {
         switch added {
         case .lastDay: "Added in the last 24 hours"
         case .afterNewestLog: "Added after the newest log SpaceVibe counted"

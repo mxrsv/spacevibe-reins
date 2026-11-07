@@ -18,7 +18,8 @@ enum TileLayout {
 ///
 /// `maxHeight` caps the whole card; a taller body scrolls inside it (V5-R52). A card that `stretches` (a split page's spine)
 /// takes the height its container offers, up to `maxHeight`, with the room below its body empty, as the kit's grid stretches
-/// it. The open state is the caller's, so a page keeps it in `OpenStateStore` like a band's.
+/// it. The open state is the caller's, so a page keeps it in `OpenStateStore` like a band's. A body that scrolls brings the
+/// row `scrollTarget` names (a view `.id(...)`) into view when it changes, as the Skills list does.
 struct Tile<Actions: View, Content: View>: View {
     let title: String
     var count: String?
@@ -26,11 +27,13 @@ struct Tile<Actions: View, Content: View>: View {
     var layout: TileLayout = .rows
     var maxHeight: CGFloat?
     var stretches = false
+    var scrollTarget: String?
     @Binding var isOpen: Bool
     let actions: Actions
     let content: Content
 
     @Environment(\.isShotRendering) private var isShotRendering
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var bodyHeight: CGFloat = 0
 
     var body: some View {
@@ -77,10 +80,16 @@ struct Tile<Actions: View, Content: View>: View {
                 // A headless shot draws no scroll view: the body is cut, as if scrolled to the top.
                 laidOutBody.fixedSize(horizontal: false, vertical: true).frame(minHeight: 0, maxHeight: limit, alignment: .top).clipped()
             } else {
-                ScrollView {
-                    laidOutBody.onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { bodyHeight = $0 }
+                ScrollViewReader { reader in
+                    ScrollView {
+                        laidOutBody.onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { bodyHeight = $0 }
+                    }
+                    .frame(minHeight: 0, idealHeight: min(bodyHeight, limit), maxHeight: min(bodyHeight, limit))
+                    .onChange(of: scrollTarget) { _, target in
+                        guard let target else { return }
+                        withAnimation(reduceMotion ? nil : .easeOut(duration: Metrics.Motion.quick)) { reader.scrollTo(target) }
+                    }
                 }
-                .frame(minHeight: 0, idealHeight: min(bodyHeight, limit), maxHeight: min(bodyHeight, limit))
             }
         } else {
             laidOutBody
@@ -109,17 +118,18 @@ struct Tile<Actions: View, Content: View>: View {
 
 extension Tile where Actions == EmptyView {
     init(_ title: String, count: String? = nil, state: StateMark? = nil, layout: TileLayout = .rows, maxHeight: CGFloat? = nil,
-         stretches: Bool = false, isOpen: Binding<Bool>, @ViewBuilder content: () -> Content) {
+         stretches: Bool = false, scrollTarget: String? = nil, isOpen: Binding<Bool>, @ViewBuilder content: () -> Content) {
         self.init(title: title, count: count, state: state, layout: layout, maxHeight: maxHeight, stretches: stretches,
-                  isOpen: isOpen, actions: EmptyView(), content: content())
+                  scrollTarget: scrollTarget, isOpen: isOpen, actions: EmptyView(), content: content())
     }
 }
 
 extension Tile {
     init(_ title: String, count: String? = nil, state: StateMark? = nil, layout: TileLayout = .rows, maxHeight: CGFloat? = nil,
-         stretches: Bool = false, isOpen: Binding<Bool>, @ViewBuilder content: () -> Content, @ViewBuilder actions: () -> Actions) {
+         stretches: Bool = false, scrollTarget: String? = nil, isOpen: Binding<Bool>, @ViewBuilder content: () -> Content,
+         @ViewBuilder actions: () -> Actions) {
         self.init(title: title, count: count, state: state, layout: layout, maxHeight: maxHeight, stretches: stretches,
-                  isOpen: isOpen, actions: actions(), content: content())
+                  scrollTarget: scrollTarget, isOpen: isOpen, actions: actions(), content: content())
     }
 }
 

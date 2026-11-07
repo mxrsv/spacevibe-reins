@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The Agents page (V5-R49): one sidebar page holding the tabs Skills, Subagents, Hooks and Rules. It owns the models the
 /// tabs read (`LoadoutModel` for the first three, `RulesModel`), so the sidebar's count and each tab's count come from real reads
-/// even while a tab shows "Not built yet" (U8 to U11 replace each canvas). Building it reads nothing; the page's first
+/// even while a tab shows "Not built yet" (U10 and U11 replace the last canvases). Building it reads nothing; the page's first
 /// appearance starts the reads.
 @MainActor
 @Observable
@@ -14,6 +14,7 @@ final class AgentsPage: SpaceVibeTab {
     let loadout: LoadoutModel
     let rules: RulesModel
     let skills: SkillsModel
+    let subagents: SubagentsModel
 
     private(set) var selected = AgentsCategory.skills
 
@@ -22,6 +23,7 @@ final class AgentsPage: SpaceVibeTab {
         self.loadout = loadout ?? LoadoutModel(env: env)
         rules = RulesModel(env: env)
         skills = SkillsModel(loadout: self.loadout)
+        subagents = SubagentsModel(loadout: self.loadout)
     }
 
     var counts: AgentsCounts { AgentsCounts(loadout: loadout.data, rules: rules.badge) }
@@ -32,8 +34,30 @@ final class AgentsPage: SpaceVibeTab {
     }
 
     /// The status bar's keys and data source follow the selected tab; a tab not built yet lists none.
-    var hints: [KeyHint] { selected == .skills ? SkillsStatusBar.hints : [] }
-    var source: String? { selected == .skills ? SkillsStatusBar.source : nil }
+    var hints: [KeyHint] {
+        switch selected {
+        case .skills: SkillsStatusBar.hints
+        case .subagents: SubagentsStatusBar.hints
+        case .hooks, .rules: []
+        }
+    }
+
+    var source: String? {
+        switch selected {
+        case .skills: SkillsStatusBar.source
+        case .subagents: SubagentsStatusBar.source
+        case .hooks, .rules: nil
+        }
+    }
+
+    /// A head menu of the selected tab holds the keyboard, so the page's plain keys (`1` to `4`) are off.
+    var isMenuOpen: Bool {
+        switch selected {
+        case .skills: skills.isMenuOpen
+        case .subagents: subagents.isMenuOpen
+        case .hooks, .rules: false
+        }
+    }
 
     var content: AnyView { AnyView(AgentsPageView(page: self)) }
 
@@ -51,8 +75,8 @@ final class AgentsPage: SpaceVibeTab {
     }
 }
 
-/// The tab head with its four tabs, then the selected tab's chip row and canvas: Skills is built (U8); the others show
-/// "Not built yet" until U9 to U11 replace them.
+/// The tab head with its four tabs, then the selected tab's chip row and canvas: Skills (U8) and Subagents (U9) are built; the
+/// others show "Not built yet" until U10 and U11 replace them.
 struct AgentsPageView: View {
     let page: AgentsPage
 
@@ -60,7 +84,7 @@ struct AgentsPageView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            if !shell.isPaletteOpen && !page.skills.isMenuOpen { tabKeys }
+            if !shell.isPaletteOpen && !page.isMenuOpen { tabKeys }
             VStack(spacing: 0) {
                 TabHead {
                     ForEach(AgentsCategory.allCases) { category in
@@ -70,12 +94,20 @@ struct AgentsPageView: View {
                         ) { page.select(category) }
                     }
                 } actions: {
-                    if page.selected == .skills { SkillsHeadActions(model: page.skills) }
+                    switch page.selected {
+                    case .skills: SkillsHeadActions(model: page.skills)
+                    case .subagents: SubagentsHeadActions(model: page.subagents)
+                    case .hooks, .rules: EmptyView()
+                    }
                 }
-                if page.selected == .skills && page.skills.query.filter.isOn { SkillsChipRow(model: page.skills) }
-                if page.selected == .skills {
+                switch page.selected {
+                case .skills:
+                    if page.skills.query.filter.isOn { SkillsChipRow(model: page.skills) }
                     SkillsCanvas(model: page.skills)
-                } else {
+                case .subagents:
+                    if page.subagents.query.filter.isOn { SubagentsChipRow(model: page.subagents) }
+                    SubagentsCanvas(model: page.subagents)
+                case .hooks, .rules:
                     QuietEmptyState("Not built yet", message: "\(page.selected.title) arrives in a later step of the v5 build.", placement: .list)
                     Spacer(minLength: 0)
                 }

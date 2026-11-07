@@ -58,8 +58,9 @@ final class LoadoutModel {
 
     init(env: AppEnvironment) { self.env = env }
 
-    /// Shots and tests: a model that shows `data` and never reads, for a state the fixture home cannot show (an empty category).
-    init(env: AppEnvironment, data: LoadoutData) {
+    /// Shots and tests: a model that shows `data` and never reads, for a state the fixture home cannot show (an empty category;
+    /// no data at all is the loading state).
+    init(env: AppEnvironment, data: LoadoutData?) {
         self.env = env
         self.data = data
         started = true
@@ -241,8 +242,9 @@ final class LoadoutModel {
     /// Runs the writes of a skill toggle, a bulk add or a removal one after the other and shows ONE toast whose Undo undoes
     /// every one of them, newest first, then reads the rows again once. No bulk call exists in the core, so each step is its own
     /// journal entry; a step that fails undoes the ones already written before the danger toast, so a bulk write is all or
-    /// nothing. `label` names the whole change ("Added 3 skills to Codex"). Returns at once; the write runs in a task.
-    func perform(skillWrites steps: [LoadoutRows.SkillWrites.Step], guardKey: String, label: String) {
+    /// nothing. `label` names the whole change ("Added 3 skills to Codex"); `note` is a sentence only the success toast adds after it
+    /// (what the copy leaves out), never the Undo toast. Returns at once; the write runs in a task.
+    func perform(skillWrites steps: [LoadoutRows.SkillWrites.Step], guardKey: String, label: String, note: String? = nil) {
         guard !steps.isEmpty, inFlight[guardKey] == nil else { return }
         guardTickets += 1
         let ticket = guardTickets
@@ -264,7 +266,7 @@ final class LoadoutModel {
             }
             guard let self else { return }
             self.release(guardKey, ticket: ticket, since: started)
-            self.env.toasts.show(label, undo: { [weak self] in self?.undoSkillWrites(entries, label: label) })
+            self.env.toasts.show(note.map { "\(label). \($0)" } ?? label, undo: { [weak self] in self?.undoSkillWrites(entries, label: label) })
             self.reload()
         }
     }

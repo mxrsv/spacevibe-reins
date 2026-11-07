@@ -109,21 +109,11 @@ enum SkillDays {
     }
 }
 
-/// One value of a filter field: the id the state keeps, the line in the menu and the text of the chip.
-struct SkillsFilterValue: Equatable, Sendable {
-    let id: String
-    let title: String
-    let chip: String
-
-    init(_ id: String, _ title: String, chip: String? = nil) {
-        self.id = id
-        self.title = title
-        self.chip = chip ?? title
-    }
-}
+/// The Skills filter: five fields (V5-R29).
+typealias SkillsFilter = PickFilter<SkillsFilterField>
 
 /// The five filter fields (V5-R29). AND across fields, OR within one.
-enum SkillsFilterField: String, CaseIterable, Sendable {
+enum SkillsFilterField: String, FilterFieldKind {
     case status, cli, owner, rank, lastRan
 
     var title: String {
@@ -140,51 +130,25 @@ enum SkillsFilterField: String, CaseIterable, Sendable {
     var chipTitle: String { "\(title) is" }
 
     /// The values in menu order. Rank has two groups, headed in the menu by `rankGroups`.
-    var values: [SkillsFilterValue] {
+    var values: [FilterValue] {
         switch self {
-        case .status: [SkillsFilterValue("neverRan", "Never ran"), SkillsFilterValue("heavy", "Heavily used")]
+        case .status: [FilterValue("neverRan", "Never ran"), FilterValue("heavy", "Heavily used")]
         case .cli:
-            [SkillsFilterValue("claude", "In Claude Code", chip: "Claude Code"), SkillsFilterValue("codex", "In Codex", chip: "Codex"),
-             SkillsFilterValue("both", "In both", chip: "Both"), SkillsFilterValue("one", "In one only", chip: "One only")]
-        case .owner: [SkillsFilterValue("mine", "Mine"), SkillsFilterValue("plugin", "Plugin")]
+            [FilterValue("claude", "In Claude Code", chip: "Claude Code"), FilterValue("codex", "In Codex", chip: "Codex"),
+             FilterValue("both", "In both", chip: "Both"), FilterValue("one", "In one only", chip: "One only")]
+        case .owner: [FilterValue("mine", "Mine"), FilterValue("plugin", "Plugin")]
         case .rank:
-            [SkillsFilterValue("top10", "Top 10 most used"), SkillsFilterValue("top25", "Top 25 most used"),
-             SkillsFilterValue("least10", "Least used 10"), SkillsFilterValue("never", "Never ran"),
-             SkillsFilterValue("top20", "Top 20%"), SkillsFilterValue("middle", "Middle"), SkillsFilterValue("bottom20", "Bottom 20%")]
+            [FilterValue("top10", "Top 10 most used"), FilterValue("top25", "Top 25 most used"),
+             FilterValue("least10", "Least used 10"), FilterValue("never", "Never ran"),
+             FilterValue("top20", "Top 20%"), FilterValue("middle", "Middle"), FilterValue("bottom20", "Bottom 20%")]
         case .lastRan:
-            [SkillsFilterValue("today", "Today"), SkillsFilterValue("week", "This week"),
-             SkillsFilterValue("old", "Over 30 days ago"), SkillsFilterValue("never", "Never")]
+            [FilterValue("today", "Today"), FilterValue("week", "This week"),
+             FilterValue("old", "Over 30 days ago"), FilterValue("never", "Never")]
         }
     }
 
     /// Menu headings and the id of the first value they head (Rank only).
     static let rankGroups: [(heading: String, firstValue: String)] = [("Most used", "top10"), ("Tier", "top20")]
-}
-
-/// The applied filters: a set of value ids per field.
-struct SkillsFilter: Equatable, Sendable {
-    private(set) var picks: [SkillsFilterField: Set<String>] = [:]
-
-    var isOn: Bool { picks.values.contains { !$0.isEmpty } }
-
-    func count(_ field: SkillsFilterField) -> Int { picks[field]?.count ?? 0 }
-
-    func isPicked(_ field: SkillsFilterField, _ value: String) -> Bool { picks[field]?.contains(value) ?? false }
-
-    mutating func toggle(_ field: SkillsFilterField, _ value: String) {
-        var set = picks[field] ?? []
-        if set.contains(value) { set.remove(value) } else { set.insert(value) }
-        picks[field] = set.isEmpty ? nil : set
-    }
-
-    mutating func clear() { picks = [:] }
-
-    /// The chips in field order, then menu order.
-    var chips: [(field: SkillsFilterField, value: SkillsFilterValue)] {
-        SkillsFilterField.allCases.flatMap { field in
-            field.values.filter { isPicked(field, $0.id) }.map { (field, $0) }
-        }
-    }
 }
 
 enum SkillsGroup: String, CaseIterable, Sendable {
