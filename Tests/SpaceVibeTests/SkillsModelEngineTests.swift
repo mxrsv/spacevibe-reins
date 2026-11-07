@@ -59,6 +59,23 @@ struct SkillsModelEngineTests {
         #expect(model.rows.first { $0.key == row.key }?.presentCLIs == [.claude])
     }
 
+    @Test("adding the same skill again after Undo writes again: the double-click guard does not outlive the write")
+    func addAgainAfterUndo() async throws {
+        let fixture = try CoreFixtureHome()
+        defer { fixture.remove() }
+        let (model, env, client) = try await skills(fixture)
+        defer { client.shutdown() }
+        let picked = Array(claudeOnly(model).prefix(2))
+        try #require(picked.count == 2)
+        for round in 1 ... 2 {
+            model.toggleBulk(picked, cli: .codex)
+            try await wait("the toast of round \(round)") { env.toasts.current?.message == "Added 2 skills to Codex" }
+            try await wait("the re-read of round \(round)") { model.loadout.isSettled && model.isLit(model.rows.filter { r in picked.contains { $0.key == r.key } }, cli: .codex) }
+            try await undo(model, env, label: "Added 2 skills to Codex")
+            env.toasts.dismiss()
+        }
+    }
+
     @Test("pressing a lit logo removes the skill from that CLI only; Undo restores it")
     func toggleRemoveAndUndo() async throws {
         let fixture = try CoreFixtureHome()

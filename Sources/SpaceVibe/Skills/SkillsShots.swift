@@ -4,7 +4,7 @@ import SwiftUI
 /// The v5 Skills shots (`SPACEVIBE_UI_V5=1 SPACEVIBE_SHOT_SCREEN=skills`): the real tab on the synthetic home, in every state the
 /// plan names, dark and light. The run first checks every skill's sessions against what `scripts/fixture-home.mjs` writes into
 /// the logs (the V5-A20 trace), then draws:
-/// - `skills-page`, `-filtered`, `-grouped` (by status), `-multi` (two rows picked, the bottom bar and its toast), `-warning`
+/// - `skills-page`, `-filtered`, `-grouped` (by status), `-multi` (two rows picked and the bottom bar, before any write), `-multi-added` (after the real bulk add on the synthetic home: Codex lit, the toast with Undo above the bar; undone after), `-warning`
 ///   (the popover of a never-ran skill open), `-menu-filter`, `-menu-view`, `-nothing-matches`, `-empty` (an in-memory scope with
 ///   no skills);
 /// - the pane states `-pane-heavy`, `-pane-both`, `-pane-one`, `-pane-never`, `-pane-never-both`, `-pane-new`, `-pane-plugin`.
@@ -32,61 +32,64 @@ enum SkillsShots {
         }
         try check(page, env: env)
 
+        let model = page.skills
+        func shoot(_ name: String, _ choice: AppearanceChoice, toasts: ToastCenter? = nil, shownSlot: String? = nil,
+                   page shown: AgentsPage? = nil, _ configure: () -> Void = {}) throws {
+            configure()
+            let used = shown ?? page
+            let tabs = TabRegistry.makeTabs(isV5: true).map { $0 is AgentsPage ? used : $0 }
+            let shell = ShellModel(tabs: tabs, appearance: AppearanceStore(forced: choice), isV5: true)
+            let view = ShellView()
+                .spaceVibeRoot(shell: shell, toasts: toasts ?? ToastCenter(announce: false), env: env)
+                .environment(\.shownWarningSlot, shownSlot.map { AnyHashable($0) })
+                .frame(width: ShotRenderer.size.width, height: ShotRenderer.size.height)
+            try ShotRenderer.write(view, name: name, choice: choice, to: directory)
+        }
+        func reset() {
+            model.query = SkillsQuery()
+            model.clearPicks()
+            model.isFilterOpen = false
+            model.isViewOpen = false
+            model.isScopeOpen = false
+            model.select("skill::ponytail")
+        }
+
         for choice in [AppearanceChoice.dark, .light] {
-            let model = page.skills
-            func shoot(_ name: String, toasts: ToastCenter? = nil, shownSlot: String? = nil, page shown: AgentsPage? = nil,
-                       _ configure: () -> Void = {}) throws {
-                configure()
-                let used = shown ?? page
-                let tabs = TabRegistry.makeTabs(isV5: true).map { $0 is AgentsPage ? used : $0 }
-                let shell = ShellModel(tabs: tabs, appearance: AppearanceStore(forced: choice), isV5: true)
-                let view = ShellView()
-                    .spaceVibeRoot(shell: shell, toasts: toasts ?? ToastCenter(announce: false), env: env)
-                    .environment(\.shownWarningSlot, shownSlot.map { AnyHashable($0) })
-                    .frame(width: ShotRenderer.size.width, height: ShotRenderer.size.height)
-                try ShotRenderer.write(view, name: name, choice: choice, to: directory)
-            }
-            func reset() {
-                model.query = SkillsQuery()
-                model.clearPicks()
-                model.isFilterOpen = false
-                model.isViewOpen = false
-                model.isScopeOpen = false
-                model.select("skill::ponytail")
+            func snap(_ name: String, toasts: ToastCenter? = nil, shownSlot: String? = nil, page shown: AgentsPage? = nil,
+                      _ configure: () -> Void = {}) throws {
+                try shoot(name, choice, toasts: toasts, shownSlot: shownSlot, page: shown, configure)
             }
 
             reset()
-            try shoot("skills-page")
+            try snap("skills-page")
 
-            try shoot("skills-filtered") { model.toggleFilter(.status, "neverRan") }
-            try shoot("skills-filtered-two") { model.toggleFilter(.cli, "one") }
+            try snap("skills-filtered") { model.toggleFilter(.status, "neverRan") }
+            try snap("skills-filtered-two") { model.toggleFilter(.cli, "one") }
             reset()
-            try shoot("skills-grouped") { model.query.group = .status }
-            try shoot("skills-grouped-tier") { model.query.group = .tier }
+            try snap("skills-grouped") { model.query.group = .status }
+            try snap("skills-grouped-tier") { model.query.group = .tier }
             reset()
 
-            let toasts = ToastCenter(announce: false)
-            try shoot("skills-multi", toasts: toasts) {
+            // Two rows picked and the bar over them, before any write: both are in Claude Code only, so Codex is dim everywhere.
+            try snap("skills-multi") {
                 model.togglePick("skill::ponytail")
                 model.togglePick("skill::diagnosing-bugs")
-                toasts.isOverBottomBar = true
-                toasts.show("Added 2 skills to Codex", undo: {})
             }
             reset()
-            try shoot("skills-warning", shownSlot: "skills:warn:skill::review-change") { model.select("skill::review-change") }
+            try snap("skills-warning", shownSlot: "skills:warn:skill::review-change") { model.select("skill::review-change") }
             reset()
-            try shoot("skills-menu-filter") { model.isFilterOpen = true }
+            try snap("skills-menu-filter") { model.isFilterOpen = true }
             reset()
-            try shoot("skills-menu-view") { model.isViewOpen = true }
+            try snap("skills-menu-view") { model.isViewOpen = true }
             reset()
 
             for (name, key) in [("heavy", "ponytail"), ("both", "impeccable"), ("one", "diagnosing-bugs"), ("never", "review-change"),
                                 ("never-both", "webapp-testing"), ("new", "skill-creator"), ("plugin", "neon-postgres")] {
-                try shoot("skills-pane-\(name)") { model.select("skill::\(key)") }
+                try snap("skills-pane-\(name)") { model.select("skill::\(key)") }
             }
             reset()
 
-            try shoot("skills-nothing-matches") {
+            try snap("skills-nothing-matches") {
                 model.toggleFilter(.status, "heavy")
                 model.toggleFilter(.owner, "plugin")
             }
@@ -95,8 +98,31 @@ enum SkillsShots {
                 rows: [], scopes: [LoadoutScope(value: LoadoutRows.globalScope, label: "Global")], countsByScope: [:], problems: [],
                 events: [:], globalCount: 0, home: nil)))
             empty.select(.skills)
-            try shoot("skills-empty", page: empty) {}
+            try snap("skills-empty", page: empty) {}
         }
+
+        // The real bulk add on the synthetic home, once, then the state it leaves in both appearances: Codex lit on both rows and
+        // in the bar, the toast with Undo above the bar. Undone straight after, so the home ends as it began.
+        reset()
+        model.togglePick("skill::ponytail")
+        model.togglePick("skill::diagnosing-bugs")
+        let before = model.pickedRows
+        try ShotHarness.check(before.count == 2 && !model.isLit(before, cli: .codex), "two skills picked, Codex dim on both before the write")
+        model.toggleBulk(before, cli: .codex)
+        try ShotHarness.wait("the bulk add's toast") { env.toasts.current != nil }
+        try ShotHarness.check(env.toasts.current?.message == "Added 2 skills to Codex", "the toast says \(env.toasts.current?.message ?? "nothing")")
+        try ShotHarness.wait("the re-read after the add") { page.loadout.isSettled && model.isLit(model.pickedRows, cli: .codex) }
+        try ShotHarness.check(env.toasts.current?.action != nil, "the toast carries Undo")
+        env.toasts.isOverBottomBar = true
+        for choice in [AppearanceChoice.dark, .light] { try shoot("skills-multi-added", choice, toasts: env.toasts) }
+        env.toasts.runCurrentAction()
+        try ShotHarness.wait("Undo and its re-read") {
+            env.toasts.current?.message == "Undid Added 2 skills to Codex" && page.loadout.isSettled && !model.isLit(model.pickedRows, cli: .codex)
+        }
+        try ShotHarness.check(!model.isLit(model.pickedRows, cli: .codex), "Undo put both skills back to Claude Code only")
+        env.toasts.isOverBottomBar = false
+        env.toasts.dismiss()
+        reset()
     }
 
     // MARK: The V5-A20 trace
