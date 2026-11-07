@@ -82,7 +82,7 @@ private final class FakeActivityCore: CoreService, @unchecked Sendable {
 @MainActor
 struct ActivityModelTests {
     private func model(_ core: FakeActivityCore) -> ActivityModel {
-        ActivityModel(env: AppEnvironment(roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false), makeCoreClient: { core }))
+        ActivityModel(env: AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { core }))
     }
 
     /// Spins the main actor until `done`, so a `Task` the model started can land.
@@ -252,7 +252,7 @@ struct ActivityModelCoreTests {
 
     private func model(_ fixture: CoreFixtureHome) throws -> (ActivityModel, CoreClient) {
         let client = try fixture.client()
-        let env = AppEnvironment(roots: try fixture.roots(), toasts: ToastCenter(announce: false), makeCoreClient: { client })
+        let env = AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { client })
         return (ActivityModel(env: env), client)
     }
 
@@ -332,7 +332,7 @@ struct ActivityModelCoreTests {
     @Test("when the helper is missing, the screen shows the fixed startup sentence and nothing else")
     func helperMissing() async {
         let client = CoreClient(binary: URL(fileURLWithPath: "/nonexistent/spacevibe"))
-        let env = AppEnvironment(roots: nil, toasts: ToastCenter(announce: false), makeCoreClient: { client })
+        let env = AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { client })
         let model = ActivityModel(env: env)
         await model.readOnce()
         #expect(model.failure == CoreWire.startFailedMessage)

@@ -1,8 +1,8 @@
 import Foundation
 
 /// The seam between the screens and the engine (plan S.1; docs/internals/core-protocol.md). One method per RPC method,
-/// taking and returning the DTOs of `CoreTypes*.swift`. `InProcessCore` backs it today with `ReinsCore`; `CoreClient`
-/// (S.2) backs it with the Go core over stdio. Screens must not tell the two apart.
+/// taking and returning the DTOs of `CoreTypes*.swift`. `CoreClient` backs it with the Go core over stdio; a test
+/// backs it with a fake.
 ///
 /// Errors: a refusal from the engine is a `CoreError` (`status`, safe `message`). A cancelled call throws
 /// `CancellationError`, which the wire reports as -32800. Every method fails with a `CoreError` of status 500 and the

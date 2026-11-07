@@ -1,6 +1,5 @@
 import Foundation
 import Testing
-import ReinsCore
 @testable import Reins
 
 /// `CoreClient` against the real Go core that `scripts/test.sh` builds. Each test has its own fixture home and client,
@@ -38,9 +37,8 @@ struct CoreClientTests {
             #expect(hello.protocolVersion == CoreProtocol.version)
             #expect(hello.core.name == "spacevibe")
             #expect(hello.identity.envPrefix == CoreProtocol.envPrefix)
-            #expect(hello.identity.envPrefix == ReinsCore.envPrefix)
-            #expect(hello.identity.dataDir == ReinsCore.dataFolderName)
-            #expect(Set(InProcessCore.methods).isSubset(of: Set(hello.methods)))
+            #expect(hello.identity.dataDir == ".spacevibe")
+            #expect(hello.methods.contains("initialize"))
         }
     }
 
@@ -85,7 +83,7 @@ struct CoreClientTests {
         defer { fixture.remove() }
         let client = try fixture.client()
         defer { client.shutdown() }
-        #expect(try await client.initialize().identity.envPrefix == ReinsCore.envPrefix)
+        #expect(try await client.initialize().identity.envPrefix == CoreProtocol.envPrefix)
         let error = try await #require(throws: CoreError.self) { try await client.inventoryRead() }
         #expect(error.status == 500)
         #expect(error.message.contains("SPACEVIBE_TEST"))

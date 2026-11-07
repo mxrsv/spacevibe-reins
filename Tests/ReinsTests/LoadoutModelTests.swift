@@ -153,12 +153,9 @@ struct LoadoutModelTests {
         )
     }
 
-    /// Every call goes to the Go core (`core`); the in-process core refuses everything, so a call that strays to it fails loudly.
+    /// Every call goes to the fake Go core (`core`).
     private func model(_ core: FakeLoadoutCore) -> LoadoutModel {
-        let env = AppEnvironment(
-            roots: nil, startupProblem: "No home here.", toasts: ToastCenter(announce: false), core: UnservedCore(),
-            makeCoreClient: { core }
-        )
+        let env = AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { core })
         return LoadoutModel(env: env)
     }
 
@@ -234,7 +231,7 @@ struct LoadoutModelTests {
     @Test("when the helper is missing, the screen shows the fixed startup sentence and no rows")
     func helperMissing() async throws {
         let client = CoreClient(binary: URL(fileURLWithPath: "/nonexistent/spacevibe"))
-        let model = LoadoutModel(env: AppEnvironment(roots: nil, toasts: ToastCenter(announce: false), makeCoreClient: { client }))
+        let model = LoadoutModel(env: AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { client }))
         model.start()
         try await settle("the failure") { model.readFailure != nil }
         #expect(model.readFailure == CoreWire.startFailedMessage)

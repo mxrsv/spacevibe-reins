@@ -41,7 +41,7 @@ enum ShotRenderer {
         exit(0)
     }
 
-    /// The real screens read config folders, so they run only where `Roots.resolve` refuses a root under the real home.
+    /// The real screens read config folders, so they run only where the core refuses a root under the real home.
     private static func requireSyntheticHome(_ environment: [String: String]) throws {
         guard environment[CoreEnvironment.variable("TEST")] == "1" else {
             throw ShotHarness.Failure("real-screen shots need SPACEVIBE_TEST=1 and a synthetic home")

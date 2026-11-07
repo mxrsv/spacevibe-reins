@@ -157,15 +157,13 @@ struct CoreTypesTests {
         print("transcript results decoded for: \(covered.sorted())")
     }
 
-    @Test("the handshake transcript names the identity the in-process core reports")
-    func identityMatchesTheCore() async throws {
+    @Test("the handshake transcript names the identity the Swift constants hold")
+    func identityMatchesTheConstants() throws {
         let line = try #require(try CoreTestData.transcriptLines().first { $0.file == "handshake_ok.jsonl" && $0.dir == "recv" })
         let recorded = try JSONDecoder().decode(CoreInitializeResult.self, from: JSONSerialization.data(withJSONObject: try #require(line.json["result"])))
-        let mine = try await InProcessCore(roots: nil).initialize()
-        #expect(mine.identity == recorded.identity)
-        #expect(mine.protocolVersion == recorded.protocolVersion)
-        // Activity and Stop have cut over: the in-process core serves a subset of what the Go core does.
-        #expect(Set(mine.methods).isSubset(of: Set(recorded.methods)))
+        #expect(recorded.identity.envPrefix == CoreProtocol.envPrefix)
+        #expect(recorded.identity.dataDir == ".spacevibe")
+        #expect(recorded.protocolVersion == CoreProtocol.version)
     }
 
     // MARK: Frozen goldens
@@ -322,5 +320,12 @@ struct CoreTypesTests {
         let text = try #require(String(data: JSONEncoder().encode(error), encoding: .utf8))
         #expect(try object(text) as? NSDictionary == ["status": 404, "message": "Gone."])
         #expect(CoreError("Bad input.").status == 400)
+    }
+
+    @MainActor
+    @Test("a screen shows a CoreError's message and any other error as one fixed sentence")
+    func environmentMessage() {
+        #expect(AppEnvironment.message(CoreError("Gone.", status: 404)) == "Gone.")
+        #expect(AppEnvironment.message(CancellationError()) == CoreError.unexpectedMessage)
     }
 }

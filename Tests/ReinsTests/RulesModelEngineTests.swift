@@ -10,7 +10,7 @@ import Testing
 struct RulesModelEngineTests {
     private func model(_ fixture: CoreFixtureHome) throws -> (RulesModel, CoreClient) {
         let client = try fixture.client()
-        let env = AppEnvironment(roots: try fixture.roots(), toasts: ToastCenter(announce: false), makeCoreClient: { client })
+        let env = AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { client })
         return (RulesModel(env: env), client)
     }
 

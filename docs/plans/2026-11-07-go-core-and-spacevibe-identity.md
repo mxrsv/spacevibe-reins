@@ -525,7 +525,8 @@ Each task ports the named Swift unit tests as Go table tests with the same vecto
 - [ ] **S.5 Cut over Loadout reads.** Depends on: G2.1, S.2. Verify: SW; identical `loadout` shots; `git grep -nE 'Inventory\.(read\|attachUsage\|filterCounts)\|UsageScanner' -- Sources/Reins` → empty.
 - [ ] **S.6 Cut over Loadout writes, with Undo moving to the core.** Depends on: G2.3, X-lock, S.5. Verify: SW; `CoreJournalInteropTests`; contract write cases; `git grep -nE 'Mutate\.\|Journal\.undo' -- Sources/Reins` → empty.
 - [ ] **S.7 Cut over Rules.** Depends on: G2.4, S.6. Verify: SW; identical `rules` shots incl. `SPACEVIBE_FIXTURE_CODEX` variants (`scripts/rules-shots.sh`); `git grep -nE 'RulesStore\|CodexPermissions\|Rules\.' -- Sources/Reins` → empty.
-- [ ] **S.8 Delete the Swift engine**
+- [x] **S.8 Delete the Swift engine**
+  - Status 2026-11-07: done. The gate held (six Go goldens pass, ledger "Unmapped: none", only `InProcessCore.swift` imported ReinsCore, D-3 answered). `scripts/test.sh` went from 546 to 242 tests: minus 298 `ReinsCoreTests`, minus 3 `InProcessCoreTests`, minus 2 `CoreJournalInteropTests`, minus 2 `CoreWriteLockInteropTests`, plus 1 new `AppEnvironment.message` test. `ReinsStatusline` is gone; the Go helper `Contents/Helpers/spacevibe` is the only helper.
   - Gate, all four required:
     - (a) every Go golden passes;
     - (b) the coverage ledger has no unmapped Swift test;

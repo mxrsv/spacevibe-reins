@@ -15,12 +15,11 @@ import SwiftUI
 /// The "written" shot makes the real write through the confirmation (`requestSet`, `confirmPending`) in the synthetic HOME,
 /// draws the toast, then presses Undo through the journal and checks the grid reads as before. "Invalid" corrupts one
 /// project file in the synthetic HOME for one shot and restores it. Nothing outside the synthetic HOME is touched:
-/// `Roots.resolve` refuses a root under the real home when `SPACEVIBE_TEST=1`.
+/// the core refuses a root under the real home when `SPACEVIBE_TEST=1`.
 @MainActor
 enum RulesShots {
     static func run(into directory: URL) throws {
         let env = AppEnvironment.live(toasts: ToastCenter(announce: false))
-        if let problem = env.startupProblem { throw ShotHarness.Failure(problem) }
         let model = RulesModel(env: env)
         model.start()
         try settle(model)

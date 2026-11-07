@@ -1,10 +1,9 @@
 import Foundation
 import Testing
-import ReinsCore
 @testable import Reins
 
-/// A private copy of the synthetic fixture home (`core/testdata/fixtures`) and the environment that points both engines at
-/// it (S-R1: never the real home), for the tests that run the Swift engine and the real Go core side by side.
+/// A private copy of the synthetic fixture home (`core/testdata/fixtures`) and the environment that points the real Go
+/// core at it (S-R1: never the real home). The tree is materialized here from `fixtures/manifest.json`, so it depends on no engine.
 struct CoreFixtureHome {
     let home: URL
     /// Full environment for a core process: ours plus the fixture's folders and `SPACEVIBE_TEST=1`.
@@ -38,9 +37,6 @@ struct CoreFixtureHome {
 
     func remove() { try? FileManager.default.removeItem(at: home) }
 
-    /// The Swift engine on the same folders the core gets.
-    func roots() throws -> Roots { try Roots.resolve(env: environment) }
-
     /// The Go core `scripts/test.sh` builds. A bare `swift test` has none: run `scripts/test.sh`.
     static func coreBinary() throws -> URL {
         let path = try #require(ProcessInfo.processInfo.environment[CoreEnvironment.binaryOverride], "run scripts/test.sh: it builds the core and exports SPACEVIBE_CORE_BINARY")
@@ -57,5 +53,12 @@ struct CoreFixtureHome {
             if (try url.resourceValues(forKeys: [.isRegularFileKey])).isRegularFile == true { out[relative] = try Data(contentsOf: url) }
         }
         return out
+    }
+}
+
+extension Dictionary where Key == String, Value == Data {
+    /// The paths whose bytes differ, or that exist on only one side (compares two `CoreFixtureHome.tree()` snapshots).
+    func difference(from other: [String: Data]) -> [String] {
+        Set(keys).union(other.keys).filter { self[$0] != other[$0] }.sorted()
     }
 }

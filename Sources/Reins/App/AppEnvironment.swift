@@ -10,24 +10,18 @@ import Observation
 ///         try await core.rulesRemove(...).entry      // the CoreJournalEntry the core recorded
 ///     }
 ///
-/// `startupProblem` is set when the config folders could not be resolved (under `SPACEVIBE_TEST=1` that is a root under the real
-/// home); the in-process core then refuses every call with it, and a screen shows the refusal instead of reading anything.
-/// The Go core (`goCore`) resolves the same folders itself and refuses with its own sentence; when the helper is missing it
-/// refuses with the fixed "could not be started" one.
+/// The Go core (`goCore`) resolves the config folders itself and refuses with its own sentence when it cannot (under
+/// `SPACEVIBE_TEST=1`, a root under the real home); when the helper is missing it refuses with the fixed "could not be started" one.
 ///
 /// Dev launch (`scripts/dev-fixture.sh`): `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `SPACEVIBE_HOME` come from the
-/// environment (`InProcessCore.live` and the core, which inherits it, read them). With `SPACEVIBE_TEST=1` the core's process
-/// adapter is never the real one: it replays the file named by `SPACEVIBE_PROC_FIXTURE`, or an empty list when that is unset,
-/// so nothing can signal a real process.
+/// environment, which the core inherits. With `SPACEVIBE_TEST=1` the core's process adapter is never the real one: it replays
+/// the file named by `SPACEVIBE_PROC_FIXTURE`, or an empty list when that is unset, so nothing can signal a real process.
 @MainActor
 @Observable
 final class AppEnvironment {
     static let shared = AppEnvironment.live()
 
-    let startupProblem: String?
     let toasts: ToastCenter
-    /// The in-process stub (`InProcessCore`): every screen has cut over, so nothing reads through it; S.8 deletes it.
-    let core: any CoreService
     /// The Go core process, started on the first call.
     @ObservationIgnored private lazy var coreClient: any CoreService = makeCoreClient()
     @ObservationIgnored private let makeCoreClient: () -> any CoreService
@@ -36,20 +30,15 @@ final class AppEnvironment {
     /// The updater and what Settings > Update shows. `ReinsApp` starts it in a normal launch; elsewhere it never runs.
     @ObservationIgnored lazy var updates = UpdateController(toasts: toasts)
 
-    init(startupProblem: String? = nil, toasts: ToastCenter? = nil, core: any CoreService, makeCoreClient: @escaping () -> any CoreService = { CoreClient() }) {
-        self.startupProblem = startupProblem
+    init(toasts: ToastCenter? = nil, makeCoreClient: @escaping () -> any CoreService = { CoreClient() }) {
         self.toasts = toasts ?? ToastCenter()
-        self.core = core
         self.makeCoreClient = makeCoreClient
     }
 
     /// The Go core, the only engine of every screen (Activity and Stop, Limits, Loadout, Rules), and the engine every Undo runs on. It starts on the first call.
     var goCore: any CoreService { coreClient }
 
-    static func live(environment: [String: String] = ProcessInfo.processInfo.environment, toasts: ToastCenter? = nil) -> AppEnvironment {
-        let (core, problem) = InProcessCore.live(environment: environment)
-        return AppEnvironment(startupProblem: problem, toasts: toasts, core: core)
-    }
+    static func live(toasts: ToastCenter? = nil) -> AppEnvironment { AppEnvironment(toasts: toasts) }
 
     /// Runs a write through `service` (the Go core, `goCore`). On success it shows a toast with `label` and an
     /// Undo that calls `goCore.journalUndo` with the entry the write returned, and `afterChange` runs on the main actor after the

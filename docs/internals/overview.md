@@ -9,7 +9,6 @@ Requirements: [spec](../specs/2026-11-02-reins.md) and [decision ledger](../spec
 - **The core is the engine; the shell is only UI.** The Go binary `spacevibe` ([`core/`](../../core)) reads the CLIs' files, counts usage, watches sessions and makes every write. The SwiftUI app draws state and asks for changes. The shell reaches the core only through one `CoreClient` that spawns it as a child with argv `["rpc"]` and speaks JSON-RPC 2.0 over stdio (SV3, SV4). Nothing in the UI links engine code at the end state.
 - **Why a child process, not a library.** A second shell for Windows and Linux is committed (SV2), and the same engine must serve it. A stdio child also keeps the shell free of any listener: the core opens no socket (S-R5).
 - **Names come from the core.** The product name, version, env prefix and data folder are one constant each in [`internal/identity`](../../core/internal/identity/identity.go). The shell reads them from `initialize` and hard-codes only the helper's path inside the bundle (SV12).
-- **Transition.** Until the plan's S.8 the app still links the Swift engine `ReinsCore`, which is also the source the Go packages are ported from. The two engines share two disk formats and must keep them identical: `usage-cache.json` and `journal.json`. Task state is in the plan, not here.
 
 ## Data flow
 
@@ -27,8 +26,7 @@ Requirements: [spec](../specs/2026-11-02-reins.md) and [decision ledger](../spec
 | Frozen goldens | [`core/testdata/fixtures/golden/`](../../core/testdata/fixtures/golden), listed with their hashes in [`SHA256SUMS`](../../core/testdata/fixtures/SHA256SUMS) |
 | Synthetic homes the goldens ran on | [`core/testdata/fixtures/`](../../core/testdata/fixtures): `home`, `activity-home`, `rules-home`, `zst` |
 | Materializer, canonical writer, diff, leak guard, freeze check | [`core/internal/goldentest`](../../core/internal/goldentest); rules in [core-protocol.md](core-protocol.md#canonical-golden-writer) |
-| Recorded request and response transcripts | [`core/testdata/rpc/*.jsonl`](../../core/testdata/rpc), recorded and compared by the contract tests in `core/cmd/spacevibe`; the Swift `CoreClient` tests are meant to decode them (unverified: no Swift test reads them yet) |
-| Port source and its tests | `Sources/ReinsCore`, `Tests/ReinsCoreTests`, deleted at S.8 |
+| Recorded request and response transcripts | [`core/testdata/rpc/*.jsonl`](../../core/testdata/rpc), recorded and compared by the contract tests in `core/cmd/spacevibe`; the Swift `CoreTypesTests` decode every response into its DTO |
 
 The materialized home sits at the fixed path `/private/tmp/reins-fixture-home`, and the fixture keeps its own `.reins` folder. Hook and project ids in the goldens are hashes of absolute paths under that root, and nothing can regenerate them now that the Node generator is gone. Renaming the root or the folder breaks the goldens; the rename report lists them as skipped sites (C3). Parity means canonical bytes of a named projection, not the Node bytes; the plan's "Parity method" lists the projections.
 

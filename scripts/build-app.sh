@@ -56,7 +56,6 @@ echo "==> assembling ${APP_BUNDLE}"
 rm -rf "${APP_BUNDLE}"
 mkdir -p "${APP_BUNDLE}/Contents/MacOS" "${APP_BUNDLE}/Contents/Resources" "${APP_BUNDLE}/Contents/Frameworks" "${APP_BUNDLE}/Contents/Helpers"
 cp "${BINARY}" "${APP_BUNDLE}/Contents/MacOS/${EXECUTABLE_NAME}"
-cp "${BINARY_DIR}/ReinsStatusline" "${APP_BUNDLE}/Contents/MacOS/ReinsStatusline"
 cp Resources/Info.plist "${APP_BUNDLE}/Contents/Info.plist"
 # The Go core, in Helpers/ and not MacOS/: `spacevibe` and the app's executable would collide on a case-insensitive volume.
 APP_VERSION="$(plutil -extract CFBundleShortVersionString raw "${APP_BUNDLE}/Contents/Info.plist")"
@@ -112,7 +111,6 @@ for component in \
   "${SPARKLE_FRAMEWORK}"; do
   codesign --force --preserve-metadata=identifier,entitlements "${SIGN_ARGS[@]}" "${component}"
 done
-codesign --force "${SIGN_ARGS[@]}" "${APP_BUNDLE}/Contents/MacOS/ReinsStatusline"
 codesign --force "${SIGN_ARGS[@]}" "${APP_BUNDLE}/Contents/Helpers/spacevibe"
 codesign --force "${SIGN_ARGS[@]}" "${APP_BUNDLE}"
 codesign --verify --deep --strict --verbose=2 "${APP_BUNDLE}"

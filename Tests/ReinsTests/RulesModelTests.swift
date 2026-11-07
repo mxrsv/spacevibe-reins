@@ -111,8 +111,7 @@ struct RulesModelTests {
     }
 
     private func model(_ core: FakeRulesCore) -> RulesModel {
-        // The in-process core refuses everything, so a call that strays to it fails loudly.
-        let env = AppEnvironment(startupProblem: nil, toasts: ToastCenter(announce: false), core: UnservedCore(), makeCoreClient: { core })
+        let env = AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { core })
         return RulesModel(env: env)
     }
 
@@ -183,7 +182,7 @@ struct RulesModelTests {
     @Test("when the helper is missing, the page shows the fixed startup sentence and no rules")
     func helperMissing() async throws {
         let client = CoreClient(binary: URL(fileURLWithPath: "/nonexistent/spacevibe"))
-        let model = RulesModel(env: AppEnvironment(roots: nil, toasts: ToastCenter(announce: false), makeCoreClient: { client }))
+        let model = RulesModel(env: AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { client }))
         model.start()
         try await settle("the failure") { model.failure != nil }
         #expect(model.failure == CoreWire.startFailedMessage)

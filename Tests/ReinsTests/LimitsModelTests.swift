@@ -9,7 +9,7 @@ import Testing
 struct LimitsModelTests {
     private func model(_ fixture: CoreFixtureHome) throws -> (LimitsModel, CoreClient) {
         let client = try fixture.client()
-        let env = AppEnvironment(roots: try fixture.roots(), makeCoreClient: { client })
+        let env = AppEnvironment(makeCoreClient: { client })
         return (LimitsModel(env: env), client)
     }
 
@@ -44,7 +44,7 @@ struct LimitsModelTests {
     @Test("when the helper is missing, the page shows the fixed startup sentence and no results")
     func helperMissing() async {
         let client = CoreClient(binary: URL(fileURLWithPath: "/nonexistent/spacevibe"))
-        let model = LimitsModel(env: AppEnvironment(roots: nil, makeCoreClient: { client }))
+        let model = LimitsModel(env: AppEnvironment(makeCoreClient: { client }))
         await model.readOnce()
         #expect(model.failure == CoreWire.startFailedMessage)
         #expect(model.results.isEmpty && model.readAt == nil)

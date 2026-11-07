@@ -6,15 +6,15 @@ What is installed for Claude Code and Codex: skills, subagents and hooks, read f
 
 | Part | Responsibility | Source |
 | --- | --- | --- |
-| Roots | Where each CLI's config, logs and Reins's own data live; refuses a real home under `SPACEVIBE_TEST=1` (S-R1) | [Roots.swift](../../Sources/ReinsCore/Roots.swift) `Roots.resolve` |
-| Read | Walk both CLIs, enabled Claude plugins and discovered projects into one `InventorySnapshot` | [InventoryReader.swift](../../Sources/ReinsCore/InventoryReader.swift) `Inventory.read` |
-| Frontmatter | `name` and `description` of a `SKILL.md` or subagent `.md`; flat `key: value` only, not YAML | [Frontmatter.swift](../../Sources/ReinsCore/Frontmatter.swift) |
-| Project discovery | Find projects that have their own `.claude` folder | [InventoryProjects.swift](../../Sources/ReinsCore/InventoryProjects.swift) `discoverProjects` |
-| Hook identity and dead hooks | Hook hash, script paths named by a command | [InventoryHash.swift](../../Sources/ReinsCore/InventoryHash.swift), [InventoryScriptPaths.swift](../../Sources/ReinsCore/InventoryScriptPaths.swift) |
-| Usage join | Add a usage cell per CLI to every row | [InventoryUsageAttach.swift](../../Sources/ReinsCore/InventoryUsageAttach.swift) `attachUsage` |
-| Filter counts | Counts for the filter chips | [InventoryFilterCounts.swift](../../Sources/ReinsCore/InventoryFilterCounts.swift) `filterCounts` |
-| Types | Row, cell and snapshot shapes, hook events per CLI | [InventoryTypes.swift](../../Sources/ReinsCore/InventoryTypes.swift) |
-| File access | Bounded reads that tell "missing" from "cannot be read" | [InventoryFileIO.swift](../../Sources/ReinsCore/InventoryFileIO.swift) |
+| Roots | Where each CLI's config, logs and Reins's own data live; refuses a real home under `SPACEVIBE_TEST=1` (S-R1) | [roots.go](../../core/internal/roots/roots.go) `Resolve` |
+| Read | Walk both CLIs, enabled Claude plugins and discovered projects into one `InventorySnapshot` | [reader.go](../../core/internal/inventory/reader.go) |
+| Frontmatter | `name` and `description` of a `SKILL.md` or subagent `.md`; flat `key: value` only, not YAML | [frontmatter.go](../../core/internal/inventory/frontmatter.go) |
+| Project discovery | Find projects that have their own `.claude` folder | [projects.go](../../core/internal/inventory/projects.go) |
+| Hook identity and dead hooks | Hook hash, script paths named by a command | [hashes.go](../../core/internal/hashes/hashes.go), [script-paths.go](../../core/internal/inventory/script-paths.go) |
+| Usage join | Add a usage cell per CLI to every row | [attach-usage.go](../../core/internal/inventory/attach-usage.go) |
+| Filter counts | Counts for the filter chips | [filter-counts.go](../../core/internal/inventory/filter-counts.go) |
+| Types | Row, cell and snapshot shapes, hook events per CLI | [types.go](../../core/internal/inventory/types.go) |
+| File access | Bounded reads that tell "missing" from "cannot be read" | [fileio.go](../../core/internal/inventory/fileio.go) |
 
 ## Where each fact comes from
 
@@ -39,7 +39,7 @@ Settings are read only for hooks, plugin flags and skill overrides. No other val
 ## Rules that are easy to get wrong
 
 - **Row identity.** An item's `key` is kind, project and bare name, so the same skill in both CLIs is one matrix row. A hook's `key` is project and hash. Its `id` differs: a global hook id hashes owner, event, matcher and command; a project hook id also hashes its file, so the same hook in two files has two ids but one `key`.
-- **Hook hash is event plus command.** Hashing the command alone inflates run counts, because the same command is often wired to several events ([InventoryHash.swift](../../Sources/ReinsCore/InventoryHash.swift) `hookHash`). The logs do not say which file a hook came from, so a hook in a global and a project file shares one count.
+- **Hook hash is event plus command.** Hashing the command alone inflates run counts, because the same command is often wired to several events ([hashes.go](../../core/internal/hashes/hashes.go)). The logs do not say which file a hook came from, so a hook in a global and a project file shares one count.
 - **Dead hook.** A hook is dead only when its command names at least one script path and every path is missing. A path Reins cannot stat is not "missing": the hook is not marked dead and a problem sentence says so.
 - **Plugin names.** A plugin-qualified name (`plugin:skill`) is matched by its part after the last `:` (`Inventory.bare`).
 - **Project discovery is bounded.** At most `Inventory.maxProjects` folders, newest first, 3 logs per folder, 64 KB per log. A project never opened with either CLI is not found, and a `cwd` that falls outside the first 64 KB is missed. The home folder and paths under `.claude/worktrees/` are skipped.
@@ -60,5 +60,5 @@ Settings are read only for hooks, plugin flags and skill overrides. No other val
 
 ## Verification
 
-- `scripts/test.sh`: [InventoryTests.swift](../../Tests/ReinsCoreTests/InventoryTests.swift), [FrontmatterTests.swift](../../Tests/ReinsCoreTests/FrontmatterTests.swift) and [RootsTests.swift](../../Tests/ReinsCoreTests/RootsTests.swift) run against `TempHome` or the fixture home, never the real config.
+- `scripts/test.sh`: `cd core && go test ./...` runs [inventory_test.go](../../core/internal/inventory/inventory_test.go), [frontmatter_test.go](../../core/internal/inventory/frontmatter_test.go) and [roots_test.go](../../core/internal/roots/roots_test.go) against temporary homes or the fixture home, never the real config.
 - The goldens are frozen (SV5); the Node core that generated them is deleted and lives in git history.

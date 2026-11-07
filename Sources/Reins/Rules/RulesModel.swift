@@ -273,7 +273,7 @@ final class RulesModel {
         _ work: @escaping @Sendable (any CoreService, RulesScope) async throws -> CoreJournalEntry?
     ) {
         guard let snapshot else {
-            env.toasts.show(env.startupProblem ?? "The config folders could not be resolved.", tone: .danger)
+            env.toasts.show("The config folders could not be resolved.", tone: .danger)
             return
         }
         guard !isWriting else { return }
