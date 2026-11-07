@@ -8,9 +8,10 @@ import Testing
 struct RuleFamiliesTests {
     private static func rule(_ text: String, _ verdict: CoreVerdict) -> CoreRule { RulesSynthetic.rule(text, verdict) }
 
-    private static func reading(_ sandbox: String? = "workspace-write", installed: Bool = true, present: Bool = true, model: CoreCodexModel = .legacy,
-                                profile: String? = nil, notReadable: Bool = false) -> CodexReading {
-        CodexReading(codex: RulesSynthetic.codex(sandbox: sandbox, present: present, model: model, profile: profile, notReadable: notReadable), installed: installed)
+    private static func reading(_ sandbox: String? = "workspace-write", approval: String? = "on-request", installed: Bool = true, present: Bool = true,
+                                model: CoreCodexModel = .legacy, profile: String? = nil, notReadable: Bool = false) -> CodexReading {
+        CodexReading(codex: RulesSynthetic.codex(sandbox: sandbox, approval: approval, present: present, model: model, profile: profile, notReadable: notReadable),
+                     installed: installed)
     }
 
     private static func layout(_ rules: [CoreRule], _ reading: CodexReading = reading(), filter: RulesFilter = RulesFilter()) -> RulesLayout {
@@ -57,10 +58,11 @@ struct RuleFamiliesTests {
         for family in [RuleFamily.read, .web, .mcp, .other] { #expect(CodexFact.of(family, reading) == nil, "\(family.title)") }
     }
 
-    @Test("only a fact that says on or off is compared: full access writes anywhere, read only edits nothing, a workspace is neither; Bash never")
+    @Test("only a fact that says on or off is compared: full access writes anywhere, read only edits nothing only while approvals are never, a workspace is neither; Bash never")
     func comparableFacts() {
         #expect(CodexFact.of(.edit, Self.reading("danger-full-access"))?.isOpen == true)
-        #expect(CodexFact.of(.edit, Self.reading("read-only"))?.isOpen == false)
+        #expect(CodexFact.of(.edit, Self.reading("read-only", approval: "never"))?.isOpen == false)
+        for approval in ["on-request", "untrusted", "on-failure", nil] { #expect(CodexFact.of(.edit, Self.reading("read-only", approval: approval))?.isOpen == nil, "read-only and \(approval ?? "no policy"): Codex may ask to go past it") }
         #expect(CodexFact.of(.edit, Self.reading("workspace-write"))?.isOpen == nil)
         for mode in ["danger-full-access", "read-only", "workspace-write"] { #expect(CodexFact.of(.bash, Self.reading(mode))?.isOpen == nil, "\(mode)") }
     }
@@ -113,11 +115,12 @@ struct RuleFamiliesTests {
         #expect(open.bands.map(\.family) == [.edit, .bash, .read, .web, .mcp, .other], "the flagged band first, then family order")
         #expect(RulesCanvas.opensByDefault(open, 0) && !RulesCanvas.opensByDefault(open, 1), "only the flagged band opens")
         // Off in Codex and allowed in Claude Code.
-        let off = Self.layout([Self.rule("Edit(src/**)", .allow), Self.rule("Bash(ls:*)", .allow)], Self.reading("read-only"))
+        let off = Self.layout([Self.rule("Edit(src/**)", .allow), Self.rule("Bash(ls:*)", .allow)], Self.reading("read-only", approval: "never"))
         #expect(off.mismatches.map(\.family) == [.edit])
+        #expect(Self.layout([Self.rule("Edit(src/**)", .allow)], Self.reading("read-only")).mismatches.isEmpty, "read only with approvals on is not off")
         // Open in Codex with nothing denied, off in Codex with nothing allowed: no problem.
         #expect(Self.layout([Self.rule("Edit(src/**)", .allow)], Self.reading("danger-full-access")).mismatches.isEmpty)
-        #expect(Self.layout([Self.rule("Edit(src/**)", .deny)], Self.reading("read-only")).mismatches.isEmpty)
+        #expect(Self.layout([Self.rule("Edit(src/**)", .deny)], Self.reading("read-only", approval: "never")).mismatches.isEmpty)
         #expect(Self.layout(RulesSynthetic.sample, Self.reading("workspace-write")).mismatches.isEmpty)
     }
 
@@ -196,7 +199,7 @@ struct RuleFamiliesTests {
         #expect(page.answer.alsoLine == nil)
         let whole = Self.page([Self.rule("Edit(~/.ssh/**)", .deny)], codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
         #expect(whole.answer.sentence == "Edit/Write: open in Codex, denied in Claude Code." && whole.answer.family?.allStance.single == .deny)
-        let off = Self.page([Self.rule("Edit(src/**)", .allow)], codex: RulesSynthetic.codex(sandbox: "read-only"))
+        let off = Self.page([Self.rule("Edit(src/**)", .allow)], codex: RulesSynthetic.codex(sandbox: "read-only", approval: "never"))
         #expect(off.answer.sentence == "Edit/Write: off in Codex, allowed in Claude Code.")
     }
 
@@ -207,11 +210,20 @@ struct RuleFamiliesTests {
         #expect(RulesAnswer(sentence: "x").alsoLine == nil)
     }
 
-    @Test("nothing needs the user: a plain sentence, no family row and no fix")
+    @Test("nothing needs the user: the plain sentence, no family row and no fix, but only when a family was compared; else it says nothing was")
     func healthy() {
-        let page = Self.page(RulesSynthetic.sample)
-        #expect(page.answer.sentence == "No tool is open in one CLI and denied in the other." && page.answer.family == nil && !page.answer.showsRetry)
-        #expect(page.layout.redundant.count == 1, "a redundant rule is not a problem for the Answer")
+        let full = Self.page(RulesSynthetic.healthy, codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
+        #expect(full.layout.hasComparison && full.layout.mismatches.isEmpty == false, "the ssh deny against full access is a problem; take it out below")
+        let calm = Self.page(RulesSynthetic.healthy.filter { $0.rule != "Edit(~/.ssh/**)" }, codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
+        #expect(calm.layout.hasComparison)
+        #expect(calm.answer.sentence == "No tool is open in one CLI and denied in the other." && calm.answer.family == nil && !calm.answer.showsRetry)
+        // A workspace sandbox says neither open nor off for any family: nothing was compared, so no clean result is claimed.
+        let workspace = Self.page(RulesSynthetic.sample)
+        #expect(!workspace.layout.hasComparison && workspace.layout.mismatches.isEmpty)
+        #expect(workspace.answer.sentence == "Nothing to compare: no Codex setting says whether these tools are open or off." && workspace.answer.family == nil)
+        #expect(workspace.layout.redundant.count == 1, "a redundant rule is not a problem for the Answer")
+        // Full access with no Edit/Write rule: no family with rules has a comparable fact.
+        #expect(!Self.page([Self.rule("Bash(ls:*)", .allow)], codex: RulesSynthetic.codex(sandbox: "danger-full-access")).layout.hasComparison)
     }
 
     @Test("no data: loading has no sentence; no rules, Codex not installed and an unreadable file each say so")

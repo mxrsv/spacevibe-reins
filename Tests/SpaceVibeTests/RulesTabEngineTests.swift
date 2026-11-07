@@ -39,7 +39,7 @@ struct RulesTabEngineTests {
 
     private func verdict(_ model: RulesModel, _ text: String) -> CoreVerdict? { model.page.rules.first { $0.rule == text }?.verdict }
 
-    @Test("the fixture's global file reads as the page the plan traced: 11 rules in four families, Codex known, nothing to flag")
+    @Test("the fixture's global file reads as the page the plan traced: 11 rules in four families, Codex known, nothing compared")
     func fixturePage() async throws {
         let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
@@ -52,7 +52,7 @@ struct RulesTabEngineTests {
         #expect(page.layout.bands.map(\.stance.summary) == ["Allow 4 \u{00B7} Ask 2 \u{00B7} Deny 1", "Deny", "Allow 1 \u{00B7} Deny 1", "Allow"])
         #expect(page.layout.bands.map { $0.fact?.text } == ["Sandbox: workspace-write", "Sandbox: workspace-write", nil, nil])
         #expect(page.reading.note == "Codex is read only here. Approval policy on-request, from ~/.codex/config.toml.")
-        #expect(page.answer.sentence == "No tool is open in one CLI and denied in the other." && page.layout.redundant.isEmpty)
+        #expect(page.answer.sentence == "Nothing to compare: no Codex setting says whether these tools are open or off." && !page.layout.hasComparison && page.layout.redundant.isEmpty)
     }
 
     @Test("one rule's verdict: one write, one toast, and Undo restores the home byte for byte")

@@ -74,6 +74,7 @@ struct RulesAnswer: Equatable, Sendable {
         case .unknown(let reason): return RulesAnswer(sentence: "Nothing to compare: \(reason.sentence)")
         case .known: break
         }
+        guard layout.hasComparison else { return RulesAnswer(sentence: "Nothing to compare: no Codex setting says whether these tools are open or off.") }
         guard let first = layout.mismatches.first, let open = first.fact?.isOpen else {
             return RulesAnswer(sentence: "No tool is open in one CLI and denied in the other.")
         }

@@ -121,14 +121,17 @@ struct CodexFact: Equatable, Sendable {
     var text: String { "\(label): \(value)" }
 
     /// G12, settled against what `CoreCodexPermissions` holds and Codex's own pages (read 2026-11-08):
-    /// - Bash and Edit/Write: `sandbox_mode`, which says where commands and edits can reach. Only Edit/Write compares it:
-    ///   `danger-full-access` writes anywhere, `read-only` edits nothing; `workspace-write` is neither.
+    /// - Bash and Edit/Write: `sandbox_mode`, which says where commands and edits can reach. Only Edit/Write compares it, and only where
+    ///   Codex cannot step past it: `danger-full-access` ("no sandbox") writes anywhere, which is open; `read-only` is off only when
+    ///   `approval_policy` is `never` (with any other policy Codex may ask to go past the sandbox, so the setting alone does not say
+    ///   off; Hypothesis, unverified: the pages describe presets of both settings, not this pair); `workspace-write` is neither.
     /// - Read, Web, MCP, Other tools: none. No sandbox mode limits reads. `sandbox_workspace_write.network_access` is the network of
     ///   commands, "separate from" Codex's web search tool, which has its own `web_search` key that the core does not read (the
     ///   mock's Web: Network and MCP: Project trust rows are not used: a project's trust level is about project config, not MCP).
     static func of(_ family: RuleFamily, _ reading: CodexReading) -> CodexFact? {
-        guard let mode = reading.codex?.sandboxMode, family == .bash || family == .edit else { return nil }
-        let isOpen: Bool? = family == .edit ? (mode == "danger-full-access" ? true : mode == "read-only" ? false : nil) : nil
+        guard let codex = reading.codex, let mode = codex.sandboxMode, family == .bash || family == .edit else { return nil }
+        let never = CodexWording.approval(codex) == "never"
+        let isOpen: Bool? = family == .edit ? (mode == "danger-full-access" ? true : mode == "read-only" && never ? false : nil) : nil
         return CodexFact(label: "Sandbox", value: CodexWording.word(mode), isOpen: isOpen)
     }
 }
@@ -225,6 +228,9 @@ struct RulesLayout: Equatable, Sendable {
     let bands: [RuleBand]
     /// The families that disagree, in family order, whatever the Filter says (the Answer reads these).
     let mismatches: [RuleBand]
+    /// At least one family with rules has a Codex fact that says on or off: only then can "nothing is open in one CLI and denied in the
+    /// other" be said (otherwise nothing was compared).
+    let hasComparison: Bool
     let redundant: [RedundantRule]
 
     init(rules: [CoreRule], reading: CodexReading, filter: RulesFilter) {
@@ -238,6 +244,7 @@ struct RulesLayout: Equatable, Sendable {
             return RuleBand(family: family, rules: shown, all: members, fact: fact, holdsProblem: disagrees)
         }
         mismatches = all.filter(\.holdsProblem)
+        hasComparison = all.contains { !$0.all.isEmpty && $0.fact?.isOpen != nil }
         let listed = all.filter { !$0.rules.isEmpty }
         bands = listed.filter(\.holdsProblem) + listed.filter { !$0.holdsProblem }
         redundant = RedundantRules.of(unique)

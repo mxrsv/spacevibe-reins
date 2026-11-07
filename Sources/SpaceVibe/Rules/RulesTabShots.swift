@@ -163,7 +163,8 @@ enum RulesTabShots {
         }
         let full = RulesSynthetic.codex(sandbox: "danger-full-access")
         let (sample, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.sample, codex: full))
-        let (healthy, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.healthy))
+        // Healthy: Codex has full access, so Edit/Write is compared, and nothing denies it here (nor is anything redundant).
+        let (healthy, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.healthy.filter { $0.rule != "Edit(~/.ssh/**)" }, codex: full))
         let (many, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.many, codex: full))
         let (none, _) = synthetic(RulesSynthetic.snapshot([]))
         let (loading, _) = synthetic(nil)
@@ -240,7 +241,8 @@ enum RulesTabShots {
         print("trace: Answer \"\(page.answer.sentence ?? "nil")\", family \(page.answer.family?.family.title ?? "none"), Codex note \"\(page.reading.note ?? "none")\"")
         switch variant {
         case .standard:
-            try ShotHarness.check(page.answer.sentence == "No tool is open in one CLI and denied in the other." && page.layout.redundant.isEmpty, "the default fixture has nothing to flag")
+            try ShotHarness.check(page.answer.sentence == "Nothing to compare: no Codex setting says whether these tools are open or off." && !page.layout.hasComparison && page.layout.redundant.isEmpty,
+                                  "the default fixture's workspace sandbox is neither open nor off for any family, so nothing is compared")
             try ShotHarness.check(page.reading.note == "Codex is read only here. Approval policy on-request, from ~/.codex/config.toml.", "the note reads approval_policy")
         case .unrestricted:
             try ShotHarness.check(page.answer.sentence == "Edit/Write: open in Codex, denied in Claude Code.", "Edit/Write is open in Codex and denied here")

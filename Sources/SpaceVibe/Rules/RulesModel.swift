@@ -87,10 +87,10 @@ final class RulesModel {
 
     // MARK: The v5 tab
 
-    /// Codex is on this Mac: the reading of `limits.read` says so; before one exists, its `config.toml` does.
+    /// Codex is on this Mac unless the shell's reading (`limits.read`) says it is not. Before a reading exists nothing says so, and a Mac
+    /// with Codex but no `config.toml` must not read "not installed": the page then says there is no file.
     var codexInstalled: Bool {
-        if let entry = limitsResults().first(where: { $0.cli == .codex }) { return entry.state != .notInstalled }
-        return snapshot?.codex.present ?? false
+        limitsResults().first { $0.cli == .codex }.map { $0.state != .notInstalled } ?? true
     }
 
     var page: RulesPage { RulesPage(snapshot: snapshot, failure: failure, codexInstalled: codexInstalled, filter: filter) }
