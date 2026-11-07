@@ -19,6 +19,8 @@ struct ListPaneLayout<List: View, Pane: View, Bar: View>: View {
 
     @Environment(ToastCenter.self) private var toasts
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// False on a tab the shell keeps mounted but hidden (`AppShell` disables it), so its bar never lifts the toast.
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         GeometryReader { proxy in
@@ -46,7 +48,7 @@ struct ListPaneLayout<List: View, Pane: View, Bar: View>: View {
             }
         }
         .animation(reduceMotion ? nil : .easeOut(duration: Metrics.Motion.quick), value: barShown)
-        .onChange(of: barShown, initial: true) { _, shown in toasts.isOverBottomBar = shown }
+        .onChange(of: barShown && isEnabled, initial: true) { _, lifted in toasts.isOverBottomBar = lifted }
         .onDisappear { toasts.isOverBottomBar = false }
     }
 }

@@ -129,6 +129,11 @@ enum SkillsWording {
         return "Added \(what) to \(cli.label)" + skippedNote(skipped)
     }
 
+    /// Skills added to different CLIs in one write ("a" on picks that each lack another CLI): no single CLI to name.
+    static func addLabel(_ rows: [LoadoutRow], toEach skipped: Int, count: Int) -> String {
+        "Added \(count == 1 ? rows[0].name : "\(count) skills") to the other CLI" + skippedNote(skipped)
+    }
+
     static func removeLabel(_ rows: [LoadoutRow], from cli: CoreCLI?, skipped: Int) -> String {
         let what = rows.count == 1 ? rows[0].name : "\(rows.count) skills"
         return "Removed \(what)" + (cli.map { " from \($0.label)" } ?? "") + skippedNote(skipped)

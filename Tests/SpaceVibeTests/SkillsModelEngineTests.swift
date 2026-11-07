@@ -211,3 +211,61 @@ struct SkillsBulkFailureTests {
         #expect(core.calls.filter { $0.hasPrefix("undo") } == ["undo entry-1"], "the one that was written is undone")
     }
 }
+
+/// A core that accepts every copy and records what it was asked, for a write that spans both CLIs.
+private final class RecordingCore: UnservedCore, @unchecked Sendable {
+    private let lock = NSLock()
+    private var _calls: [String] = []
+    var calls: [String] { lock.withLock { _calls } }
+
+    override func loadoutRows() async throws -> CoreLoadoutRows {
+        SkillRowsFixture.snapshot([("a", SkillRowsFixture.counted(1), nil, "user", nil), ("b", nil, SkillRowsFixture.counted(1), "user", nil)])
+    }
+
+    override func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult {
+        CoreUsageResult(
+            totals: CoreUsageTotals(claude: CoreCLITotals(skill: [:], agent: [:], hook: [:]), codex: CoreCLITotals(skill: [:], agent: [:], hook: [:])),
+            sessions: CoreUsageSessions(claude: 1, codex: 1),
+            windows: CoreUsageWindows(claude: CoreLogWindow(files: 1, oldest: nil, newest: nil), codex: CoreLogWindow(files: 1, oldest: nil, newest: nil)), files: 2)
+    }
+
+    override func loadoutCopyToOther(id: String) async throws -> CoreEntryResult {
+        let n = lock.withLock { () -> Int in _calls.append("copy \(id)"); return _calls.filter { $0.hasPrefix("copy") }.count }
+        return CoreEntryResult(entry: CoreJournalEntry(id: "entry-\(n)", at: "2026-11-07T10:00:00.000Z", label: "Copied", undone: false, count: 1))
+    }
+
+    override func journalUndo(id: String) async throws -> CoreUndoResult {
+        lock.withLock { _calls.append("undo \(id)") }
+        return CoreUndoResult(label: "Copied")
+    }
+}
+
+@Suite("Skills model, a write that spans both CLIs")
+@MainActor
+struct SkillsAddToOtherTests {
+    @Test("`a` on picks that each lack the other CLI is one toast whose Undo undoes every file, newest first")
+    func oneToastOneUndo() async throws {
+        let core = RecordingCore()
+        let env = AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { core })
+        let model = SkillsModel(loadout: LoadoutModel(env: env))
+        model.loadout.start()
+        func wait(_ done: () -> Bool) async throws {
+            let deadline = Date().addingTimeInterval(30)
+            while !done(), Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+        }
+        try await wait { model.loadout.isSettled }
+        try #require(model.loadout.isSettled)
+        #expect(model.detected == [.claude, .codex])
+
+        model.addToOtherCLI(model.rows)
+        try await wait { env.toasts.current != nil }
+        #expect(env.toasts.current?.message == "Added 2 skills to the other CLI")
+        #expect(core.calls == ["copy codex:skill:global:b", "copy claude:skill:global:a"], "b goes to Claude Code, then a to Codex, in one write")
+        #expect(env.toasts.current?.action != nil)
+
+        env.toasts.runCurrentAction()
+        try await wait { env.toasts.current?.message == "Undid Added 2 skills to the other CLI" }
+        #expect(env.toasts.current?.message == "Undid Added 2 skills to the other CLI")
+        #expect(core.calls.filter { $0.hasPrefix("undo") } == ["undo entry-2", "undo entry-1"])
+    }
+}

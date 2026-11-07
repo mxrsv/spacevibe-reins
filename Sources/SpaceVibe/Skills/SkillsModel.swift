@@ -136,16 +136,30 @@ final class SkillsModel {
         if isLit(rows, cli: cli) { remove(rows, from: cli) } else { add(rows, to: cli) }
     }
 
-    func add(_ rows: [LoadoutRow], to cli: CoreCLI) {
-        let plan = LoadoutRows.addWrites(rows, to: cli, events: events)
-        guard !plan.steps.isEmpty else {
-            if rows.contains(where: { $0.members[cli] == nil }) { env.toasts.show(SkillsWording.nothingToChange(rows, adding: true)) }
+    func add(_ rows: [LoadoutRow], to cli: CoreCLI) { add(rows, to: [cli]) }
+
+    /// Adds each row to each of `clis` it lacks as ONE write: one toast and one Undo for every file, however many CLIs.
+    private func add(_ rows: [LoadoutRow], to clis: [CoreCLI]) {
+        var steps: [LoadoutRows.SkillWrites.Step] = []
+        var written: [(row: LoadoutRow, cli: CoreCLI)] = []
+        var skipped = 0
+        for cli in clis {
+            let lacking = rows.filter { $0.members[cli] == nil }
+            let plan = LoadoutRows.addWrites(lacking, to: cli, events: events)
+            steps += plan.steps
+            skipped += plan.skipped
+            written += lacking.filter { LoadoutRows.copyPlan($0, to: cli, events: events) != nil && $0.plugin == nil }.map { ($0, cli) }
+        }
+        guard !steps.isEmpty else {
+            if rows.contains(where: { row in clis.contains { row.members[$0] == nil } }) { env.toasts.show(SkillsWording.nothingToChange(rows, adding: true)) }
             return
         }
-        let written = rows.filter { $0.members[cli] == nil && LoadoutRows.copyPlan($0, to: cli, events: events) != nil && $0.plugin == nil }
-        flash(written.map { "\($0.key):\(cli.rawValue)" })
-        loadout.perform(skillWrites: plan.steps, guardKey: "skills:add:\(cli.rawValue):\(written.map(\.key).sorted().joined(separator: ","))",
-                        label: SkillsWording.addLabel(written, to: cli, skipped: plan.skipped))
+        let names = Set(written.map(\.row.key))
+        let label = Set(written.map(\.cli)).count == 1
+            ? SkillsWording.addLabel(written.map(\.row), to: written[0].cli, skipped: skipped)
+            : SkillsWording.addLabel(Array(written.map(\.row)), toEach: skipped, count: names.count)
+        flash(written.map { "\($0.row.key):\($0.cli.rawValue)" })
+        loadout.perform(skillWrites: steps, guardKey: "skills:add:\(written.map { "\($0.row.key)>\($0.cli.rawValue)" }.sorted().joined(separator: ","))", label: label)
     }
 
     /// Removes the rows from `cli`, or from every CLI that has them when `cli` is nil.
@@ -167,7 +181,7 @@ final class SkillsModel {
 
     /// `a`: add each target skill to every detected CLI that lacks it.
     func addToOtherCLI(_ rows: [LoadoutRow]) {
-        for cli in detected { add(rows.filter { $0.members[cli] == nil }, to: cli) }
+        add(rows, to: detected)
     }
 
     /// The file `Open` and `o` show: the first CLI's copy (Claude Code first).
