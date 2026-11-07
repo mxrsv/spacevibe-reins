@@ -7,11 +7,11 @@
 //
 // Layout under <dir>: .claude/ .codex/ .reins/ (Reins data) and work/spacevibe-{bench,api,academy}/ (projects
 // with their own .claude/settings.json). Point the app at it with HOME, CLAUDE_CONFIG_DIR, CODEX_HOME and
-// REINS_HOME (the printed exports do exactly that), then `npm run dev`, or use scripts/shots.mjs.
+// SPACEVIBE_HOME (the printed exports do exactly that), then `npm run dev`, or use scripts/shots.mjs.
 //
 // Safety: it refuses any <dir> that is, contains or sits under the real home (os.userInfo().homedir and
 // $HOME, resolved through symlinks), and any <dir> that already has files. Use os.tmpdir(); ~/scratch is
-// under the real home, so it is refused too (core roots() refuses it for REINS_TEST=1 for the same reason).
+// under the real home, so it is refused too (core roots() refuses it for SPACEVIBE_TEST=1 for the same reason).
 //
 // Extending it (feature agents): add a function `(ctx) => void` to SECTIONS at the bottom. `ctx` has
 // { dir, claude, codex, work, now, put(path, text), day(n) }. Keep it synthetic and keep the existing names.
@@ -86,7 +86,7 @@ export function writeFixtureHome(dir, { now = Date.now() } = {}) {
   mkdirSync(join(root, '.reins'), { recursive: true });
   return {
     dir: root,
-    env: { HOME: root, CLAUDE_CONFIG_DIR: claude, CODEX_HOME: codex, REINS_HOME: join(root, '.reins') },
+    env: { HOME: root, CLAUDE_CONFIG_DIR: claude, CODEX_HOME: codex, SPACEVIBE_HOME: join(root, '.reins') },
   };
 }
 
@@ -216,12 +216,12 @@ function loadoutProjectSection(ctx) {
 }
 
 // Rules: one project with whole-tool rules (so its capability cells have single values) and a local file.
-// REINS_FIXTURE_CODEX=unrestricted|both rewrites the Codex config for the "unrestricted" and the "both models" states.
+// SPACEVIBE_FIXTURE_CODEX=unrestricted|both rewrites the Codex config for the "unrestricted" and the "both models" states.
 function rulesSection(ctx) {
   const { codex, work, put } = ctx;
   put(join(work, 'spacevibe-academy/.claude/settings.json'), JSON.stringify({ permissions: { allow: ['Read', 'Edit'], ask: ['Bash', 'WebFetch', 'WebSearch'], deny: ['Bash(git push *)'] } }, null, 2));
   put(join(work, 'spacevibe-academy/.claude/settings.local.json'), JSON.stringify({ permissions: { allow: ['Bash(pnpm dev)'] } }, null, 2));
-  const variant = process.env.REINS_FIXTURE_CODEX;
+  const variant = process.env.SPACEVIBE_FIXTURE_CODEX;
   if (variant !== 'unrestricted' && variant !== 'both') return;
   put(join(codex, 'config.toml'), [
     'approval_policy = "never"', 'sandbox_mode = "danger-full-access"',
@@ -234,12 +234,12 @@ function rulesSection(ctx) {
 // Activity: three Claude Code sessions (running, waiting with a junk title in a worktree, idle), three Codex
 // processes (running, a silent tool call, one with no rollout yet), failed commands that repeat (one with a later
 // pass), and two files with the same basename. Live processes are faked: the app reads <dir>/.reins/activity-proc.json
-// instead of ps/lsof when REINS_TEST=1. REINS_FIXTURE_ACTIVITY=empty writes no live session; =loading delays the
+// instead of ps/lsof when SPACEVIBE_TEST=1. SPACEVIBE_FIXTURE_ACTIVITY=empty writes no live session; =loading delays the
 // first read by 20 s so a screenshot can catch "Reading logs…". The sessions and rollouts below add to the Claude
 // and Codex session counts that Loadout shows, and use no skill, agent or hook (the usage scan counts those).
 function activitySection(ctx) {
   const { claude, codex, work, now, put } = ctx;
-  const variant = process.env.REINS_FIXTURE_ACTIVITY;
+  const variant = process.env.SPACEVIBE_FIXTURE_ACTIVITY;
   const at = (agoMs) => new Date(now - agoMs).toISOString();
   const MIN = 60_000;
   const log = (path, records, agoMs) => {
@@ -338,11 +338,11 @@ function activitySection(ctx) {
   }));
 }
 
-// Limits: only when REINS_FIXTURE_LIMITS is set, so the golden fixture (and every count derived from it) stays as it was.
+// Limits: only when SPACEVIBE_FIXTURE_LIMITS is set, so the golden fixture (and every count derived from it) stays as it was.
 // "typical": Claude Code read 2 days ago, Codex read 4 minutes ago, Gemini CLI present but not measurable.
 // "edge": no Claude Code reading, Codex 5-hour window already reset and the weekly one at 4% left, no Gemini CLI.
 function limitsSection(ctx) {
-  const variant = process.env.REINS_FIXTURE_LIMITS;
+  const variant = process.env.SPACEVIBE_FIXTURE_LIMITS;
   if (!variant) return;
   const { claude, codex, now, put } = ctx;
   const MIN = 60_000, H = 3_600_000;

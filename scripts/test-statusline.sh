@@ -13,7 +13,7 @@ with tempfile.TemporaryDirectory(prefix="reins-statusline ' ") as scratch:
     claude.mkdir()
     (claude / '.claude.json').write_text(json.dumps({'oauthAccount': {'accountUuid': 'synthetic'}}))
     env = {**os.environ, 'HOME': str(root), 'CLAUDE_CONFIG_DIR': str(claude),
-           'CODEX_HOME': str(root / '.codex'), 'REINS_HOME': str(root / '.reins'), 'REINS_TEST': '1'}
+           'CODEX_HOME': str(root / '.codex'), 'SPACEVIBE_HOME': str(root / '.spacevibe'), 'SPACEVIBE_TEST': '1'}
     # Quotes in both the original command and paths exercise shell argument preservation.
     original = "cat; printf 'original-statusline\\n' >&2; exit 7"
     settings = claude / 'settings.json'
@@ -29,7 +29,7 @@ with tempfile.TemporaryDirectory(prefix="reins-statusline ' ") as scratch:
     result = subprocess.run(['/bin/sh', '-c', command], input=payload, env=env, capture_output=True, timeout=10)
     assert result.returncode == 7 and result.stdout == payload
     assert result.stderr == b'original-statusline\n', result.stderr
-    snapshot = root / '.reins/claude-limits/synthetic-session.json'
+    snapshot = root / '.spacevibe/claude-limits/synthetic-session.json'
     saved = snapshot.read_bytes()
     assert json.loads(saved)['rate_limits']['seven_day']['used_percentage'] == 76
     assert b'do-not-store' not in saved
@@ -39,11 +39,11 @@ with tempfile.TemporaryDirectory(prefix="reins-statusline ' ") as scratch:
     assert b'Quota capture failed' in result.stderr
     assert snapshot.read_bytes() == saved
     # The delegate may stop reading stdin early; the collector must still finish without SIGPIPE.
-    early = subprocess.run([root / '.reins/bin/reins-statusline', '--capture', str(root / '.reins'),
+    early = subprocess.run([root / '.spacevibe/bin/reins-statusline', '--capture', str(root / '.spacevibe'),
                             str(claude), 'exit 0'], input=huge, env=env, capture_output=True, timeout=10)
     assert early.returncode == 0
     # Cancelling a status-line invocation must also cancel the original command, not orphan it in another group.
-    pending = subprocess.Popen([root / '.reins/bin/reins-statusline', '--capture', str(root / '.reins'),
+    pending = subprocess.Popen([root / '.spacevibe/bin/reins-statusline', '--capture', str(root / '.spacevibe'),
                                 str(claude), 'echo $$; sleep 20'], env=env, stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
     try:

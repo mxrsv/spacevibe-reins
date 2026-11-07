@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The inner loop: build, sign, relaunch. Opens a window; it reads the real ~/.claude and ~/.codex
-# unless HOME, CLAUDE_CONFIG_DIR, CODEX_HOME and REINS_HOME point at a synthetic folder first.
+# unless HOME, CLAUDE_CONFIG_DIR, CODEX_HOME and SPACEVIBE_HOME point at a synthetic folder first.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

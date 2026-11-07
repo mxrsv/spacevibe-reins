@@ -8,7 +8,7 @@
 # what let the built test bundle find `Testing.framework` and `lib_TestingInterop.dylib` at
 # run time. With a full Xcode installed none of this applies and the flags are skipped.
 #
-# Tests build their own temporary HOME. REINS_TEST=1 turns on the real-home guard in `Roots`.
+# Tests build their own temporary HOME. SPACEVIBE_TEST=1 turns on the real-home guard in `Roots`.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -29,7 +29,7 @@ else
   echo "note: no Command Line Tools swift-testing found; running swift test unmodified." >&2
 fi
 
-export REINS_TEST=1
+export SPACEVIBE_TEST=1
 # The frozen goldens (SV5) must be byte-identical to the committed hashes.
 (cd core/testdata/fixtures && shasum -a 256 -c --quiet SHA256SUMS)
 # The `+` form: bash 3.2 with `set -u` treats an empty array as unbound, which is the Xcode case above.

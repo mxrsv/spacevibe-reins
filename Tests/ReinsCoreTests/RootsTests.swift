@@ -36,17 +36,17 @@ struct RootsTests {
     @Test("falls back to folders under HOME and ignores empty values")
     func defaults() throws {
         let (fakeReal, scratch) = try twoFolders()
-        let env = ["HOME": scratch.root.path, "CLAUDE_CONFIG_DIR": "", "REINS_TEST": "1"]
+        let env = ["HOME": scratch.root.path, "CLAUDE_CONFIG_DIR": "", "SPACEVIBE_TEST": "1"]
         let roots = try Roots.resolve(env: env, realHome: fakeReal.root.path)
         #expect(roots.claude.root.path == scratch.claude.path)
         #expect(roots.codex.root.path == scratch.codex.path)
         #expect(roots.data.path == scratch.reins.path)
     }
 
-    @Test("REINS_TEST=1 refuses a root under the real home")
+    @Test("SPACEVIBE_TEST=1 refuses a root under the real home")
     func refusesRealRoots() throws {
         let (fakeReal, scratch) = try twoFolders()
-        for key in ["CLAUDE_CONFIG_DIR", "CODEX_HOME", "REINS_HOME"] {
+        for key in ["CLAUDE_CONFIG_DIR", "CODEX_HOME", "SPACEVIBE_HOME"] {
             var env = scratch.env
             env[key] = fakeReal.root.appendingPathComponent("deep/dir").path
             #expect(throws: RootsError.self, "\(key) under the real home") {
@@ -55,7 +55,7 @@ struct RootsTests {
         }
         // HOME itself being the real home means all three defaults are real.
         var env = scratch.env
-        for key in ["CLAUDE_CONFIG_DIR", "CODEX_HOME", "REINS_HOME"] { env[key] = nil }
+        for key in ["CLAUDE_CONFIG_DIR", "CODEX_HOME", "SPACEVIBE_HOME"] { env[key] = nil }
         env["HOME"] = fakeReal.root.path
         #expect(throws: RootsError.self) { _ = try Roots.resolve(env: env, realHome: fakeReal.root.path) }
     }
@@ -107,14 +107,14 @@ struct RootsTests {
         _ = try Roots.resolve(env: env, realHome: home)
     }
 
-    @Test("without REINS_TEST nothing is checked")
+    @Test("without SPACEVIBE_TEST nothing is checked")
     func noGuardWithoutFlag() throws {
         let (fakeReal, scratch) = try twoFolders()
         var env = scratch.env
-        env["REINS_TEST"] = nil
+        env["SPACEVIBE_TEST"] = nil
         env["CLAUDE_CONFIG_DIR"] = fakeReal.claude.path
         #expect(try Roots.resolve(env: env, realHome: fakeReal.root.path).claude.root.path == fakeReal.claude.path)
-        env["REINS_TEST"] = "0"
+        env["SPACEVIBE_TEST"] = "0"
         _ = try Roots.resolve(env: env, realHome: fakeReal.root.path)
     }
 
@@ -123,9 +123,9 @@ struct RootsTests {
         let real = Roots.realHomeDirectory()
         #expect(!real.isEmpty)
         // Pure path resolution: nothing is read or written under the real home.
-        let env = ["HOME": real, "REINS_TEST": "1"]
+        let env = ["HOME": real, "SPACEVIBE_TEST": "1"]
         #expect(throws: RootsError.self) { _ = try Roots.resolve(env: env) }
-        // And the default environment of this very test run (scripts/test.sh sets REINS_TEST=1) is never the real home.
+        // And the default environment of this very test run (scripts/test.sh sets SPACEVIBE_TEST=1) is never the real home.
         let temp = try TempHome()
         _ = try Roots.resolve(env: temp.env)
     }

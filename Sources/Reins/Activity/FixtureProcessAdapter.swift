@@ -28,13 +28,13 @@ final class FixtureProcessAdapter: ProcessAdapter, @unchecked Sendable {
         pendingDelayMs = delayMs
     }
 
-    /// A list with no process: what `REINS_TEST=1` uses when no file is given, so test mode can never see a real process.
+    /// A list with no process: what `SPACEVIBE_TEST=1` uses when no file is given, so test mode can never see a real process.
     static var empty: FixtureProcessAdapter { FixtureProcessAdapter() }
 
     static func load(path: String) throws -> FixtureProcessAdapter {
         guard let data = FileManager.default.contents(atPath: path),
               var spec = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
-            throw ReinsError("REINS_PROC_FIXTURE does not point at a readable process list file.", status: 400)
+            throw ReinsError("SPACEVIBE_PROC_FIXTURE does not point at a readable process list file.", status: 400)
         }
         if let shared = spec["shared"] as? [String: Any] { spec = shared }
         let alive = (spec["alive"] as? [Int]) ?? []

@@ -13,8 +13,8 @@ Every visual decision lives in [`Sources/Reins/Tokens`](../Sources/Reins/Tokens)
 restyle is an edit to a token or a component, never to a screen. A screen that needs something new gets a component
 first, shown in the gallery.
 
-`Gallery/` is exempt: it lays out specimens. See everything with `REINS_GALLERY=1 scripts/dev-fixture.sh`, or as PNGs
-with `REINS_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-dark.png`, `gallery-light.png`).
+`Gallery/` is exempt: it lays out specimens. See everything with `SPACEVIBE_GALLERY=1 scripts/dev-fixture.sh`, or as PNGs
+with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`gallery-dark.png`, `gallery-light.png`).
 
 ## Type
 

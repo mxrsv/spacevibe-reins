@@ -6,7 +6,7 @@ What is installed for Claude Code and Codex: skills, subagents and hooks, read f
 
 | Part | Responsibility | Source |
 | --- | --- | --- |
-| Roots | Where each CLI's config, logs and Reins's own data live; refuses a real home under `REINS_TEST=1` (S-R1) | [Roots.swift](../../Sources/ReinsCore/Roots.swift) `Roots.resolve` |
+| Roots | Where each CLI's config, logs and Reins's own data live; refuses a real home under `SPACEVIBE_TEST=1` (S-R1) | [Roots.swift](../../Sources/ReinsCore/Roots.swift) `Roots.resolve` |
 | Read | Walk both CLIs, enabled Claude plugins and discovered projects into one `InventorySnapshot` | [InventoryReader.swift](../../Sources/ReinsCore/InventoryReader.swift) `Inventory.read` |
 | Frontmatter | `name` and `description` of a `SKILL.md` or subagent `.md`; flat `key: value` only, not YAML | [Frontmatter.swift](../../Sources/ReinsCore/Frontmatter.swift) |
 | Project discovery | Find projects that have their own `.claude` folder | [InventoryProjects.swift](../../Sources/ReinsCore/InventoryProjects.swift) `discoverProjects` |
@@ -31,7 +31,7 @@ Settings are read only for hooks, plugin flags and skill overrides. No other val
 
 ## Runtime path
 
-1. `Roots.resolve` fixes the folders from `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `REINS_HOME`.
+1. `Roots.resolve` fixes the folders from `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `SPACEVIBE_HOME`.
 2. `Inventory.read` lists each CLI, then enabled plugins, then each discovered project. It reads the disk synchronously; call it off the main thread.
 3. `attachUsage` takes a `UsageInput` from the usage scan (`UsageScanner`) and fills `cells` on every row and `usage` on every Claude hook.
 4. `filterCounts` turns rows into chip counts.

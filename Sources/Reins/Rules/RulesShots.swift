@@ -3,20 +3,20 @@ import ReinsCore
 import SwiftUI
 
 /// Headless screenshots of the real Rules screen, read from the synthetic HOME before any frame is drawn (`ImageRenderer`
-/// draws one frame and runs no `.task`). `ShotRenderer.run` starts it for `REINS_SHOT_SCREEN=rules`; `ShotHarness` holds the
+/// draws one frame and runs no `.task`). `ShotRenderer.run` starts it for `SPACEVIBE_SHOT_SCREEN=rules`; `ShotHarness` holds the
 /// checks, waits and shell it shares with the Loadout and Activity runs. CI runs it through `scripts/dev-fixture.sh --shots`:
 ///
-///     REINS_SHOT_SCREEN=rules scripts/dev-fixture.sh --shots <dir>
+///     SPACEVIBE_SHOT_SCREEN=rules scripts/dev-fixture.sh --shots <dir>
 ///     scripts/rules-shots.sh <dir>            # all three Codex variants
 ///
-/// `REINS_FIXTURE_CODEX=unrestricted|both` (read by `scripts/fixture-home.mjs`) changes the Codex config; in those runs only
+/// `SPACEVIBE_FIXTURE_CODEX=unrestricted|both` (read by `scripts/fixture-home.mjs`) changes the Codex config; in those runs only
 /// the Codex page (and, for `unrestricted`, the Claude Code page's summary bar) is shot, under names of their own so the runs
 /// do not overwrite each other.
 ///
 /// The "written" shot makes the real write through the confirmation (`requestSet`, `confirmPending`) in the synthetic HOME,
 /// draws the toast, then presses Undo through the journal and checks the grid reads as before. "Invalid" corrupts one
 /// project file in the synthetic HOME for one shot and restores it. Nothing outside the synthetic HOME is touched:
-/// `Roots.resolve` refuses a root under the real home when `REINS_TEST=1`.
+/// `Roots.resolve` refuses a root under the real home when `SPACEVIBE_TEST=1`.
 @MainActor
 enum RulesShots {
     static func run(into directory: URL) throws {

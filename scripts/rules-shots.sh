@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 DIR="${1:?usage: scripts/rules-shots.sh <dir>}"
 mkdir -p "${DIR}"
 
-export REINS_SHOT_SCREEN=rules
+export SPACEVIBE_SHOT_SCREEN=rules
 scripts/dev-fixture.sh --shots "${DIR}"
-REINS_FIXTURE_CODEX=unrestricted scripts/dev-fixture.sh --shots "${DIR}"
-REINS_FIXTURE_CODEX=both scripts/dev-fixture.sh --shots "${DIR}"
+SPACEVIBE_FIXTURE_CODEX=unrestricted scripts/dev-fixture.sh --shots "${DIR}"
+SPACEVIBE_FIXTURE_CODEX=both scripts/dev-fixture.sh --shots "${DIR}"

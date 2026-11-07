@@ -148,9 +148,9 @@ struct LimitsStatuslineTests {
     func invalidFiles() throws {
         let home = try TempHome()
         try account(home)
-        try home.write(".reins/claude-limits/invalid.json", "{bad")
-        try home.write(".reins/claude-limits/large.json", Data(repeating: 32, count: 5000))
-        let fifo = home.url(".reins/claude-limits/fifo.json")
+        try home.write(".spacevibe/claude-limits/invalid.json", "{bad")
+        try home.write(".spacevibe/claude-limits/large.json", Data(repeating: 32, count: 5000))
+        let fifo = home.url(".spacevibe/claude-limits/fifo.json")
         #expect(mkfifo(fifo.path, 0o600) == 0)
         try LimitsClaudeStatusline.capture(input(76), roots: home.roots, now: now.addingTimeInterval(60))
         #expect(LimitsClaudeStatusline.read(try home.roots, now: now).source == .claudeCache)

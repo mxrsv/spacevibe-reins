@@ -41,7 +41,7 @@
 	<string>Reins reads the .claude and .codex folders of projects kept here to list their skills, hooks and permissions.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 SpaceVibe</string>
-	<!-- Updates. scripts/build-app.sh adds SUFeedURL when REINS_UPDATE_FEED_URL is set, so a build without it makes
+	<!-- Updates. scripts/build-app.sh adds SUFeedURL when SPACEVIBE_UPDATE_FEED_URL is set, so a build without it makes
 	     no request. Checks run without asking; installing always takes a click. The private half of this key is in
 	     the owner's login Keychain under the Sparkle account dev.spacevibe.reins: never regenerate it (AGENTS.md B8). -->
 	<key>SUPublicEDKey</key>

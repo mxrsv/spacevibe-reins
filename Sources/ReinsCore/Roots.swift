@@ -12,7 +12,7 @@ public struct CLIRoots: Equatable, Sendable {
 }
 
 public enum RootsError: Error, Equatable, Sendable {
-    /// REINS_TEST=1 and a root sits under the real home. `label` is claude, codex or reins; `path` is the offending root.
+    /// SPACEVIBE_TEST=1 and a root sits under the real home. `label` is claude, codex or reins; `path` is the offending root.
     case underRealHome(label: String, path: String)
 }
 
@@ -20,7 +20,7 @@ extension RootsError: CustomStringConvertible {
     public var description: String {
         switch self {
         case .underRealHome(let label, let path):
-            return "REINS_TEST=1: the \(label) root \(path) is under the real home. Point HOME, CLAUDE_CONFIG_DIR, CODEX_HOME and REINS_HOME at a temporary folder."
+            return "SPACEVIBE_TEST=1: the \(label) root \(path) is under the real home. Point HOME, CLAUDE_CONFIG_DIR, CODEX_HOME and SPACEVIBE_HOME at a temporary folder."
         }
     }
 }
@@ -38,9 +38,9 @@ public struct Roots: Equatable, Sendable {
     public let gemini: URL
 
     /// - Parameters:
-    ///   - env: HOME, CLAUDE_CONFIG_DIR, CODEX_HOME, REINS_HOME and REINS_TEST. An empty value counts as unset.
+    ///   - env: HOME, CLAUDE_CONFIG_DIR, CODEX_HOME, SPACEVIBE_HOME and SPACEVIBE_TEST. An empty value counts as unset.
     ///   - realHome: the account's real home folder, from the password database. Tests pass a stand-in.
-    /// - Throws: `RootsError.underRealHome` when REINS_TEST is "1" and a root, or the real path behind it, is under the real home.
+    /// - Throws: `RootsError.underRealHome` when SPACEVIBE_TEST is "1" and a root, or the real path behind it, is under the real home.
     public static func resolve(
         env: [String: String] = ProcessInfo.processInfo.environment,
         realHome: String = Roots.realHomeDirectory()
@@ -49,10 +49,10 @@ public struct Roots: Equatable, Sendable {
         let home = value("HOME") ?? realHome
         let claudeRoot = value("CLAUDE_CONFIG_DIR") ?? (home as NSString).appendingPathComponent(".claude")
         let codexRoot = value("CODEX_HOME") ?? (home as NSString).appendingPathComponent(".codex")
-        let dataRoot = value("REINS_HOME") ?? (home as NSString).appendingPathComponent(".reins")
+        let dataRoot = value(ReinsCore.env("HOME")) ?? (home as NSString).appendingPathComponent(ReinsCore.dataFolderName)
         let claudeState = ((value("CLAUDE_CONFIG_DIR") ?? home) as NSString).appendingPathComponent(".claude.json")
         let geminiRoot = (home as NSString).appendingPathComponent(".gemini")
-        if env["REINS_TEST"] == "1" {
+        if env[ReinsCore.env("TEST")] == "1" {
             try assertNotUnderRealHome(realHome: realHome, roots: [
                 ("claude", claudeRoot), ("codex", codexRoot), ("reins", dataRoot), ("claude state", claudeState), ("gemini", geminiRoot),
             ])

@@ -3,7 +3,7 @@ import Testing
 @testable import ReinsCore
 
 // Hook records are generated here in the shape Claude Code writes them; nothing is copied from real logs.
-// Temp HOME only: the roots come from TempHome (or the fixture tree with a temp data folder), and REINS_TEST=1 turns on the guard.
+// Temp HOME only: the roots come from TempHome (or the fixture tree with a temp data folder), and SPACEVIBE_TEST=1 turns on the guard.
 
 private func scanner(_ home: TempHome) throws -> UsageScanner { UsageScanner(roots: try Roots.resolve(env: home.env)) }
 
@@ -118,7 +118,7 @@ struct UsageScanTests {
     func corruptCache() async throws {
         let h = try TempHome()
         try h.write(".claude/projects/p/s1.jsonl", try attach("2026-10-01", ["type": "hook_success", "hookEvent": "Stop", "command": "c"]))
-        try h.write(".reins/usage-cache.json", "{ truncated")
+        try h.write(".spacevibe/usage-cache.json", "{ truncated")
         let r = try Roots.resolve(env: h.env)
         let result = try await UsageScanner(roots: r).scan()
         #expect(result.totals.claude.hook.count == 1)
@@ -196,7 +196,7 @@ struct UsageScanTests {
         try FixtureHome.materialize()
         let temp = try TempHome()
         var env = FixtureHome.env
-        env["REINS_HOME"] = temp.reins.path
+        env["SPACEVIBE_HOME"] = temp.reins.path
         let r = try Roots.resolve(env: env)
         let cold = try await UsageScanner(roots: r).scan()
         let expected = try FixtureHome.golden("usage")
@@ -211,7 +211,7 @@ struct UsageScanTests {
     @Test("the scan never reads the real home: the roots it is given are the temp ones, and the guard refuses the real ones")
     func neverTouchesRealHome() throws {
         let real = Roots.realHomeDirectory()
-        #expect(throws: RootsError.self) { try Roots.resolve(env: ["HOME": real, "REINS_TEST": "1"]) }
+        #expect(throws: RootsError.self) { try Roots.resolve(env: ["HOME": real, "SPACEVIBE_TEST": "1"]) }
         let h = try TempHome()
         let r = try Roots.resolve(env: h.env)
         for url in [r.claude.logs, r.codex.logs, UsageScanCache.url(r)] { #expect(url.path.hasPrefix(h.root.path)) }

@@ -11,12 +11,12 @@ import ReinsCore
 ///         try removeRule(roots, ...)      // returns the JournalEntry the engine recorded
 ///     }
 ///
-/// `roots` is nil, with `startupProblem` set, when `Roots.resolve()` throws (under `REINS_TEST=1` that is a root under
+/// `roots` is nil, with `startupProblem` set, when `Roots.resolve()` throws (under `SPACEVIBE_TEST=1` that is a root under
 /// the real home). A screen shows `startupProblem` instead of reading anything.
 ///
-/// Dev launch (`scripts/dev-fixture.sh`): `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `REINS_HOME` come from the
-/// environment. With `REINS_TEST=1` the process adapter is never the real one: it replays the file named by
-/// `REINS_PROC_FIXTURE`, or an empty list when that is unset, so nothing can signal a real process.
+/// Dev launch (`scripts/dev-fixture.sh`): `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `SPACEVIBE_HOME` come from the
+/// environment. With `SPACEVIBE_TEST=1` the process adapter is never the real one: it replays the file named by
+/// `SPACEVIBE_PROC_FIXTURE`, or an empty list when that is unset, so nothing can signal a real process.
 @MainActor
 @Observable
 final class AppEnvironment {
@@ -43,8 +43,8 @@ final class AppEnvironment {
         var roots: Roots?
         do { roots = try Roots.resolve(env: environment) } catch { problems.append(String(describing: error)) }
         let proc: any ProcessAdapter
-        if environment["REINS_TEST"] == "1" {
-            if let path = environment["REINS_PROC_FIXTURE"], !path.isEmpty {
+        if environment[ReinsCore.env("TEST")] == "1" {
+            if let path = environment[ReinsCore.env("PROC_FIXTURE")], !path.isEmpty {
                 do { proc = try FixtureProcessAdapter.load(path: path) } catch {
                     problems.append(String(describing: error))
                     proc = FixtureProcessAdapter.empty

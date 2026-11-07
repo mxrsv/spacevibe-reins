@@ -182,13 +182,13 @@ public enum FileEdit {
         return Target(real: Roots.resolvedPath(path), existed: true, mode: Int(info.st_mode & 0o777))
     }
 
-    /// Defense in depth for tests: under REINS_TEST=1 a path under the real home is never written, whatever the roots say.
+    /// Defense in depth for tests: under SPACEVIBE_TEST=1 a path under the real home is never written, whatever the roots say.
     static func refuseRealHomeUnderTest(_ path: String) throws {
-        guard ProcessInfo.processInfo.environment["REINS_TEST"] == "1" else { return }
+        guard ProcessInfo.processInfo.environment[ReinsCore.env("TEST")] == "1" else { return }
         let home = Roots.resolvedPath(Roots.realHomeDirectory())
         let resolved = Roots.resolvedPath(path)
         if resolved == home || resolved.hasPrefix(home.hasSuffix("/") ? home : home + "/") {
-            throw ReinsError("REINS_TEST=1: refusing to write under the real home.", status: 500)
+            throw ReinsError("SPACEVIBE_TEST=1: refusing to write under the real home.", status: 500)
         }
     }
 }

@@ -3,14 +3,14 @@ import ReinsCore
 import SwiftUI
 
 /// Headless screenshots of the real Loadout screen, read from the synthetic HOME before any frame is drawn (`ImageRenderer`
-/// draws one frame and runs no `.task`). `ShotRenderer.run` starts it for `REINS_SHOT_SCREEN=loadout`; `ShotHarness` holds the
+/// draws one frame and runs no `.task`). `ShotRenderer.run` starts it for `SPACEVIBE_SHOT_SCREEN=loadout`; `ShotHarness` holds the
 /// checks, waits and shell it shares with the Rules and Activity runs. CI runs it through `scripts/dev-fixture.sh --shots`:
 ///
-///     REINS_SHOT_SCREEN=loadout scripts/dev-fixture.sh --shots <dir>
+///     SPACEVIBE_SHOT_SCREEN=loadout scripts/dev-fixture.sh --shots <dir>
 ///
 /// The "added" and "removed" shots make the real write in the synthetic HOME, draw the toast, then undo it through the journal
 /// and check the row is back, so one run also exercises Add to, Remove and Undo against real files. Nothing outside the
-/// synthetic HOME is touched: `Roots.resolve` refuses a root under the real home when `REINS_TEST=1`.
+/// synthetic HOME is touched: `Roots.resolve` refuses a root under the real home when `SPACEVIBE_TEST=1`.
 @MainActor
 enum LoadoutShots {
     static func run(into directory: URL) throws {

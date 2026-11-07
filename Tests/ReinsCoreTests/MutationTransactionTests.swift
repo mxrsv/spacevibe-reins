@@ -16,7 +16,7 @@ struct MutationTransactionTests {
         for name in ["missing-first.sh", "missing-second.sh"] {
             _ = try Mutate.addHook(roots: roots, clis: [.claude], event: "Stop", command: home.url(name).path)
         }
-        try home.write(".reins/journal.json", "[]")
+        try home.write(".spacevibe/journal.json", "[]")
         return roots
     }
 
@@ -65,13 +65,13 @@ struct MutationTransactionTests {
         let home = try TempHome()
         let roots = try seed(home)
         let before = try contents(roots)
-        let trash = try FileManager.default.contentsOfDirectory(atPath: home.url(".reins/trash").path).sorted()
-        try home.write(".reins/journal.json", "{ invalid history")
+        let trash = try FileManager.default.contentsOfDirectory(atPath: home.url(".spacevibe/trash").path).sorted()
+        try home.write(".spacevibe/journal.json", "{ invalid history")
         let error = #expect(throws: ReinsError.self) { try run(operation, roots: roots) }
         #expect(error?.message == Journal.unreadableMessage)
         #expect(try contents(roots) == before)
-        #expect(try FileManager.default.contentsOfDirectory(atPath: home.url(".reins/trash").path).sorted() == trash)
-        #expect(try String(contentsOf: home.url(".reins/journal.json"), encoding: .utf8) == "{ invalid history")
+        #expect(try FileManager.default.contentsOfDirectory(atPath: home.url(".spacevibe/trash").path).sorted() == trash)
+        #expect(try String(contentsOf: home.url(".spacevibe/journal.json"), encoding: .utf8) == "{ invalid history")
     }
 
     @Test("journal persistence failure restores every mutation, including shared hook backups",
@@ -86,12 +86,12 @@ struct MutationTransactionTests {
         defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: roots.data.path) }
         let error = #expect(throws: ReinsError.self) { try run(operation, roots: roots) }
         #expect(error?.status == 500)
-        #expect(error?.message.contains("journal.json.reins-") == true)
+        #expect(error?.message.contains("journal.json.spacevibe-") == true)
         #expect(error?.message != Journal.rollbackFailureMessage)
         #expect(try contents(roots) == before)
-        #expect(try String(contentsOf: home.url(".reins/journal.json"), encoding: .utf8) == "[]")
+        #expect(try String(contentsOf: home.url(".spacevibe/journal.json"), encoding: .utf8) == "[]")
         let paths = FileManager.default.enumerator(atPath: home.root.path)?.allObjects as? [String] ?? []
-        #expect(!paths.contains { $0.contains(".reins-") && $0.hasSuffix(".tmp") })
+        #expect(!paths.contains { $0.contains(".spacevibe-") && $0.hasSuffix(".tmp") })
     }
 
     @Test("a journal that fails after preflight restores a symlink target and its mode")
@@ -105,8 +105,8 @@ struct MutationTransactionTests {
         let error = #expect(throws: ReinsError.self) {
             try FileEdit.editJSON(roots, file: link, label: "Synthetic edit") { document in
                 // This closure runs after the journal preflight, before the config mutation.
-                try FileManager.default.removeItem(at: home.url(".reins/journal.json"))
-                try FileManager.default.createDirectory(at: home.url(".reins/journal.json"), withIntermediateDirectories: false)
+                try FileManager.default.removeItem(at: home.url(".spacevibe/journal.json"))
+                try FileManager.default.createDirectory(at: home.url(".spacevibe/journal.json"), withIntermediateDirectories: false)
                 return try document.setting(["model"], to: "synthetic")
             }
         }
@@ -127,7 +127,7 @@ struct MutationTransactionTests {
                 let first = try #require(FileEdit.apply(roots, file: codex) { _ in "model = \"after\"\n" })
                 let op = try #require(FileEdit.apply(roots, file: roots.claude.hookFile) { _ in "{}\n" })
                 try home.write(".claude/settings.json", "concurrent writer\n")
-                try home.write(".reins/journal.json", "{ now corrupt")
+                try home.write(".spacevibe/journal.json", "{ now corrupt")
                 return try Journal.recordMutation(roots, label: "Synthetic edit", ops: [first, op])
             }
         }

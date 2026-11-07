@@ -22,8 +22,8 @@ struct CodexWordingTests {
             "HOME": root.path,
             "CLAUDE_CONFIG_DIR": root.appendingPathComponent(".claude").path,
             "CODEX_HOME": codex.path,
-            "REINS_HOME": root.appendingPathComponent(".reins").path,
-            "REINS_TEST": "1",
+            "SPACEVIBE_HOME": root.appendingPathComponent(".spacevibe").path,
+            "SPACEVIBE_TEST": "1",
         ]
         return CodexPermissions.read(roots: try Roots.resolve(env: env))
     }

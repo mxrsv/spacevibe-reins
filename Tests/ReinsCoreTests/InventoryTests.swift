@@ -56,7 +56,7 @@ struct InventoryTests {
         try FixtureHome.materialize()
         let temp = try TempHome()
         var env = FixtureHome.env
-        env["REINS_HOME"] = temp.reins.path
+        env["SPACEVIBE_HOME"] = temp.reins.path
         let r = try Roots.resolve(env: env)
 
         let snapshot = Inventory.read(roots: r)
@@ -422,10 +422,10 @@ struct InventoryTests {
         #expect(small.text == "hi" && !small.truncated)
     }
 
-    @Test("a root under the real home is refused when REINS_TEST=1, so no read or scan can reach it")
+    @Test("a root under the real home is refused when SPACEVIBE_TEST=1, so no read or scan can reach it")
     func guardRefusesRealHome() {
         let real = Roots.realHomeDirectory()
-        #expect(throws: RootsError.self) { try Roots.resolve(env: ["HOME": real, "REINS_TEST": "1"]) }
+        #expect(throws: RootsError.self) { try Roots.resolve(env: ["HOME": real, "SPACEVIBE_TEST": "1"]) }
     }
 
     @Test("items and hooks survive a JSON round trip")
@@ -433,7 +433,7 @@ struct InventoryTests {
         try FixtureHome.materialize()
         let temp = try TempHome()
         var env = FixtureHome.env
-        env["REINS_HOME"] = temp.reins.path
+        env["SPACEVIBE_HOME"] = temp.reins.path
         let r = try Roots.resolve(env: env)
         let result = try await UsageScanner(roots: r).scan()
         let inv = Inventory.attachUsage(Inventory.read(roots: r), usage: .ready(result), now: try FixtureHome.now())

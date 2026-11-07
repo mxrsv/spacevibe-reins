@@ -61,7 +61,7 @@ func capture(_ arguments: [String]) throws -> Int32 {
     do {
         if oversized { throw ReinsError("Status line input exceeded its size limit.", status: 400) }
         var environment = ProcessInfo.processInfo.environment
-        environment["REINS_HOME"] = arguments[1]
+        environment[ReinsCore.env("HOME")] = arguments[1]
         let roots = try Roots.resolve(env: environment)
         guard roots.claude.root.standardizedFileURL.path == URL(fileURLWithPath: arguments[2]).standardizedFileURL.path else {
             throw ReinsError("Claude config folder changed; capture skipped.", status: 409)

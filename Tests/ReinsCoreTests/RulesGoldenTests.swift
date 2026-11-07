@@ -218,7 +218,7 @@ struct RulesGoldenView {
         let walker = try #require(FileManager.default.enumerator(at: root, includingPropertiesForKeys: [.isRegularFileKey]))
         for case let url as URL in walker where url.pathExtension == "json" {
             let relative = String(url.path.dropFirst(root.path.count + 1))
-            if relative.hasPrefix(".reins") { continue }
+            if relative.hasPrefix(".reins") || relative.hasPrefix(".spacevibe") { continue }
             out[relative] = (try? JSONSerialization.jsonObject(with: Data(contentsOf: url))) ?? "<not JSON>"
         }
         return out

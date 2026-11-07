@@ -37,10 +37,10 @@ struct UpdateControllerTests {
         }
     }
 
-    @Test("only a normal launch outside REINS_TEST runs the updater")
+    @Test("only a normal launch outside SPACEVIBE_TEST runs the updater")
     func launchModes() {
         #expect(UpdateController.runs(in: .normal, environment: [:]))
-        #expect(!UpdateController.runs(in: .normal, environment: ["REINS_TEST": "1"]))
+        #expect(!UpdateController.runs(in: .normal, environment: ["SPACEVIBE_TEST": "1"]))
         #expect(!UpdateController.runs(in: .gallery, environment: [:]))
         #expect(!UpdateController.runs(in: .shots(directory: URL(fileURLWithPath: "/tmp")), environment: [:]))
     }
@@ -64,7 +64,7 @@ struct UpdateControllerTests {
     @MainActor
     func startRespectsMode() {
         let updates = UpdateController(toasts: ToastCenter(announce: false))
-        updates.start(mode: .normal, environment: ["REINS_TEST": "1"], info: validInfo)
+        updates.start(mode: .normal, environment: ["SPACEVIBE_TEST": "1"], info: validInfo)
         #expect(updates.isRunning == false)
         #expect(updates.status == .unavailable("Updates are off in this launch mode."))
     }

@@ -1,8 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// `REINS_SHOT_SCREEN=limits`: the sidebar block on a demo shell, then the Limits page it opens, read from the synthetic
-/// home, in both appearances. `REINS_FIXTURE_LIMITS=typical|edge` (scripts/fixture-home.mjs) chooses what the files say.
+/// `SPACEVIBE_SHOT_SCREEN=limits`: the sidebar block on a demo shell, then the Limits page it opens, read from the synthetic
+/// home, in both appearances. `SPACEVIBE_FIXTURE_LIMITS=typical|edge` (scripts/fixture-home.mjs) chooses what the files say.
 @MainActor
 enum LimitsShots {
     static func run(into directory: URL) throws {

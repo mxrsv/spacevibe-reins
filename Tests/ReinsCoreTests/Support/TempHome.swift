@@ -17,7 +17,7 @@ final class TempHome {
 
     var claude: URL { root.appendingPathComponent(".claude", isDirectory: true) }
     var codex: URL { root.appendingPathComponent(".codex", isDirectory: true) }
-    var reins: URL { root.appendingPathComponent(".reins", isDirectory: true) }
+    var reins: URL { root.appendingPathComponent(".spacevibe", isDirectory: true) }
 
     /// Environment that points every root at this folder, with the real-home guard on.
     var env: [String: String] {
@@ -25,8 +25,8 @@ final class TempHome {
             "HOME": root.path,
             "CLAUDE_CONFIG_DIR": claude.path,
             "CODEX_HOME": codex.path,
-            "REINS_HOME": reins.path,
-            "REINS_TEST": "1",
+            "SPACEVIBE_HOME": reins.path,
+            "SPACEVIBE_TEST": "1",
         ]
     }
 
@@ -35,7 +35,7 @@ final class TempHome {
 
     func url(_ relative: String) -> URL { root.appendingPathComponent(relative) }
 
-    /// Any temp file left in the folders. Every `.tmp` counts, not only Reins's own `.reins-*.tmp`: the stricter check, and no fixture or script ships one.
+    /// Any temp file left in the folders. Every `.tmp` counts, not only Reins's own `.spacevibe-*.tmp`: the stricter check, and no fixture or script ships one.
     func strayTempFiles(in folders: URL...) -> [String] {
         folders.flatMap { folder in
             ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).filter { $0.hasSuffix(".tmp") }

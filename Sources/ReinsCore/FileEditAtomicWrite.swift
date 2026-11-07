@@ -13,7 +13,7 @@ enum AtomicWrite {
     static func write(
         to path: String, data: Data, mode: Int, validate: ((Data) throws -> Void)? = nil, beforeRename: (() throws -> Void)? = nil
     ) throws {
-        let temp = "\(path).reins-\(getpid())-\(UUID().uuidString.lowercased().prefix(8)).tmp"
+        let temp = "\(path).spacevibe-\(getpid())-\(UUID().uuidString.lowercased().prefix(8)).tmp"
         do {
             try create(temp, data: data, mode: mode)
             if let validate {

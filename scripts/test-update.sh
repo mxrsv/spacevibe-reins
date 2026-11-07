@@ -12,7 +12,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-PORT="${REINS_UPDATE_TEST_PORT:-8765}"
+PORT="${SPACEVIBE_UPDATE_TEST_PORT:-8765}"
 FEED="http://127.0.0.1:${PORT}"
 DOMAIN="dev.spacevibe.reins"
 TOOLS=".build/artifacts/sparkle/Sparkle/bin"
@@ -37,7 +37,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "==> building (feed ${FEED}/appcast.xml)"
-REINS_BUNDLE_DIR="${WORK}/base" REINS_UPDATE_FEED_URL="${FEED}/appcast.xml" scripts/build-app.sh >"${WORK}/build.log" 2>&1 \
+SPACEVIBE_BUNDLE_DIR="${WORK}/base" SPACEVIBE_UPDATE_FEED_URL="${FEED}/appcast.xml" scripts/build-app.sh >"${WORK}/build.log" 2>&1 \
   || { tail -20 "${WORK}/build.log" >&2; fail "build"; }
 IDENTITY="$(codesign -dvv "${WORK}/base/Reins.app" 2>&1 | sed -n 's/^Authority=\(Developer ID Application:.*\)$/\1/p')"
 [[ -n "${IDENTITY}" ]] || fail "needs a Developer ID signature (see AGENTS.md B3)"
@@ -53,7 +53,7 @@ make_bundle() {
   codesign --force --options runtime --timestamp=none --sign "${IDENTITY}" "$1/Reins.app" 2>/dev/null
 }
 
-mkdir -p "${WORK}/feed" "${WORK}/home/.claude" "${WORK}/home/.codex" "${WORK}/home/.reins"
+mkdir -p "${WORK}/feed" "${WORK}/home/.claude" "${WORK}/home/.codex" "${WORK}/home/.spacevibe"
 make_bundle "${WORK}/new" 2 0.2.0
 ditto -c -k --keepParent "${WORK}/new/Reins.app" "${WORK}/feed/Reins-0.2.0.zip"
 "${TOOLS}/generate_appcast" --account "${DOMAIN}" --download-url-prefix "${FEED}/" --maximum-deltas 0 "${WORK}/feed" >/dev/null
@@ -77,7 +77,7 @@ run() {
   # Far enough in the past that the scheduled check runs at launch.
   defaults write "${DOMAIN}" SULastCheckTime -date '2020-01-01 00:00:00 +0000'
   open -g -n --env "HOME=${WORK}/home" --env "CLAUDE_CONFIG_DIR=${WORK}/home/.claude" --env "CODEX_HOME=${WORK}/home/.codex" \
-    --env "REINS_HOME=${WORK}/home/.reins" "${dir}/Reins.app"
+    --env "SPACEVIBE_HOME=${WORK}/home/.spacevibe" "${dir}/Reins.app"
 
   for _ in $(seq 1 60); do grep -q 'GET /Reins-0.2.0.zip' "${WORK}/server.log" && break; sleep 1; done
   grep -q 'GET /Reins-0.2.0.zip' "${WORK}/server.log" || { cat "${WORK}/server.log" >&2; fail "${name}: the app never downloaded the update"; }

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import ReinsCore
 
-// Every test runs on a TempHome (REINS_TEST=1 makes Roots refuse a root under the real home). The golden replay copies the
+// Every test runs on a TempHome (SPACEVIBE_TEST=1 makes Roots refuse a root under the real home). The golden replay copies the
 // synthetic fixture HOME into one, runs each operation the Node core ran (golden/mutate.json), and compares.
 @Suite("Mutate")
 struct MutateTests {
@@ -35,7 +35,7 @@ struct MutateTests {
         }
 
         func read(_ relative: String) throws -> String { try String(contentsOf: home.url(relative), encoding: .utf8) }
-        func tree() throws -> [String: String] { try TreeHash.measure(home.root, root: root, skipTop: [".reins", ".fixture-stamp"]) }
+        func tree() throws -> [String: String] { try TreeHash.measure(home.root, root: root, skipTop: [".reins", ".spacevibe", ".fixture-stamp"]) }
     }
 
     /// Path -> sha1 of the text with the copy's root replaced by `$HOME` (the hashing the frozen goldens (SV5), last generated at b58269d3f3eb, used).
@@ -417,7 +417,7 @@ struct MutateTests {
         let roots = try home.roots
         let file = home.url(".claude/settings.json")
         try home.write(".claude/settings.json", "{\n  \"env\": {\"T\": \"\(Self.canary)\"},\n  \"hooks\": {\n    \"Stop\": [\n      {\n        \"hooks\": [\n          { \"type\": \"command\", \"command\": \"echo kept\" },\n          { \"type\": \"command\", \"command\": \"echo added\", \"timeout\": 5 }\n        ]\n      }\n    ]\n  }\n}")
-        try home.write(".reins/journal.json", """
+        try home.write(".spacevibe/journal.json", """
         [
           { "id": "aaaaaaaa-0000-0000-0000-000000000001", "at": "2026-11-02T10:00:00.000Z", "label": "Added Stop hook to Claude Code",
             "ops": [ { "type": "hook-added", "file": "\(file.path)", "event": "Stop", "matcher": null, "hook": { "type": "command", "command": "echo added", "timeout": 5 } } ] },

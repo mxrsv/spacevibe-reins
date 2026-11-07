@@ -2,7 +2,7 @@ import Foundation
 import ReinsCore
 import SwiftUI
 
-/// Headless screenshots of the real Activity screen. `ShotRenderer.run` starts it for `REINS_SHOT_SCREEN=activity`, which
+/// Headless screenshots of the real Activity screen. `ShotRenderer.run` starts it for `SPACEVIBE_SHOT_SCREEN=activity`, which
 /// needs the synthetic HOME and fake process list of `scripts/dev-fixture.sh --shots`; `ShotHarness` holds the waits and
 /// shell it shares with the Loadout and Rules runs. The report is read from the synthetic HOME before any frame is drawn,
 /// because `ImageRenderer` draws one frame and runs no `.task`.

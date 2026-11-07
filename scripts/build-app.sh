@@ -3,15 +3,15 @@
 #
 #   scripts/build-app.sh                 development build: Developer ID when present, else ad-hoc; no timestamp
 #   scripts/build-app.sh --distribution  release candidate: Developer ID required, secure timestamp (notarization
-#                                        rejects a signature without one), REINS_UPDATE_FEED_URL required
+#                                        rejects a signature without one), SPACEVIBE_UPDATE_FEED_URL required
 #
 # Signing: the Developer ID identity is used when it is in the keychain (override the name with
-# REINS_SIGNING_IDENTITY). In a development build it is never required: without it the bundle is ad-hoc signed,
+# SPACEVIBE_SIGNING_IDENTITY). In a development build it is never required: without it the bundle is ad-hoc signed,
 # which runs fine but makes macOS ask again for folder access (Documents, Desktop) after each rebuild.
 #
-# Updates: REINS_UPDATE_FEED_URL is written to the bundle as SUFeedURL. Without it the app has no update source and makes
+# Updates: SPACEVIBE_UPDATE_FEED_URL is written to the bundle as SUFeedURL. Without it the app has no update source and makes
 # no request. HTTPS only; plain http is accepted for 127.0.0.1, which is what scripts/test-update.sh serves.
-# REINS_BUNDLE_DIR puts the bundle somewhere other than build/.
+# SPACEVIBE_BUNDLE_DIR puts the bundle somewhere other than build/.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -28,19 +28,19 @@ if [[ $# -gt 1 ]]; then echo "Too many build arguments" >&2; exit 2; fi
 
 APP_NAME="Reins"
 EXECUTABLE_NAME="Reins"
-BUILD_DIR="${REINS_BUNDLE_DIR:-build}"
+BUILD_DIR="${SPACEVIBE_BUNDLE_DIR:-build}"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
-SIGNING_IDENTITY="${REINS_SIGNING_IDENTITY:-Developer ID Application: VAN BINH TRAN (DJDD3T8LH7)}"
-UPDATE_FEED_URL="${REINS_UPDATE_FEED_URL:-}"
+SIGNING_IDENTITY="${SPACEVIBE_SIGNING_IDENTITY:-Developer ID Application: VAN BINH TRAN (DJDD3T8LH7)}"
+UPDATE_FEED_URL="${SPACEVIBE_UPDATE_FEED_URL:-}"
 
 case "${UPDATE_FEED_URL}" in
   ""|https://*|http://127.0.0.1:*) ;;
-  *) echo "REINS_UPDATE_FEED_URL must be HTTPS (or http://127.0.0.1:<port> for a local test)." >&2; exit 2 ;;
+  *) echo "SPACEVIBE_UPDATE_FEED_URL must be HTTPS (or http://127.0.0.1:<port> for a local test)." >&2; exit 2 ;;
 esac
 if [[ "${DISTRIBUTION}" == 1 ]]; then
   case "${UPDATE_FEED_URL}" in
     https://*) ;;
-    *) echo "A distribution build needs REINS_UPDATE_FEED_URL set to the public HTTPS appcast URL." >&2; exit 2 ;;
+    *) echo "A distribution build needs SPACEVIBE_UPDATE_FEED_URL set to the public HTTPS appcast URL." >&2; exit 2 ;;
   esac
 fi
 
@@ -59,7 +59,7 @@ if [[ -n "${UPDATE_FEED_URL}" ]]; then
   plutil -insert SUFeedURL -string "${UPDATE_FEED_URL}" "${APP_BUNDLE}/Contents/Info.plist"
   echo "    update feed: ${UPDATE_FEED_URL}"
 else
-  echo "    updates off: REINS_UPDATE_FEED_URL is not set"
+  echo "    updates off: SPACEVIBE_UPDATE_FEED_URL is not set"
 fi
 ditto "${BINARY_DIR}/Sparkle.framework" "${APP_BUNDLE}/Contents/Frameworks/Sparkle.framework"
 # Inter, the only typeface (OFL); InterFont registers it from here at launch.

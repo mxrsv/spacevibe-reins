@@ -50,18 +50,18 @@ jobs:
       - name: Screenshots
         run: |
           for screen in shell loadout rules activity; do
-            REINS_SHOT_SCREEN=$screen scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/$screen"
+            SPACEVIBE_SHOT_SCREEN=$screen scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/$screen"
           done
           for variant in typical edge; do
-            REINS_FIXTURE_LIMITS=$variant REINS_SHOT_SCREEN=limits scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/limits-$variant"
+            SPACEVIBE_FIXTURE_LIMITS=$variant SPACEVIBE_SHOT_SCREEN=limits scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/limits-$variant"
           done
           if [ -d Sources/Reins/TokenUsage ]; then
-            REINS_SHOT_SCREEN=tokens scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/tokens"
+            SPACEVIBE_SHOT_SCREEN=tokens scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/tokens"
           fi
           # Agents plan A10: one fixture home per Codex permission model, behind the development switch.
           if [ -d Sources/Reins/Agents ]; then
             for variant in legacy profiles both; do
-              REINS_AGENTS=1 REINS_FIXTURE_AGENTS=$variant REINS_SHOT_SCREEN=agents scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/agents-$variant"
+              SPACEVIBE_AGENTS=1 SPACEVIBE_FIXTURE_AGENTS=$variant SPACEVIBE_SHOT_SCREEN=agents scripts/dev-fixture.sh --shots "$RUNNER_TEMP/shots/agents-$variant"
             done
           fi
 

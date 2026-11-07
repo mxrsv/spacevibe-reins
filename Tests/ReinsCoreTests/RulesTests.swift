@@ -3,7 +3,7 @@ import Testing
 @testable import ReinsCore
 
 /// Claude permission rules (RulesStore, Rules grid) and the read-only Codex reader (CodexPermissions). Every test runs on a
-/// TempHome or FixtureHome; the real ~/.claude and ~/.codex are never read (REINS_TEST=1 and the Roots guard).
+/// TempHome or FixtureHome; the real ~/.claude and ~/.codex are never read (SPACEVIBE_TEST=1 and the Roots guard).
 /// Behavior reference: frozen goldens (SV5), last generated at b58269d3f3eb and the Node rules tests at that commit.
 @Suite("Rules")
 struct RulesTests {
@@ -469,10 +469,10 @@ struct RulesTests {
         #expect(!sb.journalText().contains("TOKEN"))
     }
 
-    @Test("all writes stay inside the temporary HOME (REINS_TEST=1)")
+    @Test("all writes stay inside the temporary HOME (SPACEVIBE_TEST=1)")
     func staysInTempHome() throws {
         let sb = try Sandbox()
-        #expect(ProcessInfo.processInfo.environment["REINS_TEST"] == "1")
+        #expect(ProcessInfo.processInfo.environment["SPACEVIBE_TEST"] == "1")
         let real = Roots.resolvedPath(Roots.realHomeDirectory())
         for url in [sb.roots.claude.root, sb.roots.codex.root, sb.roots.data] { #expect(!Roots.resolvedPath(url.path).hasPrefix(real + "/")) }
         #expect(sb.roots.claude.hookFile.path.hasPrefix(sb.home.root.path))

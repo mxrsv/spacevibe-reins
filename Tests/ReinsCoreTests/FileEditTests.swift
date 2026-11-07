@@ -272,10 +272,10 @@ struct FileEditTests {
         #expect(sandbox.trashFiles().count == 2)
     }
 
-    @Test("under REINS_TEST=1 an edit refuses a path under the real home")
+    @Test("under SPACEVIBE_TEST=1 an edit refuses a path under the real home")
     func refusesRealHome() throws {
         let sandbox = try Sandbox()
-        let real = URL(fileURLWithPath: Roots.realHomeDirectory()).appendingPathComponent(".reins-never-written/settings.json")
+        let real = URL(fileURLWithPath: Roots.realHomeDirectory()).appendingPathComponent(".spacevibe-never-written/settings.json")
         let error = #expect(throws: ReinsError.self) {
             try FileEdit.editJSON(sandbox.roots, file: real, label: "Never", change: addRule("Read"))
         }

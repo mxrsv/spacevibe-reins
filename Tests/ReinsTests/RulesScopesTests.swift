@@ -143,8 +143,8 @@ struct RulesScopesTests {
         try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
         let env = [
             "HOME": home.path, "CLAUDE_CONFIG_DIR": home.appendingPathComponent(".claude").path,
-            "CODEX_HOME": home.appendingPathComponent(".codex").path, "REINS_HOME": home.appendingPathComponent(".reins").path,
-            "REINS_TEST": "1",
+            "CODEX_HOME": home.appendingPathComponent(".codex").path, "SPACEVIBE_HOME": home.appendingPathComponent(".spacevibe").path,
+            "SPACEVIBE_TEST": "1",
         ]
         return (RulesStore(roots: try Roots.resolve(env: env), projects: { [] }), home)
     }

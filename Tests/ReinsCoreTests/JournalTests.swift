@@ -59,7 +59,7 @@ struct JournalTests {
         let home = try TempHome()
         let r = try home.roots
         let settings = try home.write(".claude/settings.json", "{\"model\":\"y\"}\n")
-        let backup = try home.write(".reins/trash/1793637068527-ff71479b/settings.json", "{\"model\":\"x\"}\n")
+        let backup = try home.write(".spacevibe/trash/1793637068527-ff71479b/settings.json", "{\"model\":\"x\"}\n")
         let created = try home.write(".claude/skills/new/SKILL.md", "---\nname: new\n---\n")
         // Shape copied from an entry the Node core wrote (synthetic paths): a file edit, a created skill, a hook op.
         let nodeJournal = """
@@ -111,7 +111,7 @@ struct JournalTests {
           }
         ]
         """
-        try home.write(".reins/journal.json", nodeJournal)
+        try home.write(".spacevibe/journal.json", nodeJournal)
 
         let history = Journal.history(r)
         #expect(history.map(\.count) == [2, 1, 1])
@@ -200,7 +200,7 @@ struct JournalTests {
         let r = try home.roots
         let created = try home.write("made/file.txt", "keep me")
         let edited = try home.write("edited.json", "{\"a\":1}\n")
-        let backup = try home.write(".reins/trash/1-aaaaaaaa/edited.json", "{}\n")
+        let backup = try home.write(".spacevibe/trash/1-aaaaaaaa/edited.json", "{}\n")
         // Undo runs last op first: it moves `made` away, then refuses on the edited file (its hash does not match).
         let entry = try Journal.record(r, label: "Two ops", ops: [
             .fileEdited(file: edited.path, existed: true, backup: backup.path, after: String(repeating: "0", count: 64)),
@@ -216,7 +216,7 @@ struct JournalTests {
     // MARK: Refusals and rollback of one op
 
     private func trashCopy(_ home: TempHome, _ name: String, _ text: String = "saved") throws -> URL {
-        try home.write(".reins/trash/1-\(name)/\(name)", text)
+        try home.write(".spacevibe/trash/1-\(name)/\(name)", text)
     }
 
     @Test("moved: when a later-reversed op refuses, the op already reversed is moved back to the trash")
@@ -252,7 +252,7 @@ struct JournalTests {
         #expect(try String(contentsOf: trash, encoding: .utf8) == "old file")
 
         let gone = home.url("work/gone.txt")
-        let missing = try Journal.record(r, label: "gone", ops: [.moved(from: gone.path, to: home.url(".reins/trash/9-zzzzzzzz/gone.txt").path)])
+        let missing = try Journal.record(r, label: "gone", ops: [.moved(from: gone.path, to: home.url(".spacevibe/trash/9-zzzzzzzz/gone.txt").path)])
         let second = #expect(throws: ReinsError.self) { try Journal.undo(r, id: missing.id) }
         #expect(second?.status == 409 && second?.message.contains("saved copy") == true)
         #expect(!FileManager.default.fileExists(atPath: gone.path))
@@ -277,7 +277,7 @@ struct JournalTests {
         let r = try home.roots
         let file = try home.write("settings.json", "{\"a\":1}\n")
         let op = JournalOp.fileEdited(
-            file: file.path, existed: true, backup: home.url(".reins/trash/1-aaaaaaaa/settings.json").path,
+            file: file.path, existed: true, backup: home.url(".spacevibe/trash/1-aaaaaaaa/settings.json").path,
             after: ContentHash.sha256Hex(Data("{\"a\":1}\n".utf8))
         )
         let entry = try Journal.record(r, label: "edit", ops: [op])
@@ -307,7 +307,7 @@ struct JournalTests {
     func corruptJournalRefusesRecord() throws {
         let home = try TempHome()
         let r = try home.roots
-        let file = try home.write(".reins/journal.json", "{ not json")
+        let file = try home.write(".spacevibe/journal.json", "{ not json")
         let before = try read(file)
 
         let error = #expect(throws: ReinsError.self) { try Journal.record(r, label: "later", ops: []) }
@@ -321,7 +321,7 @@ struct JournalTests {
     func objectJournalRefusesRecordAndUndo() throws {
         let home = try TempHome()
         let r = try home.roots
-        let file = try home.write(".reins/journal.json", "{}")
+        let file = try home.write(".spacevibe/journal.json", "{}")
         let before = try read(file)
 
         let recorded = #expect(throws: ReinsError.self) { try Journal.record(r, label: "later", ops: []) }

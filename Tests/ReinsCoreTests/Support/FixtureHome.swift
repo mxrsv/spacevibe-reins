@@ -32,7 +32,7 @@ enum FixtureHome {
         let root = canonicalRoot.path
         return [
             "HOME": root, "CLAUDE_CONFIG_DIR": root + "/.claude", "CODEX_HOME": root + "/.codex",
-            "REINS_HOME": root + "/.reins", "REINS_TEST": "1",
+            "SPACEVIBE_HOME": root + "/.reins", "SPACEVIBE_TEST": "1",
         ]
     }
 

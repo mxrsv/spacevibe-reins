@@ -6,10 +6,10 @@
 #   scripts/release.sh --notarize   release artifact: notarized and stapled app and DMG, appcast.xml, SHA256SUMS
 #
 # Environment:
-#   REINS_NOTARY_PROFILE    notarytool Keychain profile (`xcrun notarytool store-credentials`); --notarize only
-#   REINS_UPDATE_FEED_URL   appcast URL baked into the app as SUFeedURL; default: the latest GitHub release's appcast.xml
-#   REINS_DOWNLOAD_PREFIX   where the DMG will be downloadable, ending in /; default: this version's GitHub release
-#   REINS_SIGNING_IDENTITY  as in scripts/build-app.sh
+#   SPACEVIBE_NOTARY_PROFILE    notarytool Keychain profile (`xcrun notarytool store-credentials`); --notarize only
+#   SPACEVIBE_UPDATE_FEED_URL   appcast URL baked into the app as SUFeedURL; default: the latest GitHub release's appcast.xml
+#   SPACEVIBE_DOWNLOAD_PREFIX   where the DMG will be downloadable, ending in /; default: this version's GitHub release
+#   SPACEVIBE_SIGNING_IDENTITY  as in scripts/build-app.sh
 #
 # Builds from `git archive HEAD` in a temporary folder, so the artifact is exactly the committed revision even when the
 # checkout has other sessions' edits; a dirty tree is still refused so nothing is forgotten. Output goes to
@@ -29,13 +29,13 @@ if [[ $# -ne 1 ]]; then usage >&2; exit 2; fi
 
 GITHUB_REPO="mxrsv/spacevibe-reins"
 APP_NAME="Reins"
-SIGNING_IDENTITY="${REINS_SIGNING_IDENTITY:-Developer ID Application: VAN BINH TRAN (DJDD3T8LH7)}"
-NOTARY_PROFILE="${REINS_NOTARY_PROFILE:-}"
+SIGNING_IDENTITY="${SPACEVIBE_SIGNING_IDENTITY:-Developer ID Application: VAN BINH TRAN (DJDD3T8LH7)}"
+NOTARY_PROFILE="${SPACEVIBE_NOTARY_PROFILE:-}"
 
 fail() { echo "$*" >&2; exit 1; }
 
 if [[ "${MODE}" == --notarize ]]; then
-  [[ -n "${NOTARY_PROFILE}" ]] || fail "Set REINS_NOTARY_PROFILE to a notarytool Keychain profile name (AGENTS.md B9)."
+  [[ -n "${NOTARY_PROFILE}" ]] || fail "Set SPACEVIBE_NOTARY_PROFILE to a notarytool Keychain profile name (AGENTS.md B9)."
   xcrun --find notarytool >/dev/null || fail "notarytool is missing from the Command Line Tools."
   xcrun --find stapler >/dev/null || fail "stapler is missing from the Command Line Tools."
 fi
@@ -70,14 +70,14 @@ if [[ -n "${PREVIOUS_TAG}" ]]; then
     || fail "CFBundleVersion ${BUILD_NUMBER} is not above ${PREVIOUS_BUILD} (${PREVIOUS_TAG}); installed copies would never see this release."
 fi
 
-UPDATE_FEED_URL="${REINS_UPDATE_FEED_URL:-https://github.com/${GITHUB_REPO}/releases/latest/download/appcast.xml}"
-DOWNLOAD_PREFIX="${REINS_DOWNLOAD_PREFIX:-https://github.com/${GITHUB_REPO}/releases/download/${TAG}/}"
+UPDATE_FEED_URL="${SPACEVIBE_UPDATE_FEED_URL:-https://github.com/${GITHUB_REPO}/releases/latest/download/appcast.xml}"
+DOWNLOAD_PREFIX="${SPACEVIBE_DOWNLOAD_PREFIX:-https://github.com/${GITHUB_REPO}/releases/download/${TAG}/}"
 OUTPUT_DIR="build/distribution/${TAG}-${REVISION:0:7}"
 [[ ! -e "${OUTPUT_DIR}" ]] || fail "${OUTPUT_DIR} exists. Remove it to package this revision again."
 mkdir -p "${OUTPUT_DIR}"
 
 echo "==> ${APP_NAME} ${VERSION} (build ${BUILD_NUMBER}) from ${REVISION:0:7}, ${MODE#--}"
-REINS_UPDATE_FEED_URL="${UPDATE_FEED_URL}" REINS_SIGNING_IDENTITY="${SIGNING_IDENTITY}" \
+SPACEVIBE_UPDATE_FEED_URL="${UPDATE_FEED_URL}" SPACEVIBE_SIGNING_IDENTITY="${SIGNING_IDENTITY}" \
   "${SOURCE_DIR}/scripts/build-app.sh" --distribution
 APP_BUNDLE="${SOURCE_DIR}/build/${APP_NAME}.app"
 printf '%s\n' "${REVISION}" >"${OUTPUT_DIR}/revision.txt"

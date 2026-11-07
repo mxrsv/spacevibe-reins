@@ -6,7 +6,7 @@ public enum StatuslineSetup {
 
     public static func quote(_ text: String) -> String { "'" + text.replacingOccurrences(of: "'", with: "'\\''") + "'" }
 
-    /// Managed children must be real directories within the data root, including under REINS_TEST.
+    /// Managed children must be real directories within the data root, including under SPACEVIBE_TEST.
     static func managedDirectory(_ roots: Roots, name: String) throws -> URL {
         let folder = roots.data.appendingPathComponent(name)
         try FileEdit.refuseRealHomeUnderTest(folder.path)

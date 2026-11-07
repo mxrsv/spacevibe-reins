@@ -1,7 +1,7 @@
 import ReinsCore
 import SwiftUI
 
-/// Every shared view in every state. Reach it with `REINS_GALLERY=1`; the screenshot mode renders the same content.
+/// Every shared view in every state. Reach it with `SPACEVIBE_GALLERY=1`; the screenshot mode renders the same content.
 struct ComponentGalleryContent: View {
     @State private var segment = "ask"
     @State private var file = "shared"

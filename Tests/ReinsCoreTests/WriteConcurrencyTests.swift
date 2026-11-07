@@ -3,7 +3,7 @@ import Testing
 @testable import ReinsCore
 
 /// The app runs every write and every Undo on its own thread. These tests drive the engine the same way: many threads at
-/// once, against one journal and one settings file. Nothing here touches the real config (TempHome, REINS_TEST=1).
+/// once, against one journal and one settings file. Nothing here touches the real config (TempHome, SPACEVIBE_TEST=1).
 @Suite("Write concurrency")
 struct WriteConcurrencyTests {
     /// Collects results from `concurrentPerform` bodies; the bodies never call `#expect`.

@@ -1,6 +1,7 @@
 import AppKit
 import Observation
 import OSLog
+import ReinsCore
 import Sparkle
 
 /// Sparkle owns the check, the update window, signature verification, installation and relaunch. This class decides
@@ -105,7 +106,7 @@ final class UpdateController: NSObject, @preconcurrency SPUStandardUserDriverDel
     /// Fixture, gallery and test launches must never reach the network, whatever the build carries.
     nonisolated static func runs(in mode: LaunchMode, environment: [String: String]) -> Bool {
         guard case .normal = mode else { return false }
-        return environment["REINS_TEST"] != "1"
+        return environment[ReinsCore.env("TEST")] != "1"
     }
 
     /// nil when the bundle can run the updater. Plain http is accepted only for 127.0.0.1, the local feed of

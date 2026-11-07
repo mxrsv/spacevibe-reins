@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// `REINS_SHOT_SCREEN=settings`: Settings over the demo shell in both appearances, every Update state, the Large font
+/// `SPACEVIBE_SHOT_SCREEN=settings`: Settings over the demo shell in both appearances, every Update state, the Large font
 /// size, and the demo tabs at Large, where the fixed text columns would truncate first. Synthetic data only; nothing is
 /// read or saved, and the updater never starts.
 @MainActor

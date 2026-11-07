@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import ReinsCore
 
-// Activity tests. Every log, status file and lock is generated inside a TempHome (REINS_TEST=1 makes Roots refuse the real
+// Activity tests. Every log, status file and lock is generated inside a TempHome (SPACEVIBE_TEST=1 makes Roots refuse the real
 // home); ps, lsof and kill are replaced by FakeProcess. Nothing here reads the real ~/.claude or ~/.codex.
 
 /// A process adapter that replays a fixed process list and records what it was asked to terminate.
@@ -634,7 +634,7 @@ struct ActivityTests {
     func refusesRealHome() throws {
         let real = Roots.realHomeDirectory()
         #expect(throws: RootsError.self) {
-            _ = try Roots.resolve(env: ["HOME": real, "REINS_TEST": "1"], realHome: real)
+            _ = try Roots.resolve(env: ["HOME": real, "SPACEVIBE_TEST": "1"], realHome: real)
         }
     }
 }
