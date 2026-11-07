@@ -90,7 +90,7 @@ enum HooksWording {
                 out.append("Codex has no \(list(events)) \(events.count == 1 ? "event" : "events") in the list SpaceVibe reads (unverified), so a hook on \(events.count == 1 ? "it" : "them") has nothing to fire on.")
             case .scriptGone: out.append("A hook whose script is gone has nothing to copy.")
             case .plugin: out.append("A plugin's hook is read-only: SpaceVibe does not copy it.")
-            case .notWritten: out.append("SpaceVibe does not write hooks into Codex. Whether Codex would load a hook SpaceVibe wrote is unverified.")
+            case .notWritten: out.append("SpaceVibe does not write hooks into Codex. Codex runs a hook only after it is reviewed and trusted (Codex's hooks page), so a hook SpaceVibe wrote would not run until then.")
             case .notInstalled: out.append("Codex is not installed on this Mac.")
             }
         }
