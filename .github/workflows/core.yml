@@ -1,0 +1,45 @@
+# Vets and tests the Go core on Linux and proves it cross-compiles for every shipped target:
+# docs/plans/2026-11-07-go-core-and-spacevibe-identity.md X1 (checks GO and XC). Ubuntu is cheap, so this runs on every core change.
+name: core
+
+on:
+  push:
+    paths: ['core/**', '.github/workflows/core.yml']
+  pull_request:
+    paths: ['core/**', '.github/workflows/core.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: core-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: core/go.mod
+
+      # The fixture root is a macOS path (/private/tmp); Linux has no such directory.
+      - name: Fixture root
+        run: sudo mkdir -p /private/tmp && sudo chmod 1777 /private/tmp
+
+      - name: Vet and test
+        working-directory: core
+        run: go vet ./... && SPACEVIBE_TEST=1 go test -count=1 ./...
+
+      - name: Cross-compile
+        working-directory: core
+        run: |
+          fail=0
+          for t in darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64 windows/arm64; do
+            CGO_ENABLED=0 GOOS=${t%/*} GOARCH=${t#*/} go build -o /dev/null ./cmd/spacevibe || { echo "FAIL $t"; fail=1; }
+          done
+          exit $fail
