@@ -22,6 +22,13 @@ type Config struct {
 	Test bool
 	// Home is the data root override (SPACEVIBE_HOME). Empty means the default under the user's home.
 	Home string
+	// UserHome is HOME, as given (empty counts as unset). It only picks where the CLI folders are
+	// looked for; it is never the real home (see roots.RealHome).
+	UserHome string
+	// ClaudeConfigDir is CLAUDE_CONFIG_DIR, as given (empty counts as unset).
+	ClaudeConfigDir string
+	// CodexHome is CODEX_HOME, as given (empty counts as unset).
+	CodexHome string
 }
 
 // Load reads the environment through os.Getenv.
@@ -44,5 +51,8 @@ func LoadFrom(getenv func(string) string) (Config, error) {
 		}
 		c.Home = filepath.Clean(v)
 	}
+	c.UserHome = getenv("HOME")
+	c.ClaudeConfigDir = getenv("CLAUDE_CONFIG_DIR")
+	c.CodexHome = getenv("CODEX_HOME")
 	return c, nil
 }
