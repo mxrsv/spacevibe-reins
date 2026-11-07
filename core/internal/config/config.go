@@ -14,6 +14,8 @@ import (
 const (
 	envTest = identity.EnvPrefix + "TEST"
 	envHome = identity.EnvPrefix + "HOME"
+	// envProcFixture is the same name as proc.EnvProcFixture; config cannot import proc (proc imports config).
+	envProcFixture = identity.EnvPrefix + "PROC_FIXTURE"
 )
 
 // Config is the typed, validated environment.
@@ -29,6 +31,9 @@ type Config struct {
 	ClaudeConfigDir string
 	// CodexHome is CODEX_HOME, as given (empty counts as unset).
 	CodexHome string
+	// ProcFixture is SPACEVIBE_PROC_FIXTURE, a process-list fixture file for dev runs (empty counts as unset).
+	// internal/proc takes it as an argument and never reads the environment.
+	ProcFixture string
 }
 
 // Load reads the environment through os.Getenv.
@@ -54,5 +59,6 @@ func LoadFrom(getenv func(string) string) (Config, error) {
 	c.UserHome = getenv("HOME")
 	c.ClaudeConfigDir = getenv("CLAUDE_CONFIG_DIR")
 	c.CodexHome = getenv("CODEX_HOME")
+	c.ProcFixture = getenv(envProcFixture)
 	return c, nil
 }
