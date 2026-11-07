@@ -292,6 +292,8 @@ extension Metrics {
     enum Bar {
         static let height: CGFloat = 8
         static let unknownDash: [CGFloat] = [3, 3]
+        /// Codex's identity fill (foreground) is a little quieter than Claude's clay (the kit's `.meter.x .mbar i`).
+        static let codexOpacity: Double = 0.85
     }
 
     /// A card (the Tile, D56).
@@ -483,6 +485,38 @@ extension Metrics {
         static let fileRowHeight: CGFloat = 32
         static let meterPadding: CGFloat = 16
         static let meterBarHeight: CGFloat = 8
+        /// The head: the tile 16 before the name; the name 8 before the plugin tag; the meta line 2 under the name, its
+        /// parts 8 apart around a 2 pt dot.
+        static let headSpacing: CGFloat = 16
+        static let nameSpacing: CGFloat = 8
+        static let metaAbove: CGFloat = 2
+        static let metaSpacing: CGFloat = 8
+        static let metaDot: CGFloat = 2
+        /// The plugin tag: 20 high, 6 at the sides, the lock 12, 4 apart.
+        static let tagHeight: CGFloat = 20
+        static let tagPadding: CGFloat = 6
+        static let tagSpacing: CGFloat = 4
+        /// A section's label sits 8 above its content.
+        static let sectionLabelSpacing: CGFloat = 8
+        /// A meter: its parts 12 apart, the head's parts 8 apart; the count's unit 4 after it; an absent column's dash line
+        /// keeps 4 above and below.
+        static let meterSpacing: CGFloat = 12
+        static let meterHeadSpacing: CGFloat = 8
+        static let meterUnitGap: CGFloat = 4
+        static let meterDashInset: CGFloat = 4
+        /// A file row: 12 at the sides, the logo (14) 8 before the path.
+        static let filePadding: CGFloat = 12
+        static let fileSpacing: CGFloat = 8
+        /// The buttons under the files, 8 apart.
+        static let actionSpacing: CGFloat = 8
+        /// The note under the buttons sits 12 below them.
+        static let noteAbove: CGFloat = 12
+    }
+
+    /// The list column of the Skills split: the hairline between it and the pane.
+    enum SkillsSplit {
+        /// Where the bar floats: 48 above the panel's bottom edge, 16 above the status bar's top.
+        static var barBottom: CGFloat { BottomBar.bottomInset - ContentPanel.statusBarHeight }
     }
 
     enum BottomBar {
@@ -586,6 +620,8 @@ extension Metrics {
         /// A toast slides in and out.
         static let toast: TimeInterval = 0.2
         static let barWidth: TimeInterval = 0.15
+        /// How long a pressed logo counts as just changed.
+        static let flash: Duration = .milliseconds(600)
     }
 
     /// Overlay shadows, with `Palette.shadowPop` and `Palette.shadowDialog`.

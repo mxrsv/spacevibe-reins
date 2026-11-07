@@ -13,13 +13,15 @@ final class AgentsPage: SpaceVibeTab {
     let glyph: any GlyphSource = ContentGlyph.stack
     let loadout: LoadoutModel
     let rules: RulesModel
+    let skills: SkillsModel
 
     private(set) var selected = AgentsCategory.skills
 
-    init(env: AppEnvironment? = nil) {
+    init(env: AppEnvironment? = nil, loadout: LoadoutModel? = nil) {
         let env = env ?? .shared
-        loadout = LoadoutModel(env: env)
+        self.loadout = loadout ?? LoadoutModel(env: env)
         rules = RulesModel(env: env)
+        skills = SkillsModel(loadout: self.loadout)
     }
 
     var counts: AgentsCounts { AgentsCounts(loadout: loadout.data, rules: rules.badge) }
@@ -28,6 +30,10 @@ final class AgentsPage: SpaceVibeTab {
     var badge: TabBadge? {
         counts.total.map { TabBadge(value: $0, spoken: "\($0) \($0 == 1 ? "item" : "items")") }
     }
+
+    /// The status bar's keys and data source follow the selected tab; a tab not built yet lists none.
+    var hints: [KeyHint] { selected == .skills ? SkillsStatusBar.hints : [] }
+    var source: String? { selected == .skills ? SkillsStatusBar.source : nil }
 
     var content: AnyView { AnyView(AgentsPageView(page: self)) }
 
@@ -45,24 +51,45 @@ final class AgentsPage: SpaceVibeTab {
     }
 }
 
-/// The tab head with its four tabs, and "Not built yet" in the canvas of the selected one.
+/// The tab head with its four tabs, then the selected tab's chip row and canvas: Skills is built (U8); the others show
+/// "Not built yet" until U9 to U11 replace them.
 struct AgentsPageView: View {
     let page: AgentsPage
 
+    @Environment(ShellModel.self) private var shell
+
     var body: some View {
-        VStack(spacing: 0) {
-            TabHead {
-                ForEach(AgentsCategory.allCases) { category in
-                    TabChip(
-                        title: category.title, glyph: category.glyph, count: page.counts.count(for: category), tone: category.tone,
-                        isActive: page.selected == category
-                    ) { page.select(category) }
+        ZStack(alignment: .topLeading) {
+            if !shell.isPaletteOpen && !page.skills.isMenuOpen { tabKeys }
+            VStack(spacing: 0) {
+                TabHead {
+                    ForEach(AgentsCategory.allCases) { category in
+                        TabChip(
+                            title: category.title, glyph: category.glyph, count: page.counts.count(for: category), tone: category.tone,
+                            isActive: page.selected == category
+                        ) { page.select(category) }
+                    }
+                } actions: {
+                    if page.selected == .skills { SkillsHeadActions(model: page.skills) }
                 }
-            } actions: {
+                if page.selected == .skills && page.skills.query.filter.isOn { SkillsChipRow(model: page.skills) }
+                if page.selected == .skills {
+                    SkillsCanvas(model: page.skills)
+                } else {
+                    QuietEmptyState("Not built yet", message: "\(page.selected.title) arrives in a later step of the v5 build.", placement: .list)
+                    Spacer(minLength: 0)
+                }
             }
-            QuietEmptyState("Not built yet", message: "\(page.selected.title) arrives in a later step of the v5 build.", placement: .list)
-            Spacer(minLength: 0)
         }
         .task { page.start() }
+    }
+
+    /// `1` to `4` switch the tabs (V5-R36); a plain key, so off while the palette or a menu has the keyboard.
+    private var tabKeys: some View {
+        Group {
+            ForEach(Array(AgentsCategory.allCases.enumerated()), id: \.element) { index, _ in
+                HiddenKey(KeyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [])) { page.select(index: index) }
+            }
+        }
     }
 }

@@ -38,6 +38,8 @@ struct Toast: Identifiable {
 @Observable
 final class ToastCenter {
     private(set) var current: Toast?
+    /// A page's bottom bar is on screen, so the v5 toast sits above it (V5-R32, 104 rather than 48). Set by `ListPaneLayout`.
+    var isOverBottomBar = false
 
     @ObservationIgnored private var timer: Task<Void, Never>?
     private let announce: Bool

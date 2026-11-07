@@ -18,6 +18,7 @@ struct WarningSlot<Popover: View>: View {
     @ViewBuilder var popover: Popover
 
     @Environment(\.specimenInteraction) private var specimen
+    @Environment(\.shownWarningSlot) private var shown
     @State private var presence = PopoverPresence()
     @State private var pending: Task<Void, Never>?
     @State private var hovering = false
@@ -53,7 +54,7 @@ struct WarningSlot<Popover: View>: View {
         .onChange(of: focused) { _, now in apply(presence.handle(.anchorFocus(now))) }
         .onExitCommand { apply(presence.handle(.escape)) }
         .onDisappear { pending?.cancel() }
-        .anchoredOverlay(isPresented: presence.isOpen, id: id, placement: .popover) {
+        .anchoredOverlay(isPresented: presence.isOpen || shown == id, id: id, placement: .popover) {
             PopoverSurface(onHover: { apply(presence.handle(.surfaceHover($0))) },
                            onExit: { apply(presence.handle(.escape)) }) { popover }
         }
@@ -85,5 +86,18 @@ extension WarningSlot where Popover == EmptyView {
     /// The empty slot of a normal row: it only keeps the column.
     init() {
         self.init(mark: nil, detail: nil, id: AnyHashable("empty")) { EmptyView() }
+    }
+}
+
+// Written out: the `@Entry` macro needs SwiftUI's macro plugin, which the Command Line Tools do not ship.
+private struct ShownWarningSlotKey: EnvironmentKey {
+    static let defaultValue: AnyHashable? = nil
+}
+
+extension EnvironmentValues {
+    /// The id of the one warning slot whose popover a headless shot draws open: a shot cannot hover. Only shot harnesses set it.
+    var shownWarningSlot: AnyHashable? {
+        get { self[ShownWarningSlotKey.self] }
+        set { self[ShownWarningSlotKey.self] = newValue }
     }
 }

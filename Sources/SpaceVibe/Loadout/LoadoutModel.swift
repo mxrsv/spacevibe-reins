@@ -58,6 +58,13 @@ final class LoadoutModel {
 
     init(env: AppEnvironment) { self.env = env }
 
+    /// Shots and tests: a model that shows `data` and never reads, for a state the fixture home cannot show (an empty category).
+    init(env: AppEnvironment, data: LoadoutData) {
+        self.env = env
+        self.data = data
+        started = true
+    }
+
     var isLoading: Bool { data == nil && readFailure == nil }
 
     /// Reads, scans and builds are all done. Screenshots wait for this.
@@ -226,6 +233,65 @@ final class LoadoutModel {
         let label = "Removed \(count) dead \(count == 1 ? "hook" : "hooks") from \(cli.label)"
         perform(guardKey: "remove-dead:\(cli.rawValue)", label: label) { core in
             try await core.loadoutRemoveDeadHooks(cli: cli).entry
+        }
+    }
+
+    // MARK: Skill writes (V5-R25, V5-R26, V5-R38)
+
+    /// Runs the writes of a skill toggle, a bulk add or a removal one after the other and shows ONE toast whose Undo undoes
+    /// every one of them, newest first, then reads the rows again once. No bulk call exists in the core, so each step is its own
+    /// journal entry; a step that fails undoes the ones already written before the danger toast, so a bulk write is all or
+    /// nothing. `label` names the whole change ("Added 3 skills to Codex"). Returns at once; the write runs in a task.
+    func perform(skillWrites steps: [LoadoutRows.SkillWrites.Step], guardKey: String, label: String) {
+        guard !steps.isEmpty, inFlight[guardKey] == nil else { return }
+        guardTickets += 1
+        let ticket = guardTickets
+        inFlight[guardKey] = ticket
+        let started = ContinuousClock.now
+        let core = self.core
+        Task { [weak self] in
+            var entries: [CoreJournalEntry] = []
+            do {
+                for step in steps { entries.append(try await Self.run(step, on: core)) }
+            } catch {
+                let reverted = await Self.undo(entries, on: core)
+                guard let self else { return }
+                self.release(guardKey, ticket: ticket, since: started)
+                let message = AppEnvironment.message(error)
+                self.env.toasts.show(reverted ? message : "\(message) Some earlier changes could not be undone.", tone: .danger)
+                if !entries.isEmpty { self.reload() }
+                return
+            }
+            guard let self else { return }
+            self.release(guardKey, ticket: ticket, since: started)
+            self.env.toasts.show(label, undo: { [weak self] in self?.undoSkillWrites(entries, label: label) })
+            self.reload()
+        }
+    }
+
+    private nonisolated static func run(_ step: LoadoutRows.SkillWrites.Step, on core: any CoreService) async throws -> CoreJournalEntry {
+        switch step {
+        case .copy(let id, _): try await core.loadoutCopyToOther(id: id).entry
+        case .remove(let id, _): try await core.loadoutRemoveItem(id: id).entry
+        }
+    }
+
+    /// Undoes `entries` newest first; false when one of them could not be undone.
+    private nonisolated static func undo(_ entries: [CoreJournalEntry], on core: any CoreService) async -> Bool {
+        var all = true
+        for entry in entries.reversed() {
+            do { _ = try await core.journalUndo(id: entry.id) } catch { all = false }
+        }
+        return all
+    }
+
+    private func undoSkillWrites(_ entries: [CoreJournalEntry], label: String) {
+        let core = self.core
+        Task { [weak self] in
+            let done = await Self.undo(entries, on: core)
+            guard let self else { return }
+            self.env.toasts.show(done ? "Undid \(label)" : "Could not undo all of \(label)", tone: done ? .info : .danger)
+            self.reload()
         }
     }
 

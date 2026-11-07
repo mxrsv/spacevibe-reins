@@ -7,11 +7,11 @@ import SwiftUI
 /// `SPACEVIBE_SHOT_SCREEN` picks the run, and nothing else does:
 /// - `shell` (the default): the demo shell states and the gallery, `<name>-<dark|light>.png`, 1440x900 points at 2x for the
 ///   shell states and the gallery at its full height, in two images (`gallery`, `gallery-more`), plus `gallery-v5` (the v5
-///   containers) and `gallery-controls` (the v5 controls and overlays) with the v5 switch on. Synthetic demo data only; it never touches the saved appearance choice
+///   containers) and `gallery-controls` (the v5 controls and overlays) and `gallery-pane` (the Skills detail pane in its six states) with the v5 switch on. Synthetic demo data only; it never touches the saved appearance choice
 ///   or the real config folders.
 /// With the v5 switch on, `shell` shoots the v5 window instead of the demo states (`ShellShots`: every Agents tab, Activity, Limits,
 /// the palette, the toast and Settings; it reads the synthetic home, so it needs `SPACEVIBE_TEST=1`) and then the gallery;
-/// `skills`, `subagents` and `hooks` shoot the Agents page on that tab, and `limits` the v5 Limits page (`LimitsShots`). The other
+/// `subagents` and `hooks` shoot the Agents page on that tab, `skills` the real Skills tab in every state (`SkillsShots`), and `limits` the v5 Limits page (`LimitsShots`). The other
 /// real-screen runs below stay on the old shell until their region is built.
 /// - `settings`: Settings on the demo shell in every update state and at the Large font size, and the demo tabs at Large
 ///   (`SettingsShots`). Synthetic data only, like `shell`.
@@ -40,7 +40,7 @@ enum ShotRenderer {
                     throw ShotHarness.Failure("SPACEVIBE_SHOT_SCREEN=\(screen) needs SPACEVIBE_UI_V5=1 (a development build)")
                 }
                 try requireSyntheticHome(environment)
-                try ShellShots.run(into: directory, tab: tab)
+                if tab == .skills { try SkillsShots.run(into: directory) } else { try ShellShots.run(into: directory, tab: tab) }
             case "loadout": try requireSyntheticHome(environment); try LoadoutShots.run(into: directory)
             case "rules": try requireSyntheticHome(environment); try RulesShots.run(into: directory)
             case "activity": try requireSyntheticHome(environment); try ActivityShots.run(into: directory)
@@ -89,6 +89,7 @@ enum ShotRenderer {
     private static func writeV5Galleries(_ choice: AppearanceChoice, into directory: URL) throws {
         try write(gallery(choice, part: .third), name: "gallery-v5", choice: choice, to: directory, fullHeight: true)
         try write(gallery(choice, part: .fourth), name: "gallery-controls", choice: choice, to: directory, fullHeight: true)
+        try write(gallery(choice, part: .fifth), name: "gallery-pane", choice: choice, to: directory, fullHeight: true)
     }
 
     private static func shell(_ choice: AppearanceChoice, configure: (ShellModel, ToastCenter) -> Void) -> some View {

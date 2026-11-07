@@ -1,0 +1,213 @@
+import Foundation
+import Testing
+@testable import SpaceVibe
+
+/// V5-A6 for the Skills tab: a logo toggle, a bulk add, a bulk remove and the pane's Remove go through the Go core, show ONE
+/// toast, and Undo puts the whole home back byte for byte. Every test runs on a private copy of the synthetic fixture home
+/// (S-R1) with the real core (`SPACEVIBE_CORE_BINARY`, as `scripts/test.sh` sets it).
+@Suite("Skills model, Go core")
+@MainActor
+struct SkillsModelEngineTests {
+    private func skills(_ fixture: CoreFixtureHome) async throws -> (SkillsModel, AppEnvironment, CoreClient) {
+        let client = try fixture.client()
+        let env = AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { client })
+        let model = SkillsModel(loadout: LoadoutModel(env: env))
+        model.loadout.start()
+        try await wait("the read") { model.loadout.isSettled || model.loadout.readFailure != nil }
+        try #require(model.loadout.isSettled, "the read did not settle: \(model.loadout.readFailure ?? "timed out")")
+        return (model, env, client)
+    }
+
+    private func wait(_ what: String, _ done: () -> Bool) async throws {
+        let deadline = Date().addingTimeInterval(60)
+        while !done(), Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+        #expect(done(), "\(what) did not happen")
+    }
+
+    /// Two skills only Claude Code has, which a person may change.
+    private func claudeOnly(_ model: SkillsModel) -> [LoadoutRow] {
+        model.rows.filter { $0.presentCLIs == [.claude] && $0.plugin == nil && $0.project == nil }
+    }
+
+    /// Runs the toast's Undo and waits for the "Undid" toast and the re-read.
+    private func undo(_ model: SkillsModel, _ env: AppEnvironment, label: String) async throws {
+        env.toasts.runCurrentAction()
+        try await wait("the Undo toast") { env.toasts.current?.message == "Undid \(label)" }
+        try await wait("the re-read") { model.loadout.isSettled }
+    }
+
+    @Test("pressing a dim logo adds the skill to that CLI with one toast; Undo restores the home byte for byte")
+    func toggleAddAndUndo() async throws {
+        let fixture = try CoreFixtureHome()
+        defer { fixture.remove() }
+        let (model, env, client) = try await skills(fixture)
+        defer { client.shutdown() }
+        let before = try fixture.tree()
+        let row = try #require(claudeOnly(model).first)
+        #expect(model.mode(row, cli: .codex) == .toggles)
+
+        model.toggle(row, cli: .codex)
+        try await wait("the toast") { env.toasts.current != nil }
+        let label = "Added \(row.name) to Codex"
+        #expect(env.toasts.current?.message == label && env.toasts.current?.action != nil)
+        #expect(try fixture.tree().difference(from: before).count == 1, "one file is written: the copy")
+        try await wait("the re-read") { model.loadout.isSettled && model.rows.first { $0.key == row.key }?.presentCLIs == [.claude, .codex] }
+
+        try await undo(model, env, label: label)
+        let changed = try fixture.tree().difference(from: before)
+        #expect(changed.isEmpty, "differs from the original: \(changed)")
+        #expect(model.rows.first { $0.key == row.key }?.presentCLIs == [.claude])
+    }
+
+    @Test("pressing a lit logo removes the skill from that CLI only; Undo restores it")
+    func toggleRemoveAndUndo() async throws {
+        let fixture = try CoreFixtureHome()
+        defer { fixture.remove() }
+        let (model, env, client) = try await skills(fixture)
+        defer { client.shutdown() }
+        let before = try fixture.tree()
+        let row = try #require(model.rows.first { $0.presentCLIs.count == 2 && $0.plugin == nil && $0.project == nil })
+        #expect(model.mode(row, cli: .codex) == .toggles)
+
+        model.toggle(row, cli: .codex)
+        try await wait("the toast") { env.toasts.current != nil }
+        let label = "Removed \(row.name) from Codex"
+        #expect(env.toasts.current?.message == label)
+        try await wait("the re-read") { model.loadout.isSettled && model.rows.first { $0.key == row.key }?.presentCLIs == [.claude] }
+
+        try await undo(model, env, label: label)
+        let changed = try fixture.tree().difference(from: before)
+        #expect(changed.isEmpty, "differs from the original: \(changed)")
+    }
+
+    @Test("a bulk add is one toast and one Undo for every skill")
+    func bulkAddAndUndo() async throws {
+        let fixture = try CoreFixtureHome()
+        defer { fixture.remove() }
+        let (model, env, client) = try await skills(fixture)
+        defer { client.shutdown() }
+        let before = try fixture.tree()
+        let picked = Array(claudeOnly(model).prefix(2))
+        try #require(picked.count == 2, "the fixture has two skills only Claude Code has")
+        #expect(model.bulkMode(picked, cli: .codex) == .toggles && !model.isLit(picked, cli: .codex))
+
+        model.toggleBulk(picked, cli: .codex)
+        try await wait("the toast") { env.toasts.current != nil }
+        let label = "Added 2 skills to Codex"
+        #expect(env.toasts.current?.message == label)
+        #expect(try fixture.tree().difference(from: before).count == 2)
+        try await wait("the re-read") { model.loadout.isSettled && model.isLit(model.rows.filter { r in picked.contains { $0.key == r.key } }, cli: .codex) }
+
+        try await undo(model, env, label: label)
+        let changed = try fixture.tree().difference(from: before)
+        #expect(changed.isEmpty, "one Undo put both skills back; differs: \(changed)")
+    }
+
+    @Test("a bulk remove from every CLI is one toast and one Undo; a bulk toggle never removes an only copy")
+    func bulkRemoveAndUndo() async throws {
+        let fixture = try CoreFixtureHome()
+        defer { fixture.remove() }
+        let (model, env, client) = try await skills(fixture)
+        defer { client.shutdown() }
+        let before = try fixture.tree()
+        let both = try #require(model.rows.first { $0.presentCLIs.count == 2 && $0.plugin == nil && $0.project == nil })
+        let one = try #require(claudeOnly(model).first)
+        #expect(model.bulkMode([one], cli: .claude) == .onlyCopy)
+
+        model.remove([both, one])
+        try await wait("the toast") { env.toasts.current != nil }
+        let label = "Removed 2 skills"
+        #expect(env.toasts.current?.message == label)
+        #expect(try fixture.tree().difference(from: before).count == 3, "two copies of one skill and one copy of the other")
+        try await wait("the re-read") { model.loadout.isSettled && model.rows.contains { $0.key == both.key } == false }
+
+        try await undo(model, env, label: label)
+        let changed = try fixture.tree().difference(from: before)
+        #expect(changed.isEmpty, "differs from the original: \(changed)")
+    }
+
+    @Test("a plugin's skill is read-only: no write, and a toast that says why")
+    func pluginRefusal() async throws {
+        let fixture = try CoreFixtureHome()
+        defer { fixture.remove() }
+        let (model, env, client) = try await skills(fixture)
+        defer { client.shutdown() }
+        let before = try fixture.tree()
+        let plugin = try #require(model.rows.first { $0.plugin != nil })
+        for cli in CoreCLI.allCases { #expect(model.mode(plugin, cli: cli) == .readOnly) }
+        model.toggle(plugin, cli: .codex)
+        #expect(env.toasts.current == nil, "a read-only logo does nothing")
+        model.remove([plugin])
+        #expect(env.toasts.current?.message == "Plugin-owned skills cannot be changed here.")
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(try fixture.tree().difference(from: before).isEmpty)
+    }
+
+    @Test("the only copy of a skill is not a toggle: its last lit logo does nothing")
+    func onlyCopy() async throws {
+        let fixture = try CoreFixtureHome()
+        defer { fixture.remove() }
+        let (model, env, client) = try await skills(fixture)
+        defer { client.shutdown() }
+        let before = try fixture.tree()
+        let row = try #require(claudeOnly(model).first)
+        #expect(model.mode(row, cli: .claude) == .onlyCopy)
+        model.toggle(row, cli: .claude)
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(env.toasts.current == nil)
+        #expect(try fixture.tree().difference(from: before).isEmpty)
+    }
+}
+
+/// A core whose second copy fails, so a bulk write has to undo the first.
+private final class FailingSecondCopyCore: UnservedCore, @unchecked Sendable {
+    private let lock = NSLock()
+    private var _calls: [String] = []
+    var calls: [String] { lock.withLock { _calls } }
+
+    override func loadoutRows() async throws -> CoreLoadoutRows {
+        let rows = SkillRowsFixture.snapshot([("a", SkillRowsFixture.counted(1), nil, "user", nil), ("b", SkillRowsFixture.counted(1), nil, "user", nil)])
+        return rows
+    }
+
+    override func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult {
+        CoreUsageResult(
+            totals: CoreUsageTotals(claude: CoreCLITotals(skill: [:], agent: [:], hook: [:]), codex: CoreCLITotals(skill: [:], agent: [:], hook: [:])),
+            sessions: CoreUsageSessions(claude: 1, codex: 0),
+            windows: CoreUsageWindows(claude: CoreLogWindow(files: 1, oldest: nil, newest: nil), codex: CoreLogWindow(files: 0, oldest: nil, newest: nil)), files: 1)
+    }
+
+    override func loadoutCopyToOther(id: String) async throws -> CoreEntryResult {
+        let n = lock.withLock { () -> Int in _calls.append("copy \(id)"); return _calls.filter { $0.hasPrefix("copy") }.count }
+        if n == 2 { throw CoreError("Codex already has a skill named b.", status: 409) }
+        return CoreEntryResult(entry: CoreJournalEntry(id: "entry-\(n)", at: "2026-11-07T10:00:00.000Z", label: "Copied", undone: false, count: 1))
+    }
+
+    override func journalUndo(id: String) async throws -> CoreUndoResult {
+        lock.withLock { _calls.append("undo \(id)") }
+        return CoreUndoResult(label: "Copied")
+    }
+}
+
+@Suite("Skills model, a bulk write that fails")
+@MainActor
+struct SkillsBulkFailureTests {
+    @Test("a failed step undoes the steps already written and shows the core's sentence, with no Undo")
+    func failureRollsBack() async throws {
+        let core = FailingSecondCopyCore()
+        let env = AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { core })
+        let model = SkillsModel(loadout: LoadoutModel(env: env))
+        model.loadout.start()
+        let deadline = Date().addingTimeInterval(30)
+        while !model.loadout.isSettled, Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+        try #require(model.loadout.isSettled)
+
+        model.add(model.rows, to: .codex)
+        let until = Date().addingTimeInterval(30)
+        while env.toasts.current == nil, Date() < until { try await Task.sleep(for: .milliseconds(20)) }
+        #expect(env.toasts.current?.message == "Codex already has a skill named b.")
+        #expect(env.toasts.current?.tone == .danger && env.toasts.current?.action == nil)
+        #expect(core.calls.filter { $0.hasPrefix("copy") }.count == 2)
+        #expect(core.calls.filter { $0.hasPrefix("undo") } == ["undo entry-1"], "the one that was written is undone")
+    }
+}

@@ -49,7 +49,7 @@ struct ToastHost: View {
                     }
                     .onHover { $0 ? toasts.hold() : toasts.release() }
                     .padding(.trailing, Metrics.ContentPanel.inset + Metrics.Toast.trailingInset)
-                    .padding(.bottom, Metrics.ContentPanel.inset + Metrics.Toast.bottomInset)
+                    .padding(.bottom, Metrics.ContentPanel.inset + (toasts.isOverBottomBar ? Metrics.Toast.bottomInsetOverBar : Metrics.Toast.bottomInset))
                     .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
                     .id(toast.id)
                 }
