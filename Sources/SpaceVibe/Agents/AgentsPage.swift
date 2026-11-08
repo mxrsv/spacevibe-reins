@@ -27,6 +27,10 @@ final class AgentsPage: SpaceVibeTab {
         hooks = HooksModel(loadout: self.loadout)
     }
 
+    /// The core's sentence when the inventory could not be read at all and nothing is shown yet; the pages then offer `Try again`
+    /// instead of a skeleton that never ends (V5-A17).
+    var readFailure: String? { loadout.data == nil ? loadout.readFailure : nil }
+
     var counts: AgentsCounts { AgentsCounts(loadout: loadout.data, rules: rules.badge) }
 
     /// The total of skills, subagents and hooks.
@@ -109,23 +113,36 @@ struct AgentsPageView: View {
                     case .rules: RulesHeadActions(model: page.rules)
                     }
                 }
-                switch page.selected {
-                case .skills:
-                    if page.skills.query.filter.isOn { SkillsChipRow(model: page.skills) }
-                    SkillsCanvas(model: page.skills)
-                case .subagents:
-                    if page.subagents.query.filter.isOn { SubagentsChipRow(model: page.subagents) }
-                    SubagentsCanvas(model: page.subagents)
-                case .hooks:
-                    if page.hooks.query.filter.isOn { HooksChipRow(model: page.hooks) }
-                    HooksCanvas(model: page.hooks)
-                case .rules:
-                    if page.rules.filter.isOn { RulesChipRow(model: page.rules) }
-                    RulesCanvas(model: page.rules)
-                }
+                canvas
             }
         }
         .task { page.start() }
+    }
+
+    /// The selected tab's chip row and canvas; a failed read of the inventory replaces the three tabs that depend on it.
+    @ViewBuilder
+    private var canvas: some View {
+        if let failure = page.readFailure, page.selected != .rules {
+            QuietEmptyState("Could not read your CLI folders", message: failure, placement: .list) {
+                Button(action: page.loadout.retry) { ActionLabel("Try again") }.buttonStyle(ActionButtonStyle())
+            }
+            Spacer(minLength: 0)
+        } else {
+            switch page.selected {
+            case .skills:
+                if page.skills.query.filter.isOn { SkillsChipRow(model: page.skills) }
+                SkillsCanvas(model: page.skills)
+            case .subagents:
+                if page.subagents.query.filter.isOn { SubagentsChipRow(model: page.subagents) }
+                SubagentsCanvas(model: page.subagents)
+            case .hooks:
+                if page.hooks.query.filter.isOn { HooksChipRow(model: page.hooks) }
+                HooksCanvas(model: page.hooks)
+            case .rules:
+                if page.rules.filter.isOn { RulesChipRow(model: page.rules) }
+                RulesCanvas(model: page.rules)
+            }
+        }
     }
 
     /// `1` to `4` switch the tabs (V5-R36); a plain key, so off while the palette or a menu has the keyboard.

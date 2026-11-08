@@ -59,10 +59,11 @@ final class LoadoutModel {
     init(env: AppEnvironment) { self.env = env }
 
     /// Shots and tests: a model that shows `data` and never reads, for a state the fixture home cannot show (an empty category;
-    /// no data at all is the loading state).
-    init(env: AppEnvironment, data: LoadoutData?) {
+    /// no data at all is the loading state, and no data with a `readFailure` is the failed read).
+    init(env: AppEnvironment, data: LoadoutData?, readFailure: String? = nil) {
         self.env = env
         self.data = data
+        self.readFailure = readFailure
         started = true
     }
 

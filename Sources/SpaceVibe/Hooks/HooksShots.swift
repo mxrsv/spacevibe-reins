@@ -8,7 +8,7 @@ import SwiftUI
 ///   `-nothing-matches`, `-removed` (after the real Remove of a dead hook on the synthetic home: the toast with Undo; undone after);
 /// - the states from in-memory data: `-sample` (a mock-like set: shared, Claude Code-only and Codex-only events, a hook only Codex
 ///   has, a plugin's, two dead), `-sample-detail`, `-sample-why`, `-sample-clock`, `-healthy`, `-many` (60), `-none`, `-no-codex`,
-///   `-loading`, `-narrow`, `-short`.
+///   `-loading`, `-read-failed`, `-narrow`, `-short`.
 @MainActor
 enum HooksShots {
     /// What `scripts/fixture-home.mjs` writes: event, matcher, script, Claude Code runs, dead.
@@ -70,6 +70,8 @@ enum HooksShots {
         let many = synthetic(HooksSynthetic.rows(HooksSynthetic.many, events: real.events))
         let none = synthetic([])
         let loading = synthetic(nil)
+        let failed = AgentsPage(env: env, loadout: LoadoutModel(env: env, data: nil, readFailure: "No ~/.claude or ~/.codex folder could be read."))
+        failed.select(.hooks)
         let withoutCodex = LimitsModel(env: env, results: [Self.entry(.claude, installed: true), Self.entry(.codex, installed: false),
                                                           CoreLimitsEntry(cli: .gemini, state: .notMeasurable, plan: nil, source: nil, at: nil, windows: [])])
         let noCodex = synthetic(HooksSynthetic.rows(HooksSynthetic.sample.filter { $0.clis == [.claude] }, events: real.events), limits: withoutCodex)
@@ -122,6 +124,7 @@ enum HooksShots {
             try snap("hooks-none", page: none)
             try snap("hooks-no-codex", page: noCodex, limits: withoutCodex)
             try snap("hooks-loading", page: loading)
+            try snap("hooks-read-failed", page: failed)
             // A copy into Claude Code carries the matcher note; its words are the wording function's, the same as the write's.
             let copyToast = ToastCenter(announce: false)
             copyToast.show("\(HooksWording.copyLabel(sampleRows[0], to: .claude)). \(HooksWording.matcherNote)", undo: {})

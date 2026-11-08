@@ -6,7 +6,7 @@ import SwiftUI
 /// the logs (the V5-A20 trace), then draws:
 /// - `skills-page`, `-filtered`, `-grouped` (by status), `-multi` (two rows picked and the bottom bar, before any write), `-multi-added` (after the real bulk add on the synthetic home: Codex lit, the toast with Undo above the bar; undone after), `-warning`
 ///   (the popover of a never-ran skill open), `-menu-filter`, `-menu-view`, `-nothing-matches`, `-empty` (an in-memory scope with
-///   no skills);
+///   no skills), `-read-failed` (the inventory could not be read);
 /// - the pane states `-pane-heavy`, `-pane-both`, `-pane-one`, `-pane-never`, `-pane-never-both`, `-pane-new`, `-pane-plugin`.
 @MainActor
 enum SkillsShots {
@@ -99,6 +99,10 @@ enum SkillsShots {
                 events: [:], globalCount: 0, home: nil)))
             empty.select(.skills)
             try snap("skills-empty", page: empty) {}
+            // The inventory could not be read at all: the core's sentence and `Try again`, never a skeleton that does not end.
+            let failed = AgentsPage(env: env, loadout: LoadoutModel(env: env, data: nil, readFailure: "No ~/.claude or ~/.codex folder could be read."))
+            failed.select(.skills)
+            try snap("skills-read-failed", page: failed) {}
         }
 
         // The real bulk add on the synthetic home, once, then the state it leaves in both appearances: Codex lit on both rows and
