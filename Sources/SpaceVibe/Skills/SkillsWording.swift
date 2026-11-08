@@ -70,26 +70,25 @@ enum SkillsWording {
         let lock = row.plugin.map { "Owned by the \($0) plugin, so SpaceVibe can read it but not change it." }
         let other = present.first.map(\.other)
         let missingElsewhere = oneOnly && other.map { detected.contains($0) } == true
-        let total = usage.sessions ?? 0
         switch status {
         case .loading:
             return nil
         case .heavy:
             // Where the sessions happened, not where the file is: 142 in Claude Code and none in Codex is "all in Claude Code".
-            let where_ = ranIn.count == 1 ? ", all in \(ranIn[0].label)" : " across both CLIs"
-            return Verdict(status: status, title: status.title, text: "Ran in \(sessions(total))\(where_). One of the busiest skills you have.",
+            // The count is the meter's: the sentence says where, not how many (V5-R60).
+            let where_ = ranIn.count == 1 ? "only in \(ranIn[0].label)" : "in both CLIs"
+            return Verdict(status: status, title: status.title, text: "Ran \(where_). One of the busiest skills you have.",
                            small: lock ?? (missingElsewhere ? "\(other?.label ?? "") does not have it yet." : idleNote(usage)))
         case .ran:
             if oneOnly {
-                let text = "Used in \(sessions(total)), but only in \(present[0].label)." + (missingElsewhere ? " \(other?.label ?? "") does not have it." : "")
+                let text = "Used only in \(present[0].label)." + (missingElsewhere ? " \(other?.label ?? "") does not have it." : "")
                 return Verdict(status: status, title: status.title, text: text,
                                small: lock ?? (missingElsewhere ? "Adding it gives \(other?.label ?? "") the same skill with a fresh count." : nil))
             }
             if ranIn.count == 1 {
-                return Verdict(status: status, title: status.title, text: "Used in \(sessions(total)), all in \(ranIn[0].label).", small: lock ?? idleNote(usage))
+                return Verdict(status: status, title: status.title, text: "Used only in \(ranIn[0].label).", small: lock ?? idleNote(usage))
             }
-            let claude = usage.sessions(in: .claude) ?? 0, codex = usage.sessions(in: .codex) ?? 0
-            return Verdict(status: status, title: status.title, text: "Used in both CLIs: \(sessions(claude)) in Claude Code and \(codex) in Codex.", small: lock)
+            return Verdict(status: status, title: status.title, text: "Used in both CLIs.", small: lock)
         case .neverRan:
             let measured = usage.measured
             let text: String
