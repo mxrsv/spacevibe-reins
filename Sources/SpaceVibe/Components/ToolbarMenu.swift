@@ -1,5 +1,18 @@
 import SwiftUI
 
+private struct ToolbarIconsOnlyKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// Set by `TabHead` when the tabs and the actions do not fit in one line: a toolbar button with a glyph then draws the glyph
+    /// alone (its name stays its accessibility label and its tooltip). Narrow widths only.
+    var toolbarIconsOnly: Bool {
+        get { self[ToolbarIconsOnlyKey.self] }
+        set { self[ToolbarIconsOnlyKey.self] = newValue }
+    }
+}
+
 /// A borderless toolbar button of the tab head (V5-R51): `Filter`, `View`, `Refresh`, the scope. 32 high, 12 at the
 /// sides, a 16 pt glyph 4 before its 12 pt label in `fg2`; hovered `hover` and `fg`, focused `sel` (D57). An open menu
 /// leaves it as it is (the kit draws no expanded state).
@@ -12,6 +25,8 @@ struct ToolbarButton: View {
     var keyCap: String?
     let action: () -> Void
 
+    @Environment(\.toolbarIconsOnly) private var iconsOnly
+
     init(_ title: String, glyph: ContentGlyph? = nil, trailingCaret: Bool = false, keyCap: String? = nil, action: @escaping () -> Void) {
         self.title = title
         self.glyph = glyph
@@ -21,16 +36,22 @@ struct ToolbarButton: View {
     }
 
     var body: some View {
+        let glyphOnly = iconsOnly && glyph != nil
         Button(action: action) {
             HStack(spacing: Metrics.ToolbarButton.spacing) {
                 if let glyph { SpaceVibeIcon(content: glyph) }
-                Text(title)
-                if trailingCaret { SpaceVibeIcon(content: .caretDown) }
-                if let keyCap { KeyCap(keyCap) }
+                if !glyphOnly {
+                    Text(title)
+                    // The scope has no glyph of its own: it keeps its label (it states the scope) and loses its caret.
+                    if trailingCaret && !iconsOnly { SpaceVibeIcon(content: .caretDown) }
+                    if let keyCap, !iconsOnly { KeyCap(keyCap) }
+                }
             }
         }
         .buttonStyle(ToolbarButtonStyle())
         .focusEffectDisabled()
+        .help(glyphOnly ? [title, keyCap].compactMap { $0 }.joined(separator: " ") : "")
+        .accessibilityLabel(title)
     }
 }
 

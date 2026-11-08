@@ -127,6 +127,18 @@ struct TabHead<Tabs: View, Actions: View>: View {
     @ViewBuilder var actions: Actions
 
     var body: some View {
+        // Wide enough for the tabs and the actions with their words: that. Otherwise the buttons keep only their glyphs.
+        ViewThatFits(in: .horizontal) {
+            row
+            row.environment(\.toolbarIconsOnly, true)
+        }
+        .frame(height: Metrics.ContentPanel.tabHeadHeight)
+        .frame(maxWidth: .infinity)
+        .overlay(alignment: .bottom) { Rectangle().fill(Palette.hair).frame(height: Metrics.Radius.edge).accessibilityHidden(true) }
+        .zIndex(1)
+    }
+
+    private var row: some View {
         HStack(spacing: 0) {
             HStack(spacing: Metrics.TabChip.spacing) { tabs }
                 .padding(.leading, Rhythm.edge)
@@ -137,9 +149,5 @@ struct TabHead<Tabs: View, Actions: View>: View {
             HStack(spacing: Metrics.TabChip.actionSpacing) { actions }
                 .padding(.trailing, Rhythm.edge)
         }
-        .frame(height: Metrics.ContentPanel.tabHeadHeight)
-        .frame(maxWidth: .infinity)
-        .overlay(alignment: .bottom) { Rectangle().fill(Palette.hair).frame(height: Metrics.Radius.edge).accessibilityHidden(true) }
-        .zIndex(1)
     }
 }
