@@ -31,7 +31,12 @@ final class AgentsPage: SpaceVibeTab {
 
     /// The total of skills, subagents and hooks.
     var badge: TabBadge? {
-        counts.total.map { TabBadge(value: $0, spoken: "\($0) \($0 == 1 ? "item" : "items")") }
+        counts.total.map { TabBadge(value: $0, spoken: Self.spokenTotal($0)) }
+    }
+
+    /// What VoiceOver says after "Agents": the three kinds the total counts, never a generic "items" (V5-R45).
+    static func spokenTotal(_ total: Int) -> String {
+        total == 1 ? "1 skill, subagent or hook" : "\(total) skills, subagents and hooks"
     }
 
     /// The status bar's keys and data source follow the selected tab; a tab not built yet lists none.

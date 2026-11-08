@@ -5,7 +5,7 @@ import SwiftUI
 struct ShellSpecimens: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s24) {
-            SpecimenLayout.panel("Sidebar: product row, search row (rest, hover, focus), page items (current with its count, hover, focus, rest), CLI status rows (reading, not found, no log, no state), footer (rest, hover, focus)") {
+            SpecimenLayout.panel("Sidebar: product row, search row (rest, hover, focus), page items (current with its count, hover, focus, rest), CLI status rows (reading, not installed, no log, no state), footer (rest, hover, focus)") {
                 HStack(alignment: .top, spacing: Space.s24) {
                     sidebar(searchState: [], items: [.current, .hover, .focus], footer: [])
                     sidebar(searchState: .hover, items: [.rest, .focus, .hover], footer: .hover)
@@ -41,7 +41,7 @@ struct ShellSpecimens: View {
             Spacer(minLength: Space.s24)
             SidebarCLIStatusGroup {
                 SidebarCLIStatusRow(name: "Claude Code", cli: .claude, state: .reading)
-                SidebarCLIStatusRow(name: "Codex", cli: .codex, state: .notFound)
+                SidebarCLIStatusRow(name: "Codex", cli: .codex, state: .notInstalled)
                 SidebarCLIStatusRow(name: "Gemini CLI", cli: .gemini, state: .noLog)
                 SidebarCLIStatusRow(name: "Claude Code", cli: .claude, state: nil)
             }

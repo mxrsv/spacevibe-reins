@@ -190,7 +190,7 @@ enum LimitsWording {
     /// Where a CLI's usage reading comes from, shown with the reading's age on the page.
     static func source(_ limits: CoreLimitsEntry) -> (title: String, body: String)? {
         if limits.source == .claudeStatusline {
-            return ("From Claude Code's status line", "Last quota received from a Claude Code session. SpaceVibe makes no network request.")
+            return ("From Claude Code's status line", "Last windows received from a Claude Code session. SpaceVibe makes no network request.")
         }
         return source(limits.cli)
     }
