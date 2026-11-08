@@ -152,9 +152,10 @@ struct SidebarCLIStatusRow: View {
     var state: SidebarCLIState?
 
     var body: some View {
-        HStack(spacing: Metrics.AppSidebar.itemGap) {
+        // No gap around the spacer: "Gemini CLI" and `not installed` share the 164 pt inside the row's padding and need all of it.
+        HStack(spacing: 0) {
             CLIMark(cli, size: .glyph)
-            Text(name).spaceVibeText(.meta, tone: .secondary).lineLimit(1)
+            Text(name).spaceVibeText(.meta, tone: .secondary).lineLimit(1).padding(.leading, Metrics.AppSidebar.itemGap)
             Spacer(minLength: 0)
             if let state {
                 HStack(spacing: Metrics.AppSidebar.statusDotGap) {

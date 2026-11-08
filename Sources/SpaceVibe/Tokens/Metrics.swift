@@ -437,6 +437,9 @@ extension Metrics {
     enum Activity {
         static let projectWidth: CGFloat = 112
         static let stateWidth: CGFloat = 104
+        /// How far the two give way in a narrow window (V5-A22, 1062 wide): the session's title keeps the rest.
+        static let projectMinWidth: CGFloat = 64
+        static let stateMinWidth: CGFloat = 72
         static let reasonMaxWidth: CGFloat = 176
         static let timesWidth: CGFloat = 64
         static let statusWidth: CGFloat = 88
@@ -466,8 +469,9 @@ extension Metrics {
         static let fixesBleed: CGFloat = Hooks.fixesBleed
         /// The Codex note under the bands: 12 above it.
         static let noteTop: CGFloat = 12
-        /// The column head: its height, and the gap between its logo and name.
-        static let headHeight: CGFloat = 28
+        /// The column head (the kit's `.ord`: 32 high with 4 above its content), and the gap between its logo and name.
+        static let headHeight: CGFloat = 32
+        static let headTop: CGFloat = 4
         static let headSpacing: CGFloat = 6
     }
 
