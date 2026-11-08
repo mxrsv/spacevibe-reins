@@ -4,7 +4,7 @@ import SwiftUI
 /// The v5 Skills shots (`SPACEVIBE_UI_V5=1 SPACEVIBE_SHOT_SCREEN=skills`): the real tab on the synthetic home, in every state the
 /// plan names, dark and light. The run first checks every skill's sessions against what `scripts/fixture-home.mjs` writes into
 /// the logs (the V5-A20 trace), then draws:
-/// - `skills-page`, `-filtered`, `-grouped` (by status), `-multi` (two rows picked and the bottom bar, before any write), `-multi-added` (after the real bulk add on the synthetic home: Codex lit, the toast with Undo above the bar; undone after), `-warning`
+/// - `skills-page`, `-short` (1062 x 685), `-narrow` (960 x 600), `-filtered`, `-grouped` (by status), `-multi` (two rows picked and the bottom bar, before any write), `-multi-added` (after the real bulk add on the synthetic home: Codex lit, the toast with Undo above the bar; undone after), `-warning`
 ///   (the popover of a never-ran skill open), `-menu-filter`, `-menu-view`, `-nothing-matches`, `-empty` (an in-memory scope with
 ///   no skills), `-read-failed` (the inventory could not be read);
 /// - the pane states `-pane-heavy`, `-pane-both`, `-pane-one`, `-pane-never`, `-pane-never-both`, `-pane-new`, `-pane-plugin`.
@@ -34,7 +34,7 @@ enum SkillsShots {
 
         let model = page.skills
         func shoot(_ name: String, _ choice: AppearanceChoice, toasts: ToastCenter? = nil, shownSlot: String? = nil,
-                   page shown: AgentsPage? = nil, _ configure: () -> Void = {}) throws {
+                   page shown: AgentsPage? = nil, size: CGSize = ShotRenderer.size, _ configure: () -> Void = {}) throws {
             configure()
             let used = shown ?? page
             let tabs = TabRegistry.makeTabs(isV5: true).map { $0 is AgentsPage ? used : $0 }
@@ -42,7 +42,7 @@ enum SkillsShots {
             let view = ShellView()
                 .spaceVibeRoot(shell: shell, toasts: toasts ?? ToastCenter(announce: false), env: env)
                 .environment(\.shownWarningSlot, shownSlot.map { AnyHashable($0) })
-                .frame(width: ShotRenderer.size.width, height: ShotRenderer.size.height)
+                .frame(width: size.width, height: size.height)
             try ShotRenderer.write(view, name: name, choice: choice, to: directory)
         }
         func reset() {
@@ -56,12 +56,15 @@ enum SkillsShots {
 
         for choice in [AppearanceChoice.dark, .light] {
             func snap(_ name: String, toasts: ToastCenter? = nil, shownSlot: String? = nil, page shown: AgentsPage? = nil,
-                      _ configure: () -> Void = {}) throws {
-                try shoot(name, choice, toasts: toasts, shownSlot: shownSlot, page: shown, configure)
+                      size: CGSize = ShotRenderer.size, _ configure: () -> Void = {}) throws {
+                try shoot(name, choice, toasts: toasts, shownSlot: shownSlot, page: shown, size: size, configure)
             }
 
             reset()
             try snap("skills-page")
+            // V5-A22: a window shorter than the list and the pane, and one narrower than the pane's room (960 and 1062 wide).
+            try snap("skills-short", size: CGSize(width: 1062, height: 685))
+            try snap("skills-narrow", size: CGSize(width: 960, height: 600))
 
             try snap("skills-filtered") { model.toggleFilter(.status, "neverRan") }
             try snap("skills-filtered-two") { model.toggleFilter(.cli, "one") }
