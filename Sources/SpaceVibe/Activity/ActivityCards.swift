@@ -117,8 +117,9 @@ extension ActivityCards {
 
     private func sessionRow(_ item: ActivitySessionItem) -> some View {
         ListRow(item.session.title, isCurrent: item.id == current, onActivate: { model.open(item.id) }, accessibilityName: item.spoken) {
-            MetaCell(text: item.session.project ?? "", width: Metrics.Activity.projectWidth, alignment: .leading)
-            MetaCell(text: item.stateText, width: Metrics.Activity.stateWidth)
+            MetaCell(text: item.session.project ?? "", width: Metrics.Activity.projectWidth, alignment: .leading,
+                     shrinksTo: Metrics.Activity.projectMinWidth)
+            MetaCell(text: item.stateText, width: Metrics.Activity.stateWidth, shrinksTo: Metrics.Activity.stateMinWidth)
             sessionSlot(item)
         }
         .id(item.id)

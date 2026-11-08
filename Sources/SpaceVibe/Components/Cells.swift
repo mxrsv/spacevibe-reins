@@ -156,11 +156,16 @@ struct MetaCell: View {
     let text: String
     var width: CGFloat?
     var alignment: Alignment = .trailing
+    /// A narrow row lets this column give way down to this width (the text then ends in an ellipsis) so the row's name keeps
+    /// room; nil keeps the column fixed at `width`.
+    var shrinksTo: CGFloat?
 
     var body: some View {
-        Text(text)
-            .spaceVibeText(.meta, tone: .tertiary)
-            .lineLimit(1)
-            .frame(width: width, alignment: alignment)
+        let text = Text(text).spaceVibeText(.meta, tone: .tertiary).lineLimit(1)
+        if let shrinksTo, let width {
+            text.frame(minWidth: shrinksTo, maxWidth: width, alignment: alignment)
+        } else {
+            text.frame(width: width, alignment: alignment)
+        }
     }
 }

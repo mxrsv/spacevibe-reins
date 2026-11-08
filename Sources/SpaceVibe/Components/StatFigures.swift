@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// `Stats` (V5-R58): 2 to 4 figures side by side, each a 20/28 600 figure over a 12/16 `fg3` label that names what it
-/// counts and over what range. Columns are at least 88 wide and 12 apart; when they do not fit in one line they wrap.
+/// counts and over what range. Columns are at least 88 wide and 12 apart; when they do not fit in one line they wrap. A
+/// label wraps to as many lines as it needs: it carries the range, so it is never cut with an ellipsis (V5-A22).
 struct StatFigures: View {
     struct Figure: Identifiable {
         let value: String
@@ -31,7 +32,7 @@ struct StatFigures: View {
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
                 Text(figure.value).spaceVibeText(.heading, tone: .primary).lineLimit(1).lineBox(.heading)
-                Text(figure.label).spaceVibeText(.meta, tone: .tertiary).lineLimit(2).fixedSize(horizontal: false, vertical: true).lineBox(.meta)
+                Text(figure.label).spaceVibeText(.meta, tone: .tertiary).fixedSize(horizontal: false, vertical: true).lineBox(.meta)
             }
             .accessibilityElement(children: .combine)
         }
