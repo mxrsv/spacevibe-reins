@@ -7,7 +7,7 @@ import SwiftUI
 /// - `subagents-page`, `-filtered`, `-flat` (Group: None), `-detail` (a row's popover open), `-warning` (the never-ran popover),
 ///   `-menu-filter`, `-menu-group`, `-nothing-matches`;
 /// - the states from in-memory data the fixture cannot show: `-none`, `-loading`, `-no-codex`, `-many` (40, one plugin-owned),
-///   `-healthy`, `-several` (three never ran), `-read-failed`;
+///   `-healthy`, `-several` (three never ran), `-read-failed`, `-scan-failed`;
 /// - `-added` (after the real add to Codex on the synthetic home: the toast with Undo and Codex lit; undone after).
 @MainActor
 enum SubagentsShots {
@@ -71,6 +71,8 @@ enum SubagentsShots {
         let loading = synthetic(nil)
         let failed = AgentsPage(env: env, loadout: LoadoutModel(env: env, data: nil, readFailure: "No ~/.claude or ~/.codex folder could be read."))
         failed.select(.subagents)
+        let scanFailed = AgentsPage(env: env, loadout: LoadoutModel(env: env, data: real.withoutCounts(), scanFailure: "The usage scan could not run."))
+        scanFailed.select(.subagents)
         let withoutCodex = LimitsModel(env: env, results: [Self.entry(.claude, installed: true), Self.entry(.codex, installed: false),
                                                           CoreLimitsEntry(cli: .gemini, state: .notMeasurable, plan: nil, source: nil, at: nil, windows: [])])
         let noCodex = synthetic(Self.claudeOnly(agents), limits: withoutCodex)
@@ -111,6 +113,7 @@ enum SubagentsShots {
             try snap("subagents-none", page: none)
             try snap("subagents-loading", page: loading)
             try snap("subagents-read-failed", page: failed)
+            try snap("subagents-scan-failed", shownSlot: "agents:scan", page: scanFailed)
             try snap("subagents-no-codex", page: noCodex, limits: withoutCodex)
             try snap("subagents-many", page: many)
             try snap("subagents-healthy", page: healthy)

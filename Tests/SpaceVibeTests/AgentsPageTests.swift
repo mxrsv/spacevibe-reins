@@ -85,4 +85,23 @@ struct AgentsPageTests {
         #expect(AgentsPage.spokenTotal(22) == "22 skills, subagents and hooks")
         #expect(AgentsPage.spokenTotal(1) == "1 skill, subagent or hook")
     }
+
+    @Test("the page names a failed scan only while the rows have no counts, and a failed read only while it has no rows")
+    func failures() {
+        let env = AppEnvironment(toasts: ToastCenter(announce: false))
+        let rows = data([row("a", .skill)], globalCount: 1)
+        #expect(AgentsPage(env: env, loadout: LoadoutModel(env: env, data: rows, scanFailure: "The scan failed.")).scanFailure == "The scan failed.")
+        #expect(AgentsPage(env: env, loadout: LoadoutModel(env: env, data: nil, scanFailure: "The scan failed.")).scanFailure == nil)
+        #expect(AgentsPage(env: env, loadout: LoadoutModel(env: env, data: rows)).scanFailure == nil)
+        #expect(AgentsPage(env: env, loadout: LoadoutModel(env: env, data: nil, readFailure: "No folders.")).readFailure == "No folders.")
+        #expect(AgentsPage(env: env, loadout: LoadoutModel(env: env, data: rows, readFailure: "No folders.")).readFailure == nil)
+    }
+
+    @Test("the rows of a failed scan keep every cell that was counted as not counted yet")
+    func withoutCounts() {
+        var counted = row("a", .skill)
+        counted.cells = CoreCells(claude: .counted(runs: 3, last: nil, errors: nil), codex: .missing)
+        let shown = data([counted], globalCount: 1).withoutCounts()
+        #expect(shown.rows[0].cells.claude == .pending(reason: "Usage scan has not finished") && shown.rows[0].cells.codex == .missing)
+    }
 }

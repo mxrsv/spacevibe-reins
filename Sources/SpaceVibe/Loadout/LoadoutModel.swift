@@ -59,11 +59,12 @@ final class LoadoutModel {
     init(env: AppEnvironment) { self.env = env }
 
     /// Shots and tests: a model that shows `data` and never reads, for a state the fixture home cannot show (an empty category;
-    /// no data at all is the loading state, and no data with a `readFailure` is the failed read).
-    init(env: AppEnvironment, data: LoadoutData?, readFailure: String? = nil) {
+    /// no data at all is the loading state, and no data with a `readFailure` is the failed read; rows with a `scanFailure` and no counts are the failed scan).
+    init(env: AppEnvironment, data: LoadoutData?, readFailure: String? = nil, scanFailure: String? = nil) {
         self.env = env
         self.data = data
         self.readFailure = readFailure
+        self.scanFailure = scanFailure
         started = true
     }
 
@@ -101,6 +102,7 @@ final class LoadoutModel {
 
     func retry() {
         readFailure = nil
+        scanFailure = nil
         reload()
         scan()
     }
@@ -317,5 +319,20 @@ final class LoadoutModel {
             if rest > .zero { try? await Task.sleep(for: rest) }
             if inFlight[key] == ticket { inFlight[key] = nil }
         }
+    }
+}
+
+extension LoadoutData {
+    /// The same rows with no count yet, as they read while a usage scan has not landed (or failed): a shot of that state.
+    func withoutCounts() -> LoadoutData {
+        var copy = self
+        copy.rows = rows.map { row in
+            var row = row
+            let pending = CoreUsageCell.pending(reason: "Usage scan has not finished")
+            if case .counted = row.cells.claude { row.cells.claude = pending }
+            if case .counted = row.cells.codex { row.cells.codex = pending }
+            return row
+        }
+        return copy
     }
 }

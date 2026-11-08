@@ -242,6 +242,19 @@ struct LoadoutModelTests {
         #expect(model.data != nil)
     }
 
+    @Test("Try again after a failed scan drops the failure at once and counts again")
+    func scanRetry() async throws {
+        let core = FakeLoadoutCore(rows: Self.rows())
+        core.scanFailure = CoreError("The usage scan could not run.", status: 500)
+        let model = try await started(core)
+        #expect(model.scanFailure != nil && model.usageResult == nil)
+        core.scanFailure = nil
+        model.retry()
+        #expect(model.scanFailure == nil)
+        try await settle("the new scan") { model.isSettled && model.usageResult != nil }
+        #expect(model.usageNote.hasPrefix("Counted from"))
+    }
+
     @Test("a read the core refuses shows its sentence, and Retry reads again")
     func readFails() async throws {
         let core = FakeLoadoutCore(rows: Self.rows())

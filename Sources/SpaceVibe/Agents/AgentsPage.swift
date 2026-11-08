@@ -31,6 +31,10 @@ final class AgentsPage: SpaceVibeTab {
     /// instead of a skeleton that never ends (V5-A17).
     var readFailure: String? { loadout.data == nil ? loadout.readFailure : nil }
 
+    /// The core's sentence when the usage scan failed and the rows still have no counts: the three tabs then say so and offer
+    /// `Try again` (V5-A17), instead of cells that read "counting" for good.
+    var scanFailure: String? { loadout.data != nil && loadout.usageResult == nil ? loadout.scanFailure : nil }
+
     var counts: AgentsCounts { AgentsCounts(loadout: loadout.data, rules: rules.badge) }
 
     /// The total of skills, subagents and hooks.
@@ -106,6 +110,7 @@ struct AgentsPageView: View {
                         ) { page.select(category) }
                     }
                 } actions: {
+                    scanFailureSlot
                     switch page.selected {
                     case .skills: SkillsHeadActions(model: page.skills)
                     case .subagents: SubagentsHeadActions(model: page.subagents)
@@ -117,6 +122,17 @@ struct AgentsPageView: View {
             }
         }
         .task { page.start() }
+    }
+
+    /// The warning glyph at the head's left of the actions: what failed in the core's words and `Try again` beside it.
+    @ViewBuilder
+    private var scanFailureSlot: some View {
+        if let failure = page.scanFailure, page.selected != .rules {
+            WarningSlot(mark: StateMark(.warn, label: "Usage could not be counted"), detail: failure, id: "agents:scan") {
+                PopoverSentence("Usage could not be counted, so the counts are missing. \(failure)")
+                PopoverActions { Button { page.loadout.retry() } label: { ActionLabel("Try again") } }
+            }
+        }
     }
 
     /// The selected tab's chip row and canvas; a failed read of the inventory replaces the three tabs that depend on it.

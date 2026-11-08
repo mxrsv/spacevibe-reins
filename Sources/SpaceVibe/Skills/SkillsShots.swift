@@ -6,7 +6,7 @@ import SwiftUI
 /// the logs (the V5-A20 trace), then draws:
 /// - `skills-page`, `-short` (1062 x 685), `-narrow` (960 x 600), `-filtered`, `-grouped` (by status), `-multi` (two rows picked and the bottom bar, before any write), `-multi-added` (after the real bulk add on the synthetic home: Codex lit, the toast with Undo above the bar; undone after), `-warning`
 ///   (the popover of a never-ran skill open), `-menu-filter`, `-menu-view`, `-nothing-matches`, `-empty` (an in-memory scope with
-///   no skills), `-read-failed` (the inventory could not be read);
+///   no skills), `-read-failed` (the inventory could not be read), `-scan-failed` (the usage scan could not run, its popover open);
 /// - the pane states `-pane-heavy`, `-pane-both`, `-pane-one`, `-pane-never`, `-pane-never-both`, `-pane-new`, `-pane-plugin`.
 @MainActor
 enum SkillsShots {
@@ -34,7 +34,8 @@ enum SkillsShots {
 
         let model = page.skills
         func shoot(_ name: String, _ choice: AppearanceChoice, toasts: ToastCenter? = nil, shownSlot: String? = nil,
-                   page shown: AgentsPage? = nil, size: CGSize = ShotRenderer.size, _ configure: () -> Void = {}) throws {
+                   page shown: AgentsPage? = nil, size: CGSize? = nil, _ configure: () -> Void = {}) throws {
+            let size = size ?? ShotRenderer.size
             configure()
             let used = shown ?? page
             let tabs = TabRegistry.makeTabs(isV5: true).map { $0 is AgentsPage ? used : $0 }
@@ -56,7 +57,7 @@ enum SkillsShots {
 
         for choice in [AppearanceChoice.dark, .light] {
             func snap(_ name: String, toasts: ToastCenter? = nil, shownSlot: String? = nil, page shown: AgentsPage? = nil,
-                      size: CGSize = ShotRenderer.size, _ configure: () -> Void = {}) throws {
+                      size: CGSize? = nil, _ configure: () -> Void = {}) throws {
                 try shoot(name, choice, toasts: toasts, shownSlot: shownSlot, page: shown, size: size, configure)
             }
 
@@ -106,6 +107,10 @@ enum SkillsShots {
             let failed = AgentsPage(env: env, loadout: LoadoutModel(env: env, data: nil, readFailure: "No ~/.claude or ~/.codex folder could be read."))
             failed.select(.skills)
             try snap("skills-read-failed", page: failed) {}
+            // The rows are there but the usage scan failed: the warning in the tab head names it and offers `Try again`.
+            let scanFailed = AgentsPage(env: env, loadout: LoadoutModel(env: env, data: page.loadout.data?.withoutCounts(), scanFailure: "The usage scan could not run."))
+            scanFailed.select(.skills)
+            try snap("skills-scan-failed", shownSlot: "agents:scan", page: scanFailed) {}
         }
 
         // The real bulk add on the synthetic home, once, then the state it leaves in both appearances: Codex lit on both rows and
