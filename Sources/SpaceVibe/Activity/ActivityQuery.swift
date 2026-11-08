@@ -44,6 +44,20 @@ typealias ActivityFilter = PickFilter<ActivityFilterField>
 /// One live session as a row (V5-R70): the core's session with the words the row and its popover use.
 struct ActivitySessionItem: Identifiable, Equatable, Sendable {
     let session: CoreActivitySession
+    /// The core's sentence for this CLI's fixed limit: it does not record approval waits, so a long tool run and a wait look the
+    /// same (`claude-prompt-vs-busy`, `codex-tool-silent`). Nil when the report lists none for the CLI.
+    var approvalLimit: String?
+
+    /// What SpaceVibe cannot see about this session, in the core's words: a session it could not measure says why; a running
+    /// session with a tool call open gets the CLI's approval limit, because the log would not show that it waits for one.
+    var cannotSee: String? {
+        if isUnmeasurable { return session.stateReason }
+        if session.state == .running, session.currentTool != nil { return approvalLimit }
+        return nil
+    }
+
+    /// The warning slot's neutral clock label.
+    var cannotSeeLabel: String { isUnmeasurable ? "Not measurable" : "Approval waits not visible" }
 
     var id: String { "\(session.cli.rawValue):\(session.id)" }
     var isWaiting: Bool { session.state == .waiting }
@@ -183,7 +197,11 @@ struct ActivityQuery: Equatable, Sendable {
         self.installed = installed
         func cliOn(_ cli: CoreCLI) -> Bool { filter.count(.cli) == 0 || filter.isPicked(.cli, cli.rawValue) }
 
-        let live = (report?.sessions ?? []).filter { $0.state != .ended && cliOn($0.cli) }.map(ActivitySessionItem.init)
+        let approval = Dictionary(
+            (report?.unmeasurable ?? []).filter { $0.code == "claude-prompt-vs-busy" || $0.code == "codex-tool-silent" }.map { ($0.cli, $0.text) },
+            uniquingKeysWith: { first, _ in first })
+        let live = (report?.sessions ?? []).filter { $0.state != .ended && cliOn($0.cli) }
+            .map { ActivitySessionItem(session: $0, approvalLimit: approval[$0.cli]) }
         let ordered = live.enumerated().sorted { ($0.element.rank, $0.offset) < ($1.element.rank, $1.offset) }.map(\.element)
         sessions = ordered
         var bands = CoreCLI.allCases.filter(cliOn).compactMap { cli -> ActivitySessionBand? in

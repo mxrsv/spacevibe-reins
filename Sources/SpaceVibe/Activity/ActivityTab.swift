@@ -17,8 +17,9 @@ final class ActivityTab: SpaceVibeTab {
 
     var glyph: any GlyphSource { model.isV5 ? ContentGlyph.pulse : icon }
 
-    /// Failure groups whose last failure was within 24 hours.
+    /// Failure groups whose last failure was within 24 hours. The v5 sidebar gives a count to Agents only (V5-R50), so none here.
     var badge: TabBadge? {
+        guard !model.isV5 else { return nil }
         let count = model.recentFailures
         return count > 0 ? TabBadge(value: count, alert: true, spoken: "\(count) recent failed \(count == 1 ? "command" : "commands")") : nil
     }

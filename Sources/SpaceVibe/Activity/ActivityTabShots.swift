@@ -4,9 +4,10 @@ import SwiftUI
 /// The v5 Activity shots (`SPACEVIBE_UI_V5=1 SPACEVIBE_SHOT_SCREEN=activity`): the real page on the synthetic home in every state
 /// of V5-R62, dark and light. The run first checks every figure against what the core's report holds (the V5-A20 trace), then
 /// draws:
-/// - the real report: `activity-running`, `-running-filtered`, `-running-detail`, `-running-warning`, `-menu-filter`, `-stop` (the
+/// - the real report: `activity-running`, `-running-filtered`, `-running-detail`, `-running-warning`, `-running-limit` (the clock on a running session), `-menu-filter`, `-stop` (the
 ///   confirmation), `-failed`, `-failed-detail`, `-failed-warning`, `-files`, `-files-detail`;
-/// - the states from in-memory reports the fixture cannot show: `-loading`, `-error`, `-healthy`, `-nothing-running`, `-many`,
+/// - the states from in-memory reports the fixture cannot show: `-loading`, `-error`, `-stale` (a report with a failed last read, and
+///   its popover), `-healthy`, `-nothing-running`, `-many`,
 ///   `-no-failures`, `-no-files`, `-not-installed`; and the V5-A22 sizes;
 /// - two real writes, last: `-stopped` (Stop on the Codex process the fixture can verify: its process list only edits itself, so
 ///   nothing real is signalled) and `-dismissed` (Dismiss passed with its Undo toast; undone after).
@@ -59,6 +60,8 @@ enum ActivityTabShots {
             return other
         }
         let waiting = real.sessions.first { $0.state == .waiting }
+        let toolRunning = real.sessions.first { $0.cli == .claude && $0.state == .running && $0.currentTool != nil }
+        let stale = synthetic(real, failure: "The session logs could not be read.")
         let fileToShow = ActivityQuery(report: real).files.first?.id
         let failureToShow = ActivityQuery(report: real).failures.first { $0.stillFailing }
         let withoutCodex = LimitsModel(env: env, results: [Self.entry(.claude, .measured), Self.entry(.codex, .notInstalled), Self.entry(.gemini, .notInstalled)])
@@ -92,6 +95,10 @@ enum ActivityTabShots {
                 try snap("activity-stop")
                 model.cancelStop()
             }
+            if let toolRunning {
+                // A running session with a tool open: the clock says the log would not show an approval wait.
+                try snap("activity-running-limit", shownSlot: "\(ActivityCanvas.page):warn:\(toolRunning.cli.rawValue):\(toolRunning.id)")
+            }
             reset(model)
             model.isFilterOpen = true
             try snap("activity-menu-filter")
@@ -114,6 +121,8 @@ enum ActivityTabShots {
             reset(model)
             try snap("activity-loading", tab: loading)
             try snap("activity-error", tab: error)
+            try snap("activity-stale", tab: stale)
+            try snap("activity-stale-popover", tab: stale, shownSlot: "\(ActivityCanvas.page):stale")
             try snap("activity-healthy", tab: healthy)
             try snap("activity-nothing-running", tab: nothing)
             try snap("activity-many", tab: many)
@@ -224,6 +233,11 @@ enum ActivityTabShots {
             print("trace: session \(session.cli.rawValue) pid \(session.pid) \(session.state.rawValue) cost \(session.cost.map { String($0.usd) } ?? "none") age \(session.ageMs.map { String(Int($0)) } ?? "none") ms")
         }
         try ShotHarness.check(query.count(.running) == live.count, "the Running tab counts the \(live.count) open sessions")
+        try ShotHarness.check(ActivityTab(model: model).badge == nil, "the v5 sidebar shows no count beside Activity (V5-R50)")
+        let limited = query.sessions.filter { $0.cannotSee != nil && !$0.isUnmeasurable }
+        print("trace: approval limit shown on \(limited.map { "\($0.session.cli.rawValue) pid \($0.session.pid)" })")
+        try ShotHarness.check(limited.count == live.filter { $0.cli == .claude && $0.state == .running && $0.currentTool != nil }.count + live.filter { $0.cli == .codex && $0.state == .running && $0.currentTool != nil }.count,
+                              "every running session with a tool open carries its CLI's approval limit")
         let running = ActivityAnswer.running(query)
         let waiting = live.filter { $0.state == .waiting }
         print("trace: Answer running \"\(running.sentence ?? "nil")\", verdict \(running.verdict?.title ?? "none"): \(running.verdict?.text ?? "") \(running.verdict?.small ?? ""), more \(running.more)")

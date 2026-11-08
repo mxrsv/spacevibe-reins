@@ -31,11 +31,6 @@ struct ActivityCanvas: View {
                     }
                     // The chips stay on every tab, Files included, so the filtered counts of the others are explained (V5-R69).
                     if model.filter.isOn { ActivityChipRow(model: model) }
-                    if let failure = model.failure, !query.isLoading {
-                        Banner(.error, message: "The last read failed, so this may be out of date.", detail: failure, actionTitle: "Try again", action: model.retry)
-                            .padding(.horizontal, Rhythm.edge)
-                            .padding(.top, Rhythm.card)
-                    }
                     canvas(query, visible: visible, now: context.date)
                 }
             }

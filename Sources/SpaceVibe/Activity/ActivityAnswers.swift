@@ -49,10 +49,11 @@ struct ActivityAnswer: Equatable, Sendable {
         guard let first = unread.first else {
             return ActivityAnswer(sentence: "Nothing\(query.scope) is waiting for you.", verdict: nil, more: 0)
         }
-        let count = unread.count
+        let count = unread.count, open = query.sessions.count
         return ActivityAnswer(
             sentence: "Nothing\(query.scope) is known to be waiting for you.",
-            verdict: Verdict(targetID: first.id, title: "\(count) \(count == 1 ? "session is" : "sessions are") not measurable", text: first.session.stateReason, small: nil),
+            verdict: Verdict(targetID: first.id, title: first.session.title, text: first.session.stateReason,
+                             small: "\(count) of \(open) open \(open == 1 ? "session" : "sessions") cannot be measured."),
             more: count - 1)
     }
 
@@ -194,6 +195,8 @@ enum ActivityWording {
         let session = item.session
         var lines = [session.stateReason]
         if item.isWaiting { lines.append(answerInTerminal) }
+        // A running session's log would not show an approval wait: say so in the core's words (an unmeasurable one says it above).
+        if !item.isUnmeasurable, let limit = item.cannotSee { lines.append(limit) }
         if let ago = session.lastWriteAgoMs {
             lines.append("Last log write \(ActivityFormat.span(ago + elapsedMs)) ago.")
         } else if let age = session.ageMs {

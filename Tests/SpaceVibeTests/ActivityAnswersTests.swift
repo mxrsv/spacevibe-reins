@@ -39,9 +39,15 @@ struct ActivityAnswersTests {
         CoreActivityFile(path: "/work/\(path)", label: path, edits: edits, sessions: edits, last: iso(hoursAgo), clis: clis, projects: projects)
     }
 
-    private func report(sessions: [CoreActivitySession] = [], failures: [CoreActivityFailure] = [], files: [CoreActivityFile] = []) -> CoreActivityReport {
-        CoreActivityReport(sessions: sessions, failures: failures, files: files, unmeasurable: [], stats: CoreActivityStats(logs: 74, truncated: 0))
+    private func report(sessions: [CoreActivitySession] = [], failures: [CoreActivityFailure] = [], files: [CoreActivityFile] = [],
+                        limits: [CoreActivityLimit] = []) -> CoreActivityReport {
+        CoreActivityReport(sessions: sessions, failures: failures, files: files, unmeasurable: limits, stats: CoreActivityStats(logs: 74, truncated: 0))
     }
+
+    private static let claudeLimit = CoreActivityLimit(cli: .claude, code: "claude-prompt-vs-busy",
+                                                       text: "Claude Code does not record permission prompts, so a long tool run and a wait for approval look the same.")
+    private static let codexLimit = CoreActivityLimit(cli: .codex, code: "codex-tool-silent",
+                                                      text: "Codex logs nothing while a tool runs and does not record approval waits.")
 
     private func query(_ report: CoreActivityReport?, filter: ActivityFilter = ActivityFilter(), dismissed: Set<String> = [], limits: [CoreLimitsEntry] = []) -> ActivityQuery {
         ActivityQuery(report: report, filter: filter, dismissed: dismissed, limits: limits, readAt: Self.now, now: Self.now, calendar: Self.calendar)
@@ -90,10 +96,33 @@ struct ActivityAnswersTests {
         let sentence = "Codex logs nothing while a tool runs."
         let answer = ActivityAnswer.running(query(report(sessions: [session("a", cli: .codex, state: .unmeasurable, reason: sentence), session("b", cli: .codex, state: .unmeasurable)])))
         #expect(answer.sentence == "Nothing is known to be waiting for you.")
-        #expect(answer.verdict?.title == "2 sessions are not measurable" && answer.verdict?.text == sentence && answer.more == 1)
+        #expect(answer.verdict?.title == "Task a" && answer.verdict?.text == sentence)
+        #expect(answer.verdict?.small == "2 of 2 open sessions cannot be measured." && answer.more == 1)
+        let mixed = ActivityAnswer.running(query(report(sessions: [session("a", cli: .codex, state: .unmeasurable, reason: sentence), session("b"), session("c")])))
+        #expect(mixed.verdict?.small == "1 of 3 open sessions cannot be measured." && mixed.more == 0)
     }
 
-    @Test("no report yet: the Answer is loading, on every tab")
+    @Test("a running session with a tool open shows the CLI's approval limit in the core's words; one that was measured, idle or has no tool shows none")
+    func approvalLimit() {
+        let tool = CoreActivityTool(name: "Bash", target: "pnpm test")
+        let q = query(report(sessions: [
+            session("run", tool: tool), session("bare"), session("idle", state: .idle, tool: tool), session("nm", cli: .codex, state: .unmeasurable, reason: "Why not."),
+            session("cx", cli: .codex, tool: tool),
+        ], limits: [Self.claudeLimit, Self.codexLimit]))
+        func item(_ id: String) -> ActivitySessionItem { q.sessions.first { $0.session.id == id }! }
+        #expect(item("run").cannotSee == Self.claudeLimit.text && item("run").cannotSeeLabel == "Approval waits not visible")
+        #expect(item("cx").cannotSee == Self.codexLimit.text, "each CLI gets its own limit")
+        #expect(item("bare").cannotSee == nil && item("idle").cannotSee == nil)
+        #expect(item("nm").cannotSee == "Why not." && item("nm").cannotSeeLabel == "Not measurable")
+        // The detail says it once: an unmeasurable session's reason is already its first line.
+        let lines = ActivityWording.sessionLines(item("run"), elapsedMs: 0)
+        #expect(lines.contains(Self.claudeLimit.text))
+        #expect(ActivityWording.sessionLines(item("nm"), elapsedMs: 0).filter { $0 == "Why not." }.count == 1)
+        // No limit in the report: nothing is claimed.
+        #expect(query(report(sessions: [session("run", tool: tool)])).sessions.first?.cannotSee == nil)
+    }
+
+        @Test("no report yet: the Answer is loading, on every tab")
     func loading() {
         let loading = query(nil)
         #expect(loading.isLoading)
@@ -334,20 +363,19 @@ struct ActivityAnswersTests {
         #expect(model.query().count(.failed) == 1)
     }
 
-    @Test("the sidebar badge counts recent failures and drops the dismissed ones on the v5 page, not on the old screen")
+    @Test("the v5 sidebar gives Activity no count (V5-R50); the old sidebar keeps its recent-failures badge")
     func badge() {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         var recent = failure("1")
         recent.last = formatter.string(from: Date().addingTimeInterval(-3600))
-        let model = model(report(failures: [recent]))
-        #expect(model.recentFailures == 1)
-        model.dismiss(model.query().failures[0])
-        #expect(model.recentFailures == 0)
-        let old = ActivityModel(env: model.env)
-        old.preview(report: report(failures: [recent]))
-        old.dismiss(ActivityFailureItem(failure: recent))
-        #expect(old.recentFailures == 1)
+        let env = AppEnvironment(toasts: ToastCenter(announce: false))
+        let v5 = ActivityTab(env: env, isV5: true)
+        v5.model.preview(report: report(failures: [recent]))
+        #expect(v5.badge == nil)
+        let old = ActivityTab(env: env)
+        old.model.preview(report: report(failures: [recent]))
+        #expect(old.badge?.value == 1)
     }
 
     @Test("Copy puts the whole command on the pasteboard; a cut one is refused with a sentence")

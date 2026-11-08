@@ -52,11 +52,25 @@ extension ActivityCards {
             Tile("Running", count: query.isLoading ? nil : ActivityFormat.plural(query.sessions.count, "session"), layout: spineLayout(empty: query.sessions.isEmpty),
                  maxHeight: Metrics.Tile.spineMaxHeight, stretches: true, scrollTarget: current, isOpen: open("running.spine")) {
                 runningSpine
+            } actions: {
+                staleSlot
             }
         }
     }
 
     private func spineLayout(empty: Bool) -> TileLayout { query.isLoading || empty ? .bare : .rows }
+
+    /// A read that failed while an earlier report is still shown (V5-R73's stale form): the warning glyph in the spine's header,
+    /// its popover saying so with the core's sentence and `Try again` beside it.
+    @ViewBuilder
+    private var staleSlot: some View {
+        if let failure = model.failure, !query.isLoading {
+            WarningSlot(mark: StateMark(.warn, label: "Last read failed"), detail: failure, id: "\(page):stale") {
+                PopoverSentence("The last read failed, so this may be out of date. \(failure)")
+                PopoverActions { Button { model.retry() } label: { ActionLabel("Try again") } }
+            }
+        }
+    }
 
     @ViewBuilder
     private var runningSpine: some View {
@@ -107,12 +121,16 @@ extension ActivityCards {
 
     @ViewBuilder
     private func sessionSlot(_ item: ActivitySessionItem) -> some View {
-        if item.isWaiting || item.isUnmeasurable {
-            let mark = item.isWaiting ? StateMark(.warn, label: "Waiting for you") : StateMark(.clock, label: "Not measurable")
-            WarningSlot(mark: mark, detail: item.session.stateReason, id: "\(page):warn:\(item.id)") {
+        if item.isWaiting {
+            WarningSlot(mark: StateMark(.warn, label: "Waiting for you"), detail: item.session.stateReason, id: "\(page):warn:\(item.id)") {
                 PopoverSentence(item.session.stateReason)
-                if item.isWaiting { PopoverSentence(ActivityWording.answerInTerminal) }
-                if item.isWaiting, item.canStop { PopoverActions { stopButton(item, key: "S") } }
+                PopoverSentence(ActivityWording.answerInTerminal)
+                if item.canStop { PopoverActions { stopButton(item, key: "S") } }
+            }
+        } else if let cannotSee = item.cannotSee {
+            // The neutral clock (V5-R14: unmeasurable): what the log cannot show, in the core's words.
+            WarningSlot(mark: StateMark(.clock, label: item.cannotSeeLabel), detail: cannotSee, id: "\(page):warn:\(item.id)") {
+                PopoverSentence(cannotSee)
             }
         } else {
             WarningSlot()
@@ -176,6 +194,8 @@ extension ActivityCards {
             Tile("Failed commands", count: query.isLoading ? nil : ActivityFigures.failedCount(query), layout: spineLayout(empty: query.failures.isEmpty),
                  maxHeight: Metrics.Tile.spineMaxHeight, stretches: true, scrollTarget: current, isOpen: open("failed.spine")) {
                 failedSpine
+            } actions: {
+                staleSlot
             }
         }
     }
@@ -273,6 +293,8 @@ extension ActivityCards {
             Tile("Edited files", count: query.isLoading ? nil : ActivityFormat.plural(query.files.count, "file"), layout: spineLayout(empty: query.files.isEmpty),
                  maxHeight: Metrics.Tile.spineMaxHeight, stretches: true, scrollTarget: current, isOpen: open("files.spine")) {
                 filesSpine
+            } actions: {
+                staleSlot
             }
         }
     }

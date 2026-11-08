@@ -70,12 +70,7 @@ final class ActivityModel {
 
     var isLoading: Bool { report == nil && failure == nil }
 
-    /// The sidebar badge: failure groups whose last failure was within 24 hours. The v5 page leaves out the ones the user dismissed.
-    var recentFailures: Int {
-        guard isV5, var kept = report else { return ActivityRows.recentFailureCount(report, now: Date()) }
-        kept.failures = kept.failures.filter { !dismissed.contains(ActivityFailureItem(failure: $0).dismissKey) }
-        return ActivityRows.recentFailureCount(kept, now: Date())
-    }
+    var recentFailures: Int { ActivityRows.recentFailureCount(report, now: Date()) }
 
     private var core: any CoreService { env.goCore }
 
