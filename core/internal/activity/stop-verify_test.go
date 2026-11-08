@@ -236,3 +236,43 @@ func TestReadMarksUnknownCodexProcessesNotMeasured(t *testing.T) {
 		eq(t, "limits", len(sb.read(newFakeProc(nil, nil, nil)).Unmeasurable), len(limitCodes))
 	})
 }
+
+// A live process whose status file names the right session but gives no start time that can be compared is not "gone":
+// the session may well be running, so Stop says it cannot verify (409) and signals nothing. A dead pid is still 404.
+func TestStopStatusFileWithoutAUsableStartIsCannotVerify(t *testing.T) {
+	const pid = 31
+	body := func(procStart string) string {
+		return `{"pid":31,"sessionId":"` + activitySid(pid) + `","status":"idle"` + procStart + `}`
+	}
+	for name, c := range map[string]struct {
+		file  string
+		alive bool
+		want  int
+		text  string
+	}{
+		"procStart missing":       {body(""), true, 409, cannotVerify},
+		"procStart null":          {body(`,"procStart":null`), true, 409, cannotVerify},
+		"procStart not a string":  {body(`,"procStart":1793900000`), true, 409, cannotVerify},
+		"procStart empty":         {body(`,"procStart":""`), true, 409, cannotVerify},
+		"procStart unparsable":    {body(`,"procStart":"yesterday-ish"`), true, 409, cannotVerify},
+		"dead pid, no procStart":  {body(""), false, 404, "That session is no longer running."},
+		"reused pid, both parsed": {body(`,"procStart":"Mon Nov  2 10:00:00 2026"`), true, 404, "That session is no longer running."},
+	} {
+		t.Run(name, func(t *testing.T) {
+			sb := newSandbox(t)
+			sb.put(".claude/sessions/31.json", c.file, 0)
+			var alive []int
+			if c.alive {
+				alive = []int{pid}
+			}
+			p := newFakeProc(alive, map[int]string{pid: stopStart}, nil)
+			_, err := stopSession(t, sb, CLIClaude, activitySid(pid), p, fastStop)
+			if stopStatusOf(err) != c.want || stopErrorText(t, err) != c.text {
+				t.Errorf("err = %v, want %d %q", err, c.want, c.text)
+			}
+			if got := p.killedPids(); len(got) != 0 {
+				t.Errorf("signalled %v", got)
+			}
+		})
+	}
+}

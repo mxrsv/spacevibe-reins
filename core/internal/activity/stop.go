@@ -117,8 +117,23 @@ func livePid(ctx context.Context, r roots.Roots, cli CLI, id string, adapter pro
 			out.pid, out.identity, out.found = pid, identity, true
 			return out
 		}
+		// The pid is alive and the file names this session. Two start times that both parse and differ prove a reused
+		// pid (not this session). If either cannot be compared, the session may well be this process: never "gone".
+		if !startsComparable(identity.Start, recorded, recordedOK) {
+			out.unverified = true
+		}
 	}
 	return out
+}
+
+// startsComparable is true when both start times are in the `ps -o lstart=` spelling, so a difference means another process.
+func startsComparable(live, recorded string, recordedOK bool) bool {
+	if !recordedOK {
+		return false
+	}
+	_, liveOK := textjs.ParseProcessStart(live)
+	_, recordedParsed := textjs.ParseProcessStart(recorded)
+	return liveOK && recordedParsed
 }
 
 func livePidCodex(ctx context.Context, id string, adapter proc.Adapter) lookup {

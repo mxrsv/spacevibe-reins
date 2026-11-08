@@ -19,6 +19,12 @@ func WithLock(r roots.Roots, fn func(tx *Tx) error) error {
 	return fsx.WithWriteLock(r.Data, func() error { return fn(&Tx{r: r}) })
 }
 
+// WithLockContext is WithLock for a request that can be cancelled: while it waits for the lock, a cancelled ctx ends
+// the wait with context.Canceled and fn does not run (fsx.WithWriteLockContext).
+func WithLockContext(ctx context.Context, r roots.Roots, fn func(tx *Tx) error) error {
+	return fsx.WithWriteLockContext(ctx, r.Data, func() error { return fn(&Tx{r: r}) })
+}
+
 // locked is WithLock for a body that returns a value.
 func locked[T any](r roots.Roots, fn func(tx *Tx) (T, error)) (T, error) {
 	return fsx.WithWriteLockValue(r.Data, func() (T, error) { return fn(&Tx{r: r}) })
@@ -27,10 +33,12 @@ func locked[T any](r roots.Roots, fn func(tx *Tx) (T, error)) (T, error) {
 // Roots are the roots the handle works on.
 func (tx *Tx) Roots() roots.Roots { return tx.r }
 
-// lockedContext is locked for a request that can be cancelled. ctx is looked at again as the first step inside the
-// lock, so a request that was cancelled while it waited for the lock never changes anything.
+// lockedContext is locked for a request that can be cancelled. The wait for the lock ends as soon as ctx does, and ctx
+// is looked at again as the first step inside the lock, so a request that was cancelled while it waited for the lock
+// never changes anything.
 func lockedContext[T any](ctx context.Context, r roots.Roots, fn func(tx *Tx) (T, error)) (T, error) {
-	return locked(r, func(tx *Tx) (T, error) {
+	return fsx.WithWriteLockValueContext(ctx, r.Data, func() (T, error) {
+		tx := &Tx{r: r}
 		if err := ctx.Err(); err != nil {
 			var zero T
 			return zero, err

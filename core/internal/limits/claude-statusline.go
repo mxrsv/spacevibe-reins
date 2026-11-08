@@ -56,7 +56,7 @@ func StatuslineWindows() []StatuslineWindow {
 // "<claude root>\n<accountUuid>\n<organizationUuid>". False when the state file names no account. No credential
 // is read: only the two ids.
 func AccountKey(r roots.Roots) (string, bool) {
-	data, err := fsx.ReadRegular(r.ClaudeState, maxStateBytes)
+	data, err := readState(r.ClaudeState, maxStateBytes)
 	if err != nil {
 		return "", false
 	}

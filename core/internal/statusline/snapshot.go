@@ -72,7 +72,7 @@ func Capture(cfg config.Config, r roots.Roots, data []byte, now time.Time) error
 	if len(parsed) == 0 {
 		return nil
 	}
-	account, ok := limits.AccountKey(r)
+	account, ok := limits.CachedAccountKey(cfg, r)
 	if !ok {
 		return fail(ReasonAccountUnknown, "Claude account could not be identified; capture skipped.")
 	}

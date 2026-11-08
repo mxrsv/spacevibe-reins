@@ -224,3 +224,27 @@ func TestClientMayReuseAnIDRightAfterTheAnswer(t *testing.T) {
 		}
 	}
 }
+
+// brokenLog is a log whose reader has gone: every write fails.
+type brokenLog struct{}
+
+func (brokenLog) Write([]byte) (int, error) { return 0, errors.New("write: broken pipe") }
+
+// A log that cannot be written never stops the server: the request that logged still gets its answer, and so does
+// the next one.
+func TestServerSurvivesALogThatFails(t *testing.T) {
+	reg := NewRegistry()
+	reg.Register("t.panic", func(context.Context, Call) (any, error) { panic("x") })
+	reg.Register("t.ok", func(context.Context, Call) (any, error) { return true, nil })
+	var out bytes.Buffer
+	srv := NewServer(reg, Options{Log: brokenLog{}})
+	input := initLine +
+		`{"jsonrpc":"2.0","id":1,"method":"t.panic"}` + "\n" +
+		`{"jsonrpc":"2.0","id":2,"method":"t.ok"}` + "\n"
+	if err := srv.Serve(context.Background(), strings.NewReader(input), &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), `"id":1,"error":{"code":-32603`) || !strings.Contains(out.String(), `"id":2,"result":true`) {
+		t.Errorf("output %q", out.String())
+	}
+}

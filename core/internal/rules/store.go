@@ -304,11 +304,13 @@ func requireRule(rule string, verdict Verdict, doc *ojson.Document, file string)
 // scope (400, 404), the folder (409), a link out of the project (409), the journal (409), the file (409), the change.
 func (s *Store) edit(scope Scope, label string, change func(file string, doc *ojson.Document) (*ojson.Document, error)) (*mutate.Entry, error) {
 	var entry *mutate.Entry
-	err := mutate.WithLock(s.roots, func(tx *mutate.Tx) error {
-		if s.ctx != nil {
-			if err := s.ctx.Err(); err != nil {
-				return err
-			}
+	ctx := s.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	err := mutate.WithLockContext(ctx, s.roots, func(tx *mutate.Tx) error {
+		if err := ctx.Err(); err != nil {
+			return err
 		}
 		file, err := s.File(scope)
 		if err != nil {

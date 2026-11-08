@@ -69,6 +69,7 @@ type core struct {
 	cmd    *exec.Cmd
 	stdin  io.WriteCloser
 	pw     *io.PipeWriter
+	pr     *io.PipeReader
 	lines  chan string
 	stderr lockedBuffer
 	home   string
@@ -87,6 +88,14 @@ func startCore(t *testing.T, bin string, env ...string) *core {
 
 // startCoreIn runs bin with its roots under home. env entries (KEY=value) override the defaults.
 func startCoreIn(t *testing.T, bin, home string, env ...string) *core {
+	t.Helper()
+	c := prepareCoreIn(t, bin, home, env...)
+	c.begin()
+	return c
+}
+
+// prepareCoreIn builds the core's command without starting it, so a test can change its wiring first.
+func prepareCoreIn(t *testing.T, bin, home string, env ...string) *core {
 	t.Helper()
 	vars := map[string]string{
 		"PATH": os.Getenv("PATH"), "HOME": home,
@@ -110,6 +119,13 @@ func startCoreIn(t *testing.T, bin, home string, env ...string) *core {
 	if c.stdin, err = c.cmd.StdinPipe(); err != nil {
 		t.Fatal(err)
 	}
+	c.pr = pr
+	return c
+}
+
+// begin starts the prepared command and the goroutines that read its output.
+func (c *core) begin() {
+	t, pr, pw := c.t, c.pr, c.pw
 	if err := c.cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +145,6 @@ func startCoreIn(t *testing.T, bin, home string, env ...string) *core {
 	}()
 	go func() { err := c.cmd.Wait(); pw.Close(); c.done <- err }()
 	t.Cleanup(func() { c.cmd.Process.Kill() })
-	return c
 }
 
 type transcriptLine struct {

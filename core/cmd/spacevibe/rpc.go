@@ -17,6 +17,7 @@ func runRPC(args []string, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "usage: %s rpc\n", identity.Name)
 		return 2
 	}
+	keepAliveOnClosedStderr()
 	protocol, err := guardStdout()
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: cannot reserve stdout for the protocol\n", identity.Name)
