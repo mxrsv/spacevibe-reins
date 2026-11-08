@@ -37,6 +37,7 @@ struct FilterChip: View {
                     SpaceVibeIcon(.close).foregroundStyle(TextTone.secondary.color)
                 }
                 .buttonStyle(.plain)
+                .pointerCursor()
                 .spaceVibeFocusable(cornerRadius: Metrics.segmentRadius)
                 .help("Clear \(title)")
                 .accessibilityLabel("Clear \(title)")
@@ -51,6 +52,7 @@ struct FilterChip: View {
                 }
             }
             .buttonStyle(.plain)
+            .pointerCursor()
             .spaceVibeFocusable(cornerRadius: Metrics.chipHeight / 2)
             .accessibilityAddTraits(isOn ? [.isSelected] : [])
             .accessibilityLabel(count.map { "\(title), \($0)" } ?? title)
@@ -131,6 +133,7 @@ private struct ChipPartStyle: ButtonStyle {
                 .foregroundStyle(hovered ? Palette.fg : rest)
                 .background(focused ? Palette.sel : (hovered ? Palette.hover : .clear))
                 .contentShape(Rectangle())
+                .pointerCursor()
                 .onHover { hovering = $0 }
         }
     }

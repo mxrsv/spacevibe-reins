@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// What pressing a logo does (V5-R25).
@@ -59,13 +58,10 @@ struct LogoToggle: View {
         }
         .buttonStyle(LogoPressStyle())
         .disabled(mode != .toggles)
+        .pointerStyle(mode == .toggles ? .link : .notAllowed)
         .focused($focused)
         .focusEffectDisabled()
-        .onHover { inside in
-            hovering = inside
-            if mode != .toggles { inside ? NSCursor.operationNotAllowed.push() : NSCursor.pop() }
-        }
-        .onDisappear { if hovering && mode != .toggles { NSCursor.pop() } }
+        .onHover { hovering = $0 }
         .onAppear { if justChanged { pop() } }
         .onChange(of: justChanged) { _, now in if now { pop() } }
         .accessibilityLabel(cli.label)

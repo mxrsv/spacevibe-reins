@@ -36,6 +36,7 @@ struct SidebarItem<Mark: View>: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .spaceVibeFocusable(cornerRadius: Metrics.controlRadius)
         .onHover { hovering = $0 }
         .accessibilityAddTraits(isActive ? .isSelected : [])

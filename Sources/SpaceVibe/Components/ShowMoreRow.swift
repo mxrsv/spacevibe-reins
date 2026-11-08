@@ -21,6 +21,7 @@ struct ShowMoreRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .spaceVibeFocusable(cornerRadius: 0)
         .groupedListPart(.plain)
     }

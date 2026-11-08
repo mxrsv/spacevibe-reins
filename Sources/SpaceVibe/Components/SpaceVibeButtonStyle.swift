@@ -57,6 +57,7 @@ struct SpaceVibeButtonStyle: ButtonStyle {
                 .overlay(shape.fill(Palette.hover).opacity(hovering && isEnabled && kind != .primary ? 1 : 0).allowsHitTesting(false))
                 .brightness(hovering && isEnabled && kind == .primary ? 0.08 : 0)
                 .contentShape(shape)
+                .pointerCursor()
                 .opacity(opacity)
                 .onHover { hovering = $0 }
         }
@@ -218,6 +219,7 @@ struct ActionButtonStyle: ButtonStyle {
                     }
                 }
                 .contentShape(shape)
+                .pointerCursor()
                 .offset(y: pressed ? Metrics.ActionButton.pressOffset : 0)
                 .opacity(isEnabled ? 1 : Metrics.ActionButton.disabledOpacity)
                 .onHover { hovering = $0 }

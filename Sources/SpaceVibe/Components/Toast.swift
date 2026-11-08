@@ -96,6 +96,7 @@ private struct ToastActionStyle: ButtonStyle {
                 .frame(height: Metrics.Toast.actionHeight)
                 .background(shape.fill(fill))
                 .contentShape(shape)
+                .pointerCursor()
                 .onHover { hovering = $0 }
         }
     }

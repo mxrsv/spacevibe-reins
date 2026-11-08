@@ -71,6 +71,7 @@ struct SidebarSearchRow: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .focused($focused)
         .focusEffectDisabled()
         .onHover { hovering = $0 }
@@ -118,6 +119,7 @@ struct SidebarPageItem: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .focused($focused)
         .focusEffectDisabled()
         .onHover { hovering = $0 }
@@ -243,6 +245,7 @@ private struct SidebarFooterControl<Content: View>: View {
                 .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .focused($focused)
         .focusEffectDisabled()
         .onHover { hovering = $0 }

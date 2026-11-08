@@ -69,6 +69,7 @@ struct SegmentedControl<Value: Hashable>: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .keyboardShortcut(option.shortcut)
         .focused($focused, equals: option.value)
         .focusEffectDisabled()

@@ -30,6 +30,7 @@ struct ThemeTile: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .spaceVibeFocusable(cornerRadius: Metrics.groupRadius)
         .onHover { hovering = $0 }
         .accessibilityLabel(title)

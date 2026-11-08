@@ -81,6 +81,7 @@ struct RowActivation: ViewModifier {
                     return .handled
                 }
                 .onTapGesture(perform: onActivate)
+                .pointerCursor()
                 .accessibilityAction(.default, onActivate)
         } else {
             content

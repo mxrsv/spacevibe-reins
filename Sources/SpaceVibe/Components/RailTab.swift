@@ -23,6 +23,7 @@ struct RailTab: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .spaceVibeFocusable(cornerRadius: Metrics.controlRadius)
         .onHover { hovering = $0 }
         .accessibilityLabel(title)

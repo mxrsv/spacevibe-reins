@@ -28,6 +28,7 @@ struct SearchField: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .spaceVibeFocusable(cornerRadius: Metrics.fieldRadius)
         .onHover { hovering = $0 }
         .accessibilityLabel(placeholder)

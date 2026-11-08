@@ -154,6 +154,7 @@ private struct TileCollapseButton: View {
                 .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .onHover { hovering = $0 }
         .spaceVibeFocusable(cornerRadius: Metrics.Radius.control)
         .accessibilityLabel("\(isOpen ? "Collapse" : "Expand") \(title)")

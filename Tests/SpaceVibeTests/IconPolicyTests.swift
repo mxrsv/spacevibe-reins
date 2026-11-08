@@ -32,12 +32,14 @@ struct IconPolicyTests {
                  credit: "Phosphor Icons", licence: "MIT"),
     ]
 
-    /// What only the generated sets may draw. `Image(` is allowed in `brandMarkFile` (the CLI marks are images, not icons).
+    /// What only the generated sets may draw. `Image(` is allowed in `imageFiles`: the CLI marks are images, not icons, and the
+    /// not-allowed pointer is the system cursor's picture.
     static let forbidden: [(name: String, pattern: String)] = [
         ("SF Symbol", #"systemName:|systemImage:|systemSymbolName"#),
         ("image", #"\bImage\("#),
     ]
     static let brandMarkFile = "Components/CLIMark.swift"
+    static let imageFiles: Set = [brandMarkFile, "Components/PointerCursor.swift"]
 
     static func source(_ relative: String) throws -> String {
         try String(contentsOf: appSources.appendingPathComponent(relative), encoding: .utf8)
@@ -56,7 +58,7 @@ struct IconPolicyTests {
                 let line = rawLine.trimmingCharacters(in: .whitespaces)
                 if line.hasPrefix("//") { continue }
                 let range = NSRange(line.startIndex..., in: line)
-                for expression in expressions where !(expression.name == "image" && relative == brandMarkFile) {
+                for expression in expressions where !(expression.name == "image" && Self.imageFiles.contains(relative)) {
                     count += expression.regex.numberOfMatches(in: line, range: range)
                 }
             }

@@ -77,6 +77,7 @@ private struct ToolbarButtonStyle: ButtonStyle {
                 .frame(height: Metrics.ToolbarButton.height)
                 .background(shape.fill(focused || configuration.isPressed ? Palette.sel : (hovered ? Palette.hover : .clear)))
                 .contentShape(shape)
+                .pointerCursor()
                 .onHover { hovering = $0 }
                 .animation(reduceMotion ? nil : .easeOut(duration: Metrics.Motion.quick), value: hovered)
         }
@@ -169,6 +170,7 @@ struct MenuLine: View {
         .frame(height: Metrics.Menu.itemHeight)
         .background(shape.fill(isHighlighted || isExpanded ? Palette.sel : .clear))
         .contentShape(shape)
+        .pointerCursor()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(entry.title)
         .accessibilityValue(entry.spokenValue)

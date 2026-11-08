@@ -100,6 +100,7 @@ struct PaletteRow: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .focusable(false)
         .onHover { hovering = $0 }
         .accessibilityLabel([entry.title, entry.subtitle, entry.trailing].compactMap { $0 }.joined(separator: ", "))
@@ -211,6 +212,7 @@ struct PaletteCommandRow: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .focusable(false)
         .accessibilityLabel(title)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)

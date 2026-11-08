@@ -133,6 +133,7 @@ private struct RowCheckbox: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .accessibilityLabel("Pick \(name)")
         .accessibilityValue(isPicked ? "Picked" : "Not picked")
     }

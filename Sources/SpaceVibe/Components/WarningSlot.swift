@@ -45,6 +45,7 @@ struct WarningSlot<Popover: View>: View {
                 .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .focused($focused)
         .focusEffectDisabled()
         .onHover { inside in

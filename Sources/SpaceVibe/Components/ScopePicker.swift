@@ -31,6 +31,7 @@ struct ScopePicker: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
+            .pointerCursor()
             .spaceVibeFocusable(cornerRadius: Metrics.controlRadius)
             .accessibilityLabel("Scope")
             .accessibilityValue(current.label)

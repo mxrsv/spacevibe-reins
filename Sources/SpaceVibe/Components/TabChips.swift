@@ -82,6 +82,7 @@ struct TabChip: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .focused($focused)
         .focusEffectDisabled()
         .onHover { hovering = $0 }

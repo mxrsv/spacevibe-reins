@@ -25,6 +25,7 @@ struct SpaceVibeSwitch: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .pointerCursor()
         .spaceVibeFocusable(cornerRadius: Metrics.switchHeight / 2)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
