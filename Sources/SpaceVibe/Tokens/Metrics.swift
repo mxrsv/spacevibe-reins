@@ -463,6 +463,10 @@ extension Metrics {
     enum Rules {
         /// The two CLI columns: the column head, a band's extras and a rule row's verdict share this width (V5-R68).
         static let columnWidth: CGFloat = 168
+        /// In a card too narrow for two 168 columns beside a readable rule name they give way down to this (narrow widths only), and
+        /// `columnsReserved` is what the card keeps for the rule name, the row's padding, gaps and the card's edge.
+        static let columnMinWidth: CGFloat = 72
+        static let columnsReserved: CGFloat = 214
         /// A band's extras end where a row's last cell does: the header's trailing inset is wider than the row's by this much.
         static let extrasBleed: CGFloat = Band.trailing - ListRow.trailing
         /// The Answer's CLI rows reach 4 past the card's padding, as the kit's `.fixes` does.

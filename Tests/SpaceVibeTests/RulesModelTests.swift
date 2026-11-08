@@ -354,3 +354,16 @@ struct RulesModelTests {
         #expect(model.env.toasts.current?.message == "Moved Bash(git push:*) from Allow to Ask first")
     }
 }
+
+@Suite("Rules spine columns")
+struct RulesColumnsTests {
+    @Test("the two CLI columns are 168 while the card has room (1440 wide: 559), and give way to 72 in a narrow one")
+    func widths() {
+        // The card is 559 at 1440: (1440 - sidebar 220 - inset 12 - edges 2 - canvas edges 64 - gap 24) / 2.
+        #expect(RulesColumns.width(card: 559) == 168)
+        #expect(RulesColumns.width(card: .greatestFiniteMagnitude) == 168)
+        #expect(RulesColumns.width(card: 370) == 78)
+        #expect(RulesColumns.width(card: 200) == 72)
+        #expect(RulesColumns.width(card: 550) == 168 && RulesColumns.width(card: 549) < 168)
+    }
+}

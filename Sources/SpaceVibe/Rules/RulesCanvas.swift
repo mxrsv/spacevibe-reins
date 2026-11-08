@@ -10,6 +10,15 @@ enum RulesStatusBar {
     static let source = "Read from \(RulesTabWording.settingsFile)"
 }
 
+/// The width of the two CLI columns of the spine (the head, the band extras and each row's verdict): the kit's 168 while the card
+/// has room, down to `columnMinWidth` in a card too narrow for 168 beside a readable name (1062 wide: the spine is about 370).
+/// One value for the whole card, so the head, the bands and the rows stay in line. Narrow widths only: at 1440 it is 168.
+enum RulesColumns {
+    static func width(card: CGFloat) -> CGFloat {
+        min(Metrics.Rules.columnWidth, max(Metrics.Rules.columnMinWidth, (card - Metrics.Rules.columnsReserved) / 2))
+    }
+}
+
 /// The one `Filter` button at the right of the tab head (V5-R61): one field, so the menu has one level.
 struct RulesHeadActions: View {
     @Bindable var model: RulesModel
@@ -50,6 +59,10 @@ struct RulesCanvas: View {
 
     @Environment(ShellModel.self) private var shell
     @Environment(\.openStateStore) private var store
+    /// The spine card's width as drawn, which sets the width of the two CLI columns (`RulesColumns`); wide until measured.
+    @State private var spineWidth: CGFloat = .greatestFiniteMagnitude
+
+    private var columnWidth: CGFloat { RulesColumns.width(card: spineWidth) }
 
     var body: some View {
         let page = model.page
@@ -174,7 +187,7 @@ struct RulesCanvas: View {
                     Button { model.clearFilters() } label: { ActionLabel("Clear filters") }.buttonStyle(ActionButtonStyle(size: .compact))
                 }
             } else {
-                ColumnHead(reading: page.reading)
+                ColumnHead(reading: page.reading, column: columnWidth)
                 BandStack {
                     ForEach(Array(page.layout.bands.enumerated()), id: \.element.id) { offset, band in
                         Band(band.family.title, count: band.rules.count,
@@ -185,8 +198,8 @@ struct RulesCanvas: View {
                             EmptyView()
                         } extras: {
                             HStack(spacing: Metrics.ListRow.spacing) {
-                                Text(band.stance.summary).frame(width: Metrics.Rules.columnWidth, alignment: .leading)
-                                Text(band.fact?.text ?? "").frame(width: Metrics.Rules.columnWidth, alignment: .leading).help(band.fact?.text ?? "")
+                                Text(band.stance.summary).frame(width: columnWidth, alignment: .leading).help(band.stance.summary)
+                                Text(band.fact?.text ?? "").frame(width: columnWidth, alignment: .leading).help(band.fact?.text ?? "")
                             }
                             .spaceVibeText(.meta, tone: .tertiary)
                             .lineLimit(1)
@@ -205,6 +218,7 @@ struct RulesCanvas: View {
                 }
             }
         }
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { spineWidth = $0 }
     }
 
     /// V5-R55: a family open in one CLI and denied in the other opens; when nothing needs the user, the first opens; a Filter opens
@@ -229,8 +243,8 @@ struct RulesCanvas: View {
 
     private func row(_ rule: CoreRule, band: RuleBand, current: CoreRule?) -> some View {
         ListRow(rule.rule, isCurrent: rule.id == current?.id, onActivate: { model.open(rule) }, accessibilityName: RulesTabWording.spoken(rule)) {
-            CountCell(text: RulesWording.title(rule.verdict), width: Metrics.Rules.columnWidth, alignment: .leading)
-            Color.clear.frame(width: Metrics.Rules.columnWidth, height: 0).accessibilityHidden(true)
+            CountCell(text: RulesWording.title(rule.verdict), width: columnWidth, alignment: .leading)
+            Color.clear.frame(width: columnWidth, height: 0).accessibilityHidden(true)
         }
         .help(rule.rule)
         .id(rule.id)
@@ -289,6 +303,7 @@ struct RulesCanvas: View {
 /// two 168 columns of the bands and the rows.
 private struct ColumnHead: View {
     let reading: CodexReading
+    let column: CGFloat
 
     var body: some View {
         HStack(spacing: Metrics.ListRow.spacing) {
@@ -315,7 +330,7 @@ private struct ColumnHead: View {
     private func cell<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         HStack(spacing: Metrics.Rules.headSpacing) { content() }
             .lineLimit(1)
-            .frame(width: Metrics.Rules.columnWidth, alignment: .leading)
+            .frame(width: column, alignment: .leading)
     }
 }
 
