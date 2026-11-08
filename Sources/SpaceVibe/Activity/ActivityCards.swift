@@ -84,7 +84,7 @@ extension ActivityCards {
             BandStack {
                 ForEach(Array(query.sessionBands.enumerated()), id: \.element.id) { offset, item in
                     Band(item.name, count: item.items.isEmpty ? nil : item.items.count,
-                         state: item.waiting > 0 ? StateMark(.warn, label: "\(item.waiting) waiting for you") : nil,
+                         state: Self.bandMark(item),
                          isOpen: band("run:\(item.id)", problem: item.holdsProblem, offset: offset, needs: needs)) {
                         sessionRows(item)
                     } lead: {
@@ -95,6 +95,14 @@ extension ActivityCards {
                 }
             }
         }
+    }
+
+    /// The glyph at a band's head: the triangle while a session waits for the user, else the neutral clock for sessions the log
+    /// cannot show.
+    private static func bandMark(_ band: ActivitySessionBand) -> StateMark? {
+        if band.waiting > 0 { return StateMark(.warn, label: "\(band.waiting) waiting for you") }
+        if band.unmeasurable > 0 { return StateMark(.clock, label: "\(band.unmeasurable) not measurable") }
+        return nil
     }
 
     @ViewBuilder

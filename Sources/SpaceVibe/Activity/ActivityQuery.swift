@@ -141,8 +141,10 @@ struct ActivitySessionBand: Identifiable, Equatable, Sendable {
     var id: String { cli.rawValue }
     var name: String { LimitsWording.cliName(cli) }
     var waiting: Int { items.filter(\.isWaiting).count }
-    /// Holds a waiting session: its band comes first and opens by default (V5-R55).
-    var holdsProblem: Bool { waiting > 0 }
+    var unmeasurable: Int { items.filter(\.isUnmeasurable).count }
+    /// Holds a session that waits for the user, or one the log cannot show (the Answer names it): its band comes first and opens by
+    /// default (V5-R55), so the row "marked in the list" is on screen.
+    var holdsProblem: Bool { waiting > 0 || unmeasurable > 0 }
 }
 
 struct ActivityFailureBand: Identifiable, Equatable, Sendable {
@@ -216,8 +218,8 @@ struct ActivityQuery: Equatable, Sendable {
                 cli: .gemini, items: [], extra: gone ? "not installed" : "no log",
                 note: gone ? "Gemini CLI is not installed on this Mac." : "SpaceVibe cannot read Gemini CLI sessions: it writes no log."))
         }
-        // Bands that hold a waiting session come first, in their usual order.
-        sessionBands = bands.filter(\.holdsProblem) + bands.filter { !$0.holdsProblem }
+        // A band with a waiting session comes first, then one with a session that cannot be measured, then the rest, each in the usual order.
+        sessionBands = bands.filter { $0.waiting > 0 } + bands.filter { $0.waiting == 0 && $0.unmeasurable > 0 } + bands.filter { !$0.holdsProblem }
 
         let kept = (report?.failures ?? []).filter { cliOn($0.cli) }.map(ActivityFailureItem.init).filter { !dismissed.contains($0.dismissKey) }
         let ranked = kept.enumerated().sorted { a, b in

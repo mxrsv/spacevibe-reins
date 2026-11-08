@@ -192,12 +192,18 @@ enum ActivityTabShots {
         return copy
     }
 
-    /// Nothing waits and every failure has a later pass.
+    /// Nothing waits and every failure has a later pass. A session that waited for an answer is now idle between prompts, which is what
+    /// the core reports once the question is answered (no tool open, "Turn finished, waiting for the next prompt."); the sessions the
+    /// core could not measure stay as they are.
     private static func healthy(_ report: CoreActivityReport) -> CoreActivityReport {
         with(report) { copy in
             copy.sessions = copy.sessions.map { session in
                 var session = session
-                if session.state == .waiting { session.state = .running }
+                if session.state == .waiting {
+                    session.state = .idle
+                    session.stateReason = "Turn finished, waiting for the next prompt."
+                    session.currentTool = nil
+                }
                 return session
             }
             copy.failures = copy.failures.map { failure in
@@ -217,6 +223,16 @@ enum ActivityTabShots {
             session.id = "synthetic-\(index)"
             session.title = "\(index % 2 == 0 ? "Refine" : "Port") task \(String(format: "%02d", index + 1))"
             session.state = index % 5 == 3 ? .idle : (index == 7 || index == 18 ? .waiting : .running)
+            // What the core reports for each state: a waiting session has its question tool open, an idle one has no tool.
+            switch session.state {
+            case .waiting:
+                session.currentTool = CoreActivityTool(name: "AskUserQuestion", target: "")
+                session.stateReason = "Waiting for your answer to a question."
+            case .idle:
+                session.currentTool = nil
+                session.stateReason = "Turn finished, waiting for the next prompt."
+            default: break
+            }
             session.pid = 60000 + index
             return session
         }

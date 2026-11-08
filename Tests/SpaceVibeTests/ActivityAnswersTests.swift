@@ -160,6 +160,21 @@ struct ActivityAnswersTests {
         #expect(!query(report(sessions: [session("a")]), filter: filter("claude")).sessionBands.contains { $0.cli == .gemini })
     }
 
+    @Test("a band holding a session the log cannot show comes after a waiting band and before the rest, and opens by default, so the row the Answer names is on screen")
+    func unmeasurableBandOpens() {
+        let q = query(report(sessions: [
+            session("run"), session("nm", cli: .codex, state: .unmeasurable),
+        ]), limits: [entry(.gemini, .notMeasurable)])
+        #expect(q.sessionBands.map(\.id) == ["codex", "claude", "gemini"])
+        #expect(q.sessionBands[0].holdsProblem && q.sessionBands[0].unmeasurable == 1 && q.sessionBands[0].waiting == 0)
+        #expect(!q.sessionBands[1].holdsProblem)
+        let store = OpenStateStore()
+        #expect(ActivityCanvas.visibleIDs(q, pane: .running, store: store).contains("codex:nm"))
+        // A waiting band still goes first.
+        let both = query(report(sessions: [session("nm", state: .unmeasurable), session("w", cli: .codex, state: .waiting)]))
+        #expect(both.sessionBands.map(\.id).prefix(2) == ["codex", "claude"])
+    }
+
     @Test("sessions rank waiting, not measurable, running, idle; the row's state words are the core's state")
     func rankAndWords() {
         let q = query(report(sessions: [
