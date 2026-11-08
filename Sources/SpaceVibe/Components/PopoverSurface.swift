@@ -49,13 +49,13 @@ struct PopoverHead<Lead: View>: View {
         HStack(spacing: Metrics.Popover.headSpacing) {
             lead
             VStack(alignment: .leading, spacing: 0) {
-                Text(name).spaceVibeText(.control, tone: .primary).lineLimit(1)
+                Text(name).spaceVibeText(.control, tone: .primary).lineLimit(1).lineBox(.control)
                 if let sub {
                     HStack(spacing: Metrics.Popover.dotSpacing) {
                         if subIsReading {
                             Circle().fill(Palette.ok).frame(width: Metrics.Popover.dotSize, height: Metrics.Popover.dotSize)
                         }
-                        Text(sub).spaceVibeText(.meta, tone: .secondary).lineLimit(1)
+                        Text(sub).spaceVibeText(.meta, tone: .secondary).lineLimit(1).lineBox(.meta)
                     }
                 }
             }

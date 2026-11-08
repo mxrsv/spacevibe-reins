@@ -307,6 +307,7 @@ private struct ColumnHead: View {
         .spaceVibeText(.meta, tone: .tertiary)
         .padding(.horizontal, Metrics.ListRow.leading)
         .padding(.trailing, Metrics.ListRow.trailing - Metrics.ListRow.leading)
+        .padding(.top, Metrics.Rules.headTop)
         .frame(height: Metrics.Rules.headHeight)
         .accessibilityElement(children: .combine)
     }
