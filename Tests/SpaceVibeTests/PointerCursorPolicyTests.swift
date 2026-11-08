@@ -117,6 +117,5 @@ struct PointerCursorPolicyTests {
         #expect(Self.count(Self.blockConstructs, in: "x.buttonStyle(.spaceVibe(.normal))") == 0)
         #expect(Self.count([Self.cursorCalls], in: "x.pointerCursor()") == 1)
         #expect(Self.count([Self.cursorCalls], in: "x.pointerStyle(.link)") == 1)
-        #expect(Self.count([Self.cursorCalls], in: "x.pointerCursor(entry.isSelectable)") == 1)
-    }
+            }
 }

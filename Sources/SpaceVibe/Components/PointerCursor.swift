@@ -5,25 +5,23 @@ import SwiftUI
 /// in its `makeBody`, a plain `Button` after `.buttonStyle(.plain)`, a row that acts on a click through `RowActivation`.
 /// A screen never sets a cursor; it composes these blocks. `PointerCursorPolicyTests` fails when a block forgets.
 ///
-/// Enabled and clickable: the pointing hand. Disabled: the default arrow, or whatever a surrounding block sets. A text
+/// Enabled and clickable: the pointing hand. Disabled: the default arrow, even inside a row that is a pointing hand. A text
 /// field keeps the I-beam, because it never goes through this modifier.
 ///
 ///     Button(action: select) { label }
 ///         .buttonStyle(.plain)
 ///         .pointerCursor()
 extension View {
-    /// `active` is false for a part that sits in a clickable block but takes no click, such as a menu heading.
-    func pointerCursor(_ active: Bool = true) -> some View {
-        modifier(PointerCursor(active: active))
+    func pointerCursor() -> some View {
+        modifier(PointerCursor())
     }
 }
 
 private struct PointerCursor: ViewModifier {
-    let active: Bool
     @Environment(\.isEnabled) private var isEnabled
 
     func body(content: Content) -> some View {
-        content.pointerStyle(active && isEnabled ? .link : nil)
+        content.pointerStyle(isEnabled ? .link : .default)
     }
 }
 
