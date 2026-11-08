@@ -18,7 +18,9 @@
 # then draws the dead-hook states, the popovers and the in-memory states, and runs a real Remove with Undo), skills shoots the real
 # Skills tab in every state (it checks every skill's
 # sessions against what fixture-home.mjs writes, then draws filtered, grouped, multi-select, the warning popover, the menus, the
-# pane states, nothing matches and an empty category), and limits shoots the v5 Limits page (it prints and checks the
+# pane states, nothing matches and an empty category), activity shoots the v5 Activity page (it prints and checks the trace of every
+# figure against the core's report, draws every state from the real home and from in-memory reports, then runs a real Dismiss passed
+# with Undo and a real Stop on the one fixture session the core can verify, pid 52003), and limits shoots the v5 Limits page (it prints and checks the
 # trace of every window against the engine's reading, then draws the remaining V5-R62 states from in-memory readings); without
 # the switch skills|subagents|hooks refuse (rules then shoots the old screen). Nothing else selects a screen.
 #

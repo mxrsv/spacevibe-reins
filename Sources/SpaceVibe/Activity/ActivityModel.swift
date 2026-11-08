@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Observation
 
@@ -31,13 +32,50 @@ final class ActivityModel {
     /// Screenshots only: show row actions without hover.
     var revealRowActions = false
 
+    // MARK: The v5 page's state (V5-R69 to V5-R72)
+
+    /// The page the v5 shell draws; the old screen has none of this. Only the toast after a stop depends on it.
+    let isV5: Bool
+    var pane = ActivityPane.running
+    var filter = ActivityFilter()
+    var isFilterOpen = false
+    /// The row the keys act on and the row whose detail popover is open, by `ActivityQuery` ids.
+    var currentID: String?
+    var detailID: String?
+    /// Failures the user dismissed, by `ActivityFailureItem.dismissKey`. In memory for the session (G13): the core keeps no store.
+    private(set) var dismissed: Set<String> = []
+
+    @ObservationIgnored var now: () -> Date = { Date() }
+    /// The CLI readings the page's bands and Answer use: the shell's `limits.read`, which a shot or a test replaces.
+    @ObservationIgnored var limitsResults: () -> [CoreLimitsEntry]
+    /// What `Copy` and `Open` do. A test or a shot replaces them so nothing leaves the process.
+    @ObservationIgnored var copyToPasteboard: (String) -> Void = { text in
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+    /// Shows a file in Finder (it never opens or runs it: a path from a log can be anything). False when it is not there.
+    @ObservationIgnored var revealFile: (URL) -> Bool = { url in
+        guard FileManager.default.fileExists(atPath: url.path) else { return false }
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+        return true
+    }
+
     @ObservationIgnored private var isReading = false
 
-    init(env: AppEnvironment) { self.env = env }
+    init(env: AppEnvironment, isV5: Bool = false) {
+        self.env = env
+        self.isV5 = isV5
+        limitsResults = { env.limits.results }
+    }
 
     var isLoading: Bool { report == nil && failure == nil }
 
-    var recentFailures: Int { ActivityRows.recentFailureCount(report, now: Date()) }
+    /// The sidebar badge: failure groups whose last failure was within 24 hours. The v5 page leaves out the ones the user dismissed.
+    var recentFailures: Int {
+        guard isV5, var kept = report else { return ActivityRows.recentFailureCount(report, now: Date()) }
+        kept.failures = kept.failures.filter { !dismissed.contains(ActivityFailureItem(failure: $0).dismissKey) }
+        return ActivityRows.recentFailureCount(kept, now: Date())
+    }
 
     private var core: any CoreService { env.goCore }
 
@@ -112,15 +150,21 @@ final class ActivityModel {
     }
 
     /// The only caller of `activityStop`, and only for the session the confirmation names. The core looks the pid up again.
+    /// The v5 toast says what was sent (V5-R59) and has no Undo: a stopped process cannot be brought back.
     func confirmStop() {
         guard let session = pendingStop, !isStopping else { return }
         isStopping = true
+        let isV5 = isV5
         Task {
             let message: String
             var tone = ToastTone.info
             do {
                 let result = try await core.activityStop(cli: session.cli, id: session.id)
-                message = result.exited ? "Stopped \(session.title)" : "The process ignored the signal"
+                if isV5 {
+                    message = ActivityStopWording.toast(session, exited: result.exited)
+                } else {
+                    message = result.exited ? "Stopped \(session.title)" : "The process ignored the signal"
+                }
                 if !result.exited { tone = .danger }
             } catch {
                 // The core's sentence (404, 403, 409 "could not be verified", 500) is shown as it is.
@@ -134,12 +178,110 @@ final class ActivityModel {
         }
     }
 
+    // MARK: The v5 page
+
+    /// What the three tabs list at `now`: one derivation, read by the canvas, the tab head's counts and the keys.
+    func query(at date: Date? = nil) -> ActivityQuery {
+        ActivityQuery(report: report, filter: filter, dismissed: dismissed, limits: limitsResults(), readAt: readAt, now: date ?? now())
+    }
+
+    /// A head menu holds the keyboard, so the page's plain keys are off; so does the Stop confirmation.
+    var isMenuOpen: Bool { isFilterOpen || pendingStop != nil }
+
+    func select(_ pane: ActivityPane) {
+        self.pane = pane
+        detailID = nil
+        isFilterOpen = false
+    }
+
+    /// `1` is index 0; an index outside the three tabs does nothing.
+    func select(index: Int) {
+        guard ActivityPane.allCases.indices.contains(index) else { return }
+        select(ActivityPane.allCases[index])
+    }
+
+    func toggleFilter(_ value: String) {
+        filter.toggle(.cli, value)
+        detailID = nil
+    }
+
+    func clearFilters() {
+        filter.clear()
+        detailID = nil
+    }
+
+    /// The row the keys act on: the chosen one while it is listed, else the first listed.
+    func current(in visible: [String]) -> String? { CurrentRow.resolve(currentID, in: visible) }
+
+    /// A click on a row: it becomes current and its detail opens (V5-R57).
+    func open(_ id: String) {
+        currentID = id
+        detailID = id
+    }
+
+    func move(by step: Int, in visible: [String]) {
+        guard let next = CurrentRow.step(currentID, by: step, in: visible) else { return }
+        currentID = next
+        detailID = nil
+    }
+
+    func toggleDetail(of id: String?) {
+        guard let id else { return }
+        currentID = id
+        detailID = detailID == id ? nil : id
+    }
+
+    // MARK: Copy, open and dismiss
+
+    /// Puts the failed command on the pasteboard, whole: a title the core cut is refused with a sentence, never copied short.
+    func copy(_ item: ActivityFailureItem) {
+        detailID = nil
+        guard !item.isCut else {
+            env.toasts.show("That command is longer than \(ActivityRows.failureTitleLimit) characters and SpaceVibe only has its start, so it was not copied.")
+            return
+        }
+        copyToPasteboard(item.failure.title)
+        env.toasts.show("Copied the command.")
+    }
+
+    /// Shows the file in Finder (V5-R72). Sessions and failed commands have no folder to open: the report names a project, not a path (G11).
+    func reveal(_ item: ActivityFileItem) {
+        detailID = nil
+        guard revealFile(URL(fileURLWithPath: item.file.path)) else {
+            env.toasts.show("\(item.name) is no longer at \(item.file.path).", tone: .danger)
+            return
+        }
+    }
+
+    func dismiss(_ item: ActivityFailureItem) {
+        detailID = nil
+        let before = dismissed
+        dismissed.insert(item.dismissKey)
+        env.toasts.show("Dismissed \(ActivityStopWording.quoted(item.failure.title))", undo: { [weak self] in
+            self?.dismissed = before
+            self?.env.toasts.show("Restored the failed command.")
+        })
+    }
+
+    /// `Dismiss passed`: every command listed that failed and then passed. One Undo restores them all.
+    func dismissPassed() {
+        let passed = query().failures.filter { !$0.stillFailing }
+        guard !passed.isEmpty else { return }
+        detailID = nil
+        let before = dismissed
+        dismissed.formUnion(passed.map(\.dismissKey))
+        env.toasts.show(ActivityFigures.dismissedPassedLabel(passed.count), undo: { [weak self] in
+            self?.dismissed = before
+            self?.env.toasts.show("Restored \(ActivityFormat.plural(passed.count, "command")).")
+        })
+    }
+
     // MARK: Screenshots
 
     /// Puts a prepared report on screen without reading, for the headless shots.
-    func preview(report: CoreActivityReport?, readAt: Date = Date()) {
+    func preview(report: CoreActivityReport?, failure: String? = nil, readAt: Date = Date()) {
         self.report = report
         self.readAt = report == nil ? nil : readAt
-        failure = nil
+        self.failure = failure
     }
 }

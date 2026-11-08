@@ -49,6 +49,7 @@ enum ShotRenderer {
             case "loadout": try requireSyntheticHome(environment); try LoadoutShots.run(into: directory)
             case "rules" where LaunchMode.uiV5Enabled(): try requireSyntheticHome(environment); try RulesTabShots.run(into: directory)
             case "rules": try requireSyntheticHome(environment); try RulesShots.run(into: directory)
+            case "activity" where LaunchMode.uiV5Enabled(): try requireSyntheticHome(environment); try ActivityTabShots.run(into: directory)
             case "activity": try requireSyntheticHome(environment); try ActivityShots.run(into: directory)
             case "limits": try requireSyntheticHome(environment); try LimitsShots.run(into: directory)
             case "settings": try SettingsShots.run(into: directory)

@@ -432,6 +432,21 @@ extension Metrics {
         static let noteTop: CGFloat = 8
     }
 
+    /// The Activity page's row columns (`b-activity`): a session's project (112) and state (104), a failure's reason (up to 176),
+    /// its count and status, a file's folder (up to 200) and edits, and the name column of `Busiest projects` (144).
+    enum Activity {
+        static let projectWidth: CGFloat = 112
+        static let stateWidth: CGFloat = 104
+        static let reasonMaxWidth: CGFloat = 176
+        static let timesWidth: CGFloat = 64
+        static let statusWidth: CGFloat = 88
+        static let folderMaxWidth: CGFloat = 200
+        static let editsWidth: CGFloat = 72
+        static let projectNameWidth: CGFloat = 144
+        /// The note under `Busiest projects`' rows: 12 above it.
+        static let noteTop: CGFloat = 12
+    }
+
     /// The Hooks spine row: the matcher before the logos (`b-hooks`: 96).
     enum Hooks {
         static let matcherWidth: CGFloat = 96

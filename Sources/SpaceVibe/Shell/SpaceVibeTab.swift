@@ -64,6 +64,8 @@ protocol SpaceVibeTab: AnyObject {
     /// Searchable under "Items" from any tab, once the user has typed something.
     var paletteItems: [PaletteEntry] { get }
     var content: AnyView { get }
+    /// A confirmation the v5 shell draws over the whole window, sidebar included (V5-R59: the scrim covers the window). Nil: none.
+    var modal: AnyView? { get }
 }
 
 extension SpaceVibeTab {
@@ -75,4 +77,5 @@ extension SpaceVibeTab {
     var hints: [KeyHint] { [] }
     var paletteActions: [PaletteEntry] { [] }
     var paletteItems: [PaletteEntry] { [] }
+    var modal: AnyView? { nil }
 }

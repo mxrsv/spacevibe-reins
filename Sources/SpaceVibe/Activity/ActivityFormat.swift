@@ -46,6 +46,16 @@ enum ActivityFormat {
         return formatted(at, "MMM d", locale: "en_US")
     }
 
+    /// "Nov 7" in the calendar's time zone.
+    static func shortDay(_ date: Date, calendar: Calendar = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
+    }
+
     /// "14:02" for today, "Oct 29, 14:02" for another day (local time).
     static func clock(_ iso: String, now: Date) -> String {
         guard let at = date(iso) else { return "unknown time" }

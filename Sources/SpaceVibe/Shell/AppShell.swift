@@ -34,6 +34,10 @@ struct AppShell: View {
                     .accessibilityHidden(shell.isPaletteOpen)
             }
 
+            if let modal = shell.activeTab.modal {
+                modal.transition(.opacity)
+            }
+
             if shell.isPaletteOpen {
                 AppCommandPalette()
                     .transition(.opacity)
