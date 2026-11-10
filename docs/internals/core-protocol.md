@@ -108,6 +108,7 @@ Params and results use the types defined under "Wire types". "Journal entry" is 
 | `rules.add` | `{scope, dir, verdict, rule}` | `{entry:JournalEntryRef}` | 400 invalid rule; 404; 409 duplicate, not valid JSON, or a linked file | Same | label `Added <verdict> rule <rule> (<scope>)`; op `file-edited` |
 | `rules.remove` | `{scope, dir, verdict, rule}` | `{entry:JournalEntryRef}` | 404; 409 the rule already changed | Same | label `Removed <verdict> rule <rule> (<scope>)`; op `file-edited` |
 | `rules.changeVerdict` | `{scope, dir, rule, from, to}` | `{entry:JournalEntryRef}` | 400 same verdict; 404; 409 | Same | label `Changed <rule> from <a> to <b> (<scope>)`; op `file-edited` |
+| `rules.changeVerdicts` | `{scope, dir, to, rules:RuleMove[]}` | `{entry:JournalEntryRef}` | 400 an empty list, a bad verdict, or a `from` equal to `to`; 404; 409 a rule is no longer under its `from` (nothing is written), not valid JSON, or a linked file; 500 | One edit of the scope's `settings.json` under the write lock: every rule is checked, then all move together | label `Changed N rules to <to> (<scope>)` (`Changed 1 rule to ...` for one); one op `file-edited`, so one Undo restores all |
 | `rules.check` | `{rule}` | `{valid:boolean, message:string\|null}` | none | none | none |
 | `limits.read` | `{}` | `{limits:LimitsEntry[]}` in order claude, codex, gemini | none | Reads local files only: no request, no credential, no CLI started | none |
 
@@ -118,7 +119,7 @@ Behavior the table cannot say:
 - **Other process-wide state.** The inventory and rules services share one discovered-project list: every `inventory.read` and `loadout.rows` hands its list to rules, and `refreshProjects` runs discovery again for both.
 - **`usage.scan` owns the usage state.** The core keeps the last `UsageResult` of the process. `loadout.rows` attaches it, or reports `usage: "scanning"` and `pending` cells when no scan has finished in this process. The shell does not send totals back. A core restart forgets the state; `usage-cache.json` makes the next scan fast.
 - **`loadout.rows` replaces three Swift calls** `(new)`: `Inventory.read`, `attachUsage` and `filterCounts` (per scope and per row key). Grouping rows by `key`, sorting and labels stay in Swift. Problems come back unshortened, with absolute paths; the shell applies the existing rule that shortens the home folder before showing them.
-- **`rules.setCapability` returning null is not an error.** The core reports it; the app turns it into the 409 sentence "Nothing to change: the file already holds that." (`RulesModel.write` does it). `rules.add`, `remove` and `changeVerdict` never return null: the engine throws that 409 itself.
+- **`rules.setCapability` returning null is not an error.** The core reports it; the app turns it into the 409 sentence "Nothing to change: the file already holds that." (`RulesModel.write` does it). `rules.add`, `remove`, `changeVerdict` and `changeVerdicts` never return null: the engine throws that 409 itself.
 - **`rules.check`** is the live check of a rule's shape (the Rules model calls it before every add), built on `Rules.checkedRule`: empty text, over 1000 UTF-16 units, a newline, or no `Tool` or `Tool(pattern)` shape. `message` is the same sentence the write would refuse with. The write path checks again; this method is advice.
 - **Journal ops are not exposed.** `JournalEntryRef` carries `count` only: ops hold absolute paths and trash names, and no Swift caller reads them (`AppEnvironment` uses the id and the label). The journal file is `<data>/journal.json`, newest first, 200 entries, and a journal that exists but is not a JSON array of entries (every element needs a string `id`) makes every write 409; Swift silently dropped an element without an id on the next write.
 - **`addSkill` and `addAgent` are not methods.** The app has no caller.
@@ -134,6 +135,7 @@ type Scope = "global" | "project" | "local"      // rules scope; dir is null for
 type Verdict = "allow" | "ask" | "deny"
 type Capability = "read" | "edit" | "run" | "network" | "push" | "secrets"
 type CapabilityState = "allow" | "ask" | "deny" | "mixed" | "none"
+type RuleMove = { rule: string, from: Verdict }  // from: the verdict the caller saw the rule under
 
 type JournalEntryRef = { id: string, at: string, label: string, undone: boolean, count: number }
 // (new) built from JournalEntry / HistoryItem; ops are left out.

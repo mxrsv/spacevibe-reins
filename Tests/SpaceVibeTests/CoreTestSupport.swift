@@ -24,6 +24,7 @@ class UnservedCore: CoreService, @unchecked Sendable {
     func rulesAdd(scope: CoreRuleScope, dir: String?, verdict: CoreVerdict, rule: String) async throws -> CoreEntryResult { throw unserved() }
     func rulesRemove(scope: CoreRuleScope, dir: String?, verdict: CoreVerdict, rule: String) async throws -> CoreEntryResult { throw unserved() }
     func rulesChangeVerdict(scope: CoreRuleScope, dir: String?, rule: String, from: CoreVerdict, to: CoreVerdict) async throws -> CoreEntryResult { throw unserved() }
+    func rulesChangeVerdicts(scope: CoreRuleScope, dir: String?, to: CoreVerdict, rules: [CoreRuleMove]) async throws -> CoreEntryResult { throw unserved() }
     func rulesCheck(rule: String) async throws -> CoreRuleCheck { throw unserved() }
     func limitsRead() async throws -> CoreLimitsResult { throw unserved() }
 }

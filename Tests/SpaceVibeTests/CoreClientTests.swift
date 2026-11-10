@@ -77,6 +77,22 @@ struct CoreClientTests {
         }
     }
 
+    @Test("rulesChangeVerdicts sends the list, one entry comes back, and a stale from is the engine's 409", .timeLimit(.minutes(1)))
+    func changeVerdicts() async throws {
+        try await withClient { _, client in
+            for rule in ["Bash(sv-one)", "Bash(sv-two)"] { _ = try await client.rulesAdd(scope: .global, dir: nil, verdict: .allow, rule: rule) }
+            let moves = [CoreRuleMove(rule: "Bash(sv-one)", from: .allow), CoreRuleMove(rule: "Bash(sv-two)", from: .allow)]
+            let stale = try await #require(throws: CoreError.self) {
+                try await client.rulesChangeVerdicts(scope: .global, dir: nil, to: .deny, rules: moves + [CoreRuleMove(rule: "Bash(sv-gone)", from: .allow)])
+            }
+            #expect(stale.status == 409)
+            let moved = try await client.rulesChangeVerdicts(scope: .global, dir: nil, to: .deny, rules: moves).entry
+            #expect(moved.label == "Changed 2 rules to deny (global)" && moved.count == 1)
+            let rules = try await client.rulesSnapshot(scope: .global, dir: nil, refreshProjects: false).rules
+            #expect(rules.filter { $0.rule.hasPrefix("Bash(sv-") }.allSatisfy { $0.verdict == .deny })
+        }
+    }
+
     @Test("a refused environment is a startup problem every method reports, and initialize still answers", .timeLimit(.minutes(1)))
     func startupProblem() async throws {
         let fixture = try await CoreFixtureHome.make(extraEnvironment: ["SPACEVIBE_TEST": "2"])

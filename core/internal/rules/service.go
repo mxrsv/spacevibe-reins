@@ -12,7 +12,7 @@ import (
 	"spacevibe.dev/core/internal/roots"
 )
 
-// Service holds the seven rules.* RPC methods: snapshot, preview, setCapability, add, remove, changeVerdict and check
+// Service holds the eight rules.* RPC methods: snapshot, preview, setCapability, add, remove, changeVerdict, changeVerdicts and check
 // (docs/internals/core-protocol.md). A later wiring step registers them.
 //
 // It keeps the project list of the process: rules.snapshot with refreshProjects refreshes it, every other call reuses
@@ -104,6 +104,13 @@ type (
 		Rule  string    `json:"rule"`
 		From  Verdict   `json:"from"`
 		To    Verdict   `json:"to"`
+	}
+	// ChangesParams is rules.changeVerdicts: every rule in Rules moves to To, each from the verdict the caller saw.
+	ChangesParams struct {
+		Scope ScopeKind  `json:"scope"`
+		Dir   *string    `json:"dir"`
+		To    Verdict    `json:"to"`
+		Rules []RuleMove `json:"rules"`
 	}
 	// CheckParams is rules.check.
 	CheckParams struct {
@@ -333,6 +340,24 @@ func (s *Service) ChangeVerdict(ctx context.Context, p ChangeParams) (mutate.Ent
 		return mutate.EntryResult{}, err
 	}
 	entry, err := store.ChangeVerdict(scope, p.Rule, p.From, p.To)
+	return resultOf(entry), s.scrubbed(store, scope, err)
+}
+
+// ChangeVerdicts is rules.changeVerdicts: one write, one journal entry for the whole list.
+func (s *Service) ChangeVerdicts(ctx context.Context, p ChangesParams) (mutate.EntryResult, error) {
+	scope, store, err := s.begin(ctx, p.Scope, p.Dir)
+	if err != nil {
+		return mutate.EntryResult{}, err
+	}
+	if err := verdictOf(p.To, "to verdict"); err != nil {
+		return mutate.EntryResult{}, err
+	}
+	for _, m := range p.Rules {
+		if err := verdictOf(m.From, "from verdict"); err != nil {
+			return mutate.EntryResult{}, err
+		}
+	}
+	entry, err := store.ChangeVerdicts(scope, p.To, p.Rules)
 	return resultOf(entry), s.scrubbed(store, scope, err)
 }
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -30,6 +31,7 @@ const (
 	ruleChangedMessage     = "This rule has already changed. Refresh the list."
 	nothingToChangeMessage = "Nothing to change: the file already holds that."
 	notNothingChanged      = " Nothing was changed."
+	noRulesPickedMessage   = "Pick at least one rule to change."
 )
 
 // Store reads and writes the permission rules of Claude Code settings files. Behavior reference: Node rules
@@ -277,6 +279,48 @@ func (s *Store) ChangeVerdict(scope Scope, rule string, from, to Verdict) (mutat
 			return nil, err
 		}
 		return editRules(doc, file, []VerdictRule{{from, rule}}, []VerdictRule{{to, rule}})
+	}))
+}
+
+// RuleMove is one rule of a bulk change and the verdict the caller saw it under.
+type RuleMove struct {
+	Rule string  `json:"rule"`
+	From Verdict `json:"from"`
+}
+
+// ChangeVerdicts moves every listed rule to one verdict in a single write: one file edit, one backup, one journal
+// entry, so one Undo restores them all. It refuses (400) an empty list, a bad verdict or a rule whose from equals to,
+// and (409, nothing written) when any rule is no longer under its from.
+func (s *Store) ChangeVerdicts(scope Scope, to Verdict, moves []RuleMove) (mutate.Entry, error) {
+	if err := checkVerdict(to); err != nil {
+		return mutate.Entry{}, err
+	}
+	if len(moves) == 0 {
+		return mutate.Entry{}, coreerr.New(noRulesPickedMessage)
+	}
+	var remove, add []VerdictRule
+	for _, m := range moves {
+		if err := checkVerdict(m.From); err != nil {
+			return mutate.Entry{}, err
+		}
+		if m.From == to {
+			return mutate.Entry{}, coreerr.New(alreadyThatVerdictText)
+		}
+		remove = append(remove, VerdictRule{m.From, m.Rule})
+		add = append(add, VerdictRule{to, m.Rule})
+	}
+	noun := " rules"
+	if len(moves) == 1 {
+		noun = " rule"
+	}
+	label := "Changed " + strconv.Itoa(len(moves)) + noun + " to " + string(to) + " (" + scope.journalLabel() + ")"
+	return s.required(s.edit(scope, label, func(file string, doc *ojson.Document) (*ojson.Document, error) {
+		for _, m := range moves {
+			if err := requireRule(m.Rule, m.From, doc, file); err != nil {
+				return nil, err
+			}
+		}
+		return editRules(doc, file, remove, add)
 	}))
 }
 

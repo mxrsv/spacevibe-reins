@@ -41,6 +41,7 @@ final class CoreClient: CoreService, @unchecked Sendable {
         var rule: String?
         var from: CoreVerdict?
         var to: CoreVerdict?
+        var rules: [CoreRuleMove]?
 
         init(_ scope: CoreRuleScope, _ dir: String?) {
             self.scope = scope
@@ -147,6 +148,13 @@ final class CoreClient: CoreService, @unchecked Sendable {
         params.from = from
         params.to = to
         return try await connection.call("rules.changeVerdict", params)
+    }
+
+    func rulesChangeVerdicts(scope: CoreRuleScope, dir: String?, to: CoreVerdict, rules: [CoreRuleMove]) async throws -> CoreEntryResult {
+        var params = Rules(scope, dir)
+        params.to = to
+        params.rules = rules
+        return try await connection.call("rules.changeVerdicts", params)
     }
 
     func rulesCheck(rule: String) async throws -> CoreRuleCheck { try await connection.call("rules.check", Check(rule: rule)) }

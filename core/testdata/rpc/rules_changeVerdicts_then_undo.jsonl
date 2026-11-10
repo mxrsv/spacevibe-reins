@@ -1,0 +1,22 @@
+{"dir":"send","json":{"id":0,"jsonrpc":"2.0","method":"initialize","params":{"client":{"name":"contract","version":"0"},"protocolVersion":1}}}
+{"dir":"recv","json":{"id":0,"jsonrpc":"2.0","result":{"core":{"name":"spacevibe","version":"dev"},"identity":{"dataDir":".spacevibe","envPrefix":"SPACEVIBE_"},"methods":["activity.read","activity.stop","activity.subscribe","activity.unsubscribe","initialize","inventory.read","journal.history","journal.undo","limits.read","loadout.copyToOther","loadout.removeDeadHooks","loadout.removeItem","loadout.rows","rules.add","rules.changeVerdict","rules.changeVerdicts","rules.check","rules.preview","rules.remove","rules.setCapability","rules.snapshot","usage.scan"],"protocolVersion":1}}}
+{"dir":"send","json":{"id":1,"jsonrpc":"2.0","method":"rules.add","params":{"dir":null,"rule":"Bash(sv-one)","scope":"global","verdict":"allow"}}}
+{"dir":"recv","json":{"id":1,"jsonrpc":"2.0","result":{"entry":{"at":"$TIME","count":1,"id":"$SETUP_ID_1","label":"Added allow rule Bash(sv-one) (global)","undone":false}}}}
+{"dir":"send","json":{"id":2,"jsonrpc":"2.0","method":"rules.add","params":{"dir":null,"rule":"Bash(sv-two)","scope":"global","verdict":"allow"}}}
+{"dir":"recv","json":{"id":2,"jsonrpc":"2.0","result":{"entry":{"at":"$TIME","count":1,"id":"$SETUP_ID_2","label":"Added allow rule Bash(sv-two) (global)","undone":false}}}}
+{"dir":"send","json":{"id":3,"jsonrpc":"2.0","method":"rules.changeVerdicts","params":{"dir":null,"rules":[],"scope":"global","to":"deny"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"Pick at least one rule to change.","status":400},"message":"Pick at least one rule to change."},"id":3,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":4,"jsonrpc":"2.0","method":"rules.changeVerdicts","params":{"dir":null,"rules":[{"from":"deny","rule":"Bash(sv-one)"}],"scope":"global","to":"deny"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"The rule already has that verdict.","status":400},"message":"The rule already has that verdict."},"id":4,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":5,"jsonrpc":"2.0","method":"rules.changeVerdicts","params":{"dir":null,"rules":[{"from":"allow","rule":"Bash(sv-one)"}],"scope":"global","to":"maybe"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"The to verdict must be allow, ask or deny.","status":400},"message":"The to verdict must be allow, ask or deny."},"id":5,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":6,"jsonrpc":"2.0","method":"rules.changeVerdicts","params":{"dir":null,"rules":[{"from":"allow","rule":"Bash(sv-one)"},{"from":"ask","rule":"Bash(sv-two)"}],"scope":"global","to":"deny"}}}
+{"dir":"recv","json":{"error":{"code":-32000,"data":{"message":"This rule has already changed. Refresh the list.","status":409},"message":"This rule has already changed. Refresh the list."},"id":6,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":7,"jsonrpc":"2.0","method":"rules.changeVerdicts","params":{"dir":null,"rules":[{"extra":1,"from":"allow","rule":"Bash(sv-one)"}],"scope":"global","to":"deny"}}}
+{"dir":"recv","json":{"error":{"code":-32602,"message":"Invalid params: \"extra\" is not a known member."},"id":7,"jsonrpc":"2.0"}}
+{"dir":"send","json":{"id":8,"jsonrpc":"2.0","method":"rules.changeVerdicts","params":{"dir":null,"rules":[{"from":"allow","rule":"Bash(sv-one)"},{"from":"allow","rule":"Bash(sv-two)"}],"scope":"global","to":"deny"}}}
+{"dir":"recv","json":{"id":8,"jsonrpc":"2.0","result":{"entry":{"at":"$TIME","count":1,"id":"$ENTRY_ID","label":"Changed 2 rules to deny (global)","undone":false}}}}
+{"dir":"send","json":{"id":9,"jsonrpc":"2.0","method":"journal.history","params":{}}}
+{"dir":"recv","json":{"id":9,"jsonrpc":"2.0","result":{"entries":[{"at":"$TIME","count":1,"id":"$ENTRY_ID","label":"Changed 2 rules to deny (global)","undone":false},{"at":"$TIME","count":1,"id":"$SETUP_ID_2","label":"Added allow rule Bash(sv-two) (global)","undone":false},{"at":"$TIME","count":1,"id":"$SETUP_ID_1","label":"Added allow rule Bash(sv-one) (global)","undone":false}]}}}
+{"dir":"send","json":{"id":10,"jsonrpc":"2.0","method":"journal.undo","params":{"id":"$ENTRY_ID"}}}
+{"dir":"recv","json":{"id":10,"jsonrpc":"2.0","result":{"label":"Changed 2 rules to deny (global)"}}}

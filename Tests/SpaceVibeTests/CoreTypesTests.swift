@@ -117,7 +117,7 @@ struct CoreTypesTests {
         "loadout.copyToOther": CoreEntryResult.self, "loadout.removeItem": CoreEntryResult.self, "loadout.removeDeadHooks": CoreEntryResult.self,
         "journal.undo": CoreUndoResult.self, "journal.history": CoreJournalHistory.self,
         "rules.snapshot": CoreRulesSnapshot.self, "rules.preview": CoreCapabilityPreview.self, "rules.setCapability": CoreSetCapabilityResult.self,
-        "rules.add": CoreEntryResult.self, "rules.remove": CoreEntryResult.self, "rules.changeVerdict": CoreEntryResult.self,
+        "rules.add": CoreEntryResult.self, "rules.remove": CoreEntryResult.self, "rules.changeVerdict": CoreEntryResult.self, "rules.changeVerdicts": CoreEntryResult.self,
         "rules.check": CoreRuleCheck.self, "limits.read": CoreLimitsResult.self,
     ]
 

@@ -44,6 +44,7 @@ var AllMethods = []string{
 	"rules.add",
 	"rules.remove",
 	"rules.changeVerdict",
+	"rules.changeVerdicts",
 	"rules.check",
 	"limits.read",
 }

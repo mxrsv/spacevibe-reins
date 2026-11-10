@@ -62,6 +62,7 @@ func (s *Services) buildHandlers() map[string]rpc.Handler {
 		"rules.add":               typed(s, "rules.add", s.rules.Add),
 		"rules.remove":            typed(s, "rules.remove", s.rules.Remove),
 		"rules.changeVerdict":     typed(s, "rules.changeVerdict", s.rules.ChangeVerdict),
+		"rules.changeVerdicts":    typed(s, "rules.changeVerdicts", s.rules.ChangeVerdicts),
 		"rules.check":             typed(s, "rules.check", s.rules.Check),
 		"limits.read":             typed(s, "limits.read", s.limitsRead),
 	}

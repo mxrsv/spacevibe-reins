@@ -73,6 +73,7 @@ private final class FakeActivityCore: CoreService, @unchecked Sendable {
     func rulesAdd(scope: CoreRuleScope, dir: String?, verdict: CoreVerdict, rule: String) async throws -> CoreEntryResult { throw unused() }
     func rulesRemove(scope: CoreRuleScope, dir: String?, verdict: CoreVerdict, rule: String) async throws -> CoreEntryResult { throw unused() }
     func rulesChangeVerdict(scope: CoreRuleScope, dir: String?, rule: String, from: CoreVerdict, to: CoreVerdict) async throws -> CoreEntryResult { throw unused() }
+    func rulesChangeVerdicts(scope: CoreRuleScope, dir: String?, to: CoreVerdict, rules: [CoreRuleMove]) async throws -> CoreEntryResult { throw unused() }
     func rulesCheck(rule: String) async throws -> CoreRuleCheck { throw unused() }
     func limitsRead() async throws -> CoreLimitsResult { throw unused() }
 }

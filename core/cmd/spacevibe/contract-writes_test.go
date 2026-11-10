@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -108,6 +109,66 @@ func writeCases(t *testing.T) {
 			t.Error("history does not show the entry as undone")
 		}
 		c.finish("loadout_removeItem_then_undo")
+	})
+
+	t.Run("rules_changeVerdicts_then_undo", func(t *testing.T) {
+		home := copiedHome(t)
+		c := startOn(t, shippedBin, home)
+		c.initialize()
+		file := filepath.Join(home, ".claude", "settings.json")
+		global := `"scope":"global","dir":null`
+
+		// Setup: two rules the call will move, and one that makes the stale case. The setup entries are undone last.
+		for i, rule := range []string{"Bash(sv-one)", "Bash(sv-two)"} {
+			var added struct{ Entry struct{ ID string } }
+			decodeInto(t, c.ok(c.call(strconv.Itoa(1+i), "rules.add", `{`+global+`,"verdict":"allow","rule":"`+rule+`"}`)), &added)
+			c.norm.mask(added.Entry.ID, "$SETUP_ID_"+strconv.Itoa(1+i))
+		}
+		afterSetup, err := os.ReadFile(file) // the file after the setup adds: the byte-exact Undo target
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Refusals change nothing.
+		for _, refusal := range []struct {
+			id, params string
+			status     int
+		}{
+			{"3", `{` + global + `,"to":"deny","rules":[]}`, 400},
+			{"4", `{` + global + `,"to":"deny","rules":[{"rule":"Bash(sv-one)","from":"deny"}]}`, 400},
+			{"5", `{` + global + `,"to":"maybe","rules":[{"rule":"Bash(sv-one)","from":"allow"}]}`, 400},
+			{"6", `{` + global + `,"to":"deny","rules":[{"rule":"Bash(sv-one)","from":"allow"},{"rule":"Bash(sv-two)","from":"ask"}]}`, 409},
+		} {
+			if got := c.status(c.call(refusal.id, "rules.changeVerdicts", refusal.params)); got != refusal.status {
+				t.Errorf("call %s: status %d, want %d", refusal.id, got, refusal.status)
+			}
+		}
+		c.wantError(c.call("7", "rules.changeVerdicts", `{`+global+`,"to":"deny","rules":[{"rule":"Bash(sv-one)","from":"allow","extra":1}]}`), -32602)
+		if now, _ := os.ReadFile(file); !bytes.Equal(now, afterSetup) {
+			t.Fatal("a refused call changed the settings file")
+		}
+
+		var moved struct {
+			Entry struct {
+				ID, Label string
+				Count     int
+			}
+		}
+		decodeInto(t, c.ok(c.call("8", "rules.changeVerdicts", `{`+global+`,"to":"deny","rules":[{"rule":"Bash(sv-one)","from":"allow"},{"rule":"Bash(sv-two)","from":"allow"}]}`)), &moved)
+		c.norm.mask(moved.Entry.ID, "$ENTRY_ID")
+		if moved.Entry.Label != "Changed 2 rules to deny (global)" || moved.Entry.Count != 1 {
+			t.Fatalf("entry %+v", moved.Entry)
+		}
+		var hist struct{ Entries []json.RawMessage }
+		decodeInto(t, c.ok(c.call("9", "journal.history", `{}`)), &hist)
+		if len(hist.Entries) != 3 { // two adds and one change
+			t.Fatalf("history has %d entries, want 3", len(hist.Entries))
+		}
+		decodeInto(t, c.ok(c.call("10", "journal.undo", `{"id":"`+moved.Entry.ID+`"}`)), &struct{ Label string }{})
+		if now, _ := os.ReadFile(file); !bytes.Equal(now, afterSetup) {
+			t.Fatal("Undo did not put the settings file back byte for byte")
+		}
+		c.finish("rules_changeVerdicts_then_undo")
 	})
 
 	t.Run("write_guard_installed", func(t *testing.T) {

@@ -196,6 +196,12 @@ struct CoreRulesSnapshot: Codable, Equatable, Sendable {
     var globalNotReadable: Bool
 }
 
+/// One rule of `rules.changeVerdicts` and the verdict the caller saw it under; the core refuses (409) a rule that moved.
+struct CoreRuleMove: Codable, Equatable, Hashable, Sendable {
+    var rule: String
+    var from: CoreVerdict
+}
+
 /// `rules.setCapability`: `entry` is null (not an error) when the file already holds that.
 struct CoreSetCapabilityResult: Codable, Equatable, Sendable {
     @CoreNullable var entry: CoreJournalEntry?
