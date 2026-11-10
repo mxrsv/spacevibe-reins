@@ -74,4 +74,31 @@ struct PaletteSearchTests {
         #expect(listed?.first == "widget 0")
         #expect(listed?.last == "widget \(PaletteSearch.itemLimit - 1)")
     }
+
+    @Test("the newest Undo of the session is an action with the Z cap, and runs it")
+    func undoAction() throws {
+        let toasts = ToastCenter(announce: false)
+        var ran: [String] = []
+        toasts.show("a", undo: { ran.append("a") })
+        toasts.show("x", tone: .danger)
+        var actions = try #require(PaletteSearch.sections(shell: .forTests(), toasts: toasts, query: "").first { $0.title == "Actions" }).entries
+        #expect(actions.map(\.title).contains("Undo: a"))
+        toasts.show("b", undo: { ran.append("b") })
+        actions = try #require(PaletteSearch.sections(shell: .forTests(), toasts: toasts, query: "").first { $0.title == "Actions" }).entries
+        // Only the newest item is offered, so Undo stays last in, first out.
+        #expect(actions.filter { $0.id == "shell.undo" }.map(\.title) == ["Undo: b"])
+        let undo = try #require(actions.first { $0.id == "shell.undo" })
+        #expect(undo.trailing == "Z")
+        undo.perform()
+        #expect(ran == ["b"])
+    }
+
+    @Test("no Undo action while the stack is empty or no center is given")
+    func noUndoWithoutItems() {
+        let titles = { (toasts: ToastCenter?) in
+            PaletteSearch.sections(shell: .forTests(), toasts: toasts, query: "").flatMap(\.entries).map(\.title)
+        }
+        #expect(!titles(ToastCenter(announce: false)).contains { $0.hasPrefix("Undo") })
+        #expect(!titles(nil).contains { $0.hasPrefix("Undo") })
+    }
 }

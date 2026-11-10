@@ -6,12 +6,13 @@ import SwiftUI
 /// hit-testable, focusable and read by VoiceOver.
 struct AppShell: View {
     @Environment(ShellModel.self) private var shell
+    @Environment(ToastCenter.self) private var toasts
 
     var body: some View {
         ZStack {
             HStack(spacing: 0) {
                 AppSidebar()
-                ContentPanel(hints: shell.activeTab.hints, source: shell.activeTab.source) {
+                ContentPanel(hints: hints, source: shell.activeTab.source) {
                     ZStack {
                         ForEach(shell.tabs, id: \.id) { tab in
                             let isActive = tab.id == shell.activeID
@@ -47,5 +48,11 @@ struct AppShell: View {
         .pageBackground()
         .ignoresSafeArea()
         .overlayHost()
+    }
+
+    /// The active tab's keys, plus `Z undo` while the session holds an Undo.
+    private var hints: [KeyHint] {
+        let tabHints = shell.activeTab.hints
+        return toasts.undoStack.isEmpty ? tabHints : tabHints + [KeyHint(keys: ToastAction.undoKeyCap, label: "undo")]
     }
 }

@@ -34,6 +34,8 @@ final class ActivityTab: SpaceVibeTab {
     var hints: [KeyHint] { model.isV5 ? ActivityStatusBar.hints(for: model.pane) : [] }
     var source: String? { model.isV5 ? ActivityStatusBar.source : nil }
 
+    var isMenuOpen: Bool { model.isMenuOpen }
+
     var content: AnyView { model.isV5 ? AnyView(ActivityCanvas(model: model)) : AnyView(ActivityScreen(model: model)) }
 
     /// The Stop confirmation over the whole window (V5-R59).

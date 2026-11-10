@@ -20,10 +20,24 @@ struct ToastAction {
 }
 
 struct Toast: Identifiable {
-    let id = UUID()
+    let id: UUID
     let message: String
     let tone: ToastTone
     let action: ToastAction?
+
+    init(id: UUID = UUID(), message: String, tone: ToastTone, action: ToastAction?) {
+        self.id = id
+        self.message = message
+        self.tone = tone
+        self.action = action
+    }
+}
+
+/// One Undo the session can still run: the toast that offered it, its message ("Removed ponytail") and the closure.
+struct UndoItem: Identifiable {
+    let id: UUID
+    let label: String
+    let run: @MainActor () -> Void
 }
 
 /// The one toast the app shows, bottom centre. Every write calls `show` with an Undo closure.
@@ -33,11 +47,19 @@ struct Toast: Identifiable {
 ///     toasts.show("Could not write settings.json", tone: .danger)
 ///     toasts.show("SpaceVibe 0.2.0 is available", action: viewUpdate)      // any other single action
 ///
-/// A new toast replaces the current one. It disappears after about 7 seconds, paused while the pointer is on it.
+/// A new toast replaces the current one. It disappears after 5 seconds (`Metrics.toastDuration`), paused while the pointer is on it.
+///
+/// Every `undo:` also goes onto a session stack (`undoStack`, newest last, `undoDepth` deep), so a toast that replaced the
+/// one carrying an Undo does not lose it: `undoLast()`, the `Z` key and the palette run the newest item. The stack lives
+/// for this session only and never reads the Journal. An item leaves the stack when it runs, from the toast or from
+/// `undoLast()`, so one Undo never runs twice.
 @MainActor
 @Observable
 final class ToastCenter {
     private(set) var current: Toast?
+    /// Undos not yet run, oldest first. The newest is the one `undoLast()` runs.
+    private(set) var undoStack: [UndoItem] = []
+    static let undoDepth = 20
     /// A page's bottom bar is on screen, so the v5 toast sits above it (V5-R32, 104 rather than 48). Set by `ListPaneLayout`.
     var isOverBottomBar = false
 
@@ -48,7 +70,30 @@ final class ToastCenter {
     init(announce: Bool = true) { self.announce = announce }
 
     func show(_ message: String, tone: ToastTone = .info, undo: (@MainActor () -> Void)? = nil) {
-        present(Toast(message: message, tone: tone, action: undo.map(ToastAction.undo)))
+        guard let undo else {
+            present(Toast(message: message, tone: tone, action: nil))
+            return
+        }
+        let id = UUID()
+        // The toast's button takes its item off the stack first, so a later `Z` cannot replay it.
+        let action = ToastAction.undo { [weak self] in
+            self?.removeUndo(id: id)
+            undo()
+        }
+        undoStack.append(UndoItem(id: id, label: message, run: undo))
+        if undoStack.count > Self.undoDepth { undoStack.removeFirst(undoStack.count - Self.undoDepth) }
+        present(Toast(id: id, message: message, tone: tone, action: action))
+    }
+
+    /// Pops the newest Undo and runs it. A toast still showing for that item is hidden with it.
+    func undoLast() {
+        guard let item = undoStack.popLast() else { return }
+        dismiss(id: item.id)
+        item.run()
+    }
+
+    private func removeUndo(id: UUID) {
+        undoStack.removeAll { $0.id == id }
     }
 
     /// Returns the toast's id, for `dismiss(id:)`.

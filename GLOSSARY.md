@@ -103,5 +103,5 @@ SpaceVibe's record of every write to a CLI's configuration, holding the old byte
 _Avoid_: history, log (a log is what a CLI writes)
 
 **Undo**:
-Restores what one Journal entry replaced. Offered from the toast after a write.
+Restores what one Journal entry replaced. Offered from the toast after a write, and for the rest of the session from the `Z` key, the palette ("Undo: <what was done>") and the `Z undo` hint in the status bar: each runs the newest write not yet undone, up to 20. It never reaches a write from an earlier session.
 _Avoid_: rollback, revert

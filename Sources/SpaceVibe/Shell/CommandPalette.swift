@@ -7,13 +7,14 @@ import SwiftUI
 /// as the query changes.
 struct CommandPalette: View {
     @Environment(ShellModel.self) private var shell
+    @Environment(ToastCenter.self) private var toasts
     @Environment(\.isShotRendering) private var isShotRendering
     @State private var highlightedID: String?
     @FocusState private var fieldFocused: Bool
 
     var body: some View {
         @Bindable var shell = shell
-        let sections = PaletteSearch.sections(shell: shell, query: shell.paletteQuery)
+        let sections = PaletteSearch.sections(shell: shell, toasts: toasts, query: shell.paletteQuery)
         let flat = sections.flatMap(\.entries)
         let current = flat.contains { $0.id == highlightedID } ? highlightedID : flat.first?.id
 

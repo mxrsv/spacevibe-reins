@@ -7,14 +7,15 @@ struct PaletteSection: Identifiable {
     var id: String { title }
 }
 
-/// Builds what the palette lists: "Go to" (the tabs), "Actions" (the active tab's, plus global ones) and, once
+/// Builds what the palette lists: "Go to" (the tabs), "Actions" (the active tab's, plus global ones, plus Undo of the newest
+/// write in `toasts`' session stack) and, once
 /// the user has typed something, "Items" (every tab's searchable items). Matching is case-insensitive and every
 /// word of the query must appear in the title, subtitle or keywords.
 @MainActor
 enum PaletteSearch {
     static let itemLimit = 30
 
-    static func sections(shell: ShellModel, query: String) -> [PaletteSection] {
+    static func sections(shell: ShellModel, toasts: ToastCenter? = nil, query: String) -> [PaletteSection] {
         let words = query.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
 
         let goTo = shell.tabs.enumerated().map { index, tab in
@@ -44,7 +45,19 @@ enum PaletteSearch {
             trailing: "\u{2318},",
             keywords: ["preferences", "appearance", "theme", "font size", "update"]
         ) { shell.openSettings() }
-        let actions = shell.activeTab.paletteActions + [global, settings]
+        var actions = shell.activeTab.paletteActions
+        // Only the newest item, so Undo stays last in, first out.
+        if let newest = toasts?.undoStack.last {
+            actions.append(PaletteEntry(
+                id: "shell.undo",
+                title: "Undo: \(newest.label)",
+                icon: .undo,
+                glyph: SpaceVibeGlyph.undo,
+                trailing: ToastAction.undoKeyCap,
+                keywords: ["revert", "restore"]
+            ) { [toasts] in toasts?.undoLast() })
+        }
+        actions += [global, settings]
 
         var sections = [
             PaletteSection(title: "Go to", entries: goTo.filter { matches($0, words) }),
