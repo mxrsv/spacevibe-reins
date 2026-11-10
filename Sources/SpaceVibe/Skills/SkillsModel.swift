@@ -26,6 +26,8 @@ final class SkillsModel {
     @ObservationIgnored var now: () -> Date = { Date() }
     /// Opens a file in its default app; a test swaps it so nothing opens.
     @ObservationIgnored var openFile: (URL) -> Void = { NSWorkspace.shared.open($0) }
+    /// Shows a file in Finder; a test swaps it so nothing opens.
+    @ObservationIgnored var revealFile: (URL) -> Void = { NSWorkspace.shared.activateFileViewerSelecting([$0]) }
 
     init(loadout: LoadoutModel) { self.loadout = loadout }
 
@@ -184,10 +186,18 @@ final class SkillsModel {
         add(rows, to: detected)
     }
 
-    /// The file `Open` and `o` show: the first CLI's copy (Claude Code first).
+    /// The file `Open` and `o` show: the first CLI's copy (Claude Code first). macOS picks the app from the link's target,
+    /// so a `SKILL.md` linked to a `.command` would run in Terminal: only a resolved regular `.md` file opens; anything
+    /// else is shown in Finder.
     func openFile(of row: LoadoutRow) {
         guard let member = CoreCLI.allCases.compactMap({ row.members[$0] }).first, let url = Self.fileURL(member) else { return }
-        openFile(url)
+        let resolved = url.resolvingSymlinksInPath()
+        let isRegular = (try? resolved.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true
+        if isRegular, resolved.pathExtension.lowercased() == "md" {
+            openFile(resolved)
+        } else {
+            revealFile(resolved)
+        }
     }
 
     static func fileURL(_ member: LoadoutMember) -> URL? {
