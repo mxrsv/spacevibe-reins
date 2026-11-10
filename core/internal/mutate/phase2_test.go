@@ -124,6 +124,7 @@ func TestUndoStillAcceptsWhatTheEngineRecords(t *testing.T) {
 func TestCopySkillRefusesALinkOutOfItsFolder(t *testing.T) {
 	h := newHome(t)
 	r := h.roots()
+	h.installCodex()
 	h.write(".claude/skills/leaky/SKILL.md", skillMd("leaky", "d"))
 	h.write("outside/secret.txt", "secret")
 	h.symlink(h.path("outside/secret.txt"), ".claude/skills/leaky/notes")
@@ -140,6 +141,7 @@ func TestCopySkillRefusesALinkOutOfItsFolder(t *testing.T) {
 func TestCopyModes(t *testing.T) {
 	h := newHome(t)
 	r := h.roots()
+	h.installCodex()
 	h.write(".claude/skills/modes/SKILL.md", skillMd("modes", "d"))
 	h.write(".claude/skills/modes/scripts/run.sh", "#!/bin/sh\n")
 	h.write(".claude/skills/modes/ref.txt", "ref")
@@ -169,6 +171,7 @@ func TestCopyModes(t *testing.T) {
 func TestCopyCaps(t *testing.T) {
 	h := newHome(t)
 	r := h.roots()
+	h.installCodex()
 	h.write(".claude/agents/big.md", "---\nname: big\ndescription: d\n---\n"+strings.Repeat("x", maxAgentBytes))
 	_, err := CopyToOther(r, idOf(t, r, "big", inventory.KindAgent, inventory.Claude))
 	wantErr(t, err, 413)
@@ -231,6 +234,7 @@ func TestFailedCopyIsRolledBack(t *testing.T) {
 	}
 	h := newHome(t)
 	r := h.roots()
+	h.installCodex()
 	h.write(".claude/skills/half/SKILL.md", skillMd("half", "d"))
 	locked := h.write(".claude/skills/half/zz-locked.txt", "x")
 	if err := os.Chmod(locked, 0); err != nil {
@@ -323,6 +327,7 @@ func TestServiceHistoryReportsACorruptJournal(t *testing.T) {
 func TestServiceWireShape(t *testing.T) {
 	h := newHome(t)
 	r := h.roots()
+	h.installCodex()
 	h.write(".claude/skills/wire/SKILL.md", skillMd("wire", "d"))
 	svc := NewService(r)
 	res, err := svc.CopyToOther(context.Background(), IDParams{ID: idOf(t, r, "wire", inventory.KindSkill, inventory.Claude)})
@@ -375,6 +380,7 @@ func TestServiceHasOnlyTheProtocolMethods(t *testing.T) {
 func TestCopyAgentWithoutInstructionsIsRefused(t *testing.T) {
 	h := newHome(t)
 	r := h.roots()
+	h.installCodex()
 	h.write(".claude/agents/hollow.md", "---\nname: hollow\ndescription: Does nothing\n---\n\n   \n")
 	before := len(historyOf(t, r))
 	_, err := CopyToOther(r, idOf(t, r, "hollow", inventory.KindAgent, inventory.Claude))
@@ -433,6 +439,7 @@ func (c *flipCtx) Err() error {
 func TestCancelledWhileQueuedChangesNothing(t *testing.T) {
 	h := newHome(t)
 	r := h.roots()
+	h.installCodex()
 	skill := h.write(".claude/skills/wire/SKILL.md", skillMd("wire", "d"))
 	id := idOf(t, r, "wire", inventory.KindSkill, inventory.Claude)
 	done := must(CopyToOther(r, id)) // an entry to undo, recorded before the cancelled calls
@@ -464,6 +471,7 @@ func TestCancelledWhileQueuedChangesNothing(t *testing.T) {
 func TestCancelledOnAHeldLockChangesNothing(t *testing.T) {
 	h := newHome(t)
 	r := h.roots()
+	h.installCodex()
 	skill := h.write(".claude/skills/wire/SKILL.md", skillMd("wire", "d"))
 	id := idOf(t, r, "wire", inventory.KindSkill, inventory.Claude)
 	svc := NewService(r)

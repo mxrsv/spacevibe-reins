@@ -2,6 +2,7 @@ package mutate
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -260,12 +261,20 @@ func (tx *Tx) removeFile(item inventory.Item) (Entry, error) {
 
 func (tx *Tx) copyItem(item inventory.Item) (Entry, error) {
 	target := item.CLI.Other()
-	name := hashes.Bare(item.Name)
 	if err := tx.PrepareMutation(); err != nil {
 		return Entry{}, err
 	}
+	// The target CLI's own folder must exist: a copy never makes the folder of a CLI that is not installed.
+	if info, err := os.Stat(tx.cliRoots(target).Root); err != nil || !info.IsDir() {
+		return Entry{}, fail(label(target)+" is not installed on this Mac, so nothing was copied.", coreerr.StatusConflict)
+	}
+	name := hashes.Bare(item.Name)
+	if item.Kind == inventory.KindSkill {
+		// A skill is named after its folder, not the display name in SKILL.md ("PDF Tools" lives in pdf-tools).
+		name = item.Entry
+	}
 	if err := validName(name); err != nil {
-		return Entry{}, err
+		return Entry{}, fail("The "+string(item.Kind)+" \""+item.Name+"\" has a name SpaceVibe cannot use as a file name, so nothing was copied. Rename it in "+label(item.CLI)+" first.", coreerr.StatusConflict)
 	}
 	if item.Kind == inventory.KindSkill {
 		dir := filepath.Join(tx.cliRoots(target).Skills, name)

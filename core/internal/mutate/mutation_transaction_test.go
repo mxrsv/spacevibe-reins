@@ -26,6 +26,7 @@ var allOperations = []operation{"rule", "addSkill", "addAgent", "removeSkill", "
 func seedTransaction(t *testing.T) (tempHome, roots.Roots) {
 	h := newHome(t)
 	r := h.roots()
+	h.installCodex()
 	h.write(".claude/settings.json", `{"permissions":{"deny":["Bash"]}}`)
 	claude := []usage.CLI{inventory.Claude}
 	must(AddSkill(r, claude, "existing-skill", "Synthetic skill", ""))
