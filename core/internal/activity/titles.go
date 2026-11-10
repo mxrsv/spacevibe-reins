@@ -85,5 +85,13 @@ func pickTitle(candidates []string, startedAt *float64, id string) string {
 			day = textjs.IsoDay(ms)
 		}
 	}
-	return day + " · " + textjs.Prefix(id, 8)
+	return day + " · " + shortID(id)
+}
+
+// shortID is the first 8 characters of an id; a "pid N" id is whole, because cutting it names another process.
+func shortID(id string) string {
+	if strings.HasPrefix(id, "pid ") {
+		return id
+	}
+	return textjs.Prefix(id, 8)
 }

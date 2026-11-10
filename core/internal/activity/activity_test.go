@@ -112,7 +112,7 @@ func TestTitles(t *testing.T) { // Swift: "junk titles fall back to the first me
 	}
 	started := 1_793_440_800_000.0
 	eq(t, "pick date", pickTitle([]string{"", "Caveat: x"}, &started, "abcdef1234"), "2026-10-31 · abcdef12")
-	eq(t, "pick unknown", pickTitle(nil, nil, "pid 52003"), "unknown date · pid 5200")
+	eq(t, "pick unknown", pickTitle(nil, nil, "pid 52003"), "unknown date · pid 52003")
 	eq(t, "clean", textjs.UTF16Length(cleanTitle(strings.Repeat("x", 100))), 80)
 
 	sb := newSandbox(t)
