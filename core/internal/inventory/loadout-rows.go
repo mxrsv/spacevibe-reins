@@ -36,7 +36,12 @@ type LoadoutRows struct {
 // BuildLoadoutRows is LoadoutData.build and the per-row flags of LoadoutRows.build, from one raw snapshot and
 // one usage state. Pure apart from file mtimes.
 func BuildLoadoutRows(raw Snapshot, in usage.Input, now time.Time) LoadoutRows {
-	attached := AttachUsage(raw, &in, now)
+	return buildLoadoutRows(raw, in, now, nil)
+}
+
+// buildLoadoutRows is BuildLoadoutRows with the first-seen times of the store (ms by item id; see attachUsage).
+func buildLoadoutRows(raw Snapshot, in usage.Input, now time.Time, firstSeen map[string]float64) LoadoutRows {
+	attached := attachUsage(raw, &in, now, firstSeen)
 
 	scopes := []string{GlobalScope}
 	var projects []string

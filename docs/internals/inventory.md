@@ -57,7 +57,11 @@ Settings are read only for hooks, plugin flags and skill overrides. No other val
 - **Pending**: zero runs and no scanned log can have covered the row: its CLI has no scanned logs, its file changed in the last 24 hours, or it changed after the newest log. The scan not having finished also yields pending.
 - **Counted**: otherwise, with the run count. For a skill or subagent the count is sessions that used it; for a hook it is runs.
 
-"Installed at" is the file's modification time: `SKILL.md`, the subagent file, or the settings file holding the hook. This is a heuristic, so any edit moves it (see `pendingReason`).
+"Added" is the first time SpaceVibe saw the row's `id`, kept in `<data>/first-seen.json` (see [first-seen.go](../../core/internal/inventory/first-seen.go)). The pure builders `AttachUsage` and `BuildLoadoutRows` take no store: they read the file's modification time (`SKILL.md`, the subagent file, or the settings file holding the hook, which any edit moves). Only `Service.Rows` (`loadout.rows`) passes the store's times in. This is a heuristic either way (see `pendingReason`).
+
+- **Seeding.** With no store yet, each id is recorded with its file's modification time, so the first run reads as the modification-time rule did. An id that appears after the store exists is recorded as "now", whatever its file's date: a skill unzipped with a 90-day-old date still reads "Added in the last 24 hours".
+- **Kept ids.** An id missing from one read stays in the store, so a Remove and its Undo keep the original time. An entry is dropped only when the id has been absent for 90 days. "Last seen" is written again at most once a day, so a read that changes nothing does not write the file.
+- **Never fails the read.** A corrupt, oversized, unreadable or newer-version file is left as it is and `loadout.rows` answers from modification times (delete the file to start over). A data folder that cannot be created or written does the same. The write goes through the guarded atomic write, file 0600 in a 0700 folder.
 
 ## Verification
 

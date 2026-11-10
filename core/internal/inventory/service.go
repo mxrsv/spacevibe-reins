@@ -25,6 +25,8 @@ type Service struct {
 
 	mu       sync.Mutex
 	projects []string
+	// seenMu serialises the load, change and save of the first-seen store (first-seen.go).
+	seenMu sync.Mutex
 }
 
 // NewService returns a service over the roots. state may be nil, then loadout.rows always reports scanning.
@@ -50,7 +52,8 @@ func (s *Service) Read(ctx context.Context) (Snapshot, error) {
 }
 
 // Rows is loadout.rows: Read with the stored usage state attached, or "scanning" and pending cells when no
-// scan has finished in this process.
+// scan has finished in this process. It records the first time each item id was seen in <data>/first-seen.json
+// (first-seen.go); that file is the only thing it writes, and a store it cannot use or save never fails the read.
 func (s *Service) Rows(ctx context.Context) (LoadoutRows, error) {
 	snapshot, err := s.Read(ctx)
 	if err != nil {
@@ -62,7 +65,8 @@ func (s *Service) Rows(ctx context.Context) (LoadoutRows, error) {
 			in = usage.Ready(result)
 		}
 	}
-	return BuildLoadoutRows(snapshot, in, s.Now()), nil
+	now := s.Now()
+	return buildLoadoutRows(snapshot, in, now, s.firstSeenMs(snapshot, now)), nil
 }
 
 // Projects is the project list of this process. Discovery runs once if it is empty; Read refreshes it.

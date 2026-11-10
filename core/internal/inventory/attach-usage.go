@@ -19,9 +19,9 @@ import (
 // pendingGrace: a zero-run item that changed inside this window is "pending", not "never ran".
 const pendingGraceMs = 24 * 3600 * 1000
 
-// pendingReason is a HEURISTIC, not a fact: the age of an item is unknowable, so the mtime of its file stands
-// in for "installed at" (SKILL.md, the agent file, or the settings file that holds the hook; any edit of that
-// file moves it). An item with zero runs is pending instead of "never ran" when
+// pendingReason is a HEURISTIC, not a fact: the age of an item is unknowable, so "added" is the first time
+// SpaceVibe saw its id (first-seen.go) or, without that store, the mtime of its file (SKILL.md, the agent file,
+// or the settings file that holds the hook; any edit of that file moves it). An item with zero runs is pending instead of "never ran" when
 //  1. its CLI has no scanned logs at all, or
 //  2. it changed within the last 24 hours, or
 //  3. it changed after the newest scanned log, so no session could have used it yet.
@@ -39,6 +39,7 @@ func pendingReason(addedMs *float64, window *usage.LogWindow, nowMs float64) str
 }
 
 type matrixRow struct {
+	id   string
 	kind Kind
 	name string
 	hash string
@@ -50,6 +51,12 @@ type matrixRow struct {
 // runs are keyed by event plus command, so the same hook in a global and a project file shares one count: the
 // log does not say which file it came from. A nil usage reads like the scanning state.
 func AttachUsage(inv Snapshot, in *usage.Input, now time.Time) Snapshot {
+	return attachUsage(inv, in, now, nil)
+}
+
+// attachUsage is AttachUsage with firstSeen: the first-seen time in ms by item id, from the store of
+// Service.Rows. An id it holds is "added" at that time; any other id falls back to the file's mtime.
+func attachUsage(inv Snapshot, in *usage.Input, now time.Time, firstSeen map[string]float64) Snapshot {
 	nowMs := float64(now.UnixNano()) / 1e6
 	groups := map[string]map[CLI]matrixRow{}
 	add := func(key string, cli CLI, row matrixRow) {
@@ -59,16 +66,19 @@ func AttachUsage(inv Snapshot, in *usage.Input, now time.Time) Snapshot {
 		groups[key][cli] = row
 	}
 	for _, item := range inv.Items {
-		add(item.Key(), item.CLI, matrixRow{kind: item.Kind, name: item.Name, file: item.File})
+		add(item.Key(), item.CLI, matrixRow{id: item.ID, kind: item.Kind, name: item.Name, file: item.File})
 	}
 	for _, hook := range inv.Hooks {
-		add(hook.Key(), hook.CLI, matrixRow{kind: KindHook, hash: hook.Hash, file: hook.File})
+		add(hook.Key(), hook.CLI, matrixRow{id: hook.ID, kind: KindHook, hash: hook.Hash, file: hook.File})
 	}
 	type mtime struct {
 		ms *float64
 	}
 	mtimes := map[string]mtime{}
-	addedAt := func(file string) *float64 {
+	addedAt := func(id, file string) *float64 {
+		if ms, ok := firstSeen[id]; ok {
+			return &ms
+		}
 		if known, ok := mtimes[file]; ok {
 			return known.ms
 		}
@@ -117,7 +127,7 @@ func AttachUsage(inv Snapshot, in *usage.Input, now time.Time) Snapshot {
 				w := windows.For(cli)
 				window = &w
 			}
-			if reason := pendingReason(addedAt(row.file), window, nowMs); reason != "" {
+			if reason := pendingReason(addedAt(row.id, row.file), window, nowMs); reason != "" {
 				return Pending(reason)
 			}
 		}
