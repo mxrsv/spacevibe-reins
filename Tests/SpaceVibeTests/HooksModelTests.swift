@@ -62,6 +62,13 @@ struct HooksModelTests {
         #expect(HooksAnswer.of([], isLoaded: true, context: context(), notShown: true).sentence == "No hooks to show.", "hooks of another handler kind exist: \"none\" would be false")
     }
 
+    @Test("no hook rows and a file that could not be read: the Answer does not say \"No hooks yet.\"")
+    func unreadIsNotNone() {
+        let result = HooksAnswer.of([], isLoaded: true, context: context(), unread: true)
+        #expect(result.sentence == "Hooks could not be read." && result.sentence != "No hooks yet.")
+        #expect(HooksAnswer.of([], isLoaded: true, context: context(), notShown: true, unread: true).sentence == "Hooks could not be read.", "unread wins over another handler kind")
+    }
+
     @Test("Codex not installed: nothing is compared, so no hook is missing in Codex even if Codex would take hooks")
     func codexNotInstalled() {
         let list = rows([spec("gone", "Stop", dead: true), spec("fine", "PreToolUse")])

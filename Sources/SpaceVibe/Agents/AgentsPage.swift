@@ -41,6 +41,17 @@ final class AgentsPage: SpaceVibeTab {
     /// `Try again` (V5-A17), instead of cells that read "counting" for good.
     var scanFailure: String? { loadout.data != nil && loadout.usageResult == nil ? loadout.scanFailure : nil }
 
+    /// The core's sentences about files it could not read, shortened for the screen, without its line about hooks of other types
+    /// (that one is the Hooks tab's footnote). Shown in the head and in an empty tab, so a file that cannot be read never reads as "none".
+    var problems: [String] { Self.problems(in: loadout.data) }
+
+    static func problems(in data: LoadoutData?) -> [String] {
+        (data?.problems ?? []).filter { !HooksWording.isOtherTypesProblem($0) }
+    }
+
+    /// Problems the head popover lists before it says "and N more".
+    static let shownProblems = 5
+
     var counts: AgentsCounts { AgentsCounts(loadout: loadout.data, rules: rules.badge) }
 
     /// The total of skills, subagents and hooks.
@@ -136,6 +147,7 @@ struct AgentsPageView: View {
                     }
                 } actions: {
                     scanFailureSlot
+                    problemsSlot
                     switch page.selected {
                     case .skills: SkillsHeadActions(model: page.skills)
                     case .subagents: SubagentsHeadActions(model: page.subagents)
@@ -158,6 +170,18 @@ struct AgentsPageView: View {
             WarningSlot(mark: StateMark(.warn, label: "Usage could not be counted"), detail: failure, id: "agents:scan") {
                 PopoverSentence("Usage could not be counted, so the counts are missing. \(failure)")
                 PopoverActions { Button { page.loadout.retry() } label: { ActionLabel("Try again") } }
+            }
+        }
+    }
+
+    /// Files the core could not read: the glyph beside `scanFailureSlot`, one sentence per file (the first few, then the rest counted).
+    @ViewBuilder
+    private var problemsSlot: some View {
+        let problems = page.problems
+        if !problems.isEmpty, page.selected != .rules {
+            WarningSlot(mark: StateMark(.warn, label: "Some files could not be read"), detail: problems.first, id: "agents:problems") {
+                ForEach(problems.prefix(AgentsPage.shownProblems), id: \.self) { PopoverSentence($0) }
+                if problems.count > AgentsPage.shownProblems { PopoverSentence("and \(problems.count - AgentsPage.shownProblems) more") }
             }
         }
     }

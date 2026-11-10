@@ -97,7 +97,7 @@ struct HooksCanvas: View {
             } spine: {
                 Tile("Hooks", layout: .bare, maxHeight: Metrics.Tile.spineMaxHeight, stretches: true, isOpen: open("none")) {
                     // The core lists `command` hooks only: when it names others, "none" would be false.
-                    QuietEmptyState("No hooks", message: model.notShown.first ?? "Neither CLI has a hook configured.", placement: .card)
+                    QuietEmptyState("No hooks", message: model.problems.first ?? model.notShown.first ?? "Neither CLI has a hook configured.", placement: .card)
                 }
             }
         } else {

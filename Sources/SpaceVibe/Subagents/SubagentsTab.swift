@@ -91,7 +91,7 @@ struct SubagentsCanvas: View {
         } else if model.rows.isEmpty {
             SpaceVibeScrollView {
                 Tile("Subagents", layout: .bare, isOpen: open("none")) {
-                    QuietEmptyState("No subagents yet", message: "SpaceVibe found none in your CLI folders.", placement: .card)
+                    QuietEmptyState("No subagents yet", message: AgentsPage.problems(in: model.loadout.data).first ?? "SpaceVibe found none in your CLI folders.", placement: .card)
                 }
                 .padding(Rhythm.edge)
             }

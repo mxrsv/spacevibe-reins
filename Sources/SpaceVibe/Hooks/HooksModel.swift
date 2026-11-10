@@ -59,7 +59,7 @@ final class HooksModel {
 
     var layout: HooksQuery.Layout { query.layout(rows, context: context) }
 
-    var answer: HooksAnswer { HooksAnswer.of(rows, isLoaded: isLoaded, context: context, notShown: !notShown.isEmpty) }
+    var answer: HooksAnswer { HooksAnswer.of(rows, isLoaded: isLoaded, context: context, notShown: !notShown.isEmpty, unread: !problems.isEmpty) }
 
     var missing: HooksMissing { HooksMissing(rows, context: context) }
 
@@ -67,6 +67,9 @@ final class HooksModel {
 
     /// The values of the Filter's `Event` field: the events that have a hook.
     var eventValues: [FilterValue] { HooksQuery.eventValues(events: events, rows: rows) }
+
+    /// The core's sentences about files it could not read (the head's list), so an empty tab does not read as "none".
+    var problems: [String] { AgentsPage.problems(in: loadout.data) }
 
     /// The core's lines about hooks it does not list (a handler other than `command`), so the tab's count is not read as all of them.
     var notShown: [String] { (loadout.data?.problems ?? []).filter(HooksWording.isOtherTypesProblem) }

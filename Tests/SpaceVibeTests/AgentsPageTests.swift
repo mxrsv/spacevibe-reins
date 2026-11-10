@@ -30,6 +30,18 @@ struct AgentsPageTests {
         #expect(AgentsCategory.allCases.map(\.glyph.iconName) == ["flash-line", "robot-line", "fish-symbol-line", "list-checks-duotone"])
     }
 
+    @Test("problems drop the core's line about hooks of other types and keep the others")
+    func problemsDropOtherTypes() {
+        let other = "2 hooks of other types are not shown."
+        #expect(HooksWording.isOtherTypesProblem(other))
+        let broken = "~/.claude/settings.json is not valid JSON."
+        let loaded = LoadoutData(rows: [], scopes: [], countsByScope: [:], problems: [other, broken, "~/.codex/hooks.json could not be read."], events: [:], globalCount: 0)
+        #expect(AgentsPage.problems(in: loaded) == [broken, "~/.codex/hooks.json could not be read."])
+        #expect(AgentsPage.problems(in: nil).isEmpty)
+        let page = AgentsPage(env: AppEnvironment(toasts: ToastCenter(announce: false)))
+        #expect(page.problems.isEmpty, "nothing is read yet")
+    }
+
     @Test("selecting by index follows the tab order, and an index outside the four does nothing")
     func selectByIndex() {
         let page = AgentsPage(env: AppEnvironment(toasts: ToastCenter(announce: false)))

@@ -120,7 +120,7 @@ struct SkillsList: View {
                     .buttonStyle(ActionButtonStyle(size: .compact))
             }
         } else {
-            QuietEmptyState("No skills", message: "This category is empty.", placement: .list)
+            QuietEmptyState("No skills", message: AgentsPage.problems(in: model.loadout.data).first ?? "This category is empty.", placement: .list)
         }
     }
 }

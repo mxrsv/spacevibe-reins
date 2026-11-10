@@ -294,13 +294,16 @@ struct HooksAnswer: Equatable, Sendable {
     let more: Int
     let missing: [LoadoutRow]
 
-    static func of(_ rows: [LoadoutRow], isLoaded: Bool, context: HooksContext, notShown: Bool = false) -> HooksAnswer {
+    static func of(_ rows: [LoadoutRow], isLoaded: Bool, context: HooksContext, notShown: Bool = false, unread: Bool = false) -> HooksAnswer {
         // A hook that cannot run, or that Codex lacks, is known from the config alone: the Answer does not wait for the usage scan.
         guard isLoaded else {
             return HooksAnswer(sentence: nil, dead: [], more: 0, missing: [])
         }
         // The core lists `command` hooks only: when it says it left others out, "none" would be false.
-        guard !rows.isEmpty else { return HooksAnswer(sentence: notShown ? "No hooks to show." : "No hooks yet.", dead: [], more: 0, missing: []) }
+        // A file the core could not read may hold hooks: "none" would be false there too.
+        guard !rows.isEmpty else {
+            return HooksAnswer(sentence: unread ? "Hooks could not be read." : notShown ? "No hooks to show." : "No hooks yet.", dead: [], more: 0, missing: [])
+        }
         let dead = rows.filter(\.isDeadHook).sorted(by: HooksQuery.rank)
         let missing = HooksMissing(rows, context: context).rows
         var parts: [String] = []
