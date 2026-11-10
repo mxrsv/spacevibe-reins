@@ -74,37 +74,55 @@ struct RulesTabEngineTests {
         #expect(try await fixture.tree().difference(from: before).isEmpty, "Undo put the home back")
     }
 
-    @Test("a whole family: one write per rule that differs, ONE toast, and one Undo that puts every rule back, byte for byte")
+    @Test("a whole family moves its wide rules in ONE write: a path rule keeps its verdict, one Journal entry, one toast, and one Undo restores the file byte for byte")
     func wholeFamily() async throws {
         let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await model(fixture)
         defer { client.shutdown() }
         let before = try await fixture.tree()
+        let entriesBefore = try await client.journalHistory().entries.count
 
-        model.set(.bash, to: .ask)
+        // Read holds `Read(*)` (allow, wide) and `Read(.env*)` (deny, a path rule).
+        model.set(.read, to: .ask)
         try await written(model, env)
-        #expect(env.toasts.current?.message == "Bash is now Ask in Claude Code (5 rules changed)", "four allowed and one denied; the two that ask stay")
-        let bash = model.page.rules.filter { RuleFamily.of(tool: $0.tool) == .bash }
-        #expect(bash.count == 7 && bash.allSatisfy { $0.verdict == .ask })
-        #expect(model.page.layout.bands.first { $0.family == .bash }?.stance.summary == "Ask")
-        #expect(model.page.rules.filter { RuleFamily.of(tool: $0.tool) != .bash }.map(\.verdict).filter { $0 == .ask }.isEmpty, "no other family changed")
+        #expect(env.toasts.current?.message == "Read is now Ask in Claude Code (1 rule changed, 1 path rule kept)")
+        #expect(verdict(model, "Read(*)") == .ask && verdict(model, "Read(.env*)") == .deny, "the wide rule moved, the path rule did not")
+        #expect(try await client.journalHistory().entries.count == entriesBefore + 1, "one Journal entry for the whole family change")
+        #expect(model.page.rules.filter { RuleFamily.of(tool: $0.tool) != .read }.map(\.verdict).filter { $0 == .ask }.count == 2, "no other family changed (the two Bash asks were there)")
         #expect(try await fixture.tree().difference(from: before) == [".claude/settings.json"])
         try await undone(model, env)
-        #expect(try await fixture.tree().difference(from: before).isEmpty, "one Undo put all five rules back")
-        #expect(model.page.layout.bands.first { $0.family == .bash }?.stance.summary == "Allow 4 \u{00B7} Ask 2 \u{00B7} Deny 1")
+        #expect(verdict(model, "Read(*)") == .allow && verdict(model, "Read(.env*)") == .deny)
+        #expect(try await fixture.tree().difference(from: before).isEmpty, "one Undo put the file back")
     }
 
-    @Test("a family that already has the verdict writes nothing and shows a message with no Undo")
+    @Test("a family change never touches a path rule: Bash holds no wide rule, so nothing is written and the message says so")
+    func familyWithoutWideRule() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        let (model, env, client) = try await model(fixture)
+        defer { client.shutdown() }
+        let before = try await fixture.tree()
+        let entriesBefore = try await client.journalHistory().entries.count
+        model.set(.bash, to: .ask)
+        model.set(.edit, to: .allow)
+        try await wait("the message") { env.toasts.current != nil }
+        #expect(env.toasts.current?.message == RulesTabWording.familyNoWide(.edit) && env.toasts.current?.action == nil)
+        #expect(verdict(model, "Edit(~/.ssh/**)") == .deny && verdict(model, "Bash(git status:*)") == .allow)
+        #expect(try await client.journalHistory().entries.count == entriesBefore, "nothing was written")
+        #expect(try await fixture.tree().difference(from: before).isEmpty)
+    }
+
+    @Test("a family whose wide rules already have the verdict writes nothing and shows a message with no Undo")
     func familyAlreadyThere() async throws {
         let fixture = try await CoreFixtureHome.make()
         defer { fixture.remove() }
         let (model, env, client) = try await model(fixture)
         defer { client.shutdown() }
         let before = try await fixture.tree()
-        model.set(.edit, to: .deny)
+        model.set(.read, to: .allow)
         try await wait("the message") { env.toasts.current != nil }
-        #expect(env.toasts.current?.message == "Edit/Write is already Deny in Claude Code." && env.toasts.current?.action == nil)
+        #expect(env.toasts.current?.message == "Read is already Allow in Claude Code." && env.toasts.current?.action == nil)
         #expect(try await fixture.tree().difference(from: before).isEmpty)
     }
 

@@ -8,6 +8,9 @@ import Testing
 struct RuleFamiliesTests {
     private static func rule(_ text: String, _ verdict: CoreVerdict) -> CoreRule { RulesSynthetic.rule(text, verdict) }
 
+    /// The sample with a wide `Write` deny: its `Edit(~/.ssh/**)` deny is a path rule, which is no mismatch (C1).
+    private static let flagged = RulesSynthetic.sample + [rule("Write", .deny)]
+
     private static func reading(_ sandbox: String? = "workspace-write", approval: String? = "on-request", installed: Bool = true, present: Bool = true,
                                 model: CoreCodexModel = .legacy, profile: String? = nil, notReadable: Bool = false) -> CodexReading {
         CodexReading(codex: RulesSynthetic.codex(sandbox: sandbox, approval: approval, present: present, model: model, profile: profile, notReadable: notReadable),
@@ -109,19 +112,35 @@ struct RuleFamiliesTests {
 
     @Test("a family open in Codex and denied in Claude Code (or off in Codex and allowed) is flagged, comes first and opens")
     func mismatch() {
-        let open = Self.layout(RulesSynthetic.sample, Self.reading("danger-full-access"))
+        let open = Self.layout(Self.flagged, Self.reading("danger-full-access"))
         #expect(open.mismatches.map(\.family) == [.edit])
         #expect(open.bands.first?.family == .edit && open.bands.first?.holdsProblem == true)
         #expect(open.bands.map(\.family) == [.edit, .bash, .read, .web, .mcp, .other], "the flagged band first, then family order")
         #expect(RulesCanvas.opensByDefault(open, 0) && !RulesCanvas.opensByDefault(open, 1), "only the flagged band opens")
         // Off in Codex and allowed in Claude Code.
-        let off = Self.layout([Self.rule("Edit(src/**)", .allow), Self.rule("Bash(ls:*)", .allow)], Self.reading("read-only", approval: "never"))
+        let off = Self.layout([Self.rule("Edit", .allow), Self.rule("Bash(ls:*)", .allow)], Self.reading("read-only", approval: "never"))
         #expect(off.mismatches.map(\.family) == [.edit])
         #expect(Self.layout([Self.rule("Edit(src/**)", .allow)], Self.reading("read-only")).mismatches.isEmpty, "read only with approvals on is not off")
         // Open in Codex with nothing denied, off in Codex with nothing allowed: no problem.
         #expect(Self.layout([Self.rule("Edit(src/**)", .allow)], Self.reading("danger-full-access")).mismatches.isEmpty)
         #expect(Self.layout([Self.rule("Edit(src/**)", .deny)], Self.reading("read-only", approval: "never")).mismatches.isEmpty)
-        #expect(Self.layout(RulesSynthetic.sample, Self.reading("workspace-write")).mismatches.isEmpty)
+        #expect(Self.layout(Self.flagged, Self.reading("workspace-write")).mismatches.isEmpty)
+    }
+
+    @Test("a family is judged by its wide rules only (C1): a path rule denies nothing wide, a wide Edit deny does, and the stance ignores the path rules")
+    func wideRulesJudgeTheFamily() {
+        let full = Self.reading("danger-full-access")
+        let path = Self.layout([Self.rule("Edit(~/.ssh/**)", .deny)], full)
+        #expect(path.mismatches.isEmpty && path.bands.first?.holdsProblem == false && path.hasComparison, "a path deny against full access holds no mismatch")
+        #expect(path.bands.first?.allStance.counts.isEmpty == true, "a family with no wide rule has no verdict of its own")
+        for wide in ["Edit", "Edit()", "Edit(*)"] {
+            #expect(Self.layout([Self.rule(wide, .deny)], full).mismatches.map(\.family) == [.edit], "\(wide) is wide")
+        }
+        let both = Self.layout([Self.rule("Edit", .deny), Self.rule("Edit(src/**)", .allow)], full)
+        #expect(both.mismatches.map(\.family) == [.edit] && both.bands.first?.allStance.single == .deny && both.bands.first?.stance.isMixed == true)
+        let off = Self.layout([Self.rule("Edit(src/**)", .allow)], Self.reading("read-only", approval: "never"))
+        #expect(off.mismatches.isEmpty, "a path allow against a read-only sandbox is no mismatch either")
+        #expect(!Self.rule("Bash(git:*)", .allow).isWide && Self.rule("Bash", .allow).isWide && Self.rule("Bash(*)", .allow).isWide)
     }
 
     @Test("Web is never flagged: Codex's network_access is its commands' network, not its web search (G12)")
@@ -193,13 +212,15 @@ struct RuleFamiliesTests {
 
     @Test("one problem: the family, which side is open, and the Claude Code row to change; a mixed family says 'partly'")
     func oneProblem() {
-        let page = Self.page(RulesSynthetic.sample, codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
-        #expect(page.answer.sentence == "Edit/Write: open in Codex, partly denied in Claude Code.")
-        #expect(page.answer.family?.family == .edit && page.answer.family?.fact?.text == "Sandbox: danger-full-access" && page.answer.family?.allStance.single == nil)
+        let page = Self.page(Self.flagged, codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
+        #expect(page.answer.sentence == "Edit/Write: open in Codex, denied in Claude Code.")
+        #expect(page.answer.family?.family == .edit && page.answer.family?.fact?.text == "Sandbox: danger-full-access" && page.answer.family?.allStance.single == .deny)
         #expect(page.answer.alsoLine == nil)
-        let whole = Self.page([Self.rule("Edit(~/.ssh/**)", .deny)], codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
+        let partly = Self.page([Self.rule("Edit", .deny), Self.rule("Write", .allow)], codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
+        #expect(partly.answer.sentence == "Edit/Write: open in Codex, partly denied in Claude Code." && partly.answer.family?.allStance.single == nil)
+        let whole = Self.page([Self.rule("Edit", .deny)], codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
         #expect(whole.answer.sentence == "Edit/Write: open in Codex, denied in Claude Code." && whole.answer.family?.allStance.single == .deny)
-        let off = Self.page([Self.rule("Edit(src/**)", .allow)], codex: RulesSynthetic.codex(sandbox: "read-only", approval: "never"))
+        let off = Self.page([Self.rule("Edit", .allow)], codex: RulesSynthetic.codex(sandbox: "read-only", approval: "never"))
         #expect(off.answer.sentence == "Edit/Write: off in Codex, allowed in Claude Code.")
     }
 
@@ -213,10 +234,8 @@ struct RuleFamiliesTests {
     @Test("nothing needs the user: the plain sentence, no family row and no fix, but only when a family was compared; else it says nothing was")
     func healthy() {
         let full = Self.page(RulesSynthetic.healthy, codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
-        #expect(full.layout.hasComparison && full.layout.mismatches.isEmpty == false, "the ssh deny against full access is a problem; take it out below")
-        let calm = Self.page(RulesSynthetic.healthy.filter { $0.rule != "Edit(~/.ssh/**)" }, codex: RulesSynthetic.codex(sandbox: "danger-full-access"))
-        #expect(calm.layout.hasComparison)
-        #expect(calm.answer.sentence == "No tool is open in one CLI and denied in the other." && calm.answer.family == nil && !calm.answer.showsRetry)
+        #expect(full.layout.hasComparison && full.layout.mismatches.isEmpty, "the ssh deny is a path rule: it is no problem against full access (C1)")
+        #expect(full.answer.sentence == "No tool is open in one CLI and denied in the other." && full.answer.family == nil && !full.answer.showsRetry)
         // A workspace sandbox says neither open nor off for any family: nothing was compared, so no clean result is claimed.
         let workspace = Self.page(RulesSynthetic.sample)
         #expect(!workspace.layout.hasComparison && workspace.layout.mismatches.isEmpty)
@@ -271,6 +290,9 @@ struct RuleFamiliesTests {
     func wording() {
         #expect(RulesTabWording.familyChanged(.bash, to: .ask, count: 6) == "Bash is now Ask in Claude Code (6 rules changed)")
         #expect(RulesTabWording.familyChanged(.edit, to: .deny, count: 1) == "Edit/Write is now Deny in Claude Code (1 rule changed)")
+        #expect(RulesTabWording.familyChanged(.edit, to: .allow, count: 1, kept: 1) == "Edit/Write is now Allow in Claude Code (1 rule changed, 1 path rule kept)")
+        #expect(RulesTabWording.familyChanged(.edit, to: .allow, count: 2, kept: 3) == "Edit/Write is now Allow in Claude Code (2 rules changed, 3 path rules kept)")
+        #expect(RulesTabWording.familyNoWide(.bash) == "Bash has no rule for the whole tool, so there is nothing to change. Path rules keep their verdicts.")
         #expect(RulesTabWording.familyUnchanged(.read, to: .deny) == "Read is already Deny in Claude Code.")
         #expect(RulesTabWording.ruleChanged("Bash(ls:*)", to: .deny) == "Bash(ls:*) is now Deny in Claude Code")
         #expect(RulesTabWording.removed("Bash(ls:*)") == "Removed Bash(ls:*) from ~/.claude/settings.json")

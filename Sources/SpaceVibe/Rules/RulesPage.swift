@@ -122,12 +122,19 @@ enum RulesTabWording {
 
     static func ruleChanged(_ rule: String, to verdict: CoreVerdict) -> String { "\(rule) is now \(RulesWording.title(verdict)) in Claude Code" }
 
-    static func familyChanged(_ family: RuleFamily, to verdict: CoreVerdict, count: Int) -> String {
-        "\(family.title) is now \(RulesWording.title(verdict)) in Claude Code (\(count) \(count == 1 ? "rule" : "rules") changed)"
+    /// "Edit/Write is now Allow in Claude Code (1 rule changed, 2 path rules kept)": `kept` counts the path rules that keep another verdict.
+    static func familyChanged(_ family: RuleFamily, to verdict: CoreVerdict, count: Int, kept: Int = 0) -> String {
+        let keptClause = kept > 0 ? ", \(kept) path \(kept == 1 ? "rule" : "rules") kept" : ""
+        return "\(family.title) is now \(RulesWording.title(verdict)) in Claude Code (\(count) \(count == 1 ? "rule" : "rules") changed\(keptClause))"
     }
 
     static func familyUnchanged(_ family: RuleFamily, to verdict: CoreVerdict) -> String {
         "\(family.title) is already \(RulesWording.title(verdict)) in Claude Code."
+    }
+
+    /// A family with no wide rule has nothing the family menu can change (C1): nothing is written.
+    static func familyNoWide(_ family: RuleFamily) -> String {
+        "\(family.title) has no rule for the whole tool, so there is nothing to change. Path rules keep their verdicts."
     }
 
     static func removed(_ rule: String) -> String { "Removed \(rule) from \(settingsFile)" }

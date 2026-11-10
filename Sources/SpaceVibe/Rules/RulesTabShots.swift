@@ -6,9 +6,9 @@ import SwiftUI
 /// config; those runs write under their own name (`rules-unrestricted-*`, `rules-both-*`) and shoot only what the variant changes.
 /// The default run first prints and checks the V5-A20 trace (every count, stance and Codex fact against what the fixture writes), then:
 /// - the real home: `rules-page`, `-filtered`, `-detail`, `-detail-menu` (the verdict menu inside the detail), `-menu-filter`, `-toast`
-///   (after a real whole-family write, undone and compared byte for byte), `-removed` (a real Remove, undone likewise), `-invalid` (the
+///   (after a real whole-family write of Read, undone and compared byte for byte), `-removed` (a real Remove, undone likewise), `-invalid` (the
 ///   settings file corrupted for these shots, restored after);
-/// - from in-memory rules: `-sample` (a family open in Codex and partly denied here, a redundant rule, 38 rules), `-sample-menu` (the
+/// - from in-memory rules: `-sample` (a family open in Codex and denied here by a wide rule, a redundant rule, 38 rules), `-sample-menu` (the
 ///   family's verdict menu), `-sample-detail`, `-sample-toast`, `-healthy`, `-many` (60), `-none`, `-no-codex`, `-codex-profile` (Codex's
 ///   permissions come from a profile), `-nothing-matches`, `-loading`, `-narrow`, `-short`.
 @MainActor
@@ -76,9 +76,8 @@ enum RulesTabShots {
             try snap("page")
             if variant == .both { continue }
             if variant == .unrestricted {
-                // The Answer's family menu (the whole family's verdict) and a rule's detail.
-                try snap("menu") { model.verdictMenu = .family(.edit) }
-                reset()
+                // The fixture denies Edit by a path rule only, which is no mismatch (C1): the page and the rule's detail. The family menu
+                // and its write are shot from the in-memory sample, which holds a wide Edit/Write deny.
                 try snap("detail", store: detailStore) { if let detailRule { model.open(detailRule) } }
                 reset()
                 continue
@@ -93,11 +92,13 @@ enum RulesTabShots {
         }
         if variant == .both { return }
 
-        // A real change from the Answer's button on the synthetic home, then Undo, compared byte for byte.
-        try writeFamily(model, env: env, family: family, to: variant == .unrestricted ? .allow : .ask, settings: settings, original: original) { choice, toasts in
+        if variant == .unrestricted { return }
+
+        // A real change of a whole family on the synthetic home, then Undo, compared byte for byte. Read holds the one wide rule the
+        // fixture writes (`Read(*)`) and a path rule (`Read(.env*)`), so the path rule is kept (C1).
+        try writeFamily(model, env: env, family: .read, to: .ask, settings: settings, original: original) { choice, toasts in
             try shoot("toast", choice, toasts: toasts, store: detailStore)
         }
-        if variant == .unrestricted { return }
 
         // A real Remove of a rule, then Undo.
         reset()
@@ -133,20 +134,25 @@ enum RulesTabShots {
         reset()
     }
 
-    /// A whole-family write from `model.set`, one toast, shot, then Undo and the bytes compared.
+    /// A whole-family write from `model.set` (wide rules only), one toast, shot, then Undo and the bytes compared.
     private static func writeFamily(_ model: RulesModel, env: AppEnvironment, family: RuleFamily, to verdict: CoreVerdict, settings: URL, original: Data,
                                shoot: (AppearanceChoice, ToastCenter) throws -> Void) throws {
-        let changing = model.page.rules.filter { RuleFamily.of(tool: $0.tool) == family && $0.verdict != verdict }.count
+        let members = model.page.rules.filter { RuleFamily.of(tool: $0.tool) == family }
+        let changing = members.filter { $0.isWide && $0.verdict != verdict }.count
+        let kept = members.filter { !$0.isWide && $0.verdict != verdict }
         model.set(family, to: verdict)
         try ShotHarness.wait("the family write's toast") { env.toasts.current?.action != nil }
-        let expected = RulesTabWording.familyChanged(family, to: verdict, count: changing)
+        let expected = RulesTabWording.familyChanged(family, to: verdict, count: changing, kept: kept.count)
         try ShotHarness.check(env.toasts.current?.message == expected, "the toast says \"\(env.toasts.current?.message ?? "nothing")\", expected \"\(expected)\"")
-        try ShotHarness.wait("the re-read after the write") { model.isSettled && model.page.rules.filter { RuleFamily.of(tool: $0.tool) == family }.allSatisfy { $0.verdict == verdict } }
+        try ShotHarness.wait("the re-read after the write") { model.isSettled && model.page.rules.filter { RuleFamily.of(tool: $0.tool) == family && $0.isWide }.allSatisfy { $0.verdict == verdict } }
+        for rule in kept {
+            try ShotHarness.check(model.page.rules.first { $0.id == rule.id } != nil, "the path rule \(rule.rule) kept its verdict \(rule.verdict.rawValue)")
+        }
         print("trace: \(family.title) to \(verdict.rawValue): \(changing) rules changed, one toast, \"\(env.toasts.current?.message ?? "")\"")
         for choice in [AppearanceChoice.dark, .light] { try shoot(choice, env.toasts) }
         env.toasts.runCurrentAction()
         try ShotHarness.wait("Undo and its re-read") { env.toasts.current?.message == RulesTabWording.undone && model.isSettled }
-        try ShotHarness.check(try Data(contentsOf: settings) == original, "one Undo put \(changing) rules back: settings.json is the same byte for byte")
+        try ShotHarness.check(try Data(contentsOf: settings) == original, "one Undo put \(changing) wide rules back: settings.json is the same byte for byte")
         env.toasts.dismiss()
     }
 
@@ -162,9 +168,11 @@ enum RulesTabShots {
             return (page, limits)
         }
         let full = RulesSynthetic.codex(sandbox: "danger-full-access")
-        let (sample, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.sample, codex: full))
-        // Healthy: Codex has full access, so Edit/Write is compared, and nothing denies it here (nor is anything redundant).
-        let (healthy, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.healthy.filter { $0.rule != "Edit(~/.ssh/**)" }, codex: full))
+        // The sample's Edit deny is a path rule, which is no mismatch (C1): a wide `Write` deny makes Edit/Write the flagged family.
+        let flagged = RulesSynthetic.sample + [RulesSynthetic.rule("Write", .deny)]
+        let (sample, _) = synthetic(RulesSynthetic.snapshot(flagged, codex: full))
+        // Healthy: Codex has full access, so Edit/Write is compared, and no wide rule denies it here (the ssh path rule does not count; nor is anything redundant).
+        let (healthy, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.healthy, codex: full))
         let (many, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.many, codex: full))
         let (none, _) = synthetic(RulesSynthetic.snapshot([]))
         let (loading, _) = synthetic(nil)
@@ -172,7 +180,7 @@ enum RulesTabShots {
         let (profile, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.sample, codex: RulesSynthetic.codex(sandbox: nil, model: .profiles, profile: "work")))
         let (allAllowed, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.sample.filter { $0.verdict == .allow }))
         let redundant = RedundantRules.of(RulesSynthetic.sample)
-        try ShotHarness.check(redundant.map(\.rule.rule) == ["Bash(git push --force:*)"] && sample.rules.page.answer.sentence == "Edit/Write: open in Codex, partly denied in Claude Code.",
+        try ShotHarness.check(redundant.map(\.rule.rule) == ["Bash(git push --force:*)"] && sample.rules.page.answer.sentence == "Edit/Write: open in Codex, denied in Claude Code.",
                               "the sample has one redundant rule and one family that disagrees")
         let sshRule = RulesSynthetic.rule("Edit(~/.ssh/**)", .deny)
         let editOpen = OpenStateStore()
@@ -180,7 +188,7 @@ enum RulesTabShots {
         let allOpen = OpenStateStore()
         for family in RuleFamily.allCases { allOpen.setOpen(true, page: RulesModel.page, id: family.id) }
         let toast = ToastCenter(announce: false)
-        toast.show(RulesTabWording.familyChanged(.edit, to: .allow, count: 1), undo: {})
+        toast.show(RulesTabWording.familyChanged(.edit, to: .allow, count: 1, kept: 1), undo: {})
 
         for choice in [AppearanceChoice.dark, .light] {
             func snap(_ name: String, toasts: ToastCenter? = nil, page: AgentsPage? = nil, store: OpenStateStore = OpenStateStore(), size: CGSize? = nil,
@@ -245,8 +253,9 @@ enum RulesTabShots {
                                   "the default fixture's workspace sandbox is neither open nor off for any family, so nothing is compared")
             try ShotHarness.check(page.reading.note == "Codex is read only here. Approval policy on-request, from ~/.codex/config.toml.", "the note reads approval_policy")
         case .unrestricted:
-            try ShotHarness.check(page.answer.sentence == "Edit/Write: open in Codex, denied in Claude Code.", "Edit/Write is open in Codex and denied here")
-            try ShotHarness.check(page.layout.bands.first?.family == .edit && page.layout.bands.first?.holdsProblem == true, "the flagged family comes first")
+            try ShotHarness.check(page.answer.sentence == "No tool is open in one CLI and denied in the other." && page.layout.hasComparison,
+                                  "Edit(~/.ssh/**) is a path rule: Edit/Write is compared with Codex's full access and is no mismatch (C1)")
+            try ShotHarness.check(page.layout.mismatches.isEmpty && page.layout.bands.allSatisfy { !$0.holdsProblem }, "no family is flagged")
             try ShotHarness.check(page.reading.note == "Codex is read only here. Approval policy never, from ~/.codex/config.toml.", "the note reads approval_policy never")
         case .both:
             try ShotHarness.check(page.answer.sentence == "Nothing to compare: Codex has two permission models set.", "two models: nothing is compared")

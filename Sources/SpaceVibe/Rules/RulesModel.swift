@@ -362,19 +362,24 @@ final class RulesModel {
         write(label: RulesTabWording.ruleChanged(rule.rule, to: verdict), undone: RulesTabWording.undone, [Self.changeStep(rule, to: verdict)])
     }
 
-    /// A whole family's verdict. The core has no call for it (`rules.setCapability` replaces a capability's wide rules with canonical
-    /// ones and refuses a mixed cell), so it is one `rules.changeVerdict` per rule that differs: one Journal entry each, ONE toast,
-    /// and one Undo that reverts them all, newest first. Nothing differs: a message, no toast with Undo.
+    /// A whole family's verdict (V5-R67, owner call C1): the family's wide rules move, path rules keep their verdicts, and the toast says
+    /// how many rules changed and how many path rules were kept. It is ONE `rules.changeVerdicts`: one Journal entry, one toast, one
+    /// Undo. No wide rule differs: a message, nothing written.
     func set(_ family: RuleFamily, to verdict: CoreVerdict) {
         guard page.state == .ready else { return }
-        let changing = RulesLayout.unique(page.rules).filter { RuleFamily.of(tool: $0.tool) == family && $0.verdict != verdict }
+        let members = RulesLayout.unique(page.rules).filter { RuleFamily.of(tool: $0.tool) == family }
+        let wide = members.filter(\.isWide)
+        let changing = wide.filter { $0.verdict != verdict }
+        let kept = members.filter { !$0.isWide && $0.verdict != verdict }.count
         detailID = nil
         guard !changing.isEmpty else {
-            env.toasts.show(RulesTabWording.familyUnchanged(family, to: verdict))
+            env.toasts.show(wide.isEmpty ? RulesTabWording.familyNoWide(family) : RulesTabWording.familyUnchanged(family, to: verdict))
             return
         }
-        write(label: RulesTabWording.familyChanged(family, to: verdict, count: changing.count), undone: RulesTabWording.undone,
-              changing.map { Self.changeStep($0, to: verdict) })
+        let moves = changing.map { CoreRuleMove(rule: $0.rule, from: $0.verdict) }
+        write(label: RulesTabWording.familyChanged(family, to: verdict, count: changing.count, kept: kept), undone: RulesTabWording.undone, [
+            { core, scope in try await core.rulesChangeVerdicts(scope: scope.kind, dir: scope.dir, to: verdict, rules: moves).entry },
+        ])
     }
 
     func removeRule(_ rule: CoreRule) {
@@ -402,7 +407,7 @@ final class RulesModel {
 
     /// One write for every control: through the core, a toast with Undo, and a reload after the write and after an Undo. A nil
     /// result ("nothing to change", `rules.setCapability` only) is a message, never a success toast. Several `works` are one change
-    /// (a family's verdicts): one toast, one Undo that reverts them all (`AppEnvironment.performBatchWithUndo`).
+    /// (`AppEnvironment.performBatchWithUndo`); the family change is one call, so one entry and one Undo.
     /// Returns false when the write was not taken (no snapshot, or one is running).
     @discardableResult
     func write(

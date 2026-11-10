@@ -2,7 +2,8 @@ import Foundation
 
 // What the Rules tab derives from `rules.snapshot` (V5-R67): a rule's family, a family's Claude Code stance, the one Codex fact a
 // family has (C18, G12), the families that are open in one CLI and denied in the other, and the rules another rule already covers.
-// Pure: no view and no model, so `RuleFamiliesTests` drives it.
+// A family is judged by its wide rules only (owner call C1, 2026-11-10): a rule scoped to a path (`Edit(~/.ssh/**)`) narrows a tool, so
+// it never says the family is denied or allowed. Pure: no view and no model, so `RuleFamiliesTests` drives it.
 
 /// The tool families of the Permissions spine. `other` holds every rule outside the five of the mock (a `Skill`, `Task` or
 /// `NotebookEdit` rule), so the tab's count is the number of rules listed and no rule is hidden.
@@ -34,6 +35,12 @@ enum RuleFamily: String, CaseIterable, Identifiable, Sendable {
         default: .other
         }
     }
+}
+
+extension CoreRule {
+    /// A bare tool, `Tool()` or `Tool(*)`: the rule covers every use of the tool (the core's `isWide`, `core/internal/rules/parse.go`).
+    /// Any other specifier is a path or pattern rule.
+    var isWide: Bool { RedundantRules.isWide(specifier) }
 }
 
 /// A family's Claude Code stance (V5-R67): the one verdict all its rules share, or how many rules each verdict holds.
@@ -170,7 +177,7 @@ enum RedundantRules {
         return command == prefix || command.hasPrefix(prefix + " ")
     }
 
-    private static func isWide(_ specifier: String?) -> Bool {
+    static func isWide(_ specifier: String?) -> Bool {
         guard let specifier else { return true }
         let trimmed = specifier.trimmingCharacters(in: .whitespaces)
         return trimmed.isEmpty || trimmed == "*"
@@ -212,14 +219,17 @@ struct RuleBand: Identifiable, Equatable, Sendable {
     let family: RuleFamily
     /// The rules the Filter leaves.
     let rules: [CoreRule]
-    /// Every rule of the family, whatever the Filter says: the Answer and the family's verdict menu act on these.
+    /// Every rule of the family, whatever the Filter says.
     let all: [CoreRule]
     let fact: CodexFact?
     let holdsProblem: Bool
 
     var id: String { family.rawValue }
+    /// What the header says: the verdicts of the rules listed, path rules included.
     var stance: FamilyStance { FamilyStance(rules) }
-    var allStance: FamilyStance { FamilyStance(all) }
+    /// The family's verdict (C1): the stance of its wide rules, whatever the Filter says. The Answer and the family's verdict menu read
+    /// this one, and the menu changes exactly these rules.
+    var allStance: FamilyStance { FamilyStance(all.filter(\.isWide)) }
 }
 
 /// The spine's bands in order: the families open in one CLI and denied in the other first (they open), then the rest in family order;
@@ -238,7 +248,7 @@ struct RulesLayout: Equatable, Sendable {
         let all = RuleFamily.allCases.map { family -> RuleBand in
             let members = unique.filter { RuleFamily.of(tool: $0.tool) == family }
             let fact = CodexFact.of(family, reading)
-            let stance = FamilyStance(members)
+            let stance = FamilyStance(members.filter(\.isWide))
             let disagrees = (fact?.isOpen == true && stance.has(.deny)) || (fact?.isOpen == false && stance.has(.allow))
             let shown = filter.isOn ? members.filter { filter.isPicked(.verdict, $0.verdict.rawValue) } : members
             return RuleBand(family: family, rules: shown, all: members, fact: fact, holdsProblem: disagrees)
