@@ -99,7 +99,7 @@ _Avoid_: kill, terminate (in labels)
 ### Changes
 
 **Journal**:
-SpaceVibe's record of every write to a CLI's configuration, holding the old bytes as a restorable copy so the write can be undone.
+SpaceVibe's record of every write to a CLI's configuration, holding the old bytes as a restorable copy so the write can be undone. An entry and its copy are kept for 200 changes or 30 days, whichever ends first.
 _Avoid_: history, log (a log is what a CLI writes)
 
 **Undo**:

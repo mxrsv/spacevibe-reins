@@ -5,11 +5,14 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/fsx"
+	"spacevibe.dev/core/internal/ojson"
 	"spacevibe.dev/core/internal/roots"
 )
 
@@ -75,4 +78,97 @@ func removePath(r roots.Roots, path string) (Op, error) {
 		return LinkRemoved(path, target), nil
 	}
 	return moveToTrash(r, path)
+}
+
+// trashSlotPattern is the name of a folder this package makes: <epoch ms>-<8 hex>. The sweep touches nothing else.
+var trashSlotPattern = regexp.MustCompile(`^([0-9]+)-[0-9a-f]{8}$`)
+
+// slotOf is the name of the trash folder a path points into, or "" when the path is not strictly inside the trash.
+// strict adds the containment rule of Undo (absolute, no ".." segment); the loose form is for "is this slot still
+// referenced?", where a path Undo would refuse must still protect its slot.
+func (c *containment) slotOf(p string, strict bool) string {
+	if strict && !c.trashPath(p) {
+		return ""
+	}
+	if !filepath.IsAbs(p) {
+		return ""
+	}
+	clean := filepath.Clean(p)
+	for _, candidate := range []string{clean, roots.ResolvedPath(clean)} {
+		for _, folder := range c.trash {
+			rel, err := filepath.Rel(folder, candidate)
+			if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+				continue
+			}
+			return strings.SplitN(rel, string(filepath.Separator), 2)[0]
+		}
+	}
+	return ""
+}
+
+// slotsOf collects the slots named by any string inside any op, whatever the op kind or the key, so ops of kinds
+// this version cannot undo still keep their copies.
+func (c *containment) slotsOf(entries []Entry, strict bool) map[string]bool {
+	slots := map[string]bool{}
+	var walk func(v ojson.Value)
+	walk = func(v ojson.Value) {
+		if s, ok := v.StringValue(); ok {
+			if name := c.slotOf(s, strict); name != "" {
+				slots[name] = true
+			}
+		}
+		if items, ok := v.ArrayValue(); ok {
+			for _, item := range items {
+				walk(item)
+			}
+		}
+		if members, ok := v.ObjectValue(); ok {
+			for _, m := range members {
+				walk(m.Value)
+			}
+		}
+	}
+	for _, e := range entries {
+		for _, op := range e.Ops {
+			walk(op.JSON)
+		}
+	}
+	return slots
+}
+
+// pruneTrash ends the trash copies of the entries the journal just dropped, and sweeps the trash. It runs under the
+// write lock, after the journal is written, with the entries that stay (kept) and the ones that went (cut).
+//
+//   - A slot named by a dropped entry goes unless a kept entry still names it.
+//   - Sweep: a slot older than JournalMaxAge (by its name) that no kept entry names goes. This also clears the copies
+//     of entries an older version dropped without deleting them.
+//
+// Every delete is a folder directly inside <data>/trash that passes the same containment check Undo uses, removed
+// with fsx.RemoveTree; nothing outside the trash is ever removed. A failed delete is skipped, not reported: the
+// change itself succeeded, and the next write tries again.
+func pruneTrash(r roots.Roots, kept, cut []Entry, now time.Time) {
+	guard := newContainment(r)
+	referenced := guard.slotsOf(kept, false)
+	doomed := map[string]bool{}
+	for name := range guard.slotsOf(cut, true) {
+		doomed[name] = true
+	}
+	if items, err := os.ReadDir(trashDir(r)); err == nil {
+		for _, item := range items {
+			match := trashSlotPattern.FindStringSubmatch(item.Name())
+			if match == nil || !item.IsDir() {
+				continue
+			}
+			if ms, err := strconv.ParseInt(match[1], 10, 64); err == nil && now.Sub(time.UnixMilli(ms)) > JournalMaxAge {
+				doomed[item.Name()] = true
+			}
+		}
+	}
+	for name := range doomed {
+		path := filepath.Join(trashDir(r), name)
+		if referenced[name] || filepath.Dir(path) != trashDir(r) || !guard.trashPath(path) {
+			continue
+		}
+		_ = fsx.RemoveTree(path)
+	}
 }

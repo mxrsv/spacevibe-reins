@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/hashes"
@@ -75,6 +76,9 @@ func TestJournalKeepsTwoHundred(t *testing.T) {
 	}
 }
 
+// recentDay is today's date: journal entries older than JournalMaxAge are dropped, so a fixture needs a current one.
+func recentDay() string { return time.Now().UTC().Format("2006-01-02") }
+
 const nodeJournal = `[
   {
     "id": "e271c1e3-dfc2-4e9f-9d14-ba967210bee5",
@@ -130,7 +134,7 @@ func TestReadsNodeJournal(t *testing.T) {
 	settings := home.write(".claude/settings.json", "{\"model\":\"y\"}\n")
 	backup := home.write(".spacevibe/trash/1793637068527-ff71479b/settings.json", "{\"model\":\"x\"}\n")
 	created := home.write(".claude/skills/new/SKILL.md", "---\nname: new\n---\n")
-	text := strings.NewReplacer("SETTINGS", settings, "BACKUP", backup, "CREATED", filepath.Dir(created)).Replace(nodeJournal)
+	text := strings.NewReplacer("2026-11-02T", recentDay()+"T", "SETTINGS", settings, "BACKUP", backup, "CREATED", filepath.Dir(created)).Replace(nodeJournal)
 	home.write(".spacevibe/journal.json", text)
 
 	h := historyOf(t, r)

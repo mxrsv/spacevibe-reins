@@ -16,7 +16,7 @@ Requirements: [spec](../specs/2026-11-02-reins.md) and [decision ledger](../spec
 2. A screen asks for data: `inventory.read`, `loadout.rows`, `rules.snapshot`, `limits.read`, `activity.read`. The core reads the disk synchronously and answers with plain DTOs; unreadable files become `problems`, never an empty result.
 3. Usage is the slow read. `usage.scan` streams `usage/progress`, and the core keeps its result so `loadout.rows` can attach counts without the shell sending them back.
 4. Activity is a subscription: one full report, then a full report only when it changed (resync, never deltas).
-5. A write (`loadout.*`, `rules.*`) takes the write lock, edits through the atomic-write path, records one journal entry and returns its reference. Undo is `journal.undo` on that id. Stopping a session is not a journal write and cannot be undone.
+5. A write (`loadout.*`, `rules.*`) takes the write lock, edits through the atomic-write path, records one journal entry and returns its reference. Undo is `journal.undo` on that id. The same write ends old history: the journal keeps at most 200 entries no older than 30 days, and each entry it drops takes its trash copy with it. Every journal write also sweeps `<data>/trash` under the lock: a folder older than 30 days that no remaining entry names, in any op of any kind, is deleted for good. A delete is only ever a folder directly inside `<data>/trash`, checked by the containment rule Undo uses; one that fails is retried by the next write. Stopping a session is not a journal write and cannot be undone.
 6. On stdin EOF the core cancels every in-flight request, waits at most 5 s (a write inside the lock finishes regardless) and exits 0.
 
 ## Where the fixtures and goldens live

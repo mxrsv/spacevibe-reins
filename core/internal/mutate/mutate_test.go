@@ -350,12 +350,12 @@ func TestUndoNodeHookOps(t *testing.T) {
 	home := newHome(t)
 	r := home.roots()
 	file := home.write(".claude/settings.json", "{\n  \"env\": {\"T\": \""+canary+"\"},\n  \"hooks\": {\n    \"Stop\": [\n      {\n        \"hooks\": [\n          { \"type\": \"command\", \"command\": \"echo kept\" },\n          { \"type\": \"command\", \"command\": \"echo added\", \"timeout\": 5 }\n        ]\n      }\n    ]\n  }\n}")
-	home.write(".spacevibe/journal.json", `[
+	home.write(".spacevibe/journal.json", strings.ReplaceAll(`[
   { "id": "aaaaaaaa-0000-0000-0000-000000000001", "at": "2026-11-02T10:00:00.000Z", "label": "Added Stop hook to Claude Code",
     "ops": [ { "type": "hook-added", "file": "`+file+`", "event": "Stop", "matcher": null, "hook": { "type": "command", "command": "echo added", "timeout": 5 } } ] },
   { "id": "aaaaaaaa-0000-0000-0000-000000000002", "at": "2026-11-02T09:00:00.000Z", "label": "Removed Edit hook from Claude Code",
     "ops": [ { "type": "hook-removed", "file": "`+file+`", "event": "PreToolUse", "matcher": "Edit", "hook": { "type": "command", "command": "echo gone" } } ] }
-]`)
+]`, "2026-11-02T", recentDay()+"T"))
 	if l := must(Undo(r, "aaaaaaaa-0000-0000-0000-000000000001")); l != "Added Stop hook to Claude Code" {
 		t.Errorf("label %q", l)
 	}

@@ -22,13 +22,18 @@ import (
 // write path refuse (409) instead of reading it as empty or dropping elements, so a corrupt undo history is never
 // replaced by a fresh one.
 //
+// An entry and its trash copy end together (trash.go, pruneTrash): writeJournal drops the entries past the limit or
+// older than JournalMaxAge and deletes the trash slots only they referenced.
+//
 // Labels are written verbatim: callers pass a sentence about what changed (a rule name, an item name), never file
 // content.
 
 const (
 	// JournalLimit is the most entries the journal keeps.
 	JournalLimit = 200
-	journalName  = "journal.json"
+	// JournalMaxAge is how long an entry and its trash copy are kept: 200 changes or this long, whichever ends first.
+	JournalMaxAge = 30 * 24 * time.Hour
+	journalName   = "journal.json"
 	// maxJournalBytes bounds the read of journal.json; a larger file is refused like a corrupt one.
 	maxJournalBytes = 64 << 20
 )
@@ -119,9 +124,7 @@ func (tx *Tx) writeJournal(entries []Entry) error {
 	if err := ensureDataFolders(tx.r); err != nil {
 		return err
 	}
-	if len(entries) > JournalLimit {
-		entries = entries[:JournalLimit]
-	}
+	entries, cut := retained(entries, time.Now())
 	values := make([]ojson.Value, len(entries))
 	for i, e := range entries {
 		values[i] = e.value()
@@ -131,7 +134,27 @@ func (tx *Tx) writeJournal(entries []Entry) error {
 	if err != nil {
 		return fail("Could not write the undo history.", coreerr.StatusInternalFailure)
 	}
-	return fsx.AtomicWrite(journalPath(tx.r), []byte(text), 0o600, fsx.AtomicWriteOptions{})
+	if err := fsx.AtomicWrite(journalPath(tx.r), []byte(text), 0o600, fsx.AtomicWriteOptions{}); err != nil {
+		return err
+	}
+	// After the journal is on disk: a crash before this point leaves slots no entry needs, never an entry whose
+	// copy is gone. Pruning is best effort; what it misses the next write sweeps.
+	pruneTrash(tx.r, entries, cut, time.Now())
+	return nil
+}
+
+// retained splits entries (newest first) into the ones the journal keeps and the ones it drops: the first
+// JournalLimit that are not older than JournalMaxAge. An entry whose time cannot be read is not dropped for age.
+func retained(entries []Entry, now time.Time) (kept, cut []Entry) {
+	for _, e := range entries {
+		at, err := time.Parse(time.RFC3339Nano, e.At)
+		if len(kept) >= JournalLimit || (err == nil && now.Sub(at) > JournalMaxAge) {
+			cut = append(cut, e)
+		} else {
+			kept = append(kept, e)
+		}
+	}
+	return kept, cut
 }
 
 // timestamp is ISO 8601 UTC with milliseconds, like Date.toISOString().
