@@ -45,7 +45,10 @@ jobs:
 
       # No signing identity exists here, so this signs ad-hoc. AGENTS.md B1: the binary must report minos 15.0.
       - name: Build the app
-        run: scripts/build-app.sh | tee "$RUNNER_TEMP/build.log"
+        shell: bash
+        run: |
+          set -o pipefail
+          scripts/build-app.sh | tee "$RUNNER_TEMP/build.log"
 
       - name: Check the deployment target
         run: grep -E 'minos 15\.0' "$RUNNER_TEMP/build.log"

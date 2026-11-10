@@ -57,6 +57,8 @@ mkdir -p "${SOURCE_DIR}" "${STAGING_DIR}"
 git archive "${REVISION}" | tar -x -C "${SOURCE_DIR}"
 
 PLIST="${SOURCE_DIR}/Resources/Info.plist"
+# Before any build, signing or notarizing step: a release with the deprecated update key must stop here (AGENTS.md B8).
+"${SOURCE_DIR}/scripts/check-update-key.sh" "${PLIST}"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${PLIST}")"
 BUILD_NUMBER="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "${PLIST}")"
 TAG="v${VERSION}"
