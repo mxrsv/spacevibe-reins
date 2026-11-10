@@ -1,0 +1,101 @@
+# Review fixes (2026-11-10 Fable review)
+
+Requirements: no spec. The findings of the read-only whole-repo review of 2026-11-10 (baseline `744d734`) are the requirements; the owner asked in chat on 2026-11-10 that Fable decide each fix and Sonnet implement it ("tôi cần Fable để đưa ra quyết định fix còn sonnet sẽ thực hiện fix"). Review record, outside git: `~/scratch/spacevibe-reins/2026-11-10-fable-review/` (`report.md` in Vietnamese, `findings/*.md` per reviewer with trigger, path and `Check`, `verification.md`, `fix-decisions.md` from the Fable fix architect). Each task below carries a one-line statement of its findings so this plan stands without that folder.
+Checkout: `spacevibe-reins` on `main`, shared. Builders: Sonnet subagents, up to five per wave, no two in a wave on one file; they never commit. The lead (this session) runs the checks, reads each diff and commits with `git commit -- <paths>` (W11).
+Status: plan written 2026-11-10; waiting for the owner's answer to the six owner calls and "ok build". Nothing built yet.
+
+## Scope
+
+- Fix now: all 3 High and 21 Medium (5 of them in part, named per task) and 12 Lows that share a fix or are small and safe (SC3, GW5, SR9, JA9, JA7, CP3, CP7, GI11, GR8, CP10, SC14, SL13).
+- Not now: 55 Lows (old-only and deleted by X1, need a real run, need a product call, golden or wire change, not worth it now; listed in `fix-decisions.md`), 2 won't fix (GR1, GW9: old-only and deleted by X1), the 5 hypotheses (GI7, GI8, GA1, GA3, GA4; each keeps its check).
+- v5 stays behind `SPACEVIBE_UI_V5` (W17). Old-only views are touched only for lens 1 or 5 (F15).
+
+## Owner calls (asked once before the build)
+
+| # | Item | Fable's call | Alternative |
+| --- | --- | --- | --- |
+| C1 | M13: family stance from path rules (V5-R67) | Change V5-R67: a family is denied or allowed by its wide rules only; the family verdict changes wide rules only and the toast says how many path rules were kept | Keep V5-R67, reword only (the write stays) |
+| C2 | M17: secrets in shown commands | The promise reaches command text: recognisable credentials are masked in failed commands, running-tool targets and hook commands on the wire (`core/internal/redact`), rule text stays verbatim; `PRODUCT.md` reworded | Scope the promise to settings and mask nothing |
+| C3 | M4 (G10): what a subagent copy carries | Keep name, description and instructions only; say so before the click | Write `tools: Read` into a Claude Code copy (golden fix on `mutate.json`) |
+| C4 | M21: "pid 5200" title | Golden fix (SV5): the fallback title keeps the whole pid; `activity.json:108` and `SHA256SUMS` change | Keep the golden, leave the cut title |
+| C5 | M18: trash never pruned | Retention 200 changes or 30 days; the first run deletes for good every unreferenced trash slot older than 30 days, including those already in the real `~/.spacevibe/trash` (W9: not recoverable) | Prune only entries evicted from now on |
+| C6 | M11: "added" from mtime | Build a first-seen store (`<data>/first-seen.json`, seeded from today's mtimes); `loadout.rows` starts writing a file (v5 open question 7) | Defer M11; F16 drops alone |
+| C7 | H1, one half rejected | Keys keep acting on the row drawn as current (the report asked for a no-op until a row is chosen); residual risk: a first `r` on a fresh tab removes the top row, guarded by the toast, the undo stack and the one-removal guard | Make `r`/Delete a no-op until a row was chosen |
+
+## Cross-cutting designs (one version each)
+
+- **D1 re-read:** `AgentsPage.refresh(force:)` runs `loadout.refresh()` and `rules.refresh()`, throttled to 10 s, on app activation, on returning to the Agents tab, and forced by `⌘R` and a palette action; every refused or failed write re-reads. `CoreWire.restartedMessage` says the write "may not have been done".
+- **D2 current row:** `CurrentRow.neighbour(of:current:in:)` in `Components/PageKeys.swift`; models keep `listedKeys`; a removal that takes the row off the list moves the key to its neighbour once the write is taken, and puts it back on failure; one removal at a time (`LoadoutModel.removalGuardKey`).
+- **D3 undo stack:** `ToastCenter` keeps a session stack (20) of Undo actions; `z` pops it while the stack is not empty (off under the palette, Settings, a modal or an open menu); the palette offers "Undo: <label>"; v5 status bar shows a `Z undo` hint. `journal.history` stays unused (a Recent changes list needs a product call).
+- **D4 bulk:** new core method `rules.changeVerdicts` (one `Store.edit`, one Journal entry); `loadout.apply` deferred. The new method re-records every `core/testdata/rpc/*.jsonl`; that diff may hold only the `methods` arrays and the new case.
+- **D5 row identity:** `LoadoutRows.build` splits a key group with two members in one CLI by owner class (items) or matcher plus owner class (hooks); the first partition keeps the core key; linked members are removed first; a `.remove` that answers 404 after an earlier step of the same change is done.
+- **D6 problems:** a second `WarningSlot` in the Agents head lists `loadout.data.problems` (other-types line excluded); empty tabs show the first problem; existing blocks only.
+- **D7 masking:** `core/internal/redact.Command` applied at the wire projection only (never in `inventory.Read`, which writes reuse); hashes and failure keys stay on raw text.
+- **D8 presence:** Activity polls only while the window is visible (`NSApp.occlusionState`), not only while its tab is selected; `activity.unsubscribe` is delayed 1 s and skipped when a new sink registered.
+- **D9 dev gate:** `CoreEnvironment.overridesAllowed` and `LaunchMode.current` follow `LaunchMode.isDevelopmentBuild` only.
+
+## Tasks
+
+Paths under `Sources/SpaceVibe/` and `Tests/SpaceVibeTests/` drop that prefix. "Not" = files another task of the wave owns. Every task adds the test named, runs its narrow check, never commits, never runs `dev.sh`, never touches the real `~/.claude` or `~/.codex`, never runs bare `swift test`.
+
+### Wave 1
+
+- [ ] **F01 Re-read the Agents page** (H2: v5 Agents reads inventory, usage and rules once per launch, "Never ran" goes stale, no refresh; SC3: "restarted… so this was not done" for a write that may have landed). Owns `Agents/AgentsPage.swift`, `Loadout/LoadoutModel.swift`, `Rules/RulesModel.swift`, `Core/CoreWire.swift`; tests `AgentsPageTests`, `LoadoutModelTests`, `RulesModelTests`, `CoreWireTests`. Not `Shell/*`, `Core/CoreService.swift`, `Core/CoreClient.swift`. Test: a counting fake core sees a second `loadout.rows`, `usage.scan`, `rules.snapshot` after `refresh()`, none inside 10 s, and a read after a refused write. Commit `fix(agents): re-read on activation, on return to the page and after a refused write`.
+- [ ] **F02 Open file never runs a link's target** (H3: Open file on a skill whose `SKILL.md` links to a `.command` runs it in Terminal; probe-confirmed). Owns `Skills/SkillsModel.swift`; test `SkillsModelEngineTests`. Test: link to `.command` reveals in Finder; link to `.md` and a plain `SKILL.md` open the resolved file. Commit `fix(skills): Open file opens a resolved .md and shows anything else in Finder`.
+- [ ] **F03 Session undo stack** (M6: Undo lives in one 5 s toast, any later toast drops it, nothing reads the Journal). Owns `Shell/ToastCenter.swift`, `ToastHost.swift`, `PaletteSearch.swift`, `AppShell.swift`, `AppCommandPalette.swift`, `CommandPalette.swift`, `SpaceVibeTab.swift`, `Activity/ActivityTab.swift`; new `ToastCenterTests`, `PaletteSearchTests`; docs `GLOSSARY.md` (Undo). Test: `show("a", undo:)` then a danger toast, `undoLast()` runs a's undo once; palette lists "Undo: a". Commit `fix(shell): Undo survives a replaced toast: Z, the palette and a status-bar hint`.
+- [ ] **F04 `rules.changeVerdicts`** (M3 core half: a family verdict is N journaled writes). Owns `core/internal/rules/store.go`, `service.go` and tests, `core/internal/rpc/methods.go`, `core/internal/rpc/methods/handlers.go`, `core/cmd/spacevibe/contract-writes_test.go`, `core/testdata/rpc/*.jsonl`, `Core/CoreService.swift`, `Core/CoreClient.swift`, `Core/CoreTypesRules.swift`, the two test fakes; docs `docs/internals/core-protocol.md`. Test: 250 rules in one call give one entry and a byte-exact Undo; a stale `from` is 409 with unchanged bytes. Commit `feat(core): rules.changeVerdicts moves several rules in one journaled write`.
+- [ ] **F05 Say what a subagent copy carries** (M4, G10; after C3: the copy has no `tools`, said only after the write). Owns `Subagents/SubagentsTab.swift`, `SubagentsWording.swift`; test `SubagentsModelTests`; docs v5 spec V5-R64, G10. Commit `fix(subagents): say what a copy carries before Add`.
+
+### Wave 2
+
+- [ ] **F06 Current row after a removal** (H1: after a Remove the current row falls back to the first, most-used row, so the next `r` removes it; same in Hooks, Subagents, Rules). Owns `Components/PageKeys.swift`, `Skills/SkillsModel.swift`, `Skills/SkillsTab.swift`, `Hooks/HooksModel.swift`, `Hooks/HooksTab.swift`, `Subagents/SubagentsModel.swift`, `Subagents/SubagentsTab.swift`, `Rules/RulesModel.swift`, `Rules/RulesCanvas.swift`, `Loadout/LoadoutModel.swift`; new `CurrentRowTests` and the four engine tests. Test: removing the last row leaves its neighbour current in all four models; a refused removal puts the key back. Commit `fix(agents): after a removal the current row is its neighbour, one removal at a time`.
+- [ ] **F07 Split colliding rows** (M1: a user skill hidden behind a plugin skill of one name; one command on two matchers is one row; JA9). Owns `Loadout/LoadoutRows.swift`, `Loadout/LoadoutShots.swift`; test `LoadoutRowsTests`; docs `docs/internals/inventory.md`. Commit `fix(loadout): two things with one key in one CLI are two rows`.
+- [ ] **F08 Say what "Never ran" rests on** (M12: no log span shown in v5). Owns `Agents/AgentsPage.swift`, `Skills/SkillsWording.swift`, `Skills/SkillsPane.swift`, `Loadout/LoadoutFormat.swift`; tests `SkillsWordingTests`, `AgentsPageTests`. Commit `fix(skills): the status bar and the Never ran verdict name the log span`.
+- [ ] **F09 Copy names and a missing CLI** (M5: Add fails for names outside `[a-z0-9-]` and fails a whole bulk add; GW5: a copy creates the folder of an uninstalled CLI). Owns `core/internal/mutate/items.go`, `mutate_test.go`; docs `core-protocol.md`. Commit `fix(core): a copy takes the folder's name and refuses a CLI that is not installed`.
+- [ ] **F10 Whole pid in the fallback title** (M21, after C4: "pid 5200" for pid 52003 in the Stop dialog). Owns `core/internal/activity/titles.go`, `activity_test.go`, `golden/activity.json`, `SHA256SUMS`. Commit `fix(core): a pid title keeps the whole pid (golden fix, SV5)`.
+
+### Wave 3
+
+- [ ] **F11 Linked skills, refused Undo reason** (M2: Remove from every CLI of a symlinked skill always fails and rolls back; JA7). Owns `Loadout/LoadoutRows.swift`, `Loadout/LoadoutModel.swift`; tests `LoadoutRowsTests`, `LoadoutModelEngineTests`. Commit `fix(loadout): a linked skill is removed link first, and a refused Undo says why`.
+- [ ] **F12 Show `problems` in v5** (M7: an invalid `settings.json` reads "No hooks yet."). Owns `Agents/AgentsPage.swift`, `Hooks/HooksQuery.swift`, `HooksModel.swift`, `HooksTab.swift`, `Skills/SkillsList.swift`, `Subagents/SubagentsTab.swift`, `SubagentsQuery.swift`; tests `HooksModelTests`, `AgentsPageTests`. Commit `fix(agents): files that could not be read show in the head and in empty tabs`.
+- [ ] **F13 Family verdict on wide rules, one write** (M13 after C1; M3 shell half). Owns `Rules/RulesModel.swift`, `RuleFamilies.swift`, `RulesPage.swift`, `RulesTabShots.swift`; tests `RuleFamiliesTests`, `RulesTabEngineTests`; docs v5 spec V5-R67, C18, G12. Commit `fix(rules): a family is judged and changed by its wide rules, in one write`.
+- [ ] **F14 Mask credentials in shown commands** (M17 after C2, GR8). Owns new `core/internal/redact/`, `core/internal/activity/groups.go`, `report.go`, `core/internal/inventory/types-json.go`, `core/internal/rules/codex.go` and their tests; docs `core-protocol.md`, `AGENTS.md` S-R3, `PRODUCT.md`. Commit `fix(core): recognisable credentials are masked in the commands the core reports`.
+- [ ] **F15 Stop confirmation** (M8: the Stop dialog sits under the row detail's outside-tap layer, first click lost; SR9: the old dialog names no pid). Owns `Activity/ActivityModel.swift`, `ActivityStopConfirmation.swift`, `ActivityScreen.swift`; test `ActivityModelTests`. Commit `fix(activity): Stop closes the row detail, and the old dialog names the pid`.
+
+### Wave 4
+
+- [ ] **F16 First-seen time** (M11 after C6). Owns new `core/internal/inventory/first-seen.go`, `attach-usage.go`, `service.go`, `loadout-rows.go`, `rows_test.go`; docs `inventory.md`, `core-protocol.md`. Commit `fix(core): "added" is the first time SpaceVibe saw the item, not the file's date`.
+- [ ] **F17 Journal retention** (M18 after C5). Owns `core/internal/mutate/journal.go`, `trash.go`, `journal_test.go`; docs `overview.md`, `GLOSSARY.md`. Commit `fix(core): a journal entry and its trash copy end together, after 200 changes or 30 days`.
+- [ ] **F18 Activity polls only while visible** (M15: 3 s poll with `ps`/`lsof` while hidden; SC14). Owns `Activity/ActivityCanvas.swift`, `Core/CoreConnection.swift`; tests `ActivityModelTests`, `CoreClientTests`. Commit `fix(activity): poll only while the window is visible; a late unsubscribe cannot stop a new subscription`.
+- [ ] **F19 Three small Skills fixes** (CP3, CP7, GI11). Owns `Components/ToolbarMenu.swift`, `DetailPane.swift`, `Skills/SkillsQuery.swift`; test `SkillsQueryTests`. Commit `fix(skills): menu headings are not picks, Never excludes unmeasured rows, "1 session"`.
+- [ ] **F20 Release and CI gates** (M19: nothing stops a release with the old update key; SL13). Owns `scripts/release.sh`, new `scripts/check-update-key.sh`, `.github/workflows/swift.yml`; docs `AGENTS.md` B8, B9, command table. Never run `release.sh` or `generate_keys`. Commit `fix(release): refuse the deprecated update key before building; the CI build step can fail`.
+
+### Wave 5
+
+- [ ] **F21 Dev switches only in a development build** (M16: a distribution build spawns `SPACEVIBE_CORE_BINARY` under `SPACEVIBE_TEST=1`; CP10). Owns `Core/CoreEnvironment.swift`, `App/LaunchMode.swift`; tests `CoreEnvironmentTests`, `LaunchModeTests`; docs `core-protocol.md`. Commit `fix(app): the core override, gallery and shot modes need a development build`.
+- [ ] **F22 Licence notices** (M20: Sparkle and Go ship without notices). Owns `Resources/Licenses/Sparkle-MIT.txt`, `Go-BSD-3-Clause.txt`, `App/Credits.swift`; test `IconPolicyTests`. Commit `fix(credits): Sparkle and Go licence notices ship with the app`.
+- [ ] **F23 Site facts** (M14 in part: the picked direction says limits come from the status line; replacing `/` becomes a gate before WEB1). Owns `site/components/landing/directions/copy.ts`, `content.ts`, new `site/tests/landing-facts.test.mjs`; docs `AGENTS.md` WEB gates. Commit `fix(site): the picked direction names the usage cache; replacing / is a gate before WEB1`.
+- [ ] **F25 Count a skill under its folder name too** (M10: Codex skill counted by folder, looked up by frontmatter name). Owns `core/internal/inventory/attach-usage.go`, `attach_test.go`; docs `inventory.md`. Commit `fix(core): a skill's sessions are found under its folder name as well`.
+
+### Wave 6
+
+- [ ] **F24 Uninstall status-line capture** (M9: no uninstall, `undo` refused after any change, no install path in the app). Owns `core/internal/statusline/statusline.go`, `install.go`, `command-install.go`, `install_test.go`, `scripts/test-statusline.sh`, `Limits/LimitsCanvas.swift`; test `LimitsModelTests`; docs `core-protocol.md`. Never run `statusline install` on the real home. Commit `feat(limits): statusline uninstall, and the palette copies the capture commands`.
+
+### Final
+
+- [ ] **R1 Review:** `code-reviewer` on `744d734..HEAD`; fix confirmed blocker, high and medium findings; re-run the checks.
+- [ ] **E1 Eye batch:** shots of every surface marked "Seen" in `fix-decisions.md` (switch on, and `loadout`, `rules`, `activity`, `limits`, `settings` with it off), folded into the pending U14 batch of [the v5 build plan](2026-11-07-reins-ui-v5-build.md); the owner approves by eye before any push.
+
+## Verification (per wave, by the lead)
+
+- `git status --porcelain`, then each task's diff read in full.
+- `cd core && go vet ./... && SPACEVIBE_TEST=1 go test -count=1 ./...`, then `scripts/test.sh` (also checks `SHA256SUMS`); N above the previous count.
+- Shots named per task, one after the other: `SPACEVIBE_UI_V5=1 SPACEVIBE_SHOT_SCREEN=<screen> SPACEVIBE_BUILD_PATH=<scratch> scripts/dev-fixture.sh --shots <scratch>`.
+- `site/` touched: `npm run lint && npm run build && node --test tests/`.
+- A golden that changes outside F10 is a stop.
+
+## Handoff
+
+2026-11-10: plan written from `fix-decisions.md`; waiting for C1–C7 and "ok build". Baseline `744d734`.
+
+/goal Fix the 2026-11-10 review findings per docs/plans/2026-11-10-review-fixes.md: after the owner answers C1 to C7, run waves 1 to 6 with Sonnet builders, one commit per task, each with its named test. Done means every task ticked or marked blocked with its reason, go vet and go test pass, scripts/test.sh passes with N above 465, only F10 changes a golden, the code-reviewer pass on 744d734..HEAD has no open blocker, high or medium, and the owner has approved the changed surfaces by eye before any push.
