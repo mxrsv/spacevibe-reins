@@ -80,6 +80,7 @@ struct HooksCanvas: View {
             if !shell.isPaletteOpen && !model.isMenuOpen { keys(visible: visible, current: current) }
             content(layout: layout, current: current)
         }
+        .onChange(of: visible.map(\.key), initial: true) { _, keys in model.listedKeys = keys }
     }
 
     @ViewBuilder

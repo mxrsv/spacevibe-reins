@@ -24,6 +24,8 @@ final class HooksModel {
     /// A head menu holds the keyboard, so the page's plain keys are off.
     var isMenuOpen: Bool { isFilterOpen }
 
+    /// The keys listed now, in order: the tab writes them, so a removal can hand the current row to its neighbour (D2).
+    @ObservationIgnored var listedKeys: [String] = []
     @ObservationIgnored var now: () -> Date = { Date() }
     /// The CLIs on this Mac: the shell's reading (`limits.read`), which a shot or a test replaces.
     @ObservationIgnored var limitsResults: () -> [CoreLimitsEntry]
@@ -167,8 +169,15 @@ final class HooksModel {
             env.toasts.show(HooksWording.nothingToChange(row, adding: false))
             return
         }
-        loadout.perform(skillWrites: plan.steps, guardKey: "hooks:remove:\(cli?.rawValue ?? "all"):\(row.key)",
-                        label: HooksWording.removeLabel(row, from: cli))
+        // Only a removal from every CLI takes the row off the list; one CLI's copy leaves it listed.
+        let leaving: Set<String> = cli == nil && row.members.values.allSatisfy(\.removable) ? [row.key] : []
+        let before = currentKey
+        let after = CurrentRow.neighbour(of: leaving, current: before, in: listedKeys)
+        let taken = loadout.perform(skillWrites: plan.steps, guardKey: LoadoutModel.removalGuardKey, label: HooksWording.removeLabel(row, from: cli),
+                                    onFailure: { [weak self] in
+                                        if self?.currentKey == after { self?.currentKey = before }
+                                    })
+        if taken, after != before { currentKey = after }
     }
 
     /// `a`: the CLI the hook is not in.

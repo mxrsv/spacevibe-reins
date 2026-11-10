@@ -146,6 +146,49 @@ struct SubagentsModelEngineTests {
         #expect(changed.isEmpty, "one Undo put both files back; differs: \(changed)")
     }
 
+    /// The last listed subagent a person may remove from every CLI, and the row that becomes current when it goes.
+    private func lastRemovable(_ model: SubagentsModel) throws -> (target: LoadoutRow, expected: String) {
+        let keys = model.layout.rows.map(\.key)
+        model.listedKeys = keys
+        let target = try #require(model.layout.rows.last { $0.plugin == nil && $0.project == nil && $0.members.values.allSatisfy(\.removable) })
+        let index = try #require(keys.firstIndex(of: target.key))
+        let expected = index + 1 < keys.count ? keys[index + 1] : keys[index - 1]
+        try #require(expected != keys.first, "the neighbour must differ from the first row for this test to mean anything")
+        return (target, expected)
+    }
+
+    @Test("removing the current subagent leaves its neighbour current, not the first row")
+    func removeMovesCurrentRow() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        let (model, env, client) = try await subagents(fixture)
+        defer { client.shutdown() }
+        let (target, expected) = try lastRemovable(model)
+        model.currentKey = target.key
+
+        model.remove(target)
+        #expect(model.currentKey == expected)
+        try await wait("the toast") { env.toasts.current != nil }
+        try await wait("the re-read") { model.loadout.isSettled && !model.rows.contains { $0.key == target.key } }
+        #expect(model.current(in: model.layout.rows)?.key == expected)
+    }
+
+    @Test("a refused removal puts the key back on the row that stayed")
+    func refusedRemovalPutsKeyBack() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        let (model, env, client) = try await subagents(fixture)
+        defer { client.shutdown() }
+        let (target, expected) = try lastRemovable(model)
+        model.currentKey = target.key
+        for case .item(let item)? in target.members.values.map({ Optional($0) }) { try FileManager.default.removeItem(atPath: item.path) }
+
+        model.remove(target)
+        #expect(model.currentKey == expected)
+        try await wait("the refusal") { env.toasts.current?.tone == .danger }
+        #expect(model.currentKey == target.key)
+    }
+
     @Test("a plugin's subagent is read-only: no write, and a toast that says why")
     func pluginRefusal() async throws {
         let fixture = try await CoreFixtureHome.make()

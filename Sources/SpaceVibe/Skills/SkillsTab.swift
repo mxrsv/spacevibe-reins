@@ -119,6 +119,7 @@ struct SkillsCanvas: View {
                     bar(picked, detected: detected)
                 }
             }
+            .onChange(of: visible.map(\.key), initial: true) { _, keys in model.listedKeys = keys }
         }
     }
 

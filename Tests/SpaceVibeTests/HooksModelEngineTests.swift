@@ -64,6 +64,53 @@ struct HooksModelEngineTests {
         #expect(model.notShown.isEmpty, "the fixture has no hook of another handler kind")
     }
 
+    /// The last listed hook a person may remove from every CLI, and the row that becomes current when it goes.
+    private func lastRemovable(_ model: HooksModel) throws -> (target: LoadoutRow, expected: String) {
+        let keys = model.layout.rows.map(\.key)
+        model.listedKeys = keys
+        let target = try #require(model.layout.rows.last { $0.plugin == nil && $0.project == nil && $0.members.values.allSatisfy(\.removable) })
+        let index = try #require(keys.firstIndex(of: target.key))
+        let expected = index + 1 < keys.count ? keys[index + 1] : keys[index - 1]
+        try #require(expected != keys.first, "the neighbour must differ from the first row for this test to mean anything")
+        return (target, expected)
+    }
+
+    @Test("removing the current hook leaves its neighbour current, not the first row")
+    func removeMovesCurrentRow() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        let (model, env, client) = try await hooks(fixture)
+        defer { client.shutdown() }
+        let (target, expected) = try lastRemovable(model)
+        model.currentKey = target.key
+
+        model.remove(target)
+        #expect(model.currentKey == expected)
+        try await wait("the toast") { env.toasts.current != nil }
+        try await wait("the re-read") { model.loadout.isSettled && !model.rows.contains { $0.key == target.key } }
+        #expect(model.current(in: model.layout.rows)?.key == expected)
+    }
+
+    @Test("a refused removal puts the key back on the row that stayed")
+    func refusedRemovalPutsKeyBack() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        let (model, env, client) = try await hooks(fixture)
+        defer { client.shutdown() }
+        let (target, expected) = try lastRemovable(model)
+        model.currentKey = target.key
+        // The hook is gone from the files before the write, so the core cannot find it.
+        for file in [".claude/settings.json", codexHooks] {
+            let url = fixture.home.appendingPathComponent(file)
+            if FileManager.default.fileExists(atPath: url.path) { try Data("{}".utf8).write(to: url) }
+        }
+
+        model.remove(target)
+        #expect(model.currentKey == expected)
+        try await wait("the refusal") { env.toasts.current?.tone == .danger }
+        #expect(model.currentKey == target.key)
+    }
+
     @Test("the core refuses a hook copy into Codex with its own sentence, and the tab's rule says the same before any call; nothing is written")
     func codexRefusal() async throws {
         let fixture = try await CoreFixtureHome.make()

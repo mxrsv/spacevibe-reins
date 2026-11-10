@@ -23,6 +23,10 @@ final class LoadoutModel {
     /// (the row is still on screen until the re-read lands), so one write cannot run twice.
     static let writeGuard: Duration = .milliseconds(500)
 
+    /// The one guard key of every v5 removal (Skills, Hooks, Subagents): a repeated `r` while a removal runs, and for
+    /// `writeGuard` after it, is dropped, so the key that moved to the neighbour never removes a second row by accident.
+    static let removalGuardKey = "removal"
+
     let env: AppEnvironment
 
     private(set) var data: LoadoutData?
@@ -246,9 +250,13 @@ final class LoadoutModel {
     /// every one of them, newest first, then reads the rows again once. No bulk call exists in the core, so each step is its own
     /// journal entry; a step that fails undoes the ones already written before the danger toast, so a bulk write is all or
     /// nothing. `label` names the whole change ("Added 3 skills to Codex"); `note` is a sentence only the success toast adds after it
-    /// (what the copy leaves out), never the Undo toast. Returns at once; the write runs in a task.
-    func perform(skillWrites steps: [LoadoutRows.SkillWrites.Step], guardKey: String, label: String, note: String? = nil) {
-        guard !steps.isEmpty, inFlight[guardKey] == nil else { return }
+    /// (what the copy leaves out), never the Undo toast. Returns at once; the write runs in a task. The result is false when the
+    /// write was not taken (no steps, or its guard is held); `onFailure` runs once a taken write failed, after the earlier steps
+    /// were undone.
+    @discardableResult
+    func perform(skillWrites steps: [LoadoutRows.SkillWrites.Step], guardKey: String, label: String, note: String? = nil,
+                 onFailure: (@MainActor () -> Void)? = nil) -> Bool {
+        guard !steps.isEmpty, inFlight[guardKey] == nil else { return false }
         guardTickets += 1
         let ticket = guardTickets
         inFlight[guardKey] = ticket
@@ -264,6 +272,7 @@ final class LoadoutModel {
                 self.release(guardKey, ticket: ticket, since: started)
                 let message = AppEnvironment.message(error)
                 self.env.toasts.show(reverted ? message : "\(message) Some earlier changes could not be undone.", tone: .danger)
+                onFailure?()
                 // A refused or failed write may still have changed the files, so the list is always read again.
                 self.reload()
                 return
@@ -273,6 +282,7 @@ final class LoadoutModel {
             self.env.toasts.show(note.map { "\(label). \($0)" } ?? label, undo: { [weak self] in self?.undoSkillWrites(entries, label: label) })
             self.reload()
         }
+        return true
     }
 
     private nonisolated static func run(_ step: LoadoutRows.SkillWrites.Step, on core: any CoreService) async throws -> CoreJournalEntry {

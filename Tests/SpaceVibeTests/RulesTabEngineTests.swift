@@ -127,6 +127,50 @@ struct RulesTabEngineTests {
         #expect(try await fixture.tree().difference(from: before).isEmpty)
     }
 
+    /// The last listed rule, the rule that becomes current when it goes, and the ids listed.
+    private func lastRule(_ model: RulesModel) throws -> (target: CoreRule, expected: String) {
+        let rules = model.page.layout.bands.flatMap(\.rules)
+        let ids = rules.map(\.id)
+        model.listedKeys = ids
+        let target = try #require(rules.last)
+        let index = try #require(ids.firstIndex(of: target.id))
+        let expected = index + 1 < ids.count ? ids[index + 1] : ids[index - 1]
+        try #require(expected != ids.first, "the neighbour must differ from the first row for this test to mean anything")
+        return (target, expected)
+    }
+
+    @Test("removing the current rule leaves its neighbour current, not the first row")
+    func removeMovesCurrentRule() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        let (model, env, client) = try await model(fixture)
+        defer { client.shutdown() }
+        let (target, expected) = try lastRule(model)
+        model.currentID = target.id
+
+        model.removeRule(target)
+        #expect(model.currentID == expected)
+        try await written(model, env)
+        #expect(model.current(in: model.page.layout.bands.flatMap(\.rules))?.id == expected)
+    }
+
+    @Test("a refused removal puts the key back on the rule that stayed")
+    func refusedRemovalPutsKeyBack() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        let (model, env, client) = try await model(fixture)
+        defer { client.shutdown() }
+        let (target, expected) = try lastRule(model)
+        model.currentID = target.id
+        // The rule is gone from the file before the write, so the core cannot find it.
+        try Data("{}".utf8).write(to: fixture.home.appendingPathComponent(".claude/settings.json"))
+
+        model.removeRule(target)
+        #expect(model.currentID == expected)
+        try await wait("the refusal") { env.toasts.current?.tone == .danger }
+        #expect(model.currentID == target.id)
+    }
+
     @Test("a settings file that does not parse hides every rule with the core's sentence, and a write is refused with nothing changed")
     func invalidFile() async throws {
         let fixture = try await CoreFixtureHome.make()

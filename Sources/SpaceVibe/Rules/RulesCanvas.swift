@@ -72,6 +72,7 @@ struct RulesCanvas: View {
             if !shell.isPaletteOpen && !model.isMenuOpen { keys(visible: visible, current: current) }
             content(page, current: current)
         }
+        .onChange(of: visible.map(\.id), initial: true) { _, ids in model.listedKeys = ids }
         .task { model.showGlobal() }
     }
 

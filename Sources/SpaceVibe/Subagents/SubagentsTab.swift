@@ -75,6 +75,7 @@ struct SubagentsCanvas: View {
                 if !shell.isPaletteOpen && !model.isMenuOpen { keys(visible: visible, current: current) }
                 content(layout: layout, current: current, now: context.date)
             }
+            .onChange(of: visible.map(\.key), initial: true) { _, keys in model.listedKeys = keys }
         }
     }
 

@@ -11,6 +11,16 @@ enum CurrentRow {
         guard let current = resolve(picked, in: rows), let index = rows.firstIndex(of: current) else { return nil }
         return rows[min(max(index + step, 0), rows.count - 1)]
     }
+
+    /// Where the key goes when `removed` rows leave the list: `current` while its resolved row stays, else the first row after it
+    /// that stays, else the last one before it, else nil. A removal never hands the key to the first row (the most-used one), so
+    /// the next `r` does not remove it.
+    static func neighbour(of removed: Set<String>, current: String?, in rows: [String]) -> String? {
+        guard let resolved = resolve(current, in: rows), removed.contains(resolved), let index = rows.firstIndex(of: resolved) else {
+            return current
+        }
+        return rows[(index + 1)...].first { !removed.contains($0) } ?? rows[..<index].last { !removed.contains($0) }
+    }
 }
 
 /// A key with no button on screen: the page's plain keys, run while the page is active (the shell disables hidden tabs).

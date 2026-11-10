@@ -174,6 +174,55 @@ struct SkillsModelEngineTests {
         #expect(env.toasts.current == nil)
         #expect(try await fixture.tree().difference(from: before).isEmpty)
     }
+
+    // MARK: The current row after a removal (D2)
+
+    /// The last listed skill a person may remove from every CLI, the row that becomes current when it goes, and the keys listed.
+    private func lastRemovable(_ model: SkillsModel) throws -> (target: LoadoutRow, expected: String) {
+        let keys = model.layout.rows.map(\.key)
+        model.listedKeys = keys
+        let target = try #require(model.layout.rows.last { $0.plugin == nil && $0.project == nil && $0.members.values.allSatisfy(\.removable) })
+        let index = try #require(keys.firstIndex(of: target.key))
+        let expected = index + 1 < keys.count ? keys[index + 1] : keys[index - 1]
+        try #require(expected != keys.first, "the neighbour must differ from the first row for this test to mean anything")
+        return (target, expected)
+    }
+
+    @Test("removing the current skill leaves its neighbour current, not the first row, and a second r during the write is dropped")
+    func removeMovesCurrentRow() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        let (model, env, client) = try await skills(fixture)
+        defer { client.shutdown() }
+        let (target, expected) = try lastRemovable(model)
+        model.select(target.key)
+
+        model.remove([target])
+        #expect(model.loadout.selectedKey == expected)
+        let neighbour = try #require(model.rows.first { $0.key == expected })
+        model.remove([neighbour])
+        #expect(model.loadout.selectedKey == expected, "a repeated r during the write is dropped, so the key does not move on")
+        try await wait("the toast") { env.toasts.current != nil }
+        try await wait("the re-read") { model.loadout.isSettled && !model.rows.contains { $0.key == target.key } }
+        #expect(model.rows.contains { $0.key == expected }, "the neighbour was not removed")
+        #expect(model.current(in: model.layout.rows)?.key == expected)
+    }
+
+    @Test("a refused removal puts the key back on the row that stayed")
+    func refusedRemovalPutsKeyBack() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        let (model, env, client) = try await skills(fixture)
+        defer { client.shutdown() }
+        let (target, expected) = try lastRemovable(model)
+        model.select(target.key)
+        for case .item(let item)? in target.members.values.map({ Optional($0) }) { try FileManager.default.removeItem(atPath: item.path) }
+
+        model.remove([target])
+        #expect(model.loadout.selectedKey == expected)
+        try await wait("the refusal") { env.toasts.current?.tone == .danger }
+        #expect(model.loadout.selectedKey == target.key)
+    }
 }
 
 /// A core whose second copy fails, so a bulk write has to undo the first.

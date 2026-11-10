@@ -23,6 +23,8 @@ final class SubagentsModel {
     /// A head menu holds the keyboard, so the page's plain keys are off.
     var isMenuOpen: Bool { isFilterOpen || isGroupOpen }
 
+    /// The keys listed now, in order: the tab writes them, so a removal can hand the current row to its neighbour (D2).
+    @ObservationIgnored var listedKeys: [String] = []
     @ObservationIgnored var now: () -> Date = { Date() }
     /// The CLIs on this Mac: the shell's reading (`limits.read`), which a shot or a test replaces.
     @ObservationIgnored var limitsResults: () -> [CoreLimitsEntry]
@@ -50,7 +52,9 @@ final class SubagentsModel {
     /// The CLIs the logo strip lists, Claude Code first (V5-R24): one that is not installed has no logo.
     var detected: [CoreCLI] { LoadoutRows.detectedCLIs(limits: limitsResults(), rows: rows) }
 
-    var answer: SubagentsAnswer { SubagentsAnswer.of(rows, isLoaded: isLoaded, detected: detected) }
+    var answer: SubagentsAnswer {
+        SubagentsAnswer.of(rows, isLoaded: isLoaded, detected: detected, since: LoadoutFormat.usageSince(loadout.usageResult))
+    }
 
     var addable: SubagentsAddable { SubagentsAddable(rows, detected: detected) }
 
@@ -138,8 +142,15 @@ final class SubagentsModel {
             env.toasts.show(SubagentsWording.nothingToChange(row, adding: false))
             return
         }
-        loadout.perform(skillWrites: plan.steps, guardKey: "subagents:remove:\(cli?.rawValue ?? "all"):\(row.key)",
-                        label: SubagentsWording.removeLabel(row, from: cli))
+        // Only a removal from every CLI takes the row off the list; one CLI's copy leaves it listed.
+        let leaving: Set<String> = cli == nil && row.members.values.allSatisfy(\.removable) ? [row.key] : []
+        let before = currentKey
+        let after = CurrentRow.neighbour(of: leaving, current: before, in: listedKeys)
+        let taken = loadout.perform(skillWrites: plan.steps, guardKey: LoadoutModel.removalGuardKey, label: SubagentsWording.removeLabel(row, from: cli),
+                                    onFailure: { [weak self] in
+                                        if self?.currentKey == after { self?.currentKey = before }
+                                    })
+        if taken, after != before { currentKey = after }
     }
 
     /// `a`: the CLI the subagent is not in, when it is on this Mac.

@@ -51,6 +51,8 @@ final class RulesModel {
     /// The CLIs on this Mac: the shell's reading (`limits.read`), which a shot or a test replaces.
     @ObservationIgnored var limitsResults: () -> [CoreLimitsEntry]
     @ObservationIgnored weak var shell: ShellModel?
+    /// The ids listed now, in order: the tab writes them, so a removal can hand the current rule to its neighbour (D2).
+    @ObservationIgnored var listedKeys: [String] = []
     @ObservationIgnored private var started = false
     @ObservationIgnored private var generation = 0
     /// Bumped by every preview request and every scope switch, so a preview that finishes late is dropped.
@@ -379,9 +381,18 @@ final class RulesModel {
         guard page.state == .ready else { return }
         detailID = nil
         let (verdict, text) = (rule.verdict, rule.rule)
-        write(label: RulesTabWording.removed(text), undone: RulesTabWording.undone, [{ core, scope in
-            try await core.rulesRemove(scope: scope.kind, dir: scope.dir, verdict: verdict, rule: text).entry
-        }])
+        let before = currentID
+        let after = CurrentRow.neighbour(of: [rule.id], current: before, in: listedKeys)
+        let taken = write(
+            label: RulesTabWording.removed(text), undone: RulesTabWording.undone,
+            onFailure: { [weak self] message in
+                guard let self else { return }
+                env.toasts.show(message, tone: .danger)
+                if currentID == after { currentID = before }
+            },
+            [{ core, scope in try await core.rulesRemove(scope: scope.kind, dir: scope.dir, verdict: verdict, rule: text).entry }]
+        )
+        if taken, after != before { currentID = after }
     }
 
     private static func changeStep(_ rule: CoreRule, to verdict: CoreVerdict) -> @Sendable (any CoreService, RulesScope) async throws -> CoreJournalEntry? {
@@ -392,6 +403,8 @@ final class RulesModel {
     /// One write for every control: through the core, a toast with Undo, and a reload after the write and after an Undo. A nil
     /// result ("nothing to change", `rules.setCapability` only) is a message, never a success toast. Several `works` are one change
     /// (a family's verdicts): one toast, one Undo that reverts them all (`AppEnvironment.performBatchWithUndo`).
+    /// Returns false when the write was not taken (no snapshot, or one is running).
+    @discardableResult
     func write(
         label: String,
         undone: String? = nil,
@@ -399,12 +412,12 @@ final class RulesModel {
         clears submitted: String? = nil,
         onFailure: (@MainActor (String) -> Void)? = nil,
         _ works: [@Sendable (any CoreService, RulesScope) async throws -> CoreJournalEntry?]
-    ) {
+    ) -> Bool {
         guard let snapshot else {
             env.toasts.show("The config folders could not be resolved.", tone: .danger)
-            return
+            return false
         }
-        guard !isWriting else { return }
+        guard !isWriting else { return false }
         isWriting = true
         let scope = target ?? snapshot.selection.scope
         env.performBatchWithUndo(
@@ -431,15 +444,17 @@ final class RulesModel {
                 }
             }
         )
+        return true
     }
 
+    @discardableResult
     private func write(
         label: String,
         scope target: RulesScope? = nil,
         clears submitted: String? = nil,
         onFailure: (@MainActor (String) -> Void)? = nil,
         _ work: @escaping @Sendable (any CoreService, RulesScope) async throws -> CoreJournalEntry?
-    ) {
+    ) -> Bool {
         write(label: label, scope: target, clears: submitted, onFailure: onFailure, [work])
     }
 }

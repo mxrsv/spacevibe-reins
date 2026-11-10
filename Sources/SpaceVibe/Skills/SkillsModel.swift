@@ -23,6 +23,8 @@ final class SkillsModel {
 
     /// A head menu holds the keyboard, so the page's plain keys are off.
     var isMenuOpen: Bool { isFilterOpen || isViewOpen || isScopeOpen }
+    /// The keys listed now, in order: the tab writes them, so a removal can hand the current row to its neighbour (D2).
+    @ObservationIgnored var listedKeys: [String] = []
     @ObservationIgnored var now: () -> Date = { Date() }
     /// Opens a file in its default app; a test swaps it so nothing opens.
     @ObservationIgnored var openFile: (URL) -> Void = { NSWorkspace.shared.open($0) }
@@ -176,8 +178,17 @@ final class SkillsModel {
             guard case .remove(let id, let from) = step, let row = written.first(where: { $0.members[from]?.id == id }) else { return nil }
             return "\(row.key):\(from.rawValue)"
         })
-        loadout.perform(skillWrites: plan.steps, guardKey: "skills:remove:\(cli?.rawValue ?? "all"):\(written.map(\.key).sorted().joined(separator: ","))",
-                        label: SkillsWording.removeLabel(written, from: cli, skipped: plan.skipped))
+        // Only a removal from every CLI takes a row off the list; one CLI's copy leaves the row listed.
+        let leaving = cli == nil ? Set(written.filter { $0.members.values.allSatisfy(\.removable) }.map(\.key)) : []
+        let before = loadout.selectedKey
+        let after = CurrentRow.neighbour(of: leaving, current: before, in: listedKeys)
+        let taken = loadout.perform(skillWrites: plan.steps, guardKey: LoadoutModel.removalGuardKey,
+                                    label: SkillsWording.removeLabel(written, from: cli, skipped: plan.skipped),
+                                    onFailure: { [weak self] in
+                                        if self?.loadout.selectedKey == after { self?.loadout.selectedKey = before }
+                                    })
+        guard taken else { return }
+        if after != before { loadout.selectedKey = after }
         picked.subtract(written.map(\.key))
     }
 
