@@ -421,6 +421,8 @@ final class RulesModel {
                 guard let self else { return }
                 isWriting = false
                 if let onFailure { onFailure(message) } else { env.toasts.show(message, tone: .danger) }
+                // A refused or failed write may still have changed the file (a restarted helper), so the list is read again.
+                reload()
             },
             works.map { work in
                 { core in

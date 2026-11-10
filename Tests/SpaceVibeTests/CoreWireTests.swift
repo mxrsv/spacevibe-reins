@@ -57,4 +57,9 @@ struct CoreWireTests {
         #expect(note?["id"] == nil)
         #expect(note?["jsonrpc"] as? String == "2.0")
     }
+
+    @Test("a write the helper may have finished says so, and tells the user to check the list")
+    func restartedSentence() {
+        #expect(CoreWire.restartedMessage == "The SpaceVibe helper restarted before it answered, so this may not have been done. Check the list and try again.")
+    }
 }

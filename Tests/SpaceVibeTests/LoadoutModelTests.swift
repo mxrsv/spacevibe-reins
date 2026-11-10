@@ -347,7 +347,7 @@ struct LoadoutModelTests {
         #expect(core.calls.filter { $0.hasPrefix("copy") }.count == 1)
     }
 
-    @Test("a refusal shows the core's own sentence in a danger toast, releases the guard and does not read again",
+    @Test("a refusal shows the core's own sentence in a danger toast, releases the guard and reads the rows again",
           arguments: [
               (409, "A skill named one already exists in Codex."), (404, "That item is no longer installed."),
               (403, "That item belongs to a plugin."), (413, "That skill is too large to copy."),
@@ -362,7 +362,20 @@ struct LoadoutModelTests {
         #expect(model.env.toasts.current?.message == message && model.env.toasts.current?.tone == .danger)
         #expect(model.env.toasts.current?.action == nil)
         try await settle("the guard release") { model.guardedWrites == 0 }
-        #expect(core.rowsReads == reads)
+        try await settle("the re-read") { core.rowsReads == reads + 1 && model.isSettled }
+        #expect(core.rowsReads == reads + 1)
+    }
+
+    @Test("a refused skill write with nothing written yet still reads the rows again")
+    func refusedSkillWriteReads() async throws {
+        let core = FakeLoadoutCore(rows: Self.rows())
+        let model = try await started(core)
+        core.writeFailure = CoreError("That item is no longer installed.", status: 404)
+        let reads = core.rowsReads
+        model.perform(skillWrites: [.remove(id: "claude:skill:global:one", from: .claude)], guardKey: "test", label: "Removed one")
+        try await settle("the toast") { model.env.toasts.current?.tone == .danger }
+        try await settle("the re-read") { core.rowsReads == reads + 1 && model.isSettled }
+        #expect(core.rowsReads == reads + 1)
     }
 
     @Test("an error that is not the core's gets a fixed sentence, never its description")

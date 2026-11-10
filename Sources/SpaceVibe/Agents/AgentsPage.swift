@@ -1,3 +1,4 @@
+import AppKit
 import Observation
 import SwiftUI
 
@@ -16,7 +17,12 @@ final class AgentsPage: SpaceVibeTab {
     let subagents: SubagentsModel
     let hooks: HooksModel
 
+    /// A refresh that is not forced is skipped when the last one ran less than this long ago, so app activation, a return to the
+    /// tab and a burst of both read once.
+    static let refreshInterval: TimeInterval = 10
+
     private(set) var selected = AgentsCategory.skills
+    @ObservationIgnored private var lastRefresh: Date?
 
     init(env: AppEnvironment? = nil, loadout: LoadoutModel? = nil, rules: RulesModel? = nil) {
         let env = env ?? .shared
@@ -90,6 +96,21 @@ final class AgentsPage: SpaceVibeTab {
         loadout.start()
         rules.start()
     }
+
+    /// Reads the inventory, the usage and the rules again: files may have changed outside the app. A page that has not started
+    /// reads nothing. Skipped inside `refreshInterval` of the last refresh unless `force` (`⌘R` and the palette force it).
+    func refresh(force: Bool = false, now: Date = Date()) {
+        if !force, let last = lastRefresh, now.timeIntervalSince(last) < Self.refreshInterval { return }
+        lastRefresh = now
+        loadout.refresh()
+        rules.refresh()
+    }
+
+    var paletteActions: [PaletteEntry] {
+        [PaletteEntry(id: "agents.refresh", title: "Refresh", glyph: ContentGlyph.enter, trailing: "⌘R", keywords: ["reload", "read again", "skills", "subagents", "hooks", "rules"]) { [weak self] in
+            self?.refresh(force: true)
+        }]
+    }
 }
 
 /// The tab head with its four tabs, then the selected tab's chip row and canvas: Skills (U8), Subagents (U9), Hooks (U10) and Rules (U11).
@@ -100,7 +121,10 @@ struct AgentsPageView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            if !shell.isPaletteOpen && !page.isMenuOpen { tabKeys }
+            if !shell.isPaletteOpen && !page.isMenuOpen {
+                tabKeys
+                HiddenKey(KeyboardShortcut("r", modifiers: .command)) { page.refresh(force: true) }
+            }
             VStack(spacing: 0) {
                 TabHead {
                     ForEach(AgentsCategory.allCases) { category in
@@ -122,6 +146,8 @@ struct AgentsPageView: View {
             }
         }
         .task { page.start() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in page.refresh() }
+        .onChange(of: shell.activeID) { _, id in if id == page.id { page.refresh() } }
     }
 
     /// The warning glyph at the head's left of the actions: what failed in the core's words and `Try again` beside it.

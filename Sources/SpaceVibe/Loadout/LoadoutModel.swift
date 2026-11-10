@@ -264,7 +264,8 @@ final class LoadoutModel {
                 self.release(guardKey, ticket: ticket, since: started)
                 let message = AppEnvironment.message(error)
                 self.env.toasts.show(reverted ? message : "\(message) Some earlier changes could not be undone.", tone: .danger)
-                if !entries.isEmpty { self.reload() }
+                // A refused or failed write may still have changed the files, so the list is always read again.
+                self.reload()
                 return
             }
             guard let self else { return }
@@ -307,6 +308,7 @@ final class LoadoutModel {
             onFailure: { [weak self] message in
                 self?.release(guardKey, ticket: ticket, since: started)
                 self?.env.toasts.show(message, tone: .danger)
+                self?.reload()
             }
         ) { try await work($0) }
     }

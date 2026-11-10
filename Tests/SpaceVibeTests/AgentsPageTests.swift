@@ -104,4 +104,113 @@ struct AgentsPageTests {
         let shown = data([counted], globalCount: 1).withoutCounts()
         #expect(shown.rows[0].cells.claude == .pending(reason: "Usage scan has not finished") && shown.rows[0].cells.codex == .missing)
     }
+
+    // MARK: Re-reading (D1)
+
+    private func settle(_ what: String, _ done: () -> Bool) async throws {
+        let deadline = Date().addingTimeInterval(10)
+        while !done(), Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(done(), "\(what) did not happen")
+    }
+
+    private func settled(_ page: AgentsPage) -> Bool { page.loadout.isSettled && page.rules.isSettled }
+
+    private func started(_ core: CountingAgentsCore) async throws -> AgentsPage {
+        let env = AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { core })
+        let page = AgentsPage(env: env)
+        page.start()
+        try await settle("the first reads") { settled(page) }
+        return page
+    }
+
+    @Test("refresh reads the inventory, the usage and the rules again; a second call inside ten seconds reads nothing")
+    func refreshReadsOnceInTenSeconds() async throws {
+        let core = CountingAgentsCore()
+        let page = try await started(core)
+        let before = core.counts
+        #expect(before.rows == 2 && before.scans == 1 && before.snapshots == 1)
+
+        let t0 = Date(timeIntervalSince1970: 1_000_000)
+        page.refresh(now: t0)
+        try await settle("the re-reads") { settled(page) && core.counts.rows == before.rows + 2 }
+        #expect(core.counts.scans == before.scans + 1 && core.counts.snapshots == before.snapshots + 1)
+
+        let after = core.counts
+        page.refresh(now: t0.addingTimeInterval(AgentsPage.refreshInterval - 1))
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(core.counts == after, "a second refresh inside the interval reads nothing")
+
+        page.refresh(now: t0.addingTimeInterval(AgentsPage.refreshInterval))
+        try await settle("the later re-read") { settled(page) && core.counts.snapshots == after.snapshots + 1 }
+    }
+
+    @Test("a forced refresh reads inside the interval, and the palette entry forces it")
+    func forcedRefresh() async throws {
+        let core = CountingAgentsCore()
+        let page = try await started(core)
+        let t0 = Date(timeIntervalSince1970: 1_000_000)
+        page.refresh(now: t0)
+        try await settle("the first refresh") { settled(page) && core.counts.snapshots == 2 }
+        page.refresh(force: true, now: t0.addingTimeInterval(1))
+        try await settle("the forced refresh") { settled(page) && core.counts.snapshots == 3 }
+        let action = try #require(page.paletteActions.first { $0.id == "agents.refresh" })
+        #expect(action.title == "Refresh" && action.trailing == "⌘R")
+        action.perform()
+        try await settle("the palette refresh") { settled(page) && core.counts.snapshots == 4 }
+    }
+
+    @Test("a page that has not started reads nothing on refresh")
+    func refreshBeforeStart() async throws {
+        let core = CountingAgentsCore()
+        let env = AppEnvironment(toasts: ToastCenter(announce: false), makeCoreClient: { core })
+        let page = AgentsPage(env: env)
+        page.refresh(force: true)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(core.counts == CountingAgentsCore.Counts())
+    }
+}
+
+/// A core for the Agents page: empty inventory, empty rules, and a count of each read.
+private final class CountingAgentsCore: UnservedCore, @unchecked Sendable {
+    struct Counts: Equatable {
+        var rows = 0
+        var scans = 0
+        var snapshots = 0
+    }
+
+    private let lock = NSLock()
+    private var _counts = Counts()
+    var counts: Counts { lock.withLock { _counts } }
+
+    override func loadoutRows() async throws -> CoreLoadoutRows {
+        let scanned = lock.withLock { () -> Bool in _counts.rows += 1; return _counts.scans > 0 }
+        return CoreLoadoutRows(
+            usage: scanned ? .ready : .scanning, items: [], hooks: [], problems: [], events: [:], roots: ["claude": "/home/demo/.claude", "codex": "/home/demo/.codex"],
+            countsByScope: ["global": CoreFilterCounts(all: 0, only: .init(claude: 0, codex: 0), neverRan: 0, dead: 0)], rowFlags: [:]
+        )
+    }
+
+    override func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult {
+        lock.withLock { _counts.scans += 1 }
+        return CoreUsageResult(
+            totals: CoreUsageTotals(claude: CoreCLITotals(skill: [:], agent: [:], hook: [:]), codex: CoreCLITotals(skill: [:], agent: [:], hook: [:])),
+            sessions: CoreUsageSessions(claude: 1, codex: 1),
+            windows: CoreUsageWindows(claude: CoreLogWindow(files: 1, oldest: "2026-10-01", newest: nil), codex: CoreLogWindow(files: 1, oldest: "2026-10-09", newest: nil)),
+            files: 2
+        )
+    }
+
+    override func rulesSnapshot(scope: CoreRuleScope, dir: String?, refreshProjects: Bool) async throws -> CoreRulesSnapshot {
+        lock.withLock { _counts.snapshots += 1 }
+        return CoreRulesSnapshot(
+            projectDirs: [], globalRuleCount: 0, scope: .global, dir: nil, fileLabel: "~/.claude/settings.json", exists: true, problems: [], rules: [], grid: [],
+            codex: CoreCodexPermissions(
+                present: true, model: .legacy, unrestricted: false, warnings: [], approvalPolicy: .mode("on-request"), sandboxMode: "workspace-write",
+                sandboxWorkspaceWrite: nil, defaultPermissions: nil, approvalsReviewer: nil, profiles: [], projects: [],
+                rules: CoreCodexRulesSummary(files: 0, allow: 0, prompt: 0, forbidden: 0, other: 0, unreadable: 0, folderNotReadable: false),
+                notReadable: false, skippedLines: 0
+            ),
+            notReadable: false, globalNotReadable: false
+        )
+    }
 }

@@ -265,7 +265,8 @@ struct RulesModelTests {
         try await settle("the refusal") { model.env.toasts.current != nil && !model.isWriting }
         #expect(model.env.toasts.current?.message == "~/.claude/settings.json is not valid JSON, so SpaceVibe left it alone.")
         #expect(model.env.toasts.current?.tone == .danger)
-        #expect(core.calls.filter { $0.hasPrefix("snapshot") }.count == 1, "a refused write reloads nothing")
+        try await settle("the re-read") { model.isSettled }
+        #expect(core.calls.filter { $0.hasPrefix("snapshot") }.count == 2, "a refused write reads the rules again: the file may have changed")
     }
 
     @Test("a setCapability that answers no entry is the 409 sentence, never a success toast")

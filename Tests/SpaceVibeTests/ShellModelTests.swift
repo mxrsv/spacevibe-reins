@@ -151,7 +151,7 @@ struct ShellModelTests {
         #expect(sections.map(\.title) == ["Go to", "Actions"])
         #expect(sections.first?.entries.map(\.title) == ["Agents", "Activity", "Limits"])
         #expect(sections.first?.entries.map(\.trailing) == ["\u{2318}1", "\u{2318}2", "\u{2318}3"])
-        #expect(sections.last?.entries.map(\.title) == ["Switch to light theme", "Settings"])
+        #expect(sections.last?.entries.map(\.title) == ["Refresh", "Switch to light theme", "Settings"])
         #expect(sections.flatMap(\.entries).allSatisfy { $0.glyph != nil })
         let limits = try #require(sections.first?.entries.last)
         limits.perform()

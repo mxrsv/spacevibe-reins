@@ -74,7 +74,7 @@ enum CoreWire {
 
     static let protocolFaultMessage = "The SpaceVibe helper reported an internal problem."
     static let undecodableMessage = "The SpaceVibe helper sent an answer this version of SpaceVibe does not understand."
-    static let restartedMessage = "The SpaceVibe helper restarted before it answered, so this was not done. Try again."
+    static let restartedMessage = "The SpaceVibe helper restarted before it answered, so this may not have been done. Check the list and try again."
     static let startFailedMessage = "The SpaceVibe helper could not be started."
     static let incompatibleMessage = "This copy of SpaceVibe and its helper do not match. Reinstall SpaceVibe."
     static let closedMessage = "The SpaceVibe helper was shut down."
