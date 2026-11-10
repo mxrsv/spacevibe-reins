@@ -13,7 +13,7 @@ struct ActivityScreen: View {
                 .allowsHitTesting(model.pendingStop == nil)
                 .accessibilityHidden(model.pendingStop != nil)
             if let session = model.pendingStop {
-                ActivityStopConfirmation(title: session.title, isStopping: model.isStopping, cancel: model.cancelStop, confirm: model.confirmStop)
+                ActivityStopConfirmation(session: session, isStopping: model.isStopping, cancel: model.cancelStop, confirm: model.confirmStop)
                     .transition(.opacity)
             }
         }

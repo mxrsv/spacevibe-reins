@@ -242,6 +242,26 @@ struct ActivityModelTests {
         model.cancelStop()
         #expect(model.pendingStop == nil && core.stops.isEmpty)
     }
+
+    @Test("Stop closes the row detail first, so the dialog's first click is not swallowed")
+    func stopClosesDetail() {
+        let model = model(FakeActivityCore())
+        let session = FakeActivityCore.session("s1")
+        model.open("s1")
+        #expect(model.detailID == "s1")
+        model.requestStop(session)
+        #expect(model.detailID == nil)
+        #expect(model.pendingStop?.id == "s1")
+    }
+
+    @Test("The old Stop dialog says the pid, the CLI and the consequence")
+    func oldDialogNamesPid() {
+        let message = ActivityStopConfirmation.message(FakeActivityCore.session("s1"))
+        #expect(message.contains("pid 100"))
+        #expect(message.contains("Claude Code"))
+        #expect(message.contains("cannot be undone"))
+        #expect(message.contains(ActivityStopWording.note))
+    }
 }
 
 /// The page and Stop against the real Go core (plan S.3): a private copy of the synthetic fixture home with the fixture's fake

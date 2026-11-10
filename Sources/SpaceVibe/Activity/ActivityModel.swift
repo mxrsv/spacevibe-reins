@@ -136,8 +136,12 @@ final class ActivityModel {
 
     // MARK: Stop
 
-    /// Opens the confirmation. Stop never runs without it.
-    func requestStop(_ session: CoreActivitySession) { pendingStop = session }
+    /// Opens the confirmation. Stop never runs without it. The row detail closes first: its outside-tap layer would swallow the
+    /// first click on the dialog.
+    func requestStop(_ session: CoreActivitySession) {
+        detailID = nil
+        pendingStop = session
+    }
 
     func cancelStop() {
         guard !isStopping else { return }
