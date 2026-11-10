@@ -171,7 +171,33 @@ struct SkillsQueryTests {
         #expect(filtered(.lastRan, "today") == ["ponytail", "ghost"])
         #expect(filtered(.lastRan, "week") == ["ponytail", "impeccable", "ghost", "neon-postgres"])
         #expect(filtered(.lastRan, "old") == ["tdd"])
-        #expect(filtered(.lastRan, "never") == ["review-change", "skill-creator", "webapp-testing", "loading-skill"])
+        #expect(filtered(.lastRan, "never") == ["review-change", "skill-creator", "webapp-testing"])
+        // A row with no logs (Unmeasurable) or a scan still running (Loading) is not "Never".
+        let unknown = [F.row("no-logs", claude: F.noLogs), F.row("scanning", claude: F.scanning), F.row("zero", claude: F.counted(0))]
+        var query = SkillsQuery()
+        query.filter.toggle(.lastRan, "never")
+        #expect(names(query, unknown) == ["zero"])
+    }
+
+    @Test("a session meter says \"1 session\" for one and \"N sessions\" otherwise, and nothing without a count")
+    func meterLabel() {
+        func meter(_ figure: Int?) -> SessionMeter {
+            SessionMeter(cli: .claude, status: nil, figure: figure, share: nil, caption: "", emphasis: nil)
+        }
+        #expect(meter(1).sessionsLabel == "1 session" && meter(0).sessionsLabel == "0 sessions")
+        #expect(meter(28).sessionsLabel == "28 sessions" && meter(nil).sessionsLabel == nil)
+    }
+
+    @Test("a click on a Filter menu heading picks nothing; a value picks")
+    func headingClickPicksNothing() {
+        var picks: [String] = []
+        let heading = MenuEntry(id: "heading.Most used", title: "Most used", kind: .heading)
+        let value = MenuEntry(id: "top10", title: "Top 10", kind: .check(isOn: false))
+        let menu = FilterMenu(fields: [FilterMenuField(id: "rank", title: "Rank", values: [heading, value])],
+                              onToggle: { picks.append("\($0):\($1)") }, onClose: { _ in })
+        menu.toggle("rank", heading)
+        menu.toggle("rank", value)
+        #expect(picks == ["rank:top10"])
     }
 
     @Test("values within a field are ORed, fields are ANDed, and a toggle twice clears the pick")

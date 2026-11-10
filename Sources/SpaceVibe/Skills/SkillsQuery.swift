@@ -278,7 +278,7 @@ struct SkillsQuery: Equatable, Sendable {
         case .rank:
             return SkillRankMark(rawValue: value).map { marks.contains($0) } ?? false
         case .lastRan:
-            guard let last = row.skillUsage.lastRan, let days = SkillDays.daysAgo(last, now: now) else { return value == "never" }
+            guard let last = row.skillUsage.lastRan, let days = SkillDays.daysAgo(last, now: now) else { return value == "never" && row.skillUsage.state == .neverRan }
             switch value {
             case "today": return days < 1
             case "week": return days < 7

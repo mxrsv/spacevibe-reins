@@ -119,6 +119,9 @@ struct SessionMeter: Equatable {
     let caption: String
     /// The part of the caption read in `fg2`: "Last ran" then "2 days ago".
     let emphasis: String?
+
+    /// "1 session", "N sessions"; nil without a count.
+    var sessionsLabel: String? { figure.map { "\($0) \($0 == 1 ? "session" : "sessions")" } }
 }
 
 private struct MeterColumn: View {
@@ -149,7 +152,7 @@ private struct MeterColumn: View {
         HStack(alignment: .firstTextBaseline, spacing: Metrics.DetailPane.meterUnitGap) {
             if let count = meter.figure {
                 Text("\(count)").spaceVibeText(.answer, tone: .primary)
-                Text("sessions").spaceVibeText(.meta, tone: .tertiary)
+                Text(count == 1 ? "session" : "sessions").spaceVibeText(.meta, tone: .tertiary)
             } else {
                 Text("\u{2014}").spaceVibeText(.answer).foregroundStyle(Palette.fg4)
             }
@@ -165,7 +168,7 @@ private struct MeterColumn: View {
     }
 
     private var spoken: String {
-        let figure = meter.figure.map { "\($0) \($0 == 1 ? "session" : "sessions")" } ?? "no count"
+        let figure = meter.sessionsLabel ?? "no count"
         return [meter.cli.label, meter.status, figure, meter.caption, meter.emphasis].compactMap { $0 }.joined(separator: ", ")
     }
 }

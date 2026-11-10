@@ -263,7 +263,7 @@ struct FilterMenu: View {
                     ForEach(Array(values(of: open).enumerated()), id: \.element.id) { index, value in
                         MenuLine(entry: value, isHighlighted: nav.inSubmenu && nav.sub == index)
                             .onHover { if $0 { nav.hoverSub(index, values: values(of: open)) } }
-                            .onTapGesture { onToggle(open, value.id) }
+                            .onTapGesture { toggle(open, value) }
                     }
                 }
                 .offset(y: -Metrics.Menu.submenuRise)
@@ -289,9 +289,14 @@ struct FilterMenu: View {
         return values(of: entries[main].id)
     }
 
+    /// A click on a heading does nothing, as the keyboard and `RadioMenu` already behave.
+    func toggle(_ field: String, _ entry: MenuEntry) {
+        if entry.isSelectable { onToggle(field, entry.id) }
+    }
+
     private func tap(_ index: Int) {
         let entry = entries[index]
-        if oneLevel { onToggle(fields[0].id, entry.id); return }
+        if oneLevel { toggle(fields[0].id, entry); return }
         nav.hoverMain(index, entries: entries)
         run(nav.handle(.right, entries: entries, values: values(of: entry.id)))
     }
