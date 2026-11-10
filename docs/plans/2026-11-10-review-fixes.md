@@ -2,7 +2,7 @@
 
 Requirements: no spec. The findings of the read-only whole-repo review of 2026-11-10 (baseline `744d734`) are the requirements; the owner asked in chat on 2026-11-10 that Fable decide each fix and Sonnet implement it ("tôi cần Fable để đưa ra quyết định fix còn sonnet sẽ thực hiện fix"). Review record, outside git: `~/scratch/spacevibe-reins/2026-11-10-fable-review/` (`report.md` in Vietnamese, `findings/*.md` per reviewer with trigger, path and `Check`, `verification.md`, `fix-decisions.md` from the Fable fix architect). Each task below carries a one-line statement of its findings so this plan stands without that folder.
 Checkout: `spacevibe-reins` on `main`, shared. Builders: Sonnet subagents, up to five per wave, no two in a wave on one file; they never commit. The lead (this session) runs the checks, reads each diff and commits with `git commit -- <paths>` (W11).
-Status: plan written 2026-11-10; waiting for the owner's answer to the six owner calls and "ok build". Nothing built yet.
+Status: plan written 2026-11-10; the owner accepted every owner call C1–C7 as Fable decided and started the build ("ok build", 2026-11-10). Wave 1 running.
 
 ## Scope
 
@@ -11,6 +11,8 @@ Status: plan written 2026-11-10; waiting for the owner's answer to the six owner
 - v5 stays behind `SPACEVIBE_UI_V5` (W17). Old-only views are touched only for lens 1 or 5 (F15).
 
 ## Owner calls (asked once before the build)
+
+Answer 2026-11-10: "ok build", every call as Fable decided (column 3).
 
 | # | Item | Fable's call | Alternative |
 | --- | --- | --- | --- |
@@ -96,6 +98,6 @@ Paths under `Sources/SpaceVibe/` and `Tests/SpaceVibeTests/` drop that prefix. "
 
 ## Handoff
 
-2026-11-10: plan written from `fix-decisions.md`; waiting for C1–C7 and "ok build". Baseline `744d734`.
+2026-11-10: plan written from `fix-decisions.md` (`f5a7d78`). Owner: "ok build", C1–C7 accepted as Fable decided. Baseline `744d734`. Wave 1 (F01–F05) started.
 
 /goal Fix the 2026-11-10 review findings per docs/plans/2026-11-10-review-fixes.md: after the owner answers C1 to C7, run waves 1 to 6 with Sonnet builders, one commit per task, each with its named test. Done means every task ticked or marked blocked with its reason, go vet and go test pass, scripts/test.sh passes with N above 465, only F10 changes a golden, the code-reviewer pass on 744d734..HEAD has no open blocker, high or medium, and the owner has approved the changed surfaces by eye before any push.
