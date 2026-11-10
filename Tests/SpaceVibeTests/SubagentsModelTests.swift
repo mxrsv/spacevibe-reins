@@ -156,6 +156,21 @@ struct SubagentsModelTests {
         #expect(SubagentsWording.presence(list) == "In both CLIs" && SubagentsWording.presence(row("a", codex: counted(1))) == "Codex only")
     }
 
+    @Test("the copy sentence is read before Add: in the popover of an addable row and under the In one CLI only list (G10)")
+    func copyNoteBeforeAdd() {
+        let claudeOnly = row("a", claude: counted(5))
+        let toCodex = "A copy added to Codex carries its name, description and instructions, not its model or tools."
+        let toClaude = "A copy added to Claude Code carries its name, description and instructions, not its model or tools, so it can use every tool."
+        #expect(SubagentsWording.copyNote(to: .codex) == toCodex)
+        #expect(SubagentsWording.copyNote(to: .claude) == toClaude)
+        #expect(SubagentsWording.detailLines(for: claudeOnly, adding: .codex, now: SkillRowsFixture.now).last == toCodex)
+        #expect(SubagentsWording.detailLines(for: claudeOnly, adding: nil, now: SkillRowsFixture.now) == SubagentsWording.lines(for: claudeOnly, now: SkillRowsFixture.now),
+                "a row with no Add offers no copy sentence")
+        let addable = SubagentsAddable([claudeOnly, row("b", codex: counted(2))], detected: [.claude, .codex])
+        #expect(SubagentsWording.addableNotes(addable) == [toCodex, toClaude])
+        #expect(SubagentsWording.addableNotes(SubagentsAddable([], detected: [.claude, .codex])).isEmpty)
+    }
+
     // MARK: Filters (V5-R64)
 
     @Test("filters: AND across fields, OR within one; Status, CLI and Owner")

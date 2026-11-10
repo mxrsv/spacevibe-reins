@@ -75,7 +75,27 @@ enum SubagentsWording {
         }
     }
 
+    /// What the detail popover shows for a row: `lines`, then, when `Add to <CLI>` is offered, what that copy carries (G10), so the
+    /// sentence is read before the click.
+    static func detailLines(for row: LoadoutRow, adding target: CoreCLI?, now: Date) -> [String] {
+        lines(for: row, now: now) + (target.map { [copyNote(to: $0)] } ?? [])
+    }
+
+    /// The sentences under the `In one CLI only` list: one per CLI a row there would be added to, in list order.
+    static func addableNotes(_ addable: SubagentsAddable) -> [String] {
+        var targets: [CoreCLI] = []
+        for entry in addable.entries where !targets.contains(entry.target) { targets.append(entry.target) }
+        return targets.map { copyNote(to: $0) }
+    }
+
     // MARK: Toasts (V5-R38)
+
+    /// What a copy into `cli` carries, said before `Add to <CLI>` (G10, owner call C3): name, description and instructions. For
+    /// Claude Code it adds what follows from the missing `tools` line (see `addNote`).
+    static func copyNote(to cli: CoreCLI) -> String {
+        let base = "A copy added to \(cli.label) carries its name, description and instructions, not its model or tools"
+        return cli == .claude ? base + ", so it can use every tool." : base + "."
+    }
 
     static func addLabel(_ row: LoadoutRow, to cli: CoreCLI) -> String { "Added \(row.name) to \(cli.label)" }
 

@@ -146,6 +146,14 @@ struct SubagentsCanvas: View {
                     }
                 }
             }
+            ForEach(SubagentsWording.addableNotes(addable), id: \.self) { note in
+                Text(note)
+                    .spaceVibeText(.metaLine, tone: .tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineBox(.metaLine)
+                    .padding(.horizontal, Metrics.ListRow.leading)
+                    .padding(.top, Metrics.Subagents.noteTop)
+            }
             if !addable.leftOut.isEmpty {
                 Text("Not listed: \(addable.leftOut.joined(separator: ", ")).")
                     .spaceVibeText(.metaLine, tone: .tertiary)
@@ -253,7 +261,7 @@ struct SubagentsCanvas: View {
                 SpaceVibeIcon(source: CategoryGlyph.subagent, size: .row, ink: TextTone.tertiary.color)
             }
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(SubagentsWording.lines(for: row, now: now), id: \.self) { PopoverSentence($0) }
+                ForEach(SubagentsWording.detailLines(for: row, adding: add?.target, now: now), id: \.self) { PopoverSentence($0) }
             }
             if let plugin = row.plugin { PopoverNote("Owned by the \(plugin) plugin. SpaceVibe can read it but not change it.", glyph: .lock) }
             if add != nil || row.plugin == nil { detailActions(row, add: add) }
