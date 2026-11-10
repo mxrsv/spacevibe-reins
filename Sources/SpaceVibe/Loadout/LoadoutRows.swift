@@ -367,9 +367,17 @@ extension LoadoutRows {
         guard row.plugin == nil, row.project == nil else { return .readOnly }
         if let member = row.members[cli] {
             guard member.removable else { return .readOnly }
-            return row.presentCLIs.count == 1 ? .onlyCopy : .toggles
+            return isOnlyCopy(row, in: cli) ? .onlyCopy : .toggles
         }
         return copyPlan(row, to: cli, events: events) == nil ? .readOnly : .toggles
+    }
+
+    /// Whether `cli`'s copy is the one that cannot go on its own (D53, M2): no other CLI has the row, or another member is a link
+    /// to this real copy, so removing it would leave the link dangling. ONE rule: the logos, `removeWrites` and the bulk bar read it.
+    static func isOnlyCopy(_ row: LoadoutRow, in cli: CoreCLI) -> Bool {
+        guard let member = row.members[cli] else { return false }
+        if row.presentCLIs == [cli] { return true }
+        return member.owner != "link" && row.members.values.contains { $0.cli != cli && $0.owner == "link" }
     }
 
     /// The `loadout.copyToOther` and `loadout.removeItem` calls a set of skills needs, and how many rows were left out.
@@ -396,14 +404,17 @@ extension LoadoutRows {
         return out
     }
 
-    /// Removes each row from `cli`, or from every CLI that has it when `cli` is nil (the pane's and the bar's `Remove`).
+    /// Removes each row from `cli`, or from every CLI that has it when `cli` is nil (the pane's and the bar's `Remove`). A link goes
+    /// before the real folder it points to, so the second step never looks for a skill the first one took away (M2).
     static func removeWrites(_ rows: [LoadoutRow], from cli: CoreCLI?) -> SkillWrites {
         var out = SkillWrites()
         for row in rows {
             guard row.plugin == nil, row.project == nil else { out.skipped += 1; continue }
             let members = row.members.values.filter { cli == nil || $0.cli == cli }
-            if let cli, row.presentCLIs == [cli] { out.skipped += 1; continue }
-            let removable = members.filter(\.removable).sorted { $0.cli.rawValue < $1.cli.rawValue }
+            if let cli, isOnlyCopy(row, in: cli) { out.skipped += 1; continue }
+            let removable = members.filter(\.removable).sorted {
+                ($0.owner == "link") != ($1.owner == "link") ? $0.owner == "link" : $0.cli.rawValue < $1.cli.rawValue
+            }
             guard !removable.isEmpty else { out.skipped += 1; continue }
             out.steps += removable.map { .remove(id: $0.id, from: $0.cli) }
             out.rows += 1

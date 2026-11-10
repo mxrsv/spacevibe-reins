@@ -140,6 +140,135 @@ struct LoadoutModelEngineTests {
         #expect(changed.isEmpty, "differs from the original: \(changed)")
     }
 
+    // MARK: Linked skills (M2) and a refused Undo (JA7)
+
+    private static let linkedName = "linked-demo"
+
+    /// A Claude Code skill `linked-demo` of its own, plus `.codex/skills/linked-demo` as a link to it (owner `link`), or with
+    /// `sharedFolder` the whole `.codex/skills` folder as a link to `.claude/skills`.
+    private func linkSkill(in fixture: CoreFixtureHome, sharedFolder: Bool = false) throws {
+        let fm = FileManager.default
+        let claudeSkills = fixture.home.appendingPathComponent(".claude/skills", isDirectory: true)
+        let folder = claudeSkills.appendingPathComponent(Self.linkedName, isDirectory: true)
+        try fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data("---\nname: \(Self.linkedName)\ndescription: Shared by a link.\n---\n".utf8).write(to: folder.appendingPathComponent("SKILL.md"))
+        let codexSkills = fixture.home.appendingPathComponent(".codex/skills", isDirectory: true)
+        if sharedFolder {
+            try fm.removeItem(at: codexSkills)
+            try fm.createSymbolicLink(at: codexSkills, withDestinationURL: claudeSkills)
+        } else {
+            try fm.createSymbolicLink(at: codexSkills.appendingPathComponent(Self.linkedName), withDestinationURL: folder)
+        }
+    }
+
+    private func linkedRow(_ model: LoadoutModel) throws -> LoadoutRow {
+        try #require(model.data?.rows.first { $0.name == Self.linkedName && $0.kind == .skill })
+    }
+
+    @Test("a Claude Code skill and a Codex link to it: Remove from every CLI takes the link first and succeeds; Undo restores both")
+    func removeLinkedSkillFromEveryCLI() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        try linkSkill(in: fixture)
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
+        try await settled(model)
+        let before = try await fixture.tree()
+        let row = try linkedRow(model)
+        #expect(row.members[.codex]?.owner == "link" && row.members[.claude]?.owner == "user")
+        #expect(LoadoutRows.logoMode(row, cli: .claude, events: [:]) == .onlyCopy, "the real copy is the only copy while a link points at it")
+
+        let plan = LoadoutRows.removeWrites([row], from: nil)
+        #expect(plan.steps.first == .remove(id: try #require(row.members[.codex]).id, from: .codex), "the link goes first")
+        #expect(model.perform(skillWrites: plan.steps, guardKey: "linked", label: "Removed \(Self.linkedName)"))
+        try await wait("the toast") { model.env.toasts.current != nil }
+        #expect(model.env.toasts.current?.message == "Removed \(Self.linkedName)" && model.env.toasts.current?.tone != .danger)
+        let fm = FileManager.default
+        #expect(!fm.fileExists(atPath: fixture.home.appendingPathComponent(".claude/skills/\(Self.linkedName)").path))
+        #expect((try? fm.destinationOfSymbolicLink(atPath: fixture.home.appendingPathComponent(".codex/skills/\(Self.linkedName)").path)) == nil)
+        try await wait("the re-read") { model.isSettled && model.data?.rows.contains { $0.name == Self.linkedName } == false }
+
+        model.env.toasts.runCurrentAction()
+        try await wait("the Undo toast") { model.env.toasts.current?.message == "Undid Removed \(Self.linkedName)" }
+        let changed = try await fixture.tree().difference(from: before)
+        #expect(changed.isEmpty, "differs from the original: \(changed)")
+        let target = try fm.destinationOfSymbolicLink(atPath: fixture.home.appendingPathComponent(".codex/skills/\(Self.linkedName)").path)
+        #expect(target == fixture.home.appendingPathComponent(".claude/skills/\(Self.linkedName)").path)
+    }
+
+    @Test("removing the real copy alone is refused while a link points at it, and the link alone may go")
+    func realCopyIsTheOnlyCopyWhileLinked() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        try linkSkill(in: fixture)
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
+        try await settled(model)
+        let row = try linkedRow(model)
+        #expect(LoadoutRows.removeWrites([row], from: .claude).steps.isEmpty)
+        #expect(LoadoutRows.removeWrites([row], from: .codex).steps.count == 1)
+    }
+
+    @Test("`.codex/skills` linked to `.claude/skills`: Remove from every CLI succeeds, the second step finding its skill already gone")
+    func removeFromSharedSkillsFolder() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        try linkSkill(in: fixture, sharedFolder: true)
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
+        try await settled(model)
+        let before = try await fixture.tree()
+        let row = try linkedRow(model)
+        #expect(row.presentCLIs == [.claude, .codex])
+
+        let plan = LoadoutRows.removeWrites([row], from: nil)
+        #expect(plan.steps.count == 2)
+        #expect(model.perform(skillWrites: plan.steps, guardKey: "shared", label: "Removed \(Self.linkedName)"))
+        try await wait("the toast") { model.env.toasts.current != nil }
+        #expect(model.env.toasts.current?.message == "Removed \(Self.linkedName)" && model.env.toasts.current?.tone != .danger)
+        #expect(!FileManager.default.fileExists(atPath: fixture.home.appendingPathComponent(".claude/skills/\(Self.linkedName)").path))
+        try await wait("the re-read") { model.isSettled && model.data?.rows.contains { $0.name == Self.linkedName } == false }
+
+        model.env.toasts.runCurrentAction()
+        try await wait("the Undo toast") { model.env.toasts.current?.message == "Undid Removed \(Self.linkedName)" }
+        let changed = try await fixture.tree().difference(from: before)
+        #expect(changed.isEmpty, "differs from the original: \(changed)")
+    }
+
+    @Test("a refused Undo shows the core's own sentence, for one entry and for several")
+    func refusedUndoSaysWhy() async throws {
+        let fixture = try await CoreFixtureHome.make()
+        defer { fixture.remove() }
+        let (model, client) = try model(fixture)
+        defer { client.shutdown() }
+        try await settled(model)
+        let rows = try #require(model.data?.rows.filter { $0.kind == .skill && $0.presentCLIs == [.claude] && $0.plugin == nil && $0.project == nil })
+        let folder = fixture.home.appendingPathComponent(".claude/skills", isDirectory: true)
+
+        // One entry: the folder is recreated before Undo.
+        let one = try #require(rows.first)
+        #expect(model.perform(skillWrites: LoadoutRows.removeWrites([one], from: nil).steps, guardKey: "one", label: "Removed \(one.name)"))
+        try await wait("the toast") { model.env.toasts.current?.message == "Removed \(one.name)" }
+        let path = folder.appendingPathComponent(one.name, isDirectory: true).path
+        try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true)
+        model.env.toasts.runCurrentAction()
+        try await wait("the refusal") { model.env.toasts.current?.tone == .danger }
+        #expect(model.env.toasts.current?.message == "\(path) already exists again, so it was left alone.")
+
+        // Several entries: the label comes first, then the sentence.
+        let pair = Array(rows.dropFirst().prefix(2))
+        try #require(pair.count == 2)
+        let steps = LoadoutRows.removeWrites(pair, from: nil).steps
+        try await wait("the guard") { model.guardedWrites == 0 }
+        #expect(model.perform(skillWrites: steps, guardKey: "two", label: "Removed 2 skills"))
+        try await wait("the toast") { model.env.toasts.current?.message == "Removed 2 skills" }
+        let again = folder.appendingPathComponent(pair[1].name, isDirectory: true).path
+        try FileManager.default.createDirectory(atPath: again, withIntermediateDirectories: true)
+        model.env.toasts.runCurrentAction()
+        try await wait("the refusal") { model.env.toasts.current?.tone == .danger }
+        #expect(model.env.toasts.current?.message == "Could not undo all of Removed 2 skills. \(again) already exists again, so it was left alone.")
+    }
+
     // MARK: Refusals
 
     /// Status and sentence of each refusal.

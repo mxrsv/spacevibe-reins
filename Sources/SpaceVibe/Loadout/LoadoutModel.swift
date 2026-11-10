@@ -252,7 +252,8 @@ final class LoadoutModel {
     /// nothing. `label` names the whole change ("Added 3 skills to Codex"); `note` is a sentence only the success toast adds after it
     /// (what the copy leaves out), never the Undo toast. Returns at once; the write runs in a task. The result is false when the
     /// write was not taken (no steps, or its guard is held); `onFailure` runs once a taken write failed, after the earlier steps
-    /// were undone.
+    /// were undone. A removal that answers 404 after an earlier step wrote is done: its target went with that step (two CLI
+    /// folders that are one folder through a link).
     @discardableResult
     func perform(skillWrites steps: [LoadoutRows.SkillWrites.Step], guardKey: String, label: String, note: String? = nil,
                  onFailure: (@MainActor () -> Void)? = nil) -> Bool {
@@ -265,7 +266,13 @@ final class LoadoutModel {
         Task { [weak self] in
             var entries: [CoreJournalEntry] = []
             do {
-                for step in steps { entries.append(try await Self.run(step, on: core)) }
+                for step in steps {
+                    do {
+                        entries.append(try await Self.run(step, on: core))
+                    } catch let error as CoreError where error.status == 404 && !entries.isEmpty && step.isRemove {
+                        continue
+                    }
+                }
             } catch {
                 let reverted = await AppEnvironment.undoAll(entries, on: core)
                 guard let self else { return }
@@ -295,9 +302,18 @@ final class LoadoutModel {
     private func undoSkillWrites(_ entries: [CoreJournalEntry], label: String) {
         let core = self.core
         Task { [weak self] in
-            let done = await AppEnvironment.undoAll(entries, on: core)
+            var refusal: Error?
+            for entry in entries.reversed() {
+                do { _ = try await core.journalUndo(id: entry.id) } catch { refusal = refusal ?? error }
+            }
             guard let self else { return }
-            self.env.toasts.show(done ? "Undid \(label)" : "Could not undo all of \(label)", tone: done ? .info : .danger)
+            if let refusal {
+                // The core's own sentence says what happened; with several writes it follows the label of the change.
+                let reason = AppEnvironment.message(refusal)
+                self.env.toasts.show(entries.count == 1 ? reason : "Could not undo all of \(label). \(reason)", tone: .danger)
+            } else {
+                self.env.toasts.show("Undid \(label)")
+            }
             self.reload()
         }
     }
@@ -331,6 +347,12 @@ final class LoadoutModel {
             if rest > .zero { try? await Task.sleep(for: rest) }
             if inFlight[key] == ticket { inFlight[key] = nil }
         }
+    }
+}
+
+private extension LoadoutRows.SkillWrites.Step {
+    var isRemove: Bool {
+        if case .remove = self { true } else { false }
     }
 }
 

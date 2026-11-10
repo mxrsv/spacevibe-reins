@@ -196,6 +196,30 @@ struct LoadoutRowsTests {
         #expect(both.key == "skill::pdf")
     }
 
+    // MARK: linked skills (M2)
+
+    @Test("a link is removed before the real folder, and the real copy is the only copy for one CLI while a link points at it")
+    func linkFirstAndOnlyCopy() throws {
+        var link = inCodex(skill("pdf"))
+        link.owner = "link"
+        let row = try #require(LoadoutRows.build(snapshot(items: [skill("pdf"), link]), home: nil).first)
+        #expect(row.presentCLIs == [.claude, .codex])
+
+        let every = LoadoutRows.removeWrites([row], from: nil)
+        #expect(every.steps == [.remove(id: link.id, from: .codex), .remove(id: skill("pdf").id, from: .claude)])
+
+        #expect(LoadoutRows.isOnlyCopy(row, in: .claude) && !LoadoutRows.isOnlyCopy(row, in: .codex))
+        #expect(LoadoutRows.removeWrites([row], from: .claude).steps.isEmpty && LoadoutRows.removeWrites([row], from: .claude).skipped == 1)
+        #expect(LoadoutRows.removeWrites([row], from: .codex).steps == [.remove(id: link.id, from: .codex)])
+        #expect(LoadoutRows.logoMode(row, cli: .claude, events: events) == .onlyCopy)
+        #expect(LoadoutRows.logoMode(row, cli: .codex, events: events) == .toggles)
+
+        // Two real copies are not an only copy: Claude Code's goes first, as before.
+        let plain = try #require(LoadoutRows.build(snapshot(items: [skill("pdf"), inCodex(skill("pdf"))]), home: nil).first)
+        #expect(!LoadoutRows.isOnlyCopy(plain, in: .claude))
+        #expect(LoadoutRows.removeWrites([plain], from: nil).steps == [.remove(id: skill("pdf").id, from: .claude), .remove(id: inCodex(skill("pdf")).id, from: .codex)])
+    }
+
     @Test("two hooks of one hash with two matchers are two rows")
     func hooksSplitByMatcher() {
         var edit = hook(event: "PreToolUse", hash: "h1")
