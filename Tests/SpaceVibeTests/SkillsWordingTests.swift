@@ -74,6 +74,20 @@ struct SkillsWordingTests {
         #expect(SkillsWording.verdict(for: F.row("g", claude: F.scanning), status: .loading, detected: [.claude]) == nil)
     }
 
+    @Test("Never ran names the date the logs reach back to once the scan has one, and keeps the undated sentence before")
+    func neverRanNamesTheSpan() throws {
+        func text(_ row: LoadoutRow, since: String?) throws -> String {
+            try #require(SkillsWording.verdict(for: row, status: .neverRan, detected: [.claude, .codex], since: since)).text
+        }
+        let one = F.row("a", claude: F.counted(0))
+        #expect(try text(one, since: "2026-10-01") == "Installed in Claude Code. No session in the local logs since 2026-10-01.")
+        #expect(try text(one, since: nil) == "Installed in Claude Code. Nothing in the local logs shows a session.")
+        let both = F.row("b", claude: F.counted(0), codex: F.counted(0))
+        #expect(try text(both, since: "2026-10-01") == "Installed in both CLIs. No session in the local logs since 2026-10-01.")
+        let half = F.row("c", claude: F.counted(0), codex: F.noLogs)
+        #expect(try text(half, since: "2026-10-01").contains("No session in the local logs since 2026-10-01 in Claude Code"))
+    }
+
     @Test("a sentence says where the sessions happened, not where the file is: 142 in Claude Code and 0 in Codex is all in Claude Code")
     func verdictFollowsTheSessions() throws {
         func verdict(_ row: LoadoutRow, _ status: SkillStatus) throws -> SkillsWording.Verdict {

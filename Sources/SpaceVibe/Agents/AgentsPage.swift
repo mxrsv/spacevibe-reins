@@ -65,8 +65,9 @@ final class AgentsPage: SpaceVibeTab {
 
     var source: String? {
         switch selected {
-        case .skills: SkillsStatusBar.source
-        case .subagents: SubagentsStatusBar.source
+        // The counts rest on the scan: once there is a result the bar says how many sessions and since when (GI6).
+        case .skills: loadout.usageResult == nil ? SkillsStatusBar.source : loadout.usageNote
+        case .subagents: loadout.usageResult == nil ? SubagentsStatusBar.source : loadout.usageNote
         case .hooks: HooksStatusBar.source
         case .rules: RulesStatusBar.source
         }

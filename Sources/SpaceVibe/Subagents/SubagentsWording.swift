@@ -45,8 +45,8 @@ enum SubagentsWording {
 
     // MARK: The Answer
 
-    static func verdict(for row: LoadoutRow, detected: [CoreCLI]) -> SubagentsAnswer.Verdict {
-        let said = SkillsWording.verdict(for: row, status: .neverRan, detected: detected)
+    static func verdict(for row: LoadoutRow, detected: [CoreCLI], since: String? = nil) -> SubagentsAnswer.Verdict {
+        let said = SkillsWording.verdict(for: row, status: .neverRan, detected: detected, since: since)
         return SubagentsAnswer.Verdict(key: row.key, name: row.name, text: said?.text ?? "Nothing in the local logs shows a session.",
                                        small: said?.small, offersRemove: row.plugin == nil)
     }

@@ -38,7 +38,7 @@ struct SkillsPane: View {
             if !row.detail.isEmpty {
                 Text(row.detail).spaceVibeText(.prose, tone: .secondary).fixedSize(horizontal: false, vertical: true).lineBox(.prose)
             }
-            if let verdict = SkillsWording.verdict(for: row, status: status, detected: detected) {
+            if let verdict = SkillsWording.verdict(for: row, status: status, detected: detected, since: LoadoutFormat.usageSince(model.loadout.usageResult)) {
                 VerdictBox(glyph: status.verdict, glyphLabel: verdict.title, title: verdict.title, text: verdict.text, small: verdict.small)
             }
             PaneSection(title: "Sessions by CLI") {

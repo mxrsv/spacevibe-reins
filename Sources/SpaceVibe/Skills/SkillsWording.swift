@@ -61,8 +61,9 @@ enum SkillsWording {
     }
 
     /// The verdict panel; nil while the scan has not finished. `detected` are the CLIs on the machine, so "Codex does not have
-    /// it" is not said of a CLI that is not installed.
-    static func verdict(for row: LoadoutRow, status: SkillStatus, detected: [CoreCLI]) -> Verdict? {
+    /// it" is not said of a CLI that is not installed. `since` is the date of the oldest log the scan read: Never ran says how far
+    /// back it looked.
+    static func verdict(for row: LoadoutRow, status: SkillStatus, detected: [CoreCLI], since: String? = nil) -> Verdict? {
         let usage = row.skillUsage
         let present = usage.present
         let ranIn = usage.ranIn
@@ -92,13 +93,16 @@ enum SkillsWording {
         case .neverRan:
             let measured = usage.measured
             let text: String
+            let none = since.map { "No session in the local logs since \($0)" }
             if oneOnly {
-                text = "Installed in \(present[0].label). Nothing in the local logs shows a session."
+                text = "Installed in \(present[0].label). " + (none.map { $0 + "." } ?? "Nothing in the local logs shows a session.")
             } else if measured.count == 2 {
-                text = "Installed in both CLIs. Nothing in the local logs shows a session in either."
+                text = "Installed in both CLIs. " + (none.map { $0 + "." } ?? "Nothing in the local logs shows a session in either.")
             } else {
                 let unlogged = usage.withoutLogs.map(\.label).joined(separator: " or ")
-                text = "Installed in both CLIs. Nothing in the local logs shows a session in \(measured.first?.label ?? "either"), and SpaceVibe found no \(unlogged) logs."
+                let first = measured.first?.label ?? "either"
+                text = "Installed in both CLIs. " + (none.map { "\($0) in \(first)" } ?? "Nothing in the local logs shows a session in \(first)")
+                    + ", and SpaceVibe found no \(unlogged) logs."
             }
             let small = lock ?? (usage.added.map { "\(addedPhrase($0)), so it is not a candidate to remove yet." } ?? "A good candidate to remove.")
             return Verdict(status: status, title: status.title, text: text, small: small)

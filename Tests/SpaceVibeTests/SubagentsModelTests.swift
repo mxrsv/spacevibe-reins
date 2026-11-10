@@ -55,6 +55,14 @@ struct SubagentsModelTests {
         #expect(result.verdict?.text == "Installed in both CLIs. Nothing in the local logs shows a session in either.")
     }
 
+    @Test("the never-ran verdict names the date the logs reach back to when a usage result exists, and keeps the old sentence when none does")
+    func verdictNamesTheSpan() {
+        let list = rows([("architect", counted(0), nil, "user")])
+        let dated = SubagentsAnswer.of(list, isLoaded: true, detected: [.claude, .codex], since: "2026-10-01")
+        #expect(dated.verdict?.text == "Installed in Claude Code. No session in the local logs since 2026-10-01.")
+        #expect(answer(list).verdict?.text == "Installed in Claude Code. Nothing in the local logs shows a session.")
+    }
+
     @Test("nothing needs the user: every subagent has run, or nothing is worth a look; no verdict either way")
     func nothingNeedsTheUser() {
         let healthy = answer(rows([("a", counted(3), nil, "user"), ("b", counted(1), counted(2), "user")]))

@@ -33,10 +33,16 @@ enum LoadoutFormat {
         return out
     }
 
+    /// The date of the oldest session log the scan read, over both CLIs; nil when no log has a date.
+    static func usageSince(_ result: CoreUsageResult?) -> String? {
+        guard let result else { return nil }
+        return [result.windows.claude.oldest, result.windows.codex.oldest].compactMap { $0 }.min()
+    }
+
     /// What the counts rest on. They come from every session log found, not a fixed window, so it says how many and since when.
     static func usageNote(result: CoreUsageResult?, progress: CoreUsageProgress?, failure: String?) -> String {
         if let result {
-            let since = [result.windows.claude.oldest, result.windows.codex.oldest].compactMap { $0 }.min()
+            let since = usageSince(result)
             let claude = result.sessions.claude.formatted(.number.locale(Locale(identifier: "en_US")))
             let codex = result.sessions.codex.formatted(.number.locale(Locale(identifier: "en_US")))
             return "Counted from \(claude) Claude Code and \(codex) Codex sessions" + (since.map { " since \($0)" } ?? "")

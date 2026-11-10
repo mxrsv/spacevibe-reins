@@ -185,7 +185,7 @@ struct SubagentsAnswer: Equatable, Sendable {
     /// Never-ran subagents beyond the one named: "N more are marked in the list."
     let more: Int
 
-    static func of(_ rows: [LoadoutRow], isLoaded: Bool, detected: [CoreCLI]) -> SubagentsAnswer {
+    static func of(_ rows: [LoadoutRow], isLoaded: Bool, detected: [CoreCLI], since: String? = nil) -> SubagentsAnswer {
         guard isLoaded, !rows.isEmpty, !rows.contains(where: { $0.skillUsage.state == .loading }) else {
             return SubagentsAnswer(sentence: nil, verdict: nil, more: 0)
         }
@@ -195,6 +195,6 @@ struct SubagentsAnswer: Equatable, Sendable {
             return SubagentsAnswer(sentence: allRan ? "Every subagent has run." : "Nothing needs your attention.", verdict: nil, more: 0)
         }
         let sentence = "\(unused.count) \(unused.count == 1 ? "subagent" : "subagents") never ran."
-        return SubagentsAnswer(sentence: sentence, verdict: SubagentsWording.verdict(for: first, detected: detected), more: unused.count - 1)
+        return SubagentsAnswer(sentence: sentence, verdict: SubagentsWording.verdict(for: first, detected: detected, since: since), more: unused.count - 1)
     }
 }

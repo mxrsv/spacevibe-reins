@@ -144,6 +144,21 @@ struct AgentsPageTests {
         try await settle("the later re-read") { settled(page) && core.counts.snapshots == after.snapshots + 1 }
     }
 
+    @Test("the Skills and Subagents status bar names the log span once a usage result exists; before that it keeps the old source")
+    func sourceNamesTheSpan() async throws {
+        let page = try await started(CountingAgentsCore())
+        let note = "Counted from 1 Claude Code and 1 Codex sessions since 2026-10-01"
+        #expect(page.loadout.usageResult != nil)
+        page.select(.skills)
+        #expect(page.source == note)
+        page.select(.subagents)
+        #expect(page.source == note)
+        let fresh = AgentsPage(env: AppEnvironment(toasts: ToastCenter(announce: false)))
+        #expect(fresh.source == SkillsStatusBar.source)
+        fresh.select(.subagents)
+        #expect(fresh.source == SubagentsStatusBar.source)
+    }
+
     @Test("a forced refresh reads inside the interval, and the palette entry forces it")
     func forcedRefresh() async throws {
         let core = CountingAgentsCore()
