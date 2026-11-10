@@ -152,17 +152,77 @@ struct LoadoutRowsTests {
         #expect(LoadoutFilter.allCases.map { $0.count(in: counts) } == [9, 5, 4, 1])
     }
 
-    @Test("what the screen shows: problems lose the home folder, the badge counts the global scope, scopes come from the rows")
+    @Test("what the screen shows: problems lose the home folder, the badge counts the built global rows, scopes come from the rows")
     func screenData() {
         var rows = snapshot(items: [skill("one"), skill("two", project: "/a/app")])
         rows.problems = ["Could not read /home/demo/.claude/skills/broken/SKILL.md", "No home here: /elsewhere/x"]
-        rows.countsByScope = ["global": CoreFilterCounts(all: 7, only: .init(claude: 0, codex: 0), neverRan: 0, dead: 0)]
         let data = LoadoutData.build(raw: rows)
         #expect(data.problems == ["Could not read ~/.claude/skills/broken/SKILL.md", "No home here: /elsewhere/x"])
-        #expect(data.globalCount == 7)
+        #expect(data.globalCount == 1)
         #expect(data.scopes.map(\.value) == ["global", "/a/app"])
         #expect(data.events == events)
         #expect(data.rows.count == 2)
+    }
+
+    // MARK: split rows (M1)
+
+    @Test("a user skill and a plugin skill of one name in Claude Code are two rows, and the user one is removable")
+    func userAndPluginSkillSplit() throws {
+        var plugin = skill("pdf")
+        plugin.id = "claude:skill:global:plugin:pdf"
+        plugin.owner = "acme"
+        plugin.removable = false
+        let user = skill("pdf")
+        let rows = LoadoutRows.build(snapshot(items: [user, plugin]), home: nil)
+        #expect(rows.map(\.key) == ["skill::pdf", "skill::pdf#1"])
+        let userRow = try #require(rows.first { $0.members[.claude]?.id == user.id })
+        let pluginRow = try #require(rows.first { $0.members[.claude]?.id == plugin.id })
+        #expect(userRow.key == "skill::pdf" && pluginRow.plugin == "acme" && userRow.plugin == nil)
+        #expect(userRow.cells[.codex] == .missing)
+        #expect(LoadoutRows.removeWrites([userRow], from: nil).steps.count == 1)
+        #expect(LoadoutRows.removeWrites([pluginRow], from: nil).steps.isEmpty)
+    }
+
+    @Test("a user skill and its link in the other CLI stay one row next to a plugin skill")
+    func linkJoinsUserRow() throws {
+        var plugin = skill("pdf")
+        plugin.id = "claude:skill:global:plugin:pdf"
+        plugin.owner = "acme"
+        var link = inCodex(skill("pdf"))
+        link.owner = "link"
+        let rows = LoadoutRows.build(snapshot(items: [skill("pdf"), plugin, link]), home: nil)
+        #expect(rows.count == 2)
+        let both = try #require(rows.first { $0.members.count == 2 })
+        #expect(both.key == "skill::pdf")
+    }
+
+    @Test("two hooks of one hash with two matchers are two rows")
+    func hooksSplitByMatcher() {
+        var edit = hook(event: "PreToolUse", hash: "h1")
+        edit.matcher = "Edit"
+        var bash = hook(event: "PreToolUse", hash: "h1")
+        bash.matcher = "Bash"
+        bash.id = "claude:hook:h1-bash"
+        let rows = LoadoutRows.build(snapshot(hooks: [edit, bash]), home: nil)
+        #expect(rows.map(\.key).sorted() == ["hook::h1", "hook::h1#1"])
+        #expect(Set(rows.map(\.name)) == ["PreToolUse \u{00B7} Edit", "PreToolUse \u{00B7} Bash"])
+    }
+
+    @Test("a duplicate inside one owner class takes its own numbered row")
+    func duplicateGetsSibling() {
+        var second = skill("pdf")
+        second.id = "claude:skill:global:pdf-2"
+        let rows = LoadoutRows.build(snapshot(items: [skill("pdf"), second]), home: nil)
+        #expect(rows.map(\.key).sorted() == ["skill::pdf", "skill::pdf#1"])
+    }
+
+    @Test("a group without a collision keeps its key and row")
+    func noCollisionUnchanged() throws {
+        let item = skill("solo", runs: 3)
+        let row = try onlyRow(snapshot(items: [item, inCodex(skill("solo"))]))
+        #expect(row.key == item.key)
+        #expect(row.members.count == 2)
+        #expect(row.cells[.claude] == .counted(runs: 3, last: nil, errors: nil))
     }
 
     @Test("the home folder is abbreviated only when the Claude folder sits directly in it")

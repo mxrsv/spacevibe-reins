@@ -94,14 +94,15 @@ enum LoadoutShots {
         }
     }
 
-    /// Two items with one key in one CLI: the row keeps the one the usage cells are built from (the last).
+    /// Two items with one key in one CLI: with one owner class each is its own row (M1), the first under the core key.
     private static func memberChecks() throws {
         func skill(_ id: String) -> CoreInventoryItem {
             CoreInventoryItem(id: id, cli: .claude, kind: .skill, name: "twin", entry: "SKILL.md", description: "", owner: "user", path: "/x/\(id)", file: "/x/\(id)/SKILL.md", removable: true, scope: .global, project: nil, inOther: false, key: "skill::twin")
         }
         let snapshot = CoreLoadoutRows(usage: .scanning, items: [skill("first"), skill("second")], hooks: [], problems: [], events: [:], roots: [:], countsByScope: [:], rowFlags: [:])
-        let row = LoadoutRows.build(snapshot, home: nil).first
-        try ShotHarness.check(row?.members[.claude]?.id == "second", "a row with two same-key items acts on the item its cell is built from")
+        let rows = LoadoutRows.build(snapshot, home: nil)
+        try ShotHarness.check(rows.map(\.key) == ["skill::twin", "skill::twin#1"], "two same-key items in one CLI are two rows")
+        try ShotHarness.check(Set(rows.compactMap { $0.members[.claude]?.id }) == ["first", "second"], "each row acts on its own item")
     }
 
     /// The dead-hook count in the toast is the engine's, the guard outlives the write, and a double click writes once.

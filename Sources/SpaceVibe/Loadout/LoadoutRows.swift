@@ -23,26 +23,73 @@ enum LoadoutRows {
         return "\(hook.event) \u{00B7} \(matcher)"
     }
 
-    /// Groups items and hooks by row key and sorts: most runs first, then by name.
+    /// What tells two members of one CLI and one core key apart: items by owner class (`user` and `link` are one class, a plugin
+    /// is its own name), hooks by matcher plus owner class (a hook's `hash` leaves the matcher out).
+    private static func discriminator(_ member: LoadoutMember) -> String {
+        let owner = member.owner == "link" ? "user" : member.owner
+        if case .hook(let hook) = member { return "\(hook.matcher ?? "")\u{1F}\(owner)" }
+        return owner
+    }
+
+    /// The members of one row before it is built, with the discriminator they share.
+    private struct Slot {
+        var discriminator: String
+        var members: [CoreCLI: LoadoutMember] = [:]
+    }
+
+    /// The groups of one core key. A group with at most one member per CLI is one row under the core key. A group where a CLI
+    /// has two members is split by `discriminator`: the first slot keeps the core key, later ones get `<key>#<n>`, and a
+    /// duplicate left inside one discriminator takes the next free slot.
+    private static func slots(_ members: [LoadoutMember]) -> (slots: [Slot], split: Bool) {
+        var perCLI: [CoreCLI: Int] = [:]
+        for member in members { perCLI[member.cli, default: 0] += 1 }
+        guard perCLI.values.contains(where: { $0 > 1 }) else {
+            var only = Slot(discriminator: "")
+            for member in members { only.members[member.cli] = member }
+            return ([only], false)
+        }
+        var out: [Slot] = []
+        for member in members {
+            let tag = discriminator(member)
+            if let index = out.firstIndex(where: { $0.discriminator == tag && $0.members[member.cli] == nil }) {
+                out[index].members[member.cli] = member
+            } else {
+                out.append(Slot(discriminator: tag, members: [member.cli: member]))
+            }
+        }
+        return (out, true)
+    }
+
+    /// Groups items and hooks by row key and sorts: most runs first, then by name. A key where one CLI has two members is
+    /// split into several rows (M1, `slots`).
     static func build(_ snapshot: CoreLoadoutRows, home: String?) -> [LoadoutRow] {
         var order: [String] = []
-        var members: [String: [CoreCLI: LoadoutMember]] = [:]
+        var byKey: [String: [LoadoutMember]] = [:]
         func add(_ member: LoadoutMember, key: String) {
-            if members[key] == nil { order.append(key) }
-            // The last member per CLI and key, as the core builds the cells from: the row's actions and its cell
-            // then describe the same file.
-            members[key, default: [:]][member.cli] = member
+            if byKey[key] == nil { order.append(key) }
+            byKey[key, default: []].append(member)
         }
         for item in snapshot.items { add(.item(item), key: item.key) }
         for hook in snapshot.hooks { add(.hook(hook), key: hook.key) }
 
-        let rows = order.compactMap { key -> LoadoutRow? in
-            guard let group = members[key], let first = group[.claude] ?? group[.codex] else { return nil }
+        var entries: [(coreKey: String, key: String, group: [CoreCLI: LoadoutMember], split: Bool)] = []
+        for coreKey in order {
+            let (parts, split) = slots(byKey[coreKey] ?? [])
+            for (index, slot) in parts.enumerated() {
+                entries.append((coreKey, index == 0 ? coreKey : "\(coreKey)#\(index)", slot.members, split))
+            }
+        }
+
+        let rows = entries.compactMap { entry -> LoadoutRow? in
+            let (coreKey, key, group, split) = entry
+            guard let first = group[.claude] ?? group[.codex] else { return nil }
             let present = CoreCLI.allCases.compactMap { group[$0] }
-            let cells = first.cells ?? CoreCells(
-                claude: group[.claude] == nil ? .missing : .pending(reason: "Usage scan has not finished"),
-                codex: group[.codex] == nil ? .missing : .pending(reason: "Usage scan has not finished")
-            )
+            // The core builds `cells` per key group, so a split row reads `.missing` for a CLI it has no member in.
+            func cell(_ cli: CoreCLI) -> CoreUsageCell {
+                guard let member = group[cli] else { return .missing }
+                return member.cells?[cli] ?? .pending(reason: "Usage scan has not finished")
+            }
+            let cells = split ? CoreCells(claude: cell(.claude), codex: cell(.codex)) : first.cells ?? CoreCells(claude: cell(.claude), codex: cell(.codex))
             var name = ""
             var detail = ""
             var kind = LoadoutKind.skill
@@ -74,7 +121,7 @@ enum LoadoutRows {
             }
             return LoadoutRow(
                 key: key, kind: kind, project: project, members: group, cells: cells,
-                flags: snapshot.rowFlags[key] ?? CoreRowFlags(one: false, neverRan: false, dead: false),
+                flags: snapshot.rowFlags[coreKey] ?? CoreRowFlags(one: false, neverRan: false, dead: false),
                 name: name, detail: detail, plugin: plugin, errors: errors, runs: runs, addedNote: addedNote(cells)
             )
         }
@@ -378,14 +425,15 @@ struct LoadoutData: Sendable {
 
     static func build(raw: CoreLoadoutRows) -> LoadoutData {
         let home = LoadoutRows.home(roots: raw.roots)
+        let rows = LoadoutRows.build(raw, home: home)
         return LoadoutData(
-            rows: LoadoutRows.build(raw, home: home),
+            rows: rows,
             scopes: LoadoutRows.scopes(raw),
             countsByScope: raw.countsByScope,
             // The core sends the sentences with absolute paths; the home folder is shortened here.
             problems: raw.problems.map { LoadoutRows.shorten($0, home: home) },
             events: raw.events,
-            globalCount: raw.countsByScope[LoadoutRows.globalScope]?.all ?? 0,
+            globalCount: rows.filter { $0.project == nil }.count,
             home: home
         )
     }
