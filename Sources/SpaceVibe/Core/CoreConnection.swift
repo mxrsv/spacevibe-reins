@@ -128,14 +128,21 @@ final class CoreConnection: @unchecked Sendable {
         return token
     }
 
-    /// Removes a subscriber; the core stops polling only when the last one is gone.
+    /// How long the last subscriber's removal waits before `activity.unsubscribe` is sent. A tab or window that comes back inside
+    /// it keeps the running subscription instead of racing a late unsubscribe against its new `activity.subscribe`.
+    static let unsubscribeDelay: Duration = .seconds(1)
+
+    /// Removes a subscriber; the core stops polling only when the last one is gone and still is after `unsubscribeDelay`.
     func removeSink(_ token: UUID) {
-        let (last, current): (Bool, CoreSession?) = lock.withLock {
+        let last: Bool = lock.withLock {
             sinks[token] = nil
-            return (sinks.isEmpty, session)
+            return sinks.isEmpty
         }
-        guard last, let current, current.isAlive else { return }
+        guard last else { return }
         Task { [self] in
+            try? await Task.sleep(for: Self.unsubscribeDelay)
+            let current: CoreSession? = lock.withLock { sinks.isEmpty ? session : nil }
+            guard let current, current.isAlive else { return }
             let id = lock.withLock { () -> Int in defer { nextID += 1 }; return nextID }
             if let line = try? CoreWire.line(id: id, method: "activity.unsubscribe", params: CoreWire.NoParams()) {
                 _ = try? await current.request(id: id, method: "activity.unsubscribe", line: line, isRead: true)

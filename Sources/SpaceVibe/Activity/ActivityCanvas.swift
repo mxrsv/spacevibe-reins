@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The v5 Activity page (V5-R69 to V5-R72; the `b-activity` mock): the tab head with Running, Failed and Files and one `Filter`,
@@ -11,9 +12,14 @@ struct ActivityCanvas: View {
 
     @Environment(ShellModel.self) private var shell
     @Environment(\.openStateStore) private var store
+    @Environment(\.isShotRendering) private var isShotRendering
+    /// Whether the window can be seen at all (not minimised, not fully covered or on another Space). Not `scenePhase`: the page
+    /// is watched beside a terminal, so the app is rarely frontmost while the window is in view.
+    @State private var windowVisible = true
 
     var body: some View {
         let isActive = shell.activeID == ActivityTab.tabID
+        let isPolling = isActive && (windowVisible || isShotRendering)
         // The clock the ages read: the page redraws once a minute, as Limits does.
         TimelineView(.periodic(from: .now, by: 60)) { context in
             let query = model.query(at: context.date)
@@ -35,8 +41,12 @@ struct ActivityCanvas: View {
                 }
             }
         }
-        // Reads while this tab shows, and once at launch for the sidebar badge; SwiftUI cancels the task on a tab switch.
-        .task(id: isActive) { await model.run(active: isActive) }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeOcclusionStateNotification)) { _ in
+            windowVisible = NSApp.occlusionState.contains(.visible)
+        }
+        // Reads while this tab shows in a visible window, and once at launch for the sidebar badge; SwiftUI cancels the task on a
+        // tab switch or when the window is hidden.
+        .task(id: isPolling) { await model.run(active: isPolling) }
     }
 
     @ViewBuilder

@@ -226,6 +226,27 @@ struct CoreClientTests {
         }
     }
 
+    @Test("ending a subscription and starting one in the same tick keeps it: the late unsubscribe is dropped, and the last end sends it", .timeLimit(.minutes(1)))
+    func lateUnsubscribeDoesNotStopANewSubscription() async throws {
+        try await withClient { _, client in
+            var first: AsyncThrowingStream<CoreActivityReport, Error>? = client.activitySubscribe()
+            var firstIterator = first?.makeAsyncIterator()
+            #expect(try await firstIterator?.next() != nil)
+            // End the first stream and start the second in the same tick.
+            firstIterator = nil
+            first = nil
+            var second: AsyncThrowingStream<CoreActivityReport, Error>? = client.activitySubscribe()
+            var secondIterator = second?.makeAsyncIterator()
+            #expect(try await secondIterator?.next() != nil)
+            try await Task.sleep(for: CoreConnection.unsubscribeDelay + .milliseconds(600))
+            #expect(client.connection.sentCount("activity.unsubscribe") == 0, "the second subscription is still running")
+            // The last subscriber going away does send it.
+            secondIterator = nil
+            second = nil
+            #expect(await eventually(5) { client.connection.sentCount("activity.unsubscribe") == 1 })
+        }
+    }
+
     // MARK: Startup failures
 
     @Test("a helper that speaks another protocol version is a fixed startup problem, not a restart loop", .timeLimit(.minutes(1)))

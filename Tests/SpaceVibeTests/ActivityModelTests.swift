@@ -125,6 +125,16 @@ struct ActivityModelTests {
         #expect(core.ended == 1 && core.subscriptions == 1)
     }
 
+    @Test("a hidden window with a report loaded makes no subscription at all (the canvas passes isActive && windowVisible)")
+    func hiddenWindowDoesNotSubscribe() async {
+        let core = FakeActivityCore()
+        let model = model(core)
+        await model.readOnce()
+        #expect(model.report != nil)
+        await model.run(active: false)
+        #expect(core.subscriptions == 0 && core.ended == 0)
+    }
+
     @Test("a stream that fails shows the core's sentence, subscribes again, and a snapshot clears the failure")
     func streamFailure() async throws {
         let core = FakeActivityCore()
