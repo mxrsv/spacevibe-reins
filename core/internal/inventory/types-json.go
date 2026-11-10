@@ -3,6 +3,8 @@ package inventory
 import (
 	"encoding/json"
 	"errors"
+
+	"spacevibe.dev/core/internal/redact"
 )
 
 var errBadCell = errors.New("the usage cell has an unknown shape")
@@ -82,13 +84,14 @@ type hookWire struct {
 	Usage     *HookUsage `json:"usage"`
 }
 
-// MarshalJSON adds kind and key.
+// MarshalJSON adds kind and key, and masks recognisable credentials in the command. The item itself keeps the raw
+// command: a copy or a removal finds the hook by that text.
 func (h Hook) MarshalJSON() ([]byte, error) {
 	paths := h.Paths
 	if paths == nil {
 		paths = []string{}
 	}
-	return json.Marshal(hookWire{h.ID, h.CLI, KindHook, h.Event, h.Matcher, h.Command, h.Timeout, h.Async, h.Owner, h.Removable,
+	return json.Marshal(hookWire{h.ID, h.CLI, KindHook, h.Event, h.Matcher, redact.Command(h.Command), h.Timeout, h.Async, h.Owner, h.Removable,
 		h.Dead, paths, h.Hash, h.File, h.Scope, h.Project, h.Key(), h.Cells, h.Usage})
 }
 

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"spacevibe.dev/core/internal/fsx"
+	"spacevibe.dev/core/internal/redact"
 	"spacevibe.dev/core/internal/roots"
 	"spacevibe.dev/core/internal/textjs"
 	"spacevibe.dev/core/internal/toml"
@@ -285,7 +286,7 @@ func (c *CodexPermissions) fill(doc toml.Document) {
 				data.net++
 				if flag, ok := scalar(entry.Value); ok && isFlagKey(key) {
 					data.flags = slices.DeleteFunc(data.flags, func(f Flag) bool { return f.Key == key })
-					data.flags = append(data.flags, Flag{Key: key, Value: flag})
+					data.flags = append(data.flags, Flag{Key: key, Value: maskedFlag(flag)})
 				}
 			}
 		case len(table) == 2 && table[0] == "projects" && key == "trust_level":
@@ -376,6 +377,14 @@ func booleans(pairs []toml.Pair) []Flag {
 }
 
 // isFlagKey: a non-empty key of ASCII letters, digits, "_" and "-".
+// maskedFlag hides the password of a proxy URL in a string flag value; other values are returned as they are.
+func maskedFlag(v any) any {
+	if text, ok := v.(string); ok {
+		return redact.Userinfo(text)
+	}
+	return v
+}
+
 func isFlagKey(key string) bool {
 	if key == "" {
 		return false

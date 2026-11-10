@@ -74,6 +74,7 @@ A cancelled read answers -32800. A write is cancellable while it waits for the w
 - **stderr is the log.** Fixed reasons only, no file content, no request params. The shell forwards it to `os.Logger` at debug level. `rpc` asks for SIGPIPE (`signal.Notify`) on Unix, so a log line written after the shell closed the pipe fails with EPIPE, which the logger ignores, instead of Go ending the core (fd 1 and fd 2 are the same pipe after the guard). The contract case `TestCoreSurvivesAClosedStderr` holds this.
 - **No listener, no network.** The core opens no socket and `go list -deps ./cmd/spacevibe` shows no `net`, `net/http` or `crypto/tls` (S-R5).
 - **No recorded command runs.** The only processes are the fixed `ps`, `lsof` and SIGTERM of Activity, with the pid looked up again from the live system. `activity.stop` takes `{cli, id}` and never a pid (S-R4). `spacevibe statusline capture` is a command-line subcommand with no RPC route; the case `rpc_cannot_capture` holds that. Each capture is a new process, so it keeps the Claude account key in `<data>/claude-limits/account-key` (mode 0600; a hex hash plus the state file's path, size, mtime in ns and the Claude root it was computed from, never an account id) and returns it without reading `.claude.json` while those match; any mismatch, corruption or write failure falls back to computing it and never fails the capture. The file has no `.json` suffix, so it is not listed as a session snapshot.
+- **Recognisable credentials are masked in the commands the core reports** `(new)`. [`redact.Command`](../../core/internal/redact/redact.go) replaces the value with `•••` in `Authorization: <scheme> <value>` and a bare `Bearer <value>`, `--token`, `--password`, `--passwd`, `--secret`, `--api-key`, `--apikey`, `--access-token` and `--auth` (with `=` or a space), the password of curl `-u` / `--user name:pass`, `NAME=value` where an upper-case NAME holds KEY, TOKEN, SECRET, PASSWORD, PASSWD, CREDENTIAL or AUTH, the password of `scheme://user:password@host`, and the token prefixes `sk-`, `ghp_`, `gho_`, `ghs_`, `github_pat_`, `xox[abpr]-`, `AKIA` and three-part `eyJ` JWTs. A value that starts with `$` is a shell variable and stays. It is best effort: a shape not listed still shows. It is applied only at the wire projection, to `ActivityReport.failures[].title` and `.reason`, `sessions[].currentTool.target`, `InventoryHook.command` and the string values of `CodexPermissions.profiles[].networkFlags` (the userinfo password only). It is never applied inside `inventory.Read`: writes re-read through it and copy or remove a hook by its command text, so a copy writes the raw command, and the failure `key`, `hook.hash` and `Rule.rule` also stay raw. `sessions[].title` (the user's prompt), `stateReason`, `costNote`, `files[]` and `unmeasurable[].text` are not masked. A failure title is masked before its 120-character cut.
 - **Environment is read in one place**, [`internal/config`](../../core/internal/config/config.go), fail-closed (`SPACEVIBE_TEST` is `1` or `0`, `SPACEVIBE_HOME` is absolute; `HOME`, `CLAUDE_CONFIG_DIR` and `CODEX_HOME` are absolute when set, else the environment is a startup problem with a fixed sentence that names the variable: `initialize` answers and every other method answers 500 with it). Under `SPACEVIBE_TEST=1` a root under the real home, taken from the password database and not `$HOME`, is refused (S-R1). The fixture process adapter exists only under that flag: `SPACEVIBE_PROC_FIXTURE` (`Config.ProcFixture`) names its process-list file, `proc.New` receives the path as an argument, and an unreadable file is an error sentence. Outside `SPACEVIBE_TEST=1` the variable is ignored.
 - **The write guard is a startup requirement.** The entry point calls `fsx.InstallWriteGuard(cfg)` right after `config.Load`, in `rpc` and in every one-shot command, before any method can run. Without it the primitives of [`fsx`](../../core/internal/fsx/write-guard.go) write freely and the real-home refusal (S-R1) is void for writes. The case `write_guard_installed` aims a write at the real home through a debug method that exists only in a binary built with `-tags contracttest` and expects the guard's refusal; the shipped binary has no debug method.
 - **Params are strict** `(new)`. A misspelled `verdict` must not fall back to a default and write something else, so unknown members are -32602.
@@ -161,7 +162,7 @@ type InventoryItem = {                            // a skill or a subagent
 }
 type HookUsage = { runs: number, avgMs: number | null, totalMs: number, errors: number, last: string | null }
 type InventoryHook = {
-  id: string, cli: Cli, kind: "hook", event: string, matcher: string | null, command: string, timeout: number | null,
+  id: string, cli: Cli, kind: "hook", event: string, matcher: string | null, command: string /* credentials masked; hash is of the raw text */, timeout: number | null,
   async: boolean, owner: string, removable: boolean, dead: boolean, paths: string[], hash: string, file: string,
   scope: "global" | "project", project: string | null,
   key: string,                                    // "hook:<project or empty>:<hash>"
@@ -200,12 +201,13 @@ type ActivityReport = {
     cli: Cli, id: string, title: string, project: string | null, pid: number,
     state: "running" | "waiting" | "idle" | "ended" | "unmeasurable", stateReason: string,
     reasonCode: string | null,                    // open: known values below under unmeasurable
-    currentTool: { name: string, target: string } | null,
+    currentTool: { name: string, target: string } | null,   // target: credentials masked (see Output discipline)
     ageMs: number | null, lastWriteAgoMs: number | null,
     cost: { usd: number, estimated: true } | null, costNote: string | null
   }[],
   failures: {
-    kind: "command" | "hook", cli: Cli, key: string, title: string, count: number, exit: number | null, reason: string,
+    kind: "command" | "hook", cli: Cli, key: string,   // key: hash of the raw command
+    title: string, count: number, exit: number | null, reason: string,   // title and reason: credentials masked
     projects: string[], sessions: number, first: string | null, last: string | null, laterPass: string | null,
     hook: { hash: string, event: string } | null
   }[],
@@ -238,7 +240,7 @@ type CodexPermissions = {                         // (new) from CodexPermissions
   sandboxMode: string | null,
   sandboxWorkspaceWrite: { networkAccess: boolean | null, writableRoots: string[] } | null,
   defaultPermissions: string | null, approvalsReviewer: string | null,
-  profiles: { name: string, filesystemEntries: number, networkEntries: number, networkFlags: { key: string, value: boolean | string | number }[] }[],
+  profiles: { name: string, filesystemEntries: number, networkEntries: number, networkFlags: { key: string, value: boolean | string | number /* a URL's password is masked */ }[] }[],
   projects: { path: string, trustLevel: string | null }[],
   rules: { files: number, allow: number, prompt: number, forbidden: number, other: number,
            unreadable: number, folderNotReadable: boolean },   // (new) .rules files not counted; rules folder not listable

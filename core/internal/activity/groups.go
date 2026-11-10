@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"spacevibe.dev/core/internal/hashes"
+	"spacevibe.dev/core/internal/redact"
 	"spacevibe.dev/core/internal/textjs"
 )
 
@@ -30,7 +31,10 @@ func isoOrNil(ms float64) *string {
 	return &s
 }
 
+// failureTitle is the command as shown: credentials masked first, so a cut cannot leave half of one. The failure key
+// and the hook hash are made from the raw command and never from this text.
 func failureTitle(cmd string) string {
+	cmd = redact.Command(cmd)
 	if textjs.UTF16Length(cmd) > failureTitleMax {
 		return textjs.Prefix(cmd, failureTitleMax-1) + "…"
 	}
@@ -117,7 +121,7 @@ func groupFailures(logs []logEntry, limit int) []Failure {
 			laterPass = isoOrNil(*later)
 		}
 		rows = append(rows, Failure{
-			Kind: g.kind, CLI: g.cli, Key: g.key, Title: g.title, Count: g.count, Exit: g.exit, Reason: g.reason,
+			Kind: g.kind, CLI: g.cli, Key: g.key, Title: g.title, Count: g.count, Exit: g.exit, Reason: redact.Command(g.reason),
 			Projects: sortedKeys(g.projects), Sessions: len(g.sessions),
 			First: isoOrNil(g.firstAt), Last: isoOrNil(g.lastAt), LaterPass: laterPass, Hook: g.hook,
 		})

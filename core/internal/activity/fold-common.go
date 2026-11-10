@@ -5,6 +5,7 @@ import (
 
 	"spacevibe.dev/core/internal/hashes"
 	"spacevibe.dev/core/internal/ojson"
+	"spacevibe.dev/core/internal/redact"
 	"spacevibe.dev/core/internal/textjs"
 )
 
@@ -129,7 +130,7 @@ func addPending(st *logState, id string, hasID bool, name, target string, at flo
 	if !hasID || id == "" {
 		return
 	}
-	st.pending.Set(id, pendingCall{name: previewText(name), target: previewText(target), at: at, track: track})
+	st.pending.Set(id, pendingCall{name: previewText(name), target: previewText(redact.Command(target)), at: at, track: track})
 	if isQuestionTool(name) {
 		st.questions[id] = true
 	}
