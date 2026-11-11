@@ -1,6 +1,6 @@
 import AppKit
 
-/// The licences the app must show: the bundled typeface, the three icon sets and the Go library inside the bundled core. Shown in the standard About panel (SpaceVibe menu,
+/// The licences the app must show: the bundled typeface, the three icon sets, the Sparkle updater, and the Go runtime and library inside the bundled core. Shown in the standard About panel (SpaceVibe menu,
 /// About SpaceVibe), which has no other credits.
 enum Credits {
     /// Solar draws the old screens, until the v5 cut-over deletes them. CC BY 4.0 asks for the author, the licence with its link, and a note of what was changed.
@@ -74,7 +74,30 @@ enum Credits {
     WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     """
 
-    static var text: String { [icons, categoryIcons, contentIcons, typeface, compress, xxhash].joined(separator: "\n\n") }
+    /// MIT asks for the copyright and permission notice in all copies. Sparkle's `LICENSE` carries the MIT text for the framework and the
+    /// notices of the parts it bundles (bsdiff and sais-lite, ed25519, SUSignatureVerifier), so the whole file ships unchanged as
+    /// `Resources/Licenses/Sparkle-MIT.txt` (v2.10.0, the release `Package.swift` pins), copied by `scripts/build-app.sh` into
+    /// `Contents/Resources/Licenses/`. `Sparkle.framework` is embedded in the app; the credit names the main copyright holders.
+    static let sparkle = "Updates: Sparkle (https://sparkle-project.org), MIT; copyright (c) 2006-2017 Andy Matuschak, Elgato Systems GmbH, Kornel Lesiński and Mayur Pawashe, and others. The framework bundles bsdiff, sais-lite, ed25519 and SUSignatureVerifier under their own licences. The full text is in the app bundle: Contents/Resources/Licenses/Sparkle-MIT.txt."
+
+    /// BSD 3-Clause asks binary redistributions to reproduce the copyright notice, the conditions and the disclaimer. The Go runtime and the
+    /// standard library are linked statically into the bundled core binary. The text is the toolchain's `LICENSE` (Go 1.25.5); the same
+    /// file ships as `Resources/Licenses/Go-BSD-3-Clause.txt`.
+    static let goRuntime = """
+    Go runtime and standard library in the bundled core (https://go.dev)
+
+    Copyright 2009 The Go Authors.
+
+    Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+    * Neither the name of Google LLC nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    """
+
+    static var text: String { [icons, categoryIcons, contentIcons, typeface, sparkle, goRuntime, compress, xxhash].joined(separator: "\n\n") }
 
     @MainActor
     static func showAboutPanel() {

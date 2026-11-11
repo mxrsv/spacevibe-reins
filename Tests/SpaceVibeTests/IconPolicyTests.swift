@@ -189,4 +189,48 @@ struct IconPolicyTests {
             #expect(script.contains("Resources/Licenses/*.txt"))
         }
     }
+
+    /// A dependency the app ships needs a Credits notice and a licence file in `Resources/Licenses/` that `scripts/build-app.sh` copies into the bundle.
+    /// `credit` is a phrase of its Credits notice, `file` its licence file, `phrase` what that file must say.
+    struct ShippedDependency {
+        let name: String
+        let credit: String
+        let file: String
+        let phrase: String
+    }
+
+    static let shipped: [ShippedDependency] = [
+        ShippedDependency(name: "Sparkle", credit: "Licenses/Sparkle-MIT.txt", file: "Sparkle-MIT.txt", phrase: "bspatch.c and bsdiff.c"),
+        ShippedDependency(name: "Go", credit: "Copyright 2009 The Go Authors.", file: "Go-BSD-3-Clause.txt", phrase: "Neither the name of Google LLC"),
+    ]
+
+    @Test("every linked dependency has a Credits notice and a licence file: Sparkle, the Go runtime, each Go module")
+    func linkedDependenciesAreCredited() throws {
+        let root = StyleBoundaryTests.appSources.deletingLastPathComponent().deletingLastPathComponent()
+        let manifest = try String(contentsOf: root.appendingPathComponent("Package.swift"), encoding: .utf8)
+        let goMod = try String(contentsOf: root.appendingPathComponent("core/go.mod"), encoding: .utf8)
+        func matches(_ pattern: String, in text: String) -> [String] {
+            let regex = try! NSRegularExpression(pattern: pattern, options: .anchorsMatchLines)
+            return regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { Range($0.range(at: 1), in: text).map { String(text[$0]) } }
+        }
+        // Linked: each Swift package in the manifest, the Go toolchain of go.mod (the runtime is inside the core binary), each module it requires.
+        let packages = matches(#"\.package\(url:\s*"[^"]*/([^"/]+?)(?:\.git)?""#, in: manifest)
+        #expect(!packages.isEmpty && !matches(#"^go\s+(\S+)"#, in: goMod).isEmpty, "the manifest and go.mod were read")
+        for package in packages {
+            #expect(Self.shipped.contains { $0.name == package }, "Swift package \(package) has no entry in IconPolicyTests.shipped (add its Credits notice and licence file)")
+        }
+        // The line-initial `require x v` and the lines of a `require ( ... )` block.
+        let modules = matches(#"^require\s+([^\s(]+)\s+v"#, in: goMod) + matches(#"^\t([^\s]+)\s+v[^\s]+\s*$"#, in: goMod)
+        for module in modules {
+            #expect(Credits.text.contains(module), "Go module \(module) is linked into the core but Credits does not name it")
+        }
+        let licences = root.appendingPathComponent("Resources/Licenses")
+        let script = try String(contentsOf: root.appendingPathComponent("scripts/build-app.sh"), encoding: .utf8)
+        #expect(script.contains("Resources/Licenses/*.txt"))
+        for dependency in Self.shipped {
+            #expect(Credits.text.contains(dependency.credit), "Credits has no notice for \(dependency.name)")
+            let licence = try? String(contentsOf: licences.appendingPathComponent(dependency.file), encoding: .utf8)
+            #expect(licence?.contains(dependency.phrase) == true, "Resources/Licenses/\(dependency.file) is missing or is not the \(dependency.name) licence")
+        }
+    }
 }
