@@ -2,7 +2,7 @@
 
 Requirements: no spec. The findings of the read-only whole-repo review of 2026-11-10 (baseline `744d734`) are the requirements; the owner asked in chat on 2026-11-10 that Fable decide each fix and Sonnet implement it ("tôi cần Fable để đưa ra quyết định fix còn sonnet sẽ thực hiện fix"). Review record, outside git: `~/scratch/spacevibe-reins/2026-11-10-fable-review/` (`report.md` in Vietnamese, `findings/*.md` per reviewer with trigger, path and `Check`, `verification.md`, `fix-decisions.md` from the Fable fix architect). Each task below carries a one-line statement of its findings so this plan stands without that folder.
 Checkout: `spacevibe-reins` on `main`, shared. Builders: Sonnet subagents, up to five per wave, no two in a wave on one file; they never commit. The lead (this session) runs the checks, reads each diff and commits with `git commit -- <paths>` (W11).
-Status: plan written 2026-11-10; the owner accepted every owner call C1–C7 as Fable decided and started the build ("ok build", 2026-11-10). All 25 tasks and the review (R1, two passes) done; E1, the owner's eye batch, is next. Nothing pushed.
+Status: plan written 2026-11-10; the owner accepted every owner call C1–C7 as Fable decided and started the build ("ok build", 2026-11-10). Complete 2026-11-11: all 25 tasks, the review (R1, two passes) and the owner's eye approval (E1) done. Nothing pushed; push and merge wait for the owner.
 
 ## Scope
 
@@ -88,7 +88,7 @@ Paths under `Sources/SpaceVibe/` and `Tests/SpaceVibeTests/` drop that prefix. "
 ### Final
 
 - [x] **R1 Review:** `code-reviewer` on `744d734..HEAD`; fix confirmed blocker, high and medium findings; re-run the checks.
-- [ ] **E1 Eye batch:** shots of every surface marked "Seen" in `fix-decisions.md` (switch on, and `loadout`, `rules`, `activity`, `limits`, `settings` with it off), folded into the pending U14 batch of [the v5 build plan](2026-11-07-reins-ui-v5-build.md); the owner approves by eye before any push.
+- [x] **E1 Eye batch:** shots of every surface marked "Seen" in `fix-decisions.md` (switch on, and `loadout`, `rules`, `activity`, `limits`, `settings` with it off), folded into the pending U14 batch of [the v5 build plan](2026-11-07-reins-ui-v5-build.md); the owner approves by eye before any push.
 
 ## Verification (per wave, by the lead)
 
@@ -110,4 +110,5 @@ Paths under `Sources/SpaceVibe/` and `Tests/SpaceVibeTests/` drop that prefix. "
 2026-11-11, wave 6: F24 `4bdeab1` (the lead swapped the palette entries' Solar icon for `ContentGlyph.copy`); `scripts/test-statusline.sh` PASS including "uninstall after a later edit".
 2026-11-11, R1 second pass on `066ebab..4bdeab1`: WARNING, 1 HIGH (in v5, `Z` on an Activity Dismiss toast ran an older journal undo: regression from `25a22e9`), 3 LOW (toast button hid the toast while another undo ran; folder-name lookup kept the older last day; doc and test claims). All fixed in `c3e4c92`. Lead checks: `scripts/test.sh` "527 tests in 54 suites passed"; Go `ok`; site 6/6; v5 `activity` shot exit 0; docs-anchors clean. Flaky, not caused by this plan: `proc.TestCodexThreadsLsofFailureMarksLocksUnknown` failed once more under load ("missing: [], process state unknown"), passed 5 of 5 reruns here and 3 of 3 on the untouched baseline copy.
 
+2026-11-11, E1: the app was rebuilt (`build-app.sh`, minos 15.0) and opened with `SPACEVIBE_UI_V5=1` on a synthetic home; the owner approved by eye ("ok"). Open, outside this plan: the flaky `proc` test, the fixture's in-log dates (+90 days), a hook copy into an absent Claude Code folder.
 /goal Fix the 2026-11-10 review findings per docs/plans/2026-11-10-review-fixes.md: after the owner answers C1 to C7, run waves 1 to 6 with Sonnet builders, one commit per task, each with its named test. Done means every task ticked or marked blocked with its reason, go vet and go test pass, scripts/test.sh passes with N above 465, only F10 changes a golden, the code-reviewer pass on 744d734..HEAD has no open blocker, high or medium, and the owner has approved the changed surfaces by eye before any push.
