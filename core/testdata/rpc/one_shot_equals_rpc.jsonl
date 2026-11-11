@@ -19,4 +19,4 @@
 {"dir":"send","json":{"id":4,"jsonrpc":"2.0","method":"rules.snapshot","params":{"dir":null,"scope":"global"}}}
 {"dir":"recv","text":"(5646 bytes)"}
 {"dir":"send","json":{"id":9,"jsonrpc":"2.0","method":"activity.read","params":{}}}
-{"dir":"recv","text":"(3374 bytes)"}
+{"dir":"recv","text":"(report with failures, files, sessions, stats, unmeasurable)"}

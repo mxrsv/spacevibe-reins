@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -70,8 +71,19 @@ func oneShotCases(t *testing.T) {
 				t.Errorf("%s --json differs from %s:\n%.300s\n%.300s", k.command, k.method, out, want)
 			}
 		}
-		// Activity moves with the clock, so compare it with the clock-driven members masked.
+		// Activity moves with the clock: the 14-day history window decides which fixture logs it reads, so its size is
+		// not recorded, only its member names. The two are compared with the clock-driven members masked.
 		rpcActivity := c.ok(c.call("9", "activity.read", `{}`))
+		var members map[string]json.RawMessage
+		if err := json.Unmarshal(rpcActivity, &members); err != nil {
+			t.Fatalf("activity.read result: %v", err)
+		}
+		names := make([]string, 0, len(members))
+		for name := range members {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		c.recordLastAs("(report with " + strings.Join(names, ", ") + ")")
 		out, _, code := runBinary(t, shippedBin, env, "activity", "--json")
 		if code != 0 || c.norm.line(strings.TrimSuffix(string(out), "\n")) != c.norm.line(string(rpcActivity)) {
 			t.Errorf("activity --json (exit %d) differs from activity.read", code)

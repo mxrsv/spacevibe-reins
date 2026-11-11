@@ -158,6 +158,10 @@ type recorded struct{ dir, line string }
 
 func (c *core) record(dir, line string) { c.rec = append(c.rec, recorded{dir, line}) }
 
+// recordLastAs replaces the line just recorded with text, for a reply whose body follows the clock: the transcript
+// keeps the text, not a size of a body that changes whenever a fixture log crosses the history window.
+func (c *core) recordLastAs(text string) { c.rec[len(c.rec)-1].line = text }
+
 // transcript renders the conversation as the JSON lines of core/testdata/rpc.
 func (c *core) transcript() string {
 	out := make([]string, 0, len(c.rec))
