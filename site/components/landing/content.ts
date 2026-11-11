@@ -4,6 +4,9 @@
  * feature the spec does not. The example rows mirror the synthetic fixture home the
  * app's own tests run against (`core/testdata/fixtures`), so every value is
  * one the engine really produced, and every panel that shows them says "demo data".
+ * `site/tests/landing-facts.test.mjs` pins the session title to `core/testdata/fixtures/golden/activity.json`.
+ * Illustrative, not engine output: the Rules rows (`RULES`), the Tokens figures (`TOKENS`), the hero panel
+ * subset and the file list (a subset of the golden file history, paths shortened to the repo).
  */
 
 // Working value (D-1, not yet approved by the owner): the same `mxrsv/spacevibe` as GITHUB_REPO in
@@ -191,7 +194,7 @@ export const ACTIVITY = {
     },
     {
       cli: "codex",
-      title: "2026-11-02 · pid 5200",
+      title: "2026-11-02 · pid 52003",
       project: null,
       state: "unmeasurable",
       tool: null,
@@ -200,7 +203,7 @@ export const ACTIVITY = {
     },
   ] satisfies readonly SessionRow[],
   failures: [
-    { cli: "claude", title: "pnpm tsc --noEmit", count: 8, exit: 2, reason: "rank.ts(41,9): TS2322 'number | undefined' is not 'number'", laterPass: true },
+    { cli: "claude", title: "pnpm tsc --noEmit", count: 8, exit: 2, reason: "lib/leaderboard/rank.ts(41,9): error TS2322: Type 'number | undefined' is not assignable to type 'number'.", laterPass: true },
     { cli: "claude", title: "git push origin main", count: 3, exit: 1, reason: "Exit 1", laterPass: false },
   ] as const,
   files: [

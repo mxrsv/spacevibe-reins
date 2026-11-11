@@ -46,7 +46,7 @@ export const BANDS: readonly Band[] = [
     label: "Limits",
     question: "How much of my Claude and Codex limit is left?",
     answer:
-      "Read from Claude\u00A0Code’s status-line snapshots and Codex’s session logs, with no login and no API call. A CLI that keeps no usage file reads as not measurable; SpaceVibe never guesses.",
+      "Read from Claude\u00A0Code’s own usage cache, or optionally its status-line capture, and from Codex’s session logs, with no login and no API call. A CLI that keeps no usage file reads as not measurable; SpaceVibe never guesses.",
     shot: "limitsDetail",
     tab: "tabLimits",
     caption: `Limits · ${DEMO}`,
@@ -80,7 +80,7 @@ export const DIFFS: Record<BandId, { readonly claude: string; readonly codex: st
     codex: "Counts skills and subagents. Codex does not log hook runs, so a hook reads not measurable, never 0.",
   },
   limits: {
-    claude: "Reads the share left in each window from Claude\u00A0Code’s status-line snapshot.",
+    claude: "Reads the share left in each window from Claude\u00A0Code’s own usage cache, or from its status-line capture when that is installed.",
     codex: "Reads it from the last Codex turn, and shows how old that reading is.",
   },
   activity: {
