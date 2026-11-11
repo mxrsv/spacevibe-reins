@@ -74,6 +74,31 @@ func TestCellsCounted(t *testing.T) {
 	}
 }
 
+// A Codex skill is logged under its folder name; the row is named after the frontmatter name.
+func TestCellsCountedByFolderName(t *testing.T) {
+	h := newTempHome(t)
+	for _, folder := range []string{"pdf-tools", "same-name"} {
+		name := folder
+		if folder == "pdf-tools" {
+			name = "PDF Tools"
+		}
+		h.setModified(h.write(".codex/skills/"+folder+"/SKILL.md", skillFile(name)), "2026-09-20T00:00:00Z")
+	}
+	f := cellsFixture{inventory: Read(h.roots()), now: mustTime(t, "2026-11-02T12:00:00Z")}
+	f.newestLog = mustTime(t, "2026-10-29T00:00:00Z").UnixMilli()
+	totals := f.totals()
+	totals.Codex.Skill["pdf-tools"] = usage.NameUsage{Sessions: 4, Last: ptr("2026-10-21")}
+	totals.Codex.Skill["PDF Tools"] = usage.NameUsage{Sessions: 1, Last: ptr("2026-10-01")}
+	totals.Codex.Skill["same-name"] = usage.NameUsage{Sessions: 2, Last: ptr("2026-10-22")}
+	inv := AttachUsage(f.inventory, &usage.Input{State: "ready", Totals: totals, Windows: f.windows()}, f.now)
+	if got, want := cellOf(inv, "PDF Tools", Codex, Codex), Counted(4, ptr("2026-10-21"), nil); !reflect.DeepEqual(got, want) {
+		t.Errorf("pdf-tools = %+v, want the folder-name count (larger, not summed)", got)
+	}
+	if got, want := cellOf(inv, "same-name", Codex, Codex), Counted(2, ptr("2026-10-22"), nil); !reflect.DeepEqual(got, want) {
+		t.Errorf("same-name = %+v", got)
+	}
+}
+
 // Swift: InventoryTests.swift "usage cells" / "missing when not installed in that CLI; both rows of one skill show the same cells"
 func TestCellsMissing(t *testing.T) {
 	inv := newCellsFixture(t).ready()

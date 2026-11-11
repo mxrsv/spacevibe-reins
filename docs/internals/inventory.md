@@ -55,7 +55,7 @@ Settings are read only for hooks, plugin flags and skill overrides. No other val
 - **Missing**: the row is not installed in that CLI.
 - **Unmeasurable**: a Codex hook; Codex logs no hook runs.
 - **Pending**: zero runs and no scanned log can have covered the row: its CLI has no scanned logs, its file changed in the last 24 hours, or it changed after the newest log. The scan not having finished also yields pending.
-- **Counted**: otherwise, with the run count. For a skill or subagent the count is sessions that used it; for a hook it is runs.
+- **Counted**: otherwise, with the run count. For a skill or subagent the count is sessions that used it; for a hook it is runs. A skill is looked up under its name and under its folder name (Codex logs the folder name, which can differ from the frontmatter `name`); the larger session count wins, they are not added, because one session can match both.
 
 "Added" is the first time SpaceVibe saw the row's `id`, kept in `<data>/first-seen.json` (see [first-seen.go](../../core/internal/inventory/first-seen.go)). The pure builders `AttachUsage` and `BuildLoadoutRows` take no store: they read the file's modification time (`SKILL.md`, the subagent file, or the settings file holding the hook, which any edit moves). Only `Service.Rows` (`loadout.rows`) passes the store's times in. This is a heuristic either way (see `pendingReason`).
 

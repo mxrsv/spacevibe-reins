@@ -39,11 +39,12 @@ func pendingReason(addedMs *float64, window *usage.LogWindow, nowMs float64) str
 }
 
 type matrixRow struct {
-	id   string
-	kind Kind
-	name string
-	hash string
-	file string
+	id    string
+	kind  Kind
+	name  string
+	entry string
+	hash  string
+	file  string
 }
 
 // AttachUsage returns a copy of the snapshot with Cells on every item and hook, and Usage on every Claude hook
@@ -66,7 +67,7 @@ func attachUsage(inv Snapshot, in *usage.Input, now time.Time, firstSeen map[str
 		groups[key][cli] = row
 	}
 	for _, item := range inv.Items {
-		add(item.Key(), item.CLI, matrixRow{id: item.ID, kind: item.Kind, name: item.Name, file: item.File})
+		add(item.Key(), item.CLI, matrixRow{id: item.ID, kind: item.Kind, name: item.Name, entry: item.Entry, file: item.File})
 	}
 	for _, hook := range inv.Hooks {
 		add(hook.Key(), hook.CLI, matrixRow{id: hook.ID, kind: KindHook, hash: hook.Hash, file: hook.File})
@@ -119,6 +120,13 @@ func attachUsage(inv Snapshot, in *usage.Input, now time.Time, firstSeen map[str
 				names = perCLI.Agent
 			}
 			n := names[hashes.Bare(row.name)]
+			if row.kind == KindSkill && row.entry != "" {
+				// Codex logs a skill under its folder name, which can differ from the frontmatter name. One
+				// session can match both names, so take the larger count instead of adding them.
+				if byEntry := names[hashes.Bare(row.entry)]; byEntry.Sessions > n.Sessions {
+					n = byEntry
+				}
+			}
 			runs, last = n.Sessions, n.Last
 		}
 		if runs == 0 {
