@@ -5,14 +5,19 @@ import Foundation
 /// - `SPACEVIBE_GALLERY=1`: opens the component gallery instead of the shell.
 /// - `SPACEVIBE_SHOT_DIR=<dir>`: writes PNGs of the shell and the gallery into `<dir>` without opening a window, then exits.
 ///
-/// Beside the mode sits the v5 UI switch (`SPACEVIBE_UI_V5=1`, W17). It is not a mode: it combines with the gallery and the
-/// shots. It is honoured only in a development build, so a distribution build can never show unfinished surfaces.
+/// Both modes, like the v5 UI switch, are honoured only in a development build: a distribution build always starts `.normal`.
+/// The v5 switch (`SPACEVIBE_UI_V5=1`, W17) is not a mode: it combines with the gallery and the shots, so a distribution
+/// build can never show unfinished surfaces.
 enum LaunchMode {
     case normal
     case gallery
     case shots(directory: URL)
 
-    static func current(environment: [String: String] = ProcessInfo.processInfo.environment) -> LaunchMode {
+    static func current(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        isDevelopmentBuild: Bool = LaunchMode.isDevelopmentBuild
+    ) -> LaunchMode {
+        guard isDevelopmentBuild else { return .normal }
         if let path = environment[CoreEnvironment.variable("SHOT_DIR")], !path.isEmpty {
             return .shots(directory: URL(fileURLWithPath: (path as NSString).expandingTildeInPath, isDirectory: true))
         }

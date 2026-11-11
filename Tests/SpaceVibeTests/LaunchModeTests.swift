@@ -30,14 +30,35 @@ struct LaunchModeTests {
 
     @Test("the switch does not change the launch mode")
     func modeUnchanged() {
-        guard case .normal = LaunchMode.current(environment: [switchName: "1"]) else {
+        guard case .normal = LaunchMode.current(environment: [switchName: "1"], isDevelopmentBuild: true) else {
             Issue.record("SPACEVIBE_UI_V5 alone must leave the launch mode normal")
             return
         }
-        guard case .gallery = LaunchMode.current(environment: [switchName: "1", "SPACEVIBE_GALLERY": "1"]) else {
+        guard case .gallery = LaunchMode.current(environment: [switchName: "1", "SPACEVIBE_GALLERY": "1"], isDevelopmentBuild: true) else {
             Issue.record("the switch must combine with the gallery")
             return
         }
+    }
+
+    @Test("the gallery and shot modes need a development build")
+    func modesNeedDevelopmentBuild() {
+        let gallery = ["SPACEVIBE_GALLERY": "1"]
+        let shots = ["SPACEVIBE_SHOT_DIR": "/tmp/shots"]
+        for environment in [gallery, shots, gallery.merging(shots) { $1 }] {
+            guard case .normal = LaunchMode.current(environment: environment, isDevelopmentBuild: false) else {
+                Issue.record("a distribution build must start normal: \(environment)")
+                return
+            }
+        }
+        guard case .gallery = LaunchMode.current(environment: gallery, isDevelopmentBuild: true) else {
+            Issue.record("the gallery variable must open the gallery in a development build")
+            return
+        }
+        guard case .shots(let directory) = LaunchMode.current(environment: shots, isDevelopmentBuild: true) else {
+            Issue.record("the shot variable must pick the shots mode in a development build")
+            return
+        }
+        #expect(directory.path == "/tmp/shots")
     }
 
     @Test("a debug build counts as a development build")
