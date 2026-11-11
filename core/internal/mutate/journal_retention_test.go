@@ -125,3 +125,23 @@ func TestPruneNeverRemovesOutsideTheTrash(t *testing.T) {
 		}
 	}
 }
+
+// A dropped entry names only slots this package made: a file or a folder with another name directly in the trash stays.
+func TestPruneSkipsCutNamesThatAreNotSlotFolders(t *testing.T) {
+	home := newHome(t)
+	r := home.roots()
+	now := time.Now()
+	file := home.write(".spacevibe/trash/notes.txt", "keep")
+	odd := home.write(".spacevibe/trash/odd-name/keep.txt", "keep")
+	slotFile := home.write(".spacevibe/trash/"+slotName(now, "66666666"), "a file with a slot name")
+	writeJournalFile(home, journalEntry("crafted", now.Add(-31*24*time.Hour),
+		map[string]any{"type": "moved", "from": home.path(".claude/a"), "to": file},
+		map[string]any{"type": "moved", "from": home.path(".claude/b"), "to": odd},
+		map[string]any{"type": "moved", "from": home.path(".claude/c"), "to": slotFile}))
+	must(Record(r, "new", nil))
+	for name, p := range map[string]string{"file": file, "odd folder": odd, "file with a slot name": slotFile} {
+		if !exists(p) {
+			t.Errorf("%s was removed", name)
+		}
+	}
+}

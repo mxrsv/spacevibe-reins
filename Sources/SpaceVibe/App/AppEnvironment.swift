@@ -52,7 +52,7 @@ final class AppEnvironment {
             guard let self else { return }
             switch outcome {
             case .success(let entry):
-                self.toasts.show(label, undo: { [weak self] in self?.undo(entry, label: label, afterChange: afterChange) })
+                self.toasts.show(label, asyncUndo: { [weak self] in await self?.undo(entry, label: label, afterChange: afterChange) })
                 afterChange?()
             case .failure(let error):
                 if let onFailure { onFailure(Self.message(error)) } else { self.toasts.show(Self.message(error), tone: .danger) }
@@ -80,7 +80,7 @@ final class AppEnvironment {
                 return
             }
             guard let self else { return }
-            self.toasts.show(label, undo: { [weak self] in self?.undoBatch(entries, label: label, undone: undone, afterChange: afterChange) })
+            self.toasts.show(label, asyncUndo: { [weak self] in await self?.undoBatch(entries, label: label, undone: undone, afterChange: afterChange) })
             afterChange?()
         }
     }
@@ -95,40 +95,34 @@ final class AppEnvironment {
     }
 
     /// One entry reads as `performWithUndo` does (the core's own label, its own refusal); several read as one change.
-    private func undoBatch(_ entries: [CoreJournalEntry], label: String, undone: String?, afterChange: (@MainActor () -> Void)?) {
+    private func undoBatch(_ entries: [CoreJournalEntry], label: String, undone: String?, afterChange: (@MainActor () -> Void)?) async {
         let core = goCore
-        Task { [weak self] in
-            var results: [CoreUndoResult] = []
-            var failure: Error?
-            for entry in entries.reversed() {
-                do { results.append(try await core.journalUndo(id: entry.id)) } catch { failure = failure ?? error }
-            }
-            guard let self else { return }
-            if let failure {
-                self.toasts.show(entries.count == 1 ? Self.message(failure) : "Could not undo all of \(label)", tone: .danger)
-            } else if let undone {
-                self.toasts.show(undone)
-            } else {
-                let named = entries.count == 1 ? results.first?.label : nil
-                self.toasts.show("Undid \(named.flatMap { $0.isEmpty ? nil : $0 } ?? label)")
-            }
-            afterChange?()
+        var results: [CoreUndoResult] = []
+        var failure: Error?
+        for entry in entries.reversed() {
+            do { results.append(try await core.journalUndo(id: entry.id)) } catch { failure = failure ?? error }
         }
+        if let failure {
+            toasts.show(entries.count == 1 ? Self.message(failure) : "Could not undo all of \(label)", tone: .danger)
+        } else if let undone {
+            toasts.show(undone)
+        } else {
+            let named = entries.count == 1 ? results.first?.label : nil
+            toasts.show("Undid \(named.flatMap { $0.isEmpty ? nil : $0 } ?? label)")
+        }
+        afterChange?()
     }
 
-    private func undo(_ entry: CoreJournalEntry, label: String, afterChange: (@MainActor () -> Void)?) {
+    private func undo(_ entry: CoreJournalEntry, label: String, afterChange: (@MainActor () -> Void)?) async {
         let core = goCore
-        Task { [weak self] in
-            let outcome: Result<CoreUndoResult, Error>
-            do { outcome = .success(try await core.journalUndo(id: entry.id)) } catch { outcome = .failure(error) }
-            guard let self else { return }
-            switch outcome {
-            case .success(let undone):
-                self.toasts.show("Undid \(undone.label.isEmpty ? label : undone.label)")
-                afterChange?()
-            case .failure(let error):
-                self.toasts.show(Self.message(error), tone: .danger)
-            }
+        let outcome: Result<CoreUndoResult, Error>
+        do { outcome = .success(try await core.journalUndo(id: entry.id)) } catch { outcome = .failure(error) }
+        switch outcome {
+        case .success(let undone):
+            toasts.show("Undid \(undone.label.isEmpty ? label : undone.label)")
+            afterChange?()
+        case .failure(let error):
+            toasts.show(Self.message(error), tone: .danger)
         }
     }
 

@@ -151,7 +151,10 @@ func pruneTrash(r roots.Roots, kept, cut []Entry, now time.Time) {
 	referenced := guard.slotsOf(kept, false)
 	doomed := map[string]bool{}
 	for name := range guard.slotsOf(cut, true) {
-		doomed[name] = true
+		// Only a real folder this package made: a file, a link or a folder with any other name stays.
+		if info, err := os.Lstat(filepath.Join(trashDir(r), name)); err == nil && info.IsDir() && trashSlotPattern.MatchString(name) {
+			doomed[name] = true
+		}
 	}
 	if items, err := os.ReadDir(trashDir(r)); err == nil {
 		for _, item := range items {

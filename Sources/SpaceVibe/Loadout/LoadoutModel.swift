@@ -286,7 +286,7 @@ final class LoadoutModel {
             }
             guard let self else { return }
             self.release(guardKey, ticket: ticket, since: started)
-            self.env.toasts.show(note.map { "\(label). \($0)" } ?? label, undo: { [weak self] in self?.undoSkillWrites(entries, label: label) })
+            self.env.toasts.show(note.map { "\(label). \($0)" } ?? label, asyncUndo: { [weak self] in await self?.undoSkillWrites(entries, label: label) })
             self.reload()
         }
         return true
@@ -299,23 +299,20 @@ final class LoadoutModel {
         }
     }
 
-    private func undoSkillWrites(_ entries: [CoreJournalEntry], label: String) {
+    private func undoSkillWrites(_ entries: [CoreJournalEntry], label: String) async {
         let core = self.core
-        Task { [weak self] in
-            var refusal: Error?
-            for entry in entries.reversed() {
-                do { _ = try await core.journalUndo(id: entry.id) } catch { refusal = refusal ?? error }
-            }
-            guard let self else { return }
-            if let refusal {
-                // The core's own sentence says what happened; with several writes it follows the label of the change.
-                let reason = AppEnvironment.message(refusal)
-                self.env.toasts.show(entries.count == 1 ? reason : "Could not undo all of \(label). \(reason)", tone: .danger)
-            } else {
-                self.env.toasts.show("Undid \(label)")
-            }
-            self.reload()
+        var refusal: Error?
+        for entry in entries.reversed() {
+            do { _ = try await core.journalUndo(id: entry.id) } catch { refusal = refusal ?? error }
         }
+        if let refusal {
+            // The core's own sentence says what happened; with several writes it follows the label of the change.
+            let reason = AppEnvironment.message(refusal)
+            env.toasts.show(entries.count == 1 ? reason : "Could not undo all of \(label). \(reason)", tone: .danger)
+        } else {
+            env.toasts.show("Undid \(label)")
+        }
+        reload()
     }
 
     private func perform(guardKey: String, label: String, _ work: @escaping @Sendable (any CoreService) async throws -> CoreJournalEntry) {

@@ -274,6 +274,9 @@ func (tx *Tx) copyItem(item inventory.Item) (Entry, error) {
 		name = item.Entry
 	}
 	if err := validName(name); err != nil {
+		if item.Kind == inventory.KindSkill {
+			return Entry{}, fail("The skill folder \""+name+"\" has a name SpaceVibe cannot use as a file name, so nothing was copied. Rename the folder in "+label(item.CLI)+" first.", coreerr.StatusConflict)
+		}
 		return Entry{}, fail("The "+string(item.Kind)+" \""+item.Name+"\" has a name SpaceVibe cannot use as a file name, so nothing was copied. Rename it in "+label(item.CLI)+" first.", coreerr.StatusConflict)
 	}
 	if item.Kind == inventory.KindSkill {

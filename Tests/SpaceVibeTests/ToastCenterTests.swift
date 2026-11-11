@@ -4,42 +4,53 @@ import Testing
 @MainActor
 @Suite("Toast center")
 struct ToastCenterTests {
+    /// Waits until the Undo that is running has returned.
+    private func settle(_ toasts: ToastCenter) async {
+        while toasts.isUndoing { await Task.yield() }
+    }
+
     @Test("a toast that replaced the one with the Undo leaves the Undo on the stack")
-    func replacedToastKeepsUndo() {
+    func replacedToastKeepsUndo() async {
         let toasts = ToastCenter(announce: false)
         var runs = 0
         toasts.show("a", undo: { runs += 1 })
         toasts.show("x", tone: .danger)
         #expect(toasts.current?.message == "x")
         toasts.undoLast()
+        await settle(toasts)
         #expect(runs == 1)
         toasts.undoLast()
+        await settle(toasts)
         #expect(runs == 1)
         #expect(toasts.undoStack.isEmpty)
     }
 
     @Test("the toast's own Undo takes its item off the stack, so undoLast never runs it twice")
-    func toastButtonRunsOnce() {
+    func toastButtonRunsOnce() async {
         let toasts = ToastCenter(announce: false)
         var runs = 0
         toasts.show("a", undo: { runs += 1 })
         toasts.runCurrentAction()
+        await settle(toasts)
         #expect(runs == 1)
         #expect(toasts.undoStack.isEmpty)
         toasts.undoLast()
+        await settle(toasts)
         #expect(runs == 1)
     }
 
     @Test("undoLast runs the newest first and hides the toast that carried it")
-    func newestFirst() {
+    func newestFirst() async {
         let toasts = ToastCenter(announce: false)
         var order: [String] = []
         toasts.show("a", undo: { order.append("a") })
         toasts.show("b", undo: { order.append("b") })
         toasts.undoLast()
+        await settle(toasts)
         #expect(order == ["b"])
         #expect(toasts.current == nil)
         toasts.undoLast()
+        await settle(toasts)
         #expect(order == ["b", "a"])
     }
 
@@ -50,5 +61,44 @@ struct ToastCenterTests {
         #expect(toasts.undoStack.count == ToastCenter.undoDepth)
         #expect(toasts.undoStack.first?.label == "w3")
         #expect(toasts.undoStack.last?.label == "w\(ToastCenter.undoDepth + 2)")
+    }
+
+    @Test("a second undoLast while the first Undo runs does nothing; after it completes the next one runs")
+    func undosRunOneAtATime() async {
+        let toasts = ToastCenter(announce: false)
+        var order: [String] = []
+        var release: CheckedContinuation<Void, Never>?
+        toasts.show("a", asyncUndo: { order.append("a") })
+        toasts.show("b", asyncUndo: {
+            order.append("b")
+            await withCheckedContinuation { release = $0 }
+        })
+        toasts.undoLast()
+        toasts.undoLast()
+        toasts.undoLast()
+        while release == nil { await Task.yield() }
+        #expect(order == ["b"])
+        #expect(toasts.isUndoing)
+        #expect(toasts.undoStack.map(\.label) == ["a"])
+        release?.resume()
+        await settle(toasts)
+        #expect(!toasts.isUndoing)
+        toasts.undoLast()
+        await settle(toasts)
+        #expect(order == ["b", "a"])
+    }
+
+    @Test("a toast shown with sessionUndo false keeps its Undo off the stack but still runs it")
+    func dismissUndoStaysOnItsToast() async {
+        let toasts = ToastCenter(announce: false)
+        var runs = 0
+        toasts.show("Dismissed", sessionUndo: false, undo: { runs += 1 })
+        #expect(toasts.undoStack.isEmpty)
+        #expect(toasts.current?.action != nil)
+        toasts.undoLast()
+        await settle(toasts)
+        #expect(runs == 0)
+        toasts.runCurrentAction()
+        #expect(runs == 1)   // an in-memory Undo has run by the time the call returns
     }
 }

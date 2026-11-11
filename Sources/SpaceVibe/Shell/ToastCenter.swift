@@ -37,7 +37,14 @@ struct Toast: Identifiable {
 struct UndoItem: Identifiable {
     let id: UUID
     let label: String
-    let run: @MainActor () -> Void
+    let body: Body
+
+    enum Body {
+        /// In-memory, done when it returns (Dismiss in Activity): runs at once, even while a write's Undo is running.
+        case sync(@MainActor () -> Void)
+        /// A journal write: the center waits for it so Undos run one at a time.
+        case async(@MainActor () async -> Void)
+    }
 }
 
 /// The one toast the app shows, bottom centre. Every write calls `show` with an Undo closure.
@@ -52,7 +59,9 @@ struct UndoItem: Identifiable {
 /// Every `undo:` also goes onto a session stack (`undoStack`, newest last, `undoDepth` deep), so a toast that replaced the
 /// one carrying an Undo does not lose it: `undoLast()`, the `Z` key and the palette run the newest item. The stack lives
 /// for this session only and never reads the Journal. An item leaves the stack when it runs, from the toast or from
-/// `undoLast()`, so one Undo never runs twice.
+/// `undoLast()`, so one Undo never runs twice. Undos run one at a time: while one is running (`isUndoing`), `Z`, the palette
+/// and the toast button do nothing, so key repeat cannot drain the stack or race two journal writes.
+/// `show(_:sessionUndo: false)` keeps the Undo on its own toast only, for a change that is not a write (Dismiss in Activity).
 @MainActor
 @Observable
 final class ToastCenter {
@@ -60,6 +69,8 @@ final class ToastCenter {
     /// Undos not yet run, oldest first. The newest is the one `undoLast()` runs.
     private(set) var undoStack: [UndoItem] = []
     static let undoDepth = 20
+    /// An Undo is running; no other starts until it completes.
+    private(set) var isUndoing = false
     /// A page's bottom bar is on screen, so the v5 toast sits above it (V5-R32, 104 rather than 48). Set by `ListPaneLayout`.
     var isOverBottomBar = false
 
@@ -69,27 +80,54 @@ final class ToastCenter {
     /// `announce: false` for headless rendering, where there is no accessibility client.
     init(announce: Bool = true) { self.announce = announce }
 
-    func show(_ message: String, tone: ToastTone = .info, undo: (@MainActor () -> Void)? = nil) {
+    /// `undo` is in-memory and finishes when it returns; `sessionUndo: false` keeps it on its own toast only.
+    func show(_ message: String, tone: ToastTone = .info, sessionUndo: Bool = true, undo: (@MainActor () -> Void)? = nil) {
         guard let undo else {
             present(Toast(message: message, tone: tone, action: nil))
             return
         }
+        offer(message, tone: tone, sessionUndo: sessionUndo, body: .sync(undo))
+    }
+
+    /// An Undo that awaits a journal write: while it runs, no other Undo starts.
+    func show(_ message: String, tone: ToastTone = .info, asyncUndo: @escaping @MainActor () async -> Void) {
+        offer(message, tone: tone, sessionUndo: true, body: .async(asyncUndo))
+    }
+
+    private func offer(_ message: String, tone: ToastTone, sessionUndo: Bool, body: UndoItem.Body) {
         let id = UUID()
+        let item = UndoItem(id: id, label: message, body: body)
         // The toast's button takes its item off the stack first, so a later `Z` cannot replay it.
-        let action = ToastAction.undo { [weak self] in
-            self?.removeUndo(id: id)
-            undo()
+        let action = ToastAction.undo { [weak self] in self?.run(item) }
+        if sessionUndo {
+            undoStack.append(item)
+            if undoStack.count > Self.undoDepth { undoStack.removeFirst(undoStack.count - Self.undoDepth) }
         }
-        undoStack.append(UndoItem(id: id, label: message, run: undo))
-        if undoStack.count > Self.undoDepth { undoStack.removeFirst(undoStack.count - Self.undoDepth) }
         present(Toast(id: id, message: message, tone: tone, action: action))
     }
 
-    /// Pops the newest Undo and runs it. A toast still showing for that item is hidden with it.
+    /// Pops the newest Undo and runs it. A toast still showing for that item is hidden with it. Does nothing while an Undo runs.
     func undoLast() {
-        guard let item = undoStack.popLast() else { return }
+        guard !isUndoing, let item = undoStack.last else { return }
         dismiss(id: item.id)
-        item.run()
+        run(item)
+    }
+
+    /// Takes the item off the stack and runs it. An async item holds `isUndoing` until its closure returns.
+    private func run(_ item: UndoItem) {
+        switch item.body {
+        case .sync(let work):
+            removeUndo(id: item.id)
+            work()
+        case .async(let work):
+            guard !isUndoing else { return }
+            isUndoing = true
+            removeUndo(id: item.id)
+            Task { [weak self] in
+                await work()
+                self?.isUndoing = false
+            }
+        }
     }
 
     private func removeUndo(id: UUID) {

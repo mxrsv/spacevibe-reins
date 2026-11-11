@@ -56,3 +56,18 @@ func TestCopyRefusesACLIThatIsNotInstalled(t *testing.T) {
 		t.Error("the refusal created something")
 	}
 }
+
+// A skill whose FOLDER name cannot be a file name is a 409 that names the folder, not the display name.
+func TestCopySkillWithAnUnwritableFolderNameNamesTheFolder(t *testing.T) {
+	h := newHome(t)
+	r := h.roots()
+	h.write(".claude/skills/My_Skill/SKILL.md", skillMd("my-skill", "d"))
+	h.installCodex()
+	_, err := CopyToOther(r, idOf(t, r, "my-skill", inventory.KindSkill, inventory.Claude))
+	if m := wantErr(t, err, 409); !strings.Contains(m, "My_Skill") {
+		t.Errorf("message %q does not name the folder", m)
+	}
+	if exists(r.Codex.Skills) || len(historyOf(t, r)) != 0 {
+		t.Error("the refusal left something behind")
+	}
+}

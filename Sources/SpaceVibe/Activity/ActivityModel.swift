@@ -256,7 +256,7 @@ final class ActivityModel {
         detailID = nil
         let before = dismissed
         dismissed.insert(item.dismissKey)
-        env.toasts.show("Dismissed \(ActivityStopWording.quoted(item.failure.title))", undo: { [weak self] in
+        env.toasts.show("Dismissed \(ActivityStopWording.quoted(item.failure.title))", sessionUndo: false, undo: { [weak self] in
             self?.dismissed = before
             self?.env.toasts.show("Restored the failed command.")
         })
@@ -269,7 +269,7 @@ final class ActivityModel {
         detailID = nil
         let before = dismissed
         dismissed.formUnion(passed.map(\.dismissKey))
-        env.toasts.show(ActivityFigures.dismissedPassedLabel(passed.count), undo: { [weak self] in
+        env.toasts.show(ActivityFigures.dismissedPassedLabel(passed.count), sessionUndo: false, undo: { [weak self] in
             self?.dismissed = before
             self?.env.toasts.show("Restored \(ActivityFormat.plural(passed.count, "command")).")
         })
