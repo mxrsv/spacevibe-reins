@@ -23,6 +23,7 @@ struct WarningSlot<Popover: View>: View {
     @State private var pending: Task<Void, Never>?
     @State private var hovering = false
     @FocusState private var focused: Bool
+    @FocusedValue(\.warningPopoverID) private var focusedPopoverID
 
     var body: some View {
         if let mark {
@@ -48,16 +49,19 @@ struct WarningSlot<Popover: View>: View {
         .pointerCursor()
         .focused($focused)
         .focusEffectDisabled()
+        .focusFill(focused || specimen.contains(.focus), cornerRadius: Metrics.Radius.control)
         .onHover { inside in
             hovering = inside
             apply(presence.handle(.anchorHover(inside)))
         }
         .onChange(of: focused) { _, now in apply(presence.handle(.anchorFocus(now))) }
+        .onChange(of: focusedPopoverID) { _, now in apply(presence.handle(.surfaceFocus(now == id))) }
         .onExitCommand { apply(presence.handle(.escape)) }
         .onDisappear { pending?.cancel() }
         .anchoredOverlay(isPresented: presence.isOpen || shown == id, id: id, placement: .popover) {
             PopoverSurface(onHover: { apply(presence.handle(.surfaceHover($0))) },
                            onExit: { apply(presence.handle(.escape)) }) { popover }
+                .focusedValue(\.warningPopoverID, id)
         }
         .accessibilityLabel(mark.label)
         .accessibilityValue(detail ?? "")
@@ -80,6 +84,18 @@ struct WarningSlot<Popover: View>: View {
                 presence.settle()
             }
         }
+    }
+}
+
+/// Publishing on the surface includes every descendant button, not just one selected action.
+private struct WarningPopoverFocusKey: FocusedValueKey {
+    typealias Value = AnyHashable
+}
+
+extension FocusedValues {
+    var warningPopoverID: AnyHashable? {
+        get { self[WarningPopoverFocusKey.self] }
+        set { self[WarningPopoverFocusKey.self] = newValue }
     }
 }
 

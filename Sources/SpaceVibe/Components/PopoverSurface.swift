@@ -127,12 +127,13 @@ struct PopoverActions<Content: View>: View {
 /// When a hover popover opens and closes (the kit's `popover.show` and `hide`): the pointer on the anchor or keyboard focus
 /// on it opens it after 150 ms; leaving both the anchor and the surface closes it after 100 ms, so the pointer can cross the
 /// gap; Esc closes it at once and gives the focus back to the anchor without opening it again. A click toggles it. Pure,
-/// so `PopoverPresenceTests` can drive it; the view runs the effects.
+/// so `OverlayPlacementTests` can drive it; focus anywhere inside the surface also keeps it open.
 struct PopoverPresence: Equatable {
     enum Event: Equatable {
         case anchorHover(Bool)
         case surfaceHover(Bool)
         case anchorFocus(Bool)
+        case surfaceFocus(Bool)
         case activate
         case escape
     }
@@ -150,16 +151,20 @@ struct PopoverPresence: Equatable {
     private var overAnchor = false
     private var overSurface = false
     private var anchorFocused = false
+    private var surfaceFocused = false
     /// Set by Esc: the anchor keeps (or gets back) the focus but must not open the popover again until the focus leaves it
     /// or the pointer comes back.
     private var muted = false
 
-    private var wanted: Bool { overAnchor || overSurface || (anchorFocused && !muted) }
+    private var wanted: Bool { !muted && (overAnchor || overSurface || anchorFocused || surfaceFocused) }
 
     mutating func handle(_ event: Event) -> Effect {
         switch event {
-        case .anchorHover(let inside): overAnchor = inside
+        case .anchorHover(let inside):
+            overAnchor = inside
+            if inside { muted = false }
         case .surfaceHover(let inside): overSurface = inside
+        case .surfaceFocus(let focused): surfaceFocused = focused
         case .anchorFocus(let focused):
             anchorFocused = focused
             if !focused { muted = false }
@@ -172,6 +177,7 @@ struct PopoverPresence: Equatable {
             isOpen = false
             overAnchor = false
             overSurface = false
+            surfaceFocused = false
             muted = true
             return .changed(refocusAnchor: true)
         }

@@ -95,6 +95,7 @@ private struct ToastActionStyle: ButtonStyle {
                 .padding(.horizontal, Metrics.Toast.actionPadding)
                 .frame(height: Metrics.Toast.actionHeight)
                 .background(shape.fill(fill))
+                .focusFill(isFocused || specimen.contains(.focus), cornerRadius: Metrics.Radius.control)
                 .contentShape(shape)
                 .pointerCursor()
                 .onHover { hovering = $0 }

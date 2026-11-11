@@ -60,8 +60,12 @@ with `SPACEVIBE_SHOT_SCREEN=shell scripts/dev-fixture.sh --shots <dir>` (`galler
 - **Controls have no outline.** Button, search field, scope picker, segmented control, filter chip and key cap fill with
   the [`ControlGround`](../Sources/SpaceVibe/Components/ControlGround.swift): `surface` on the well, `surfaceRaised` inside a
   card (a card, a dialog and the search field set it), and `selection` for the chosen segment or chip. Focus is a fill,
-  never a ring (D57): [`focusFill`](../Sources/SpaceVibe/Components/FocusFill.swift) lays `sel` over the focused control,
-  except a selected row or tile, which already wears it.
+  never a ring (D57): [`focusFill`](../Sources/SpaceVibe/Components/FocusFill.swift) draws a neutral filled strip inside the
+  control's bottom edge, including selected and picked rows and tiles. It uses `fg` (`onAccent` on solid buttons), reads
+  at least 3:1 on its ground and leaves the text and selection fill unchanged
+  ([contrast and rendering tests](../Tests/SpaceVibeTests/ContrastTests.swift)). A warning popover stays open while any
+  child action has keyboard focus; Esc closes it and returns focus to its anchor
+  ([WarningSlot](../Sources/SpaceVibe/Components/WarningSlot.swift), [presence tests](../Tests/SpaceVibeTests/OverlayPlacementTests.swift)).
 
 ## Icons
 

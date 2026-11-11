@@ -155,13 +155,13 @@ struct ContainerSpecimens: View {
     private var rows: some View {
         HStack(alignment: .top, spacing: Space.s24) {
             VStack(alignment: .leading, spacing: Space.s8) {
-                caption("in a list (bgPanel): rest, hover, current, picked, current and picked, focus; dividers hide beside a filled row")
+                caption("in a list (bgPanel): rest, hover, current, picked, current + picked + focus, focus")
                 ListRows {
                     listRow("ponytail")
                     listRow("impeccable").specimen(.hover)
                     listRow("diagnosing-bugs", current: true)
                     listRow("explain")
-                    listRow("tidy-git", current: true, picked: true)
+                    listRow("tidy-git", current: true, picked: true).specimen(.focus)
                     listRow("kyant-kanban").specimen(.focus)
                     listRow("review-change")
                     listRow("neon-postgres")

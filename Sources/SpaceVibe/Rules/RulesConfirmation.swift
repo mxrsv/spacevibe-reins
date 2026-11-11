@@ -20,7 +20,7 @@ struct RulesConfirmation: View {
                 .keyboardShortcut(.cancelAction)
             Button("Set to \(RulesWording.title(pending.verdict))", action: confirm)
                 .buttonStyle(.spaceVibe(.primary))
-                .spaceVibeFocusable(cornerRadius: Metrics.controlRadius, focusOnAppear: true)
+                .spaceVibeFocusable(cornerRadius: Metrics.controlRadius, focusOnAppear: true, onSolid: true)
         }
     }
 

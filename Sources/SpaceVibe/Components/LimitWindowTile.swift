@@ -23,6 +23,7 @@ struct LimitWindowTile<Tags: View>: View {
     let tags: Tags
 
     @State private var hovering = false
+    @Environment(\.specimenInteraction) private var specimen
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -56,8 +57,7 @@ struct LimitWindowTile<Tags: View>: View {
         .contentShape(shape)
         .onHover { hovering = $0 }
         .modifier(RowActivation(onActivate: onActivate, focused: $focused))
-        // A selected tile already wears `selection`; a second fill would put tertiary text under 4.5:1 (ContrastTests).
-        .focusFill(focused && !selected, cornerRadius: Metrics.rowRadius)
+        .focusFill(focused || specimen.contains(.focus), cornerRadius: Metrics.rowRadius)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     }

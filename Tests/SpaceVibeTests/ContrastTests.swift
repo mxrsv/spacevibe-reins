@@ -1,3 +1,5 @@
+import AppKit
+import SwiftUI
 import Testing
 @testable import SpaceVibe
 
@@ -27,7 +29,7 @@ struct ContrastTests {
     }
 
     /// Where text sits: every surface, and the current, hovered and picked fills over the ones rows and items sit on.
-    /// `sel` is also the focus fill (D57), so "on a focused control" is covered by the `sel` rows.
+    /// Focus keeps these grounds and adds a separate filled strip; it never composites over the text.
     static let textGrounds: [Ground] = [
         ground("bgSide", P.bgSide), ground("bgApp", P.bgApp), ground("bgPanel", P.bgPanel), ground("bgRaise", P.bgRaise),
         ground("bgSunk", P.bgSunk), ground("bgPop", P.bgPop), ground("bgBand", P.bgBand),
@@ -228,24 +230,75 @@ struct ContrastTests {
         }
     }
 
-    /// D57 and V5-R41: focus is the `sel` fill. Every text and mark on it is in `pairs` (each `sel` ground is also the
-    /// focused case); here the fill must change the look from rest and stand a step above hover, in both appearances. Its
-    /// contrast with the unfocused state (WCAG 2.4.13, AAA) is about 1.1:1, not 3:1: an open trade-off for the owner at the
-    /// final eye task.
-    @Test("the focus fill differs from rest and from hover")
+    /// V5-R40: the filled focus strip itself, not just text on the selection fill, must read at 3:1.
+    @Test("the focus fill reads at 3:1 on neutral, selected, hovered, category and solid grounds")
     func focusFillDiffers() {
-        let bases: [(String, ColorValue)] = [("bgSide", P.bgSide), ("bgPanel", P.bgPanel), ("bgRaise", P.bgRaise), ("bgPop", P.bgPop)]
+        var grounds = Self.textGrounds
+        for (name, fill, _, _) in Self.tabColors {
+            grounds.append(Self.ground("focused \(name) chip", P.bgPanel, Layer(fill, alpha: TabChipAlpha.activeFocus)))
+        }
+        grounds += [Self.ground("hover on selection", P.bgPanel, Layer(P.sel), Layer(P.hover)),
+                    Self.ground("focus on selection", P.bgRaise, Layer(P.sel), Layer(P.sel)),
+                    Self.ground("off switch", P.bgPanel, Layer(P.track))]
         for appearance in Appearance.allCases {
-            for (name, base) in bases {
-                let rest = ColorMath.composite([Layer(base)], appearance)
-                let hovered = ColorMath.composite([Layer(base), Layer(P.hover)], appearance)
-                let focused = ColorMath.composite([Layer(base), Layer(P.sel)], appearance)
-                let fromRest = ColorMath.contrast(focused, rest)
-                let fromHover = ColorMath.contrast(focused, hovered)
-                #expect(fromRest > ColorMath.contrast(hovered, rest) && fromHover >= 1.02,
-                        "\(appearance) on \(name): focus \(focused.hex) is \(String(format: "%.3f", fromRest)):1 from rest, \(String(format: "%.3f", fromHover)):1 from hover")
+            for ground in grounds {
+                let surface = ColorMath.composite(ground.layers, appearance)
+                #expect(ColorMath.contrast(P.fg.rgb(appearance), surface) >= 3, "\(appearance): focus on \(ground.name)")
+            }
+            for solid in [P.accentSolid, P.badSolid] {
+                for brightness in [0, Metrics.ActionButton.solidHoverBrightness] {
+                    let surface = ColorMath.composite([Layer(solid)], appearance, brighten: brightness)
+                    #expect(ColorMath.contrast(P.onAccent.rgb(appearance), surface) >= 3)
+                }
             }
         }
+    }
+
+    @MainActor
+    @Test("focus visibly changes selected and picked rows without clearing their selection")
+    func selectedRowsKeepVisibleFocus() throws {
+        for scheme in [ColorScheme.light, .dark] {
+            for picked in [false, true] {
+                let row = ListRow("Synthetic skill", isCurrent: true, isPicked: picked, onActivate: {})
+                try expectVisibleFocus(row, scheme: scheme)
+            }
+            let tile = LimitWindowTile(cli: .claude, title: "5-hour", subtitle: "Synthetic window", meter: .none,
+                                       value: "78%", selected: true, onActivate: {})
+            try expectVisibleFocus(tile, scheme: scheme)
+            let row = Row(selected: true, onActivate: {}) { Text("Synthetic skill") }
+            try expectVisibleFocus(row, scheme: scheme)
+        }
+    }
+
+    @MainActor
+    private func expectVisibleFocus<V: View>(_ view: V, scheme: ColorScheme) throws {
+        let rest = try pixels(view, focused: false, scheme: scheme)
+        let focused = try pixels(view, focused: true, scheme: scheme)
+        #expect(rest.pixelsWide == focused.pixelsWide && rest.pixelsHigh == focused.pixelsHigh)
+        var strongestContrast = 1.0
+        var changed = 0
+        for y in 0..<rest.pixelsHigh {
+            for x in 0..<rest.pixelsWide {
+                let a = try #require(rest.colorAt(x: x, y: y)?.usingColorSpace(.sRGB))
+                let b = try #require(focused.colorAt(x: x, y: y)?.usingColorSpace(.sRGB))
+                let before = RGB(r: a.redComponent, g: a.greenComponent, b: a.blueComponent)
+                let after = RGB(r: b.redComponent, g: b.greenComponent, b: b.blueComponent)
+                if before != after { changed += 1 }
+                strongestContrast = max(strongestContrast, ColorMath.contrast(before, after))
+            }
+        }
+        #expect(strongestContrast >= 3, "\(scheme): the rendered focus indicator must reach 3:1")
+        #expect(changed < rest.pixelsWide * rest.pixelsHigh / 4, "Focus must preserve the text and selection, not repaint the row")
+    }
+
+    @MainActor
+    private func pixels<V: View>(_ view: V, focused: Bool, scheme: ColorScheme) throws -> NSBitmapImageRep {
+        let image = ImageRenderer(content: view.frame(width: 320)
+            .background(Palette.bgPanel)
+            .environment(\.colorScheme, scheme)
+            .environment(\.isShotRendering, true)
+            .specimen(focused ? .focus : []))
+        return NSBitmapImageRep(cgImage: try #require(image.cgImage))
     }
 
     @Test("the pair list covers what V5-A2 names")

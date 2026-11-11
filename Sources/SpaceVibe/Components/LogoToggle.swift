@@ -61,6 +61,7 @@ struct LogoToggle: View {
         .pointerStyle(mode == .toggles ? .link : .notAllowed)
         .focused($focused)
         .focusEffectDisabled()
+        .focusFill(isFocused, cornerRadius: Metrics.Radius.control)
         .onHover { hovering = $0 }
         .onAppear { if justChanged { pop() } }
         .onChange(of: justChanged) { _, now in if now { pop() } }

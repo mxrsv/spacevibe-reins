@@ -74,6 +74,7 @@ struct SidebarSearchRow: View {
         .pointerCursor()
         .focused($focused)
         .focusEffectDisabled()
+        .focusFill(isFocused, cornerRadius: Metrics.Radius.control)
         .onHover { hovering = $0 }
         .accessibilityLabel("Search and commands")
         .accessibilityHint(spokenKey)
@@ -122,6 +123,7 @@ struct SidebarPageItem: View {
         .pointerCursor()
         .focused($focused)
         .focusEffectDisabled()
+        .focusFill(isFocused, cornerRadius: Metrics.Radius.control)
         .onHover { hovering = $0 }
         .animation(reduceMotion ? nil : .easeOut(duration: Metrics.Motion.quick), value: lifted)
         .accessibilityLabel(count.map { "\(title), \(spokenCount ?? String($0))" } ?? title)
@@ -248,6 +250,7 @@ private struct SidebarFooterControl<Content: View>: View {
         .pointerCursor()
         .focused($focused)
         .focusEffectDisabled()
+        .focusFill(isFocused, cornerRadius: Metrics.Radius.control)
         .onHover { hovering = $0 }
         .animation(reduceMotion ? nil : .easeOut(duration: Metrics.Motion.quick), value: lifted)
         .accessibilityLabel(label)

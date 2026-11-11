@@ -85,6 +85,7 @@ struct TabChip: View {
         .pointerCursor()
         .focused($focused)
         .focusEffectDisabled()
+        .focusFill(isFocused, cornerRadius: Metrics.Radius.control)
         .onHover { hovering = $0 }
         .animation(reduceMotion ? nil : .easeOut(duration: Metrics.Motion.quick), value: lifted)
         .accessibilityLabel(title)

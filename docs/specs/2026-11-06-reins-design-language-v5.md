@@ -115,7 +115,7 @@ The Loadout page of the 2026-11-06 version, now the Skills tab (D43, D46). It is
 | ID | Requirement | Ledger |
 | --- | --- | --- |
 | V5-R40 | WCAG AA in both appearances: text 4.5:1 on its real composited surface (tab chips, count circles, the selected row, Answer text, `fg3` where it carries text); controls, meaning-carrying icons, logo state and the focus fill 3:1. | D13 |
-| V5-R41 | CHANGED (D57): visible focus on every control is a fill change (`sel`, or the control's hover fill one step stronger), never an outline or ring, on buttons, inputs, tabs, rows, logos and bands. | D57 |
+| V5-R41 | CHANGED (D57; owner-requested accessibility fixes, 2026-11-11): visible focus on every control uses a neutral filled strip inside the control, never an outline or ring, on buttons, inputs, tabs, rows, logos and bands. The strip itself must contrast at least 3:1 with its adjacent ground; selected and picked controls retain a distinct focus indicator. It must not reduce text contrast or recolour selection. | D57 |
 | V5-R42 | Reduced motion removes the 120 ms transitions, the popover rise, the logo-badge pop and the skeleton pulse. Nothing animates beyond fades and short transforms otherwise; no looping animation outside a loading skeleton. | D12 |
 | V5-R43 | Colour never carries state alone: a verdict has a glyph and a sentence; a lit logo has a badge as well as opacity; every logo toggle, warning slot, tab, band and menu item has an accessible name and value (for example "Codex: not in Codex, press to add"). | D21, D31 |
 

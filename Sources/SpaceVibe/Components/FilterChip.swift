@@ -132,6 +132,7 @@ private struct ChipPartStyle: ButtonStyle {
             configuration.label
                 .foregroundStyle(hovered ? Palette.fg : rest)
                 .background(focused ? Palette.sel : (hovered ? Palette.hover : .clear))
+                .focusFill(isFocused || specimen.contains(.focus), cornerRadius: Metrics.Radius.control)
                 .contentShape(Rectangle())
                 .pointerCursor()
                 .onHover { hovering = $0 }

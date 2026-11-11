@@ -86,6 +86,47 @@ struct OverlayPlacementTests {
         _ = presence.handle(.activate)
         #expect(!presence.isOpen)
     }
+
+    @Test("moving keyboard focus from the anchor into the popover cancels closing, in either notification order")
+    func focusInsidePopoverKeepsItOpen() {
+        for surfaceFirst in [false, true] {
+            var presence = PopoverPresence()
+            _ = presence.handle(.anchorFocus(true))
+            presence.settle()
+            if surfaceFirst { _ = presence.handle(.surfaceFocus(true)) }
+            _ = presence.handle(.anchorFocus(false))
+            if !surfaceFirst { _ = presence.handle(.surfaceFocus(true)) }
+            presence.settle()
+            #expect(presence.isOpen)
+
+            // A gap between two descendant buttons must cancel closing too.
+            #expect(presence.handle(.surfaceFocus(false)) == .settle(after: .milliseconds(100)))
+            #expect(presence.handle(.surfaceFocus(true)) == .settle(after: .zero))
+            presence.settle()
+            #expect(presence.isOpen)
+
+            _ = presence.handle(.surfaceFocus(false))
+            presence.settle()
+            #expect(!presence.isOpen)
+        }
+    }
+
+    @Test("Esc from a popover action closes it and late focus notifications cannot reopen it")
+    func escapeFromPopoverAction() {
+        var presence = PopoverPresence()
+        _ = presence.handle(.activate)
+        _ = presence.handle(.surfaceFocus(true))
+        #expect(presence.handle(.escape) == .changed(refocusAnchor: true))
+        _ = presence.handle(.surfaceFocus(true))
+        _ = presence.handle(.anchorFocus(true))
+        presence.settle()
+        #expect(!presence.isOpen)
+        _ = presence.handle(.surfaceFocus(false))
+        _ = presence.handle(.anchorFocus(false))
+        _ = presence.handle(.anchorFocus(true))
+        presence.settle()
+        #expect(presence.isOpen)
+    }
 }
 
 private extension PopoverPresence {

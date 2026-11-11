@@ -804,6 +804,30 @@ Evidence: `/tmp/reins-v5/U14-cursor/` (`sites.txt` the raw grep of interactive p
 - Switch off: `before-off/` (`git archive` of HEAD ef8eb03 through `scripts/dev-fixture.sh --shots`, `SPACEVIBE_SHOT_SCREEN=shell`) against `after-off/`, `compare -metric AE`: 18 of 18 shots 0. A cursor is not drawn in a shot, so this shows only that no look changed.
 - Not seen (W22): the cursor itself. Headless shots do not draw it, and this session must not move the owner's pointer or touch the open app. For the owner after the lead relaunches: hover a button, a row, a band header, a tab chip, a filter chip and its close, a menu line, the sidebar's search row, Settings and theme buttons, a theme tile, the switch and the segmented control (hand); a disabled button (arrow); a read-only logo inside a clickable row (not-allowed, not the hand); the search field and the palette field (I-beam). Hypothesis, unverified (each decided by that hover): the `image` pointer for not-allowed draws at the system cursor's size and a nested style beats the row's (if not, go back to `NSCursor.operationNotAllowed.push()` for that case); the scope picker is an AppKit-backed `Menu`, so `.pointerStyle` may be ignored there (used by `LoadoutToolbar` and `RulesToolbar`; the v5 tab heads use `ToolbarMenuButton`).
 
+## Accessibility correction (2026-11-11)
+
+The owner requested fixes for all three findings from the accessibility audit: the warning popover closing when focus
+enters its actions, no distinct focus on a selected row/tile, and the focus fill below 3:1. This follow-up replaces the
+U2 weak-focus trade-off for [V5-R40 and V5-R41](../specs/2026-11-06-reins-design-language-v5.md#accessibility); D57's no-ring
+decision remains. Checkout: this repo, `main`; no push or cut-over in this follow-up.
+
+- Implemented: `WarningSlot` publishes a `FocusedValue` from its popover so every descendant action keeps it open;
+  `PopoverPresence` retains focus across anchor/surface handoff and closes on Escape without reopening on late events.
+- Implemented: the shared `focusFill` uses a neutral filled strip inside the control. It remains visible on selected and
+  picked rows, leaves text and selection unchanged, and uses `onAccent` on solid buttons. Custom v5 controls use this same
+  modifier. The old Limits tile also retains its focus indicator while selected.
+- Verification: the stricter 3:1 test failed on all eight original neutral-ground cases before the fix. Focused suites
+  passed 27 tests in 4 suites; the full `scripts/test.sh` passed Go vet/tests and 530 Swift tests in 54 suites (3 added:
+  popover handoff, Escape from a child action, and rendered focus on selected/picked rows). The original 260 contrast
+  pairs still pass. The final `scripts/test.sh --filter ContrastTests` passed 4 tests, including contrast measured from
+  the rendered row pixels and a check that focus leaves at least three quarters of those pixels unchanged. `git diff
+  --check` and new/changed document links pass; the spec's pre-existing `Sources/Reins` links remain outside this fix.
+- Visual evidence: synthetic SwiftUI `ImageRenderer` shots, before/after in both appearances, in
+  `/tmp/spacevibe-accessibility-20261111/`; `review.html` is the comparison sheet. Headless rendering confirms appearance,
+  not live keyboard or VoiceOver behavior. No real configuration was read or written.
+- Remaining acceptance: the owner reviews the new focus treatment; live Tab/Shift-Tab, Escape and VoiceOver on the
+  warning popover remain unverified. The previous U14 eye approval does not approve this new focus treatment.
+
 ## Handoff
 
 - Date: 2026-11-08

@@ -89,6 +89,7 @@ private struct BandHeader<Lead: View, Extras: View>: View {
         .contentShape(shape)
         .onHover { hovering = $0 }
         .modifier(RowActivation(onActivate: { isOpen.toggle() }, focused: $focused))
+        .focusFill(isFocused, cornerRadius: Metrics.Radius.block)
         .accessibilityElement(children: .combine)
         .accessibilityLabel([label, count.map { "\($0)" }, state?.label].compactMap { $0 }.joined(separator: ", "))
         .accessibilityValue(isOpen ? "Expanded" : "Collapsed")

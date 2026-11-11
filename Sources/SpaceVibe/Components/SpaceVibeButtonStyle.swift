@@ -208,6 +208,7 @@ struct ActionButtonStyle: ButtonStyle {
                 .frame(width: kind == .icon ? Metrics.ActionButton.iconSide : nil, height: kind == .icon ? Metrics.ActionButton.iconSide : size.height)
                 .background(shape.fill(fill(hovered: hovered, focused: focused, pressed: pressed)))
                 .brightness(kind.isSolid && (hovered || focused) ? Metrics.ActionButton.solidHoverBrightness : 0)
+                .focusFill(focused, cornerRadius: Metrics.Radius.control, onSolid: kind.isSolid)
                 .overlay {
                     if kind != .icon {
                         TopEdgeHighlight(radius: Metrics.Radius.control).fill(kind.isSolid ? Palette.hiOnSolid : Palette.hi).allowsHitTesting(false)

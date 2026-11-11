@@ -62,6 +62,7 @@ struct ListRow<Leading: View, Trailing: View>: View {
         .contentShape(shape)
         .onHover { hovering = $0 }
         .modifier(RowActivation(onActivate: onActivate, focused: $focused))
+        .focusFill(isFocused, cornerRadius: Metrics.Radius.block)
         .animation(reduceMotion ? nil : .easeOut(duration: Metrics.Motion.quick), value: hovered)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(accessibilityName ?? name)
