@@ -28,14 +28,6 @@ enum HookRun: Equatable, Sendable {
             else { self = .loading }
         }
     }
-
-    /// A run count SpaceVibe can stand behind (a counted cell, zero or not, or a settings file too new to say).
-    var isMeasured: Bool {
-        switch self {
-        case .ran, .neverRan, .newlyAdded: true
-        case .missing, .loading, .unmeasurable: false
-        }
-    }
 }
 
 extension LoadoutRow {
@@ -66,9 +58,6 @@ extension LoadoutRow {
     var isDeadHook: Bool { hookMembers.values.contains(where: \.dead) }
 
     func hookRun(in cli: CoreCLI) -> HookRun { HookRun(cells[cli]) }
-
-    /// The CLIs whose run count is real.
-    var measuredCLIs: [CoreCLI] { presentCLIs.filter { hookRun(in: $0).isMeasured } }
 
     /// Nothing can count this hook's runs (a Codex-only hook): the neutral clock in the warning slot.
     var isUnmeasurable: Bool {

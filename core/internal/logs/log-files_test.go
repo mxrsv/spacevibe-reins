@@ -197,3 +197,67 @@ func TestForEachChunkMissingPlainFile(t *testing.T) {
 		t.Fatalf("err = %v, want a ReadError with an errno", err)
 	}
 }
+
+func TestForEachChunkEmptyFile(t *testing.T) {
+	file := writeFile(t, t.TempDir(), "empty.jsonl", nil)
+	calls := 0
+	if err := ForEachChunk(file, func([]byte) error { calls++; return nil }); err != nil || calls != 0 {
+		t.Fatalf("err = %v, calls = %d, want no error or chunks", err, calls)
+	}
+}
+
+// The initial size is only a buffer hint: bytes appended before EOF must still be read.
+func TestForEachChunkReadsAppendedData(t *testing.T) {
+	initial := []byte("{}\n")
+	file := writeFile(t, t.TempDir(), "growing.jsonl", initial)
+	extra := bytes.Repeat([]byte("x"), 2*plainReadChunk+17)
+	var got []byte
+	err := ForEachChunk(file, func(chunk []byte) error {
+		first := len(got) == 0
+		got = append(got, chunk...)
+		if !first {
+			return nil
+		}
+		f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY, 0)
+		if err != nil {
+			return err
+		}
+		_, writeErr := f.Write(extra)
+		closeErr := f.Close()
+		return errors.Join(writeErr, closeErr)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := append(initial, extra...); !bytes.Equal(got, want) {
+		t.Fatalf("read %d bytes, want all %d original and appended bytes", len(got), len(want))
+	}
+}
+
+func BenchmarkForEachChunkPlain(b *testing.B) {
+	for _, tc := range []struct {
+		name string
+		size int
+	}{
+		{"small-512B", 512},
+		{"medium-64KiB", 64 << 10},
+		{"large-8MiB", 8 << 20},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			file := filepath.Join(b.TempDir(), "session.jsonl")
+			if err := os.WriteFile(file, bytes.Repeat([]byte("x"), tc.size), 0o600); err != nil {
+				b.Fatal(err)
+			}
+			b.SetBytes(int64(tc.size))
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				read := 0
+				err := ForEachChunk(file, func(chunk []byte) error { read += len(chunk); return nil })
+				if err != nil || read != tc.size {
+					b.Fatalf("read %d bytes, err = %v; want %d bytes", read, err, tc.size)
+				}
+			}
+		})
+	}
+}

@@ -11,7 +11,10 @@ import (
 // Finding and opening session logs. Older Codex rollouts sit on disk as `.jsonl.zst`, so a reader that only knows
 // `.jsonl` silently loses most of a machine's Codex history.
 
-const plainReadChunk = 1 << 20
+const (
+	plainReadChunk    = 1 << 20
+	plainMinReadChunk = 4 << 10
+)
 
 // logSuffixes in match order: the longest first.
 var logSuffixes = []string{".jsonl.zstd", ".jsonl.zst", ".jsonl"}
@@ -101,7 +104,14 @@ func ForEachChunk(path string, body func([]byte) error) error {
 		return readFailure(err)
 	}
 	defer f.Close()
-	buf := make([]byte, plainReadChunk)
+	info, err := f.Stat()
+	if err != nil {
+		return readFailure(err)
+	}
+	// Small logs need no full-size buffer. Keep a floor for files that grow while read;
+	// their initial size is a hint, never a limit on how many bytes we consume.
+	bufferSize := min(int64(plainReadChunk), max(info.Size(), int64(plainMinReadChunk)))
+	buf := make([]byte, int(bufferSize))
 	for {
 		n, err := f.Read(buf)
 		if n > 0 {

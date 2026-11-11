@@ -10,11 +10,6 @@ enum CoreProtocol {
     static let envPrefix = "SPACEVIBE_"
 }
 
-struct CoreClientInfo: Codable, Equatable, Sendable {
-    let name: String
-    let version: String
-}
-
 /// The result of `initialize`. The shell takes the core's name, version, env prefix and data folder from it (SV12).
 struct CoreInitializeResult: Codable, Equatable, Sendable {
     struct Core: Codable, Equatable, Sendable {
