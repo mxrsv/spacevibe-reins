@@ -5,7 +5,7 @@ import Foundation
 /// and the calendar are arguments.
 ///
 /// Data truth (V5-R75, W23): the share shown is the share LEFT, `100 - usedPercent` (`LimitsWording.shareLeft`); a window
-/// past its reset (`current == false`) reads unknown, never 0%. A reading's age is per CLI (`CoreLimitsEntry.at`), so a stale
+/// past its reset at the display clock reads unknown, never 0%. A reading's age is per CLI (`CoreLimitsEntry.at`), so a stale
 /// reading marks every window of that CLI. The plan is the one the record names (Codex only today).
 struct LimitsAnswer: Equatable {
     /// What the page has to go on.
@@ -150,8 +150,8 @@ struct LimitsAnswer: Equatable {
         var name: String { LimitsWording.cliName(entry.cli) }
     }
 
-    private static func planWide(_ windows: [CoreLimitWindow]) -> [CoreLimitWindow] {
-        windows.filter { $0.scope == nil && $0.current && $0.active }
+    private static func planWide(_ windows: [CoreLimitWindow], now: Date) -> [CoreLimitWindow] {
+        windows.filter { $0.scope == nil && $0.isCurrent(at: now) && $0.active }
     }
 
     private static func exactLeft(_ window: CoreLimitWindow) -> Double { 100 - window.usedPercent }
@@ -159,7 +159,7 @@ struct LimitsAnswer: Equatable {
     private static func answer(_ entries: [CoreLimitsEntry], now: Date, calendar: Calendar) -> (String, Verdict) {
         let readings = entries.compactMap { entry in entry.reading.map { (entry, $0.at, $0.windows) } }
         let rooms = readings.compactMap { entry, at, windows -> Room? in
-            guard let tightest = planWide(windows).min(by: { exactLeft($0) < exactLeft($1) }) else { return nil }
+            guard let tightest = planWide(windows, now: now).min(by: { exactLeft($0) < exactLeft($1) }) else { return nil }
             return Room(entry: entry, at: at, windows: windows, tightest: tightest)
         }
         // Most room first; the core's order breaks a tie.
@@ -180,7 +180,7 @@ struct LimitsAnswer: Equatable {
         if best.isLow {
             // Every CLI with room is low: hold until the first of them has no low whole-plan window left.
             let until = ranked.compactMap { room in
-                planWide(room.windows).filter { LimitsWording.tone($0) != .normal }.map(\.resetsAt).max()
+                planWide(room.windows, now: now).filter { LimitsWording.tone($0) != .normal }.map(\.resetsAt).max()
             }.min() ?? best.tightest.resetsAt
             let verdict = ranked.count > 1
                 ? Verdict(glyph: .used, title: "Both CLIs are low", text: "The best window left has \(best.left)%.", small: small)
@@ -189,10 +189,10 @@ struct LimitsAnswer: Equatable {
         }
 
         // Until the best CLI's longest whole-plan window resets (the mock's weekly window).
-        let longest = planWide(best.windows).max { ($0.minutes ?? 0) < ($1.minutes ?? 0) } ?? best.tightest
+        let longest = planWide(best.windows, now: now).max { ($0.minutes ?? 0) < ($1.minutes ?? 0) } ?? best.tightest
         let sentence = "Do heavy work in \(best.name) until \(clock(longest.resetsAt, now: now, calendar: calendar))."
         let other = readings.lazy.filter { $0.0.cli != best.entry.cli }.compactMap { entry, _, windows -> (String, CoreLimitWindow)? in
-            windows.filter { $0.current && $0.active }.min { exactLeft($0) < exactLeft($1) }.map { (LimitsWording.cliName(entry.cli), $0) }
+            windows.filter { $0.isCurrent(at: now) && $0.active }.min { exactLeft($0) < exactLeft($1) }.map { (LimitsWording.cliName(entry.cli), $0) }
         }.first
         if let other {
             let text = "\(LimitsWording.name(other.1)) has \(LimitsWording.shareLeft(other.1))% left."
@@ -210,7 +210,7 @@ struct LimitsAnswer: Equatable {
     private static func resets(_ entries: [CoreLimitsEntry], showUnused: Bool, now: Date, calendar: Calendar) -> [Reset] {
         let rows = entries.flatMap { entry -> [(CoreLimitsEntry, CoreLimitWindow)] in
             guard let windows = entry.reading?.windows else { return [] }
-            return LimitsWording.visible(windows, showInactive: showUnused).filter(\.current).map { (entry, $0) }
+            return LimitsWording.visible(windows, showInactive: showUnused).filter { $0.isCurrent(at: now) }.map { (entry, $0) }
         }
         return rows.enumerated()
             .sorted { a, b in
@@ -263,7 +263,7 @@ struct LimitsAnswer: Equatable {
         let age = LimitsWording.readAge(at: reading.at, now: now)
         let shown = LimitsWording.visible(reading.windows, showInactive: showUnused)
         let rows = shown.map { row($0, cli: entry.cli, stale: stale ? age : nil, now: now, calendar: calendar) }
-        let tones = reading.windows.filter { $0.current && $0.active }.map(LimitsWording.tone)
+        let tones = reading.windows.filter { $0.isCurrent(at: now) && $0.active }.map(LimitsWording.tone)
         let mark: Mark? = tones.contains(.out) ? Mark(kind: .danger, label: "A window is low")
             : tones.contains(.low) ? Mark(kind: .warn, label: "A window is low") : nil
         let body: Band.Body = rows.isEmpty ? .note(LimitsWording.entryNote(entry).body, nil) : .windows(rows)
@@ -273,8 +273,8 @@ struct LimitsAnswer: Equatable {
     /// The slot's glyph in the mock's order: a passed reset, then a stale reading (both the neutral clock), then little left.
     private static func row(_ window: CoreLimitWindow, cli: CoreLimitsCLI, stale age: String?, now: Date, calendar: Calendar) -> WindowRow {
         let name = LimitsWording.name(window)
-        let left = window.current ? LimitsWording.shareLeft(window) : nil
-        let tone = window.current ? LimitsWording.tone(window) : .normal
+        let left = window.isCurrent(at: now) ? LimitsWording.shareLeft(window) : nil
+        let tone = window.isCurrent(at: now) ? LimitsWording.tone(window) : .normal
         let warning: Warning?
         if left == nil {
             warning = Warning(mark: Mark(kind: .clock, label: "\(name): not known, reset passed"),

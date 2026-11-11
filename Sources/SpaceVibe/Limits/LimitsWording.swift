@@ -2,6 +2,9 @@ import Foundation
 
 extension CoreLimitWindow {
     var resetsAtDate: Date { Date(timeIntervalSince1970: resetsAt) }
+
+    /// A cached reading can expire between reads, including while the visible app is not frontmost.
+    func isCurrent(at now: Date) -> Bool { current && resetsAt > now.timeIntervalSince1970 }
 }
 
 extension CoreLimitsEntry {
@@ -14,7 +17,7 @@ extension CoreLimitsEntry {
 
 /// Wording for the Limits surface. Pure functions: every time is an argument, so nothing here reads the clock.
 /// The app shows the share left, like a battery; a window past its reset reads "unknown", never 0% used (spec, Limits).
-/// Whether a window is still running is the core's `current` flag, set when the reading was taken.
+/// A window must be current both at the core's reading and at the display's clock.
 enum LimitsWording {
     enum Tone: Equatable { case normal, low, out }
 
@@ -77,7 +80,7 @@ enum LimitsWording {
 
     /// The window that decides how much is usable: the current, active one with the least left. Nil when there is none.
     static func tightest(_ windows: [CoreLimitWindow], now: Date) -> CoreLimitWindow? {
-        windows.filter { $0.active && $0.current }.min { shareLeft($0) < shareLeft($1) }
+        windows.filter { $0.active && $0.isCurrent(at: now) }.min { shareLeft($0) < shareLeft($1) }
     }
 
     /// Windows to list: the active ones, plus the rest when `showInactive`.
@@ -87,7 +90,7 @@ enum LimitsWording {
 
     /// "3 h 12 min" until the reset; nil once it has passed.
     static func resetsIn(_ window: CoreLimitWindow, now: Date) -> String? {
-        window.current ? span(window.resetsAtDate.timeIntervalSince(now)) : nil
+        window.isCurrent(at: now) ? span(window.resetsAtDate.timeIntervalSince(now)) : nil
     }
 
     /// The reset's clock time: "21:12", "Fri 16:00", "Nov 10".

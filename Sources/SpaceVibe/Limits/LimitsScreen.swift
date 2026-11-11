@@ -80,7 +80,7 @@ private struct LimitsEntryTile: View {
     var body: some View {
         let name = LimitsWording.cliName(entry.cli)
         if let window = entry.window {
-            let current = window.current
+            let current = window.isCurrent(at: now)
             let left = LimitsWording.shareLeft(window)
             let tone = current ? LimitsWording.tone(window).tile : .normal
             LimitWindowTile(
@@ -134,7 +134,7 @@ private struct WindowFacts: View {
     let now: Date
 
     var body: some View {
-        let current = window.current
+        let current = window.isCurrent(at: now)
         let tone = current ? LimitsWording.tone(window).tile : .normal
         let left = LimitsWording.shareLeft(window)
         let reset = LimitsWording.resetFact(window, now: now)

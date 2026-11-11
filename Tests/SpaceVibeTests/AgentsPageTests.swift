@@ -16,7 +16,7 @@ struct AgentsPageTests {
     }
 
     private func data(_ rows: [LoadoutRow], globalCount: Int) -> LoadoutData {
-        LoadoutData(rows: rows, scopes: [], countsByScope: [:], problems: [], events: [:], globalCount: globalCount)
+        LoadoutData(rows: rows, scopes: [LoadoutScope(value: "global", label: "Global")], countsByScope: [:], problems: [], events: [:], globalCount: globalCount)
     }
 
     private func entry(_ cli: CoreLimitsCLI, _ state: CoreLimitsState) -> CoreLimitsEntry {
@@ -98,7 +98,7 @@ struct AgentsPageTests {
         #expect(AgentsPage.spokenTotal(1) == "1 skill, subagent or hook")
     }
 
-    @Test("the page names a failed scan only while the rows have no counts, and a failed read only while it has no rows")
+    @Test("first-read failures replace the empty page; later failures warn without hiding cached rows")
     func failures() {
         let env = AppEnvironment(toasts: ToastCenter(announce: false))
         let rows = data([row("a", .skill)], globalCount: 1)
@@ -107,6 +107,20 @@ struct AgentsPageTests {
         #expect(AgentsPage(env: env, loadout: LoadoutModel(env: env, data: rows)).scanFailure == nil)
         #expect(AgentsPage(env: env, loadout: LoadoutModel(env: env, data: nil, readFailure: "No folders.")).readFailure == "No folders.")
         #expect(AgentsPage(env: env, loadout: LoadoutModel(env: env, data: rows, readFailure: "No folders.")).readFailure == nil)
+        let cached = AgentsPage(env: env, loadout: LoadoutModel(env: env, data: rows, readFailure: "No folders."))
+        #expect(cached.refreshFailure == "No folders.")
+        #expect(cached.skills.rows.count == 1)
+        cached.select(.hooks)
+        #expect(cached.refreshFailure == "No folders.")
+        cached.select(.subagents)
+        #expect(cached.refreshFailure == "No folders.")
+        cached.select(.rules)
+        #expect(cached.refreshFailure == nil, "inventory failures belong to inventory tabs")
+        let rules = RulesModel(env: env, snapshot: RulesSynthetic.snapshot([RulesSynthetic.rule("Bash", .deny)]), failure: "Rules could not be read.")
+        let rulesPage = AgentsPage(env: env, rules: rules)
+        rulesPage.select(.rules)
+        #expect(rulesPage.refreshFailure == "Rules could not be read.")
+        #expect(rules.page.state == .ready && rules.page.rules.count == 1)
     }
 
     @Test("the rows of a failed scan keep every cell that was counted as not counted yet")

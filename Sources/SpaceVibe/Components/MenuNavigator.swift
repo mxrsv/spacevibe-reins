@@ -71,7 +71,7 @@ struct MenuNavigator: Equatable {
             if inSubmenu { sub = Self.step(from: sub, by: by, in: values) } else { main = Self.step(from: main, by: by, in: entries) }
             return .none
         case .right:
-            guard !inSubmenu, let main, case .field = entries[main].kind else { return .none }
+            guard !inSubmenu, let main, entries.indices.contains(main), case .field = entries[main].kind else { return .none }
             return open(entries[main].id, values: values)
         case .left:
             guard inSubmenu else { return .none }

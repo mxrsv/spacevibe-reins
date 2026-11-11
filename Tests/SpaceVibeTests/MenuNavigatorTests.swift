@@ -53,6 +53,17 @@ struct MenuNavigatorTests {
         #expect(!nav.inSubmenu)
     }
 
+    @Test("Right ignores a highlighted entry removed by a refresh, and arrows recover")
+    func rightAfterEntriesShrink() {
+        var nav = MenuNavigator(entries: Self.fields)
+        nav.hoverMain(2, entries: Self.fields)
+        let remaining = Array(Self.fields.prefix(1))
+        #expect(nav.handle(.right, entries: remaining) == .none)
+        #expect(nav.handle(.enter, entries: remaining) == .none)
+        #expect(nav.handle(.down, entries: remaining) == .none && nav.main == 0)
+        #expect(nav.handle(.right, entries: [], values: []) == .none)
+    }
+
     @Test("Return toggles the highlighted value in the submenu and in a one-level menu, and opens a field")
     func returnToggles() {
         var nav = MenuNavigator(entries: Self.fields)

@@ -79,6 +79,16 @@ struct LimitsAnswerTests {
         #expect(shown[2].spoken == "Codex Review, not known")
     }
 
+    @Test("cached expired windows leave the recommendation and reset list without another read")
+    func cachedWindowExpires() {
+        let cached = measured(.codex, [window("primary", used: 90, resets: 30)])
+        let facts = LimitsAnswer(.read([cached]), showUnused: false, now: Self.now.addingTimeInterval(120), calendar: Self.calendar)
+        #expect(facts.sentence == "No current reading.")
+        #expect(facts.resets?.isEmpty == true)
+        #expect(rows(facts.bands[0]).first?.left == nil)
+        #expect(rows(facts.bands[0]).first?.warning?.mark.kind == .clock)
+    }
+
     @Test("both CLIs low: hold heavy work until the first of them has no low window left")
     func bothLow() {
         let facts = answer([

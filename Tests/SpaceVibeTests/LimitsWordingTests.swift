@@ -130,6 +130,16 @@ struct LimitsWordingTests {
         #expect(LimitsWording.resetsAt(passed, now: Self.now, calendar: Self.calendar) == "17:34")
     }
 
+    @Test("a cached current window expires as the display clock passes its reset", arguments: [30.0, 120.0])
+    func cachedWindowExpires(elapsed: TimeInterval) {
+        let cached = window(used: 90, resets: 30)
+        let later = Self.now.addingTimeInterval(elapsed)
+        #expect(LimitsWording.tightest([cached], now: later) == nil)
+        #expect(LimitsWording.resetsIn(cached, now: later) == nil)
+        #expect(LimitsWording.resetFact(cached, now: later).label == "Reset was")
+        #expect(LimitsWording.summary(measured(.codex, at: 0, [cached]), now: later) == .unknown)
+    }
+
     @Test("a reading six hours old or more is stale (V5-R74), and its age reads in minutes, hours, then days")
     func readingAge() {
         #expect(!LimitsWording.isStale(at: Self.now.addingTimeInterval(-6 * Self.hour + 1), now: Self.now))

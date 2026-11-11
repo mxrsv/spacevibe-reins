@@ -198,6 +198,25 @@ struct LoadoutRowsTests {
 
     // MARK: linked skills (M2)
 
+    @Test("surviving row keys stay unique through duplicate reorder, removal and re-addition")
+    func keysSurviveDuplicateRefreshes() throws {
+        let user = skill("pdf")
+        var plugin = user
+        plugin.id = "plugin:pdf"
+        plugin.owner = "demo-plugin"
+        plugin.removable = false
+        let original = LoadoutData.build(raw: snapshot(items: [user, plugin])).rows
+        let originalPlugin = try #require(original.first { $0.plugin != nil })
+        let reordered = LoadoutData.build(raw: snapshot(items: [plugin, user]), previousRows: original).rows
+        #expect(reordered.first { $0.plugin != nil }?.key == originalPlugin.key)
+        #expect(Set(reordered.map(\.key)).count == 2)
+        let remaining = LoadoutData.build(raw: snapshot(items: [plugin]), previousRows: reordered).rows
+        #expect(remaining.first?.key == originalPlugin.key)
+        let restored = LoadoutData.build(raw: snapshot(items: [user, plugin]), previousRows: remaining).rows
+        #expect(restored.first { $0.plugin != nil }?.key == originalPlugin.key)
+        #expect(Set(restored.map(\.key)).count == 2)
+    }
+
     @Test("a link is removed before the real folder, and the real copy is the only copy for one CLI while a link points at it")
     func linkFirstAndOnlyCopy() throws {
         var link = inCodex(skill("pdf"))

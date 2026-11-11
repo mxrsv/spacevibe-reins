@@ -107,6 +107,9 @@ enum SkillsShots {
             let failed = AgentsPage(env: env, loadout: LoadoutModel(env: env, data: nil, readFailure: "No ~/.claude or ~/.codex folder could be read."))
             failed.select(.skills)
             try snap("skills-read-failed", page: failed) {}
+            let stale = AgentsPage(env: env, loadout: LoadoutModel(env: env, data: page.loadout.data, readFailure: "The core could not be started."))
+            try snap("skills-refresh-failed", shownSlot: "agents:refresh", page: stale) {}
+            try snap("skills-refresh-failed-narrow", shownSlot: "agents:refresh", page: stale, size: CGSize(width: 960, height: 600)) {}
             // The rows are there but the usage scan failed: the warning in the tab head names it and offers `Try again`.
             let scanFailed = AgentsPage(env: env, loadout: LoadoutModel(env: env, data: page.loadout.data?.withoutCounts(), scanFailure: "The usage scan could not run."))
             scanFailed.select(.skills)

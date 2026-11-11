@@ -51,6 +51,7 @@ enum RulesTabShots {
                 .environment(limits ?? env.limits)
                 .spaceVibeRoot(shell: shell, toasts: toasts ?? ToastCenter(announce: false), env: env)
                 .environment(\.openStateStore, store)
+                .environment(\.shownWarningSlot, used.refreshFailure == nil ? nil : AnyHashable("agents:refresh"))
                 .frame(width: size.width, height: size.height)
             try ShotRenderer.write(view, name: "\(variant.prefix)-\(name)", choice: choice, to: directory)
         }
@@ -159,8 +160,8 @@ enum RulesTabShots {
     /// The states the synthetic home cannot hold, drawn from in-memory snapshots.
     private static func inMemory(env: AppEnvironment, page real: AgentsPage, model: RulesModel,
                                  shoot: (String, AppearanceChoice, ToastCenter?, AgentsPage?, OpenStateStore, CGSize?, LimitsModel?, () -> Void) throws -> Void) throws {
-        func synthetic(_ snapshot: RulesSnapshot?, installed: Bool = true) -> (AgentsPage, LimitsModel?) {
-            let models = RulesModel(env: env, snapshot: snapshot)
+        func synthetic(_ snapshot: RulesSnapshot?, installed: Bool = true, failure: String? = nil) -> (AgentsPage, LimitsModel?) {
+            let models = RulesModel(env: env, snapshot: snapshot, failure: failure)
             let limits = installed ? nil : LimitsModel(env: env, results: [entry(.claude, installed: true), entry(.codex, installed: false)])
             if let limits { models.limitsResults = { limits.results } }
             let page = AgentsPage(env: env, loadout: real.loadout, rules: models)
@@ -176,6 +177,7 @@ enum RulesTabShots {
         let (many, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.many, codex: full))
         let (none, _) = synthetic(RulesSynthetic.snapshot([]))
         let (loading, _) = synthetic(nil)
+        let (stale, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.sample), failure: "The core could not be started.")
         let (noCodex, noCodexLimits) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.sample), installed: false)
         let (profile, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.sample, codex: RulesSynthetic.codex(sandbox: nil, model: .profiles, profile: "work")))
         let (allAllowed, _) = synthetic(RulesSynthetic.snapshot(RulesSynthetic.sample.filter { $0.verdict == .allow }))
@@ -212,6 +214,8 @@ enum RulesTabShots {
             try snap("nothing-matches", page: allAllowed) { allAllowed.rules.filter.toggle(.verdict, "deny") }
             allAllowed.rules.filter.clear()
             try snap("loading", page: loading)
+            try snap("refresh-failed", page: stale)
+            try snap("refresh-failed-narrow", page: stale, size: CGSize(width: 960, height: 600))
             // V5-A22: a window below 700 pt of canvas (the halves stack), and one shorter than the cards.
             try snap("narrow", page: sample, size: CGSize(width: 960, height: 600))
             try snap("short", page: sample, size: CGSize(width: 1062, height: 685))

@@ -41,6 +41,13 @@ final class AgentsPage: SpaceVibeTab {
     /// `Try again` (V5-A17), instead of cells that read "counting" for good.
     var scanFailure: String? { loadout.data != nil && loadout.usageResult == nil ? loadout.scanFailure : nil }
 
+    /// A later refresh failed: keep the last successful data, but never present it as a fresh reading.
+    var refreshFailure: String? {
+        if selected == .rules { return rules.snapshot?.selection == .global ? rules.failure : nil }
+        guard loadout.data != nil else { return nil }
+        return loadout.readFailure ?? (loadout.usageResult == nil ? nil : loadout.scanFailure)
+    }
+
     /// The core's sentences about files it could not read, shortened for the screen, without its line about hooks of other types
     /// (that one is the Hooks tab's footnote). Shown in the head and in an empty tab, so a file that cannot be read never reads as "none".
     var problems: [String] { Self.problems(in: loadout.data) }
@@ -146,6 +153,7 @@ struct AgentsPageView: View {
                         ) { page.select(category) }
                     }
                 } actions: {
+                    refreshFailureSlot
                     scanFailureSlot
                     problemsSlot
                     switch page.selected {
@@ -164,6 +172,16 @@ struct AgentsPageView: View {
     }
 
     /// The warning glyph at the head's left of the actions: what failed in the core's words and `Try again` beside it.
+    @ViewBuilder
+    private var refreshFailureSlot: some View {
+        if let failure = page.refreshFailure {
+            WarningSlot(mark: StateMark(.warn, label: "Refresh failed"), detail: failure, id: "agents:refresh") {
+                PopoverSentence("Showing the last successful reading. \(failure)")
+                PopoverActions { Button { page.refresh(force: true) } label: { ActionLabel("Try again") } }
+            }
+        }
+    }
+
     @ViewBuilder
     private var scanFailureSlot: some View {
         if let failure = page.scanFailure, page.selected != .rules {

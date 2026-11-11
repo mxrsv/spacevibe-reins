@@ -46,6 +46,8 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
     private var _scanFailure: Error?
     private var _writeGate: WriteGate?
     private var _scanGate: WriteGate?
+    var restartAfterNextScan = false
+    var removesItems = false
 
     init(rows: CoreLoadoutRows) { _rows = rows }
 
@@ -92,7 +94,10 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
         progress?(CoreUsageProgress(done: 4, total: 4))
         if let gate = scanGate { await gate.wait() }
         if let failure = scanFailure { throw failure }
-        lock.withLock { _scanned = true }
+        lock.withLock {
+            _scanned = !restartAfterNextScan
+            restartAfterNextScan = false
+        }
         return Self.usage
     }
 
@@ -106,6 +111,7 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
     override func loadoutRemoveItem(id: String) async throws -> CoreEntryResult {
         record("remove \(id)")
         if let failure = writeFailure { throw failure }
+        if removesItems { lock.withLock { _rows.items = _rows.items.filter { $0.id != id } } }
         return Self.entry("Removed skill one from Claude Code")
     }
 
@@ -232,12 +238,58 @@ struct LoadoutModelTests {
         #expect(core.calls.filter { $0 == "scan" }.count == 2)
     }
 
+    @Test("a restart between a successful scan and its rows reply triggers another scan")
+    func restartDuringScanRefresh() async throws {
+        let core = FakeLoadoutCore(rows: Self.rows())
+        let gate = WriteGate()
+        core.scanGate = gate
+        core.restartAfterNextScan = true
+        let model = model(core)
+        model.start()
+        try await settle("initial rows") { model.data != nil && core.calls.contains("scan") }
+        gate.open()
+        try await settle("rescan") { core.calls.filter { $0 == "scan" }.count == 2 && model.isSettled }
+        #expect(model.usageResult != nil && model.scanFailure == nil)
+        #expect(core.calls.filter { $0 == "scan" }.count == 2)
+    }
+
+    @Test("removing a duplicate keeps its surviving neighbour current after rows rebuild")
+    func duplicateRemovalKeepsNeighbour() async throws {
+        let user = Self.skill("alpha")
+        var plugin = user
+        plugin.id = "plugin:alpha"
+        plugin.owner = "demo-plugin"
+        plugin.removable = false
+        var beta = Self.skill("beta")
+        beta.cells = CoreCells(claude: .counted(runs: 100, last: nil, errors: nil), codex: .missing)
+        var raw = Self.rows()
+        raw.items = [beta, user, plugin]
+        raw.hooks = []
+        let core = FakeLoadoutCore(rows: raw)
+        core.removesItems = true
+        let loadout = try await started(core)
+        let skills = SkillsModel(loadout: loadout)
+        skills.listedKeys = skills.rows.map(\.key)
+        let target = try #require(skills.rows.first { $0.members[.claude]?.id == user.id })
+        let neighbour = try #require(skills.rows.first { $0.members[.claude]?.id == plugin.id })
+        skills.select(target.key)
+        skills.remove([target])
+        try await settle("duplicate removal") { loadout.isSettled && skills.rows.count == 2 }
+        #expect(skills.current(in: skills.rows)?.members[.claude]?.id == plugin.id)
+        #expect(skills.current(in: skills.rows)?.key == neighbour.key)
+        try await Task.sleep(for: .milliseconds(600))
+        if let current = skills.current(in: skills.rows) { skills.remove([current]) }
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(core.calls.filter { $0.hasPrefix("remove ") } == ["remove \(user.id)"])
+    }
+
     @Test("a failed scan is the banner, and the rows are still read")
     func scanFails() async throws {
         let core = FakeLoadoutCore(rows: Self.rows())
         core.scanFailure = CoreError("The usage scan could not run.", status: 500)
         let model = try await started(core)
         #expect(model.scanFailure == "The usage scan could not run.")
+        #expect(core.calls.filter { $0 == "scan" }.count == 1, "a refused scan must not restart itself forever")
         #expect(model.usageNote == "Usage could not be counted")
         #expect(model.data != nil)
     }

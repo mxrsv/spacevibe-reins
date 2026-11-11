@@ -37,6 +37,7 @@ enum LoadoutShots {
             }
 
             try shot("default")
+            try shot("refresh-failed", LoadoutModel(env: env, data: model.data, readFailure: "The core could not be started."))
             try shot("loading", LoadoutModel(env: env))
 
             model.shotKinds = [.hook]

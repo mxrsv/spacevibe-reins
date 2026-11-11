@@ -131,6 +131,34 @@ enum LoadoutRows {
         }
     }
 
+    /// Numbered split keys describe one snapshot only. Preserve a surviving member's display key across reloads so
+    /// selections, picked rows and open details cannot jump when another member of the core-key group is removed.
+    static func preservingKeys(_ rows: [LoadoutRow], from previous: [LoadoutRow]) -> [LoadoutRow] {
+        let byMember = Dictionary(previous.flatMap { row in row.members.values.map { ($0.id, row.key) } },
+                                  uniquingKeysWith: { first, _ in first })
+        var keys: [Int: String] = [:]
+        var used: Set<String> = []
+        // Reserve surviving keys before assigning new rows: a new first slot must not steal an old sibling's key.
+        for (index, row) in rows.enumerated() {
+            let candidates = CoreCLI.allCases.compactMap { row.members[$0].flatMap { byMember[$0.id] } }
+            if let key = candidates.first(where: { !used.contains($0) }) {
+                keys[index] = key
+                used.insert(key)
+            }
+        }
+        return rows.enumerated().map { index, row in
+            var key = keys[index] ?? row.key
+            if keys[index] == nil {
+                var suffix = 1
+                while used.contains(key) { key = "\(row.key)#\(suffix)"; suffix += 1 }
+                used.insert(key)
+            }
+            var kept = row
+            kept.key = key
+            return kept
+        }
+    }
+
     /// A short tag when a cell says the item is new, so a zero is not read as "never ran".
     static func addedNote(_ cells: CoreCells) -> String? {
         for cli in CoreCLI.allCases {
@@ -434,9 +462,9 @@ struct LoadoutData: Sendable {
     /// The home folder as `~` abbreviates it, when the Claude folder sits directly in it.
     var home: String?
 
-    static func build(raw: CoreLoadoutRows) -> LoadoutData {
+    static func build(raw: CoreLoadoutRows, previousRows: [LoadoutRow] = []) -> LoadoutData {
         let home = LoadoutRows.home(roots: raw.roots)
-        let rows = LoadoutRows.build(raw, home: home)
+        let rows = LoadoutRows.preservingKeys(LoadoutRows.build(raw, home: home), from: previousRows)
         return LoadoutData(
             rows: rows,
             scopes: LoadoutRows.scopes(raw),

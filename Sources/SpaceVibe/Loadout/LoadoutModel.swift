@@ -134,7 +134,7 @@ final class LoadoutModel {
             readFailure = nil
             // A core that has no scan result (it restarted, so the old one is gone) answers `scanning` until someone scans.
             // The old note and counts describe a core that is gone, so they are dropped and the scan is asked for again.
-            if rows.usage == .scanning, !scanRunning {
+            if rows.usage == .scanning, !scanRunning, scanFailure == nil {
                 usageResult = nil
                 scanFailure = nil
                 scan()
@@ -164,9 +164,11 @@ final class LoadoutModel {
                 scanFailure = AppEnvironment.message(error)
             }
             scanProgress = nil
+            // A restarted core can lose the result before this follow-up read. Let fetch start its replacement scan;
+            // scanFailure keeps an actually refused scan from retrying itself indefinitely.
+            scanRunning = false
             // The core attaches the finished scan to the rows it sends next, so the cells are read again.
             await fetch(beginRead())
-            scanRunning = false
         }
     }
 
@@ -175,7 +177,8 @@ final class LoadoutModel {
         buildsRequested += 1
         buildGeneration += 1
         let generation = buildGeneration
-        let built = await Task.detached(priority: .userInitiated) { LoadoutData.build(raw: snapshot) }.value
+        let previousRows = data?.rows ?? []
+        let built = await Task.detached(priority: .userInitiated) { LoadoutData.build(raw: snapshot, previousRows: previousRows) }.value
         buildsApplied += 1
         guard generation == buildGeneration else { return }
         data = built

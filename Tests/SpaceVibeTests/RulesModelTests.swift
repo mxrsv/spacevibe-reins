@@ -12,6 +12,7 @@ private final class FakeRulesCore: UnservedCore, @unchecked Sendable {
     private var _writeFailure: Error?
     private var _undoFailure: Error?
     private var _check = CoreRuleCheck(valid: true, message: nil)
+    var waitForCheck: (@Sendable () async -> Void)?
     private var _capabilityEntry: CoreJournalEntry? = FakeRulesCore.entry("Set Push and deploy to Deny (global)")
 
     init(snapshot: CoreRulesSnapshot) { _snapshot = snapshot }
@@ -70,6 +71,7 @@ private final class FakeRulesCore: UnservedCore, @unchecked Sendable {
 
     override func rulesCheck(rule: String) async throws -> CoreRuleCheck {
         record("check \(rule)")
+        await waitForCheck?()
         return check
     }
 
@@ -309,6 +311,29 @@ struct RulesModelTests {
         #expect(core.calls.contains("check Bash(npm test *)") && core.calls.contains("add global - deny Bash(npm test *)"))
         #expect(model.env.toasts.current?.message == "Added Bash(npm test *) to Deny")
         #expect(model.draft == "" && model.addError == nil)
+    }
+
+    @Test("Add keeps the submitted project scope while its shape check waits and the user switches to Global")
+    func addKeepsSubmittedScope() async throws {
+        let core = FakeRulesCore(snapshot: Self.snapshot())
+        let model = try await started(core)
+        core.snapshot = Self.snapshot(scope: .project, dir: Self.project)
+        model.selectProject(Self.project)
+        try await settle("project read") { model.isSettled && model.snapshot?.selection.dir == Self.project }
+        let gate = AsyncStream<Void>.makeStream()
+        core.waitForCheck = { for await _ in gate.stream {} }
+        defer { gate.continuation.finish() }
+        model.draft = "Bash(npm test *)"
+        model.draftVerdict = .allow
+        model.submitDraft()
+        try await settle("shape check") { core.calls.contains("check Bash(npm test *)") }
+        core.snapshot = Self.snapshot()
+        model.selectProject(nil)
+        try await settle("Global read") { model.isSettled && model.snapshot?.selection == .global }
+        gate.continuation.finish()
+        try await settle("add") { core.calls.contains { $0.hasPrefix("add ") } && !model.isWriting }
+        #expect(core.calls.contains("add project \(Self.project) allow Bash(npm test *)"))
+        #expect(!core.calls.contains("add global - allow Bash(npm test *)"))
     }
 
     @Test("a rule the core calls invalid shows its sentence next to the field and writes nothing", arguments: [

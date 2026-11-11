@@ -34,9 +34,12 @@ struct LoadoutTable: View {
 
     @ViewBuilder
     private var banners: some View {
-        let problems = (model.scanFailure.map { [$0] } ?? []).count + data.problems.count
+        let problems = [model.readFailure, model.scanFailure].compactMap { $0 }.count + data.problems.count
         if problems > 0 {
             VStack(spacing: Space.s12) {
+                if let failure = model.readFailure {
+                    Banner(.warn, message: "The last read failed, so this may be out of date.", detail: failure, actionTitle: "Try again", action: model.retry)
+                }
                 if model.scanFailure != nil {
                     Banner(.warn, message: "Usage could not be counted, so every count shows as pending.", detail: model.scanFailure, actionTitle: "Try again", action: model.retry)
                 }

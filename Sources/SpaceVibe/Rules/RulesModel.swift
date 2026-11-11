@@ -66,9 +66,10 @@ final class RulesModel {
     }
 
     /// A model over a snapshot read elsewhere (a shot's in-memory state): it reads nothing.
-    convenience init(env: AppEnvironment, snapshot: RulesSnapshot?) {
+    convenience init(env: AppEnvironment, snapshot: RulesSnapshot?, failure: String? = nil) {
         self.init(env: env)
         self.snapshot = snapshot
+        self.failure = failure
         started = true
     }
 
@@ -312,6 +313,7 @@ final class RulesModel {
     /// Adds the draft under `draftVerdict`. The core checks the shape first (`rules.check`); its 400, 404 and 409 messages show
     /// next to the field.
     func submitDraft() {
+        guard let scope = snapshot?.selection.scope else { return }
         let rule = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let submitted = draft
         let verdict = draftVerdict
@@ -328,6 +330,7 @@ final class RulesModel {
             }
             write(
                 label: "Added \(rule) to \(RulesWording.groupTitle(verdict))",
+                scope: scope,
                 clears: submitted,
                 onFailure: { [weak self] in self?.addError = $0 }
             ) { core, scope in
