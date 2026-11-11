@@ -219,8 +219,8 @@ struct IconPolicyTests {
         for package in packages {
             #expect(Self.shipped.contains { $0.name == package }, "Swift package \(package) has no entry in IconPolicyTests.shipped (add its Credits notice and licence file)")
         }
-        // The line-initial `require x v` and the lines of a `require ( ... )` block.
-        let modules = matches(#"^require\s+([^\s(]+)\s+v"#, in: goMod) + matches(#"^\t([^\s]+)\s+v[^\s]+\s*$"#, in: goMod)
+        // The line-initial `require x v` and the lines of a `require ( ... )` block, `// indirect` ones included.
+        let modules = matches(#"^require\s+([^\s(]+)\s+v"#, in: goMod) + matches(#"^\t([^\s]+)\s+v[^\s]+(?:\s*//.*)?$"#, in: goMod)
         for module in modules {
             #expect(Credits.text.contains(module), "Go module \(module) is linked into the core but Credits does not name it")
         }

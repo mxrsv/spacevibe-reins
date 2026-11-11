@@ -77,10 +77,13 @@ func TestCellsCounted(t *testing.T) {
 // A Codex skill is logged under its folder name; the row is named after the frontmatter name.
 func TestCellsCountedByFolderName(t *testing.T) {
 	h := newTempHome(t)
-	for _, folder := range []string{"pdf-tools", "same-name"} {
+	for _, folder := range []string{"pdf-tools", "same-name", "late-days"} {
 		name := folder
-		if folder == "pdf-tools" {
+		switch folder {
+		case "pdf-tools":
 			name = "PDF Tools"
+		case "late-days":
+			name = "Late Days"
 		}
 		h.setModified(h.write(".codex/skills/"+folder+"/SKILL.md", skillFile(name)), "2026-09-20T00:00:00Z")
 	}
@@ -90,7 +93,13 @@ func TestCellsCountedByFolderName(t *testing.T) {
 	totals.Codex.Skill["pdf-tools"] = usage.NameUsage{Sessions: 4, Last: ptr("2026-10-21")}
 	totals.Codex.Skill["PDF Tools"] = usage.NameUsage{Sessions: 1, Last: ptr("2026-10-01")}
 	totals.Codex.Skill["same-name"] = usage.NameUsage{Sessions: 2, Last: ptr("2026-10-22")}
+	// The folder name has more sessions, the frontmatter name the later last day: the count and the day come from different names.
+	totals.Codex.Skill["late-days"] = usage.NameUsage{Sessions: 3, Last: ptr("2026-10-10")}
+	totals.Codex.Skill["Late Days"] = usage.NameUsage{Sessions: 1, Last: ptr("2026-10-25")}
 	inv := AttachUsage(f.inventory, &usage.Input{State: "ready", Totals: totals, Windows: f.windows()}, f.now)
+	if got, want := cellOf(inv, "Late Days", Codex, Codex), Counted(3, ptr("2026-10-25"), nil); !reflect.DeepEqual(got, want) {
+		t.Errorf("late-days = %+v, want the larger count with the later last day", got)
+	}
 	if got, want := cellOf(inv, "PDF Tools", Codex, Codex), Counted(4, ptr("2026-10-21"), nil); !reflect.DeepEqual(got, want) {
 		t.Errorf("pdf-tools = %+v, want the folder-name count (larger, not summed)", got)
 	}

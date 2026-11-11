@@ -2,7 +2,8 @@ import SwiftUI
 
 /// Draws the current toast over the window, above the hint bar. Mounted once by `ShellView`. In the v5 shell (`isV5`) it
 /// is the v5 toast (`ToastBar`), 24 from the content panel's right edge and 48 above its bottom. `Z` runs the newest Undo of the
-/// session (`ToastCenter.undoLast`) while the stack holds one, also after the toast that offered it has gone, unless the
+/// session (`ToastCenter.undoKey`) while the stack holds one, also after the toast that offered it has gone, or the Undo on the
+/// toast showing when that one is not on the stack (Dismiss in Activity), unless the
 /// palette, Settings, a confirmation or a menu holds the keyboard.
 struct ToastHost: View {
     var isV5 = false
@@ -60,11 +61,11 @@ struct ToastHost: View {
 
     /// Not while the palette is open (its field takes plain keys), nor Settings, a confirmation or a menu: Undo writes a file.
     private var isUndoKeyOn: Bool {
-        !toasts.undoStack.isEmpty && !shell.isPaletteOpen && !shell.isSettingsOpen && shell.activeTab.modal == nil && !shell.activeTab.isMenuOpen
+        toasts.canUndoByKey && !shell.isPaletteOpen && !shell.isSettingsOpen && shell.activeTab.modal == nil && !shell.activeTab.isMenuOpen
     }
 
     private var undoKey: some View {
-        Button("Undo", action: toasts.undoLast)
+        Button("Undo", action: toasts.undoKey)
             .keyboardShortcut(KeyEquivalent(Character(ToastAction.undoKeyCap.lowercased())), modifiers: [])
             .opacity(0)
             .allowsHitTesting(false)

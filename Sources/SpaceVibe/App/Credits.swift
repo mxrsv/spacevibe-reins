@@ -81,7 +81,7 @@ enum Credits {
     static let sparkle = "Updates: Sparkle (https://sparkle-project.org), MIT; copyright (c) 2006-2017 Andy Matuschak, Elgato Systems GmbH, Kornel Lesiński and Mayur Pawashe, and others. The framework bundles bsdiff, sais-lite, ed25519 and SUSignatureVerifier under their own licences. The full text is in the app bundle: Contents/Resources/Licenses/Sparkle-MIT.txt."
 
     /// BSD 3-Clause asks binary redistributions to reproduce the copyright notice, the conditions and the disclaimer. The Go runtime and the
-    /// standard library are linked statically into the bundled core binary. The text is the toolchain's `LICENSE` (Go 1.25.5); the same
+    /// standard library are linked statically into the bundled core binary. The text is the toolchain's `LICENSE` (Go 1.26.10, as `core/go.mod`); the same
     /// file ships as `Resources/Licenses/Go-BSD-3-Clause.txt`.
     static let goRuntime = """
     Go runtime and standard library in the bundled core (https://go.dev)

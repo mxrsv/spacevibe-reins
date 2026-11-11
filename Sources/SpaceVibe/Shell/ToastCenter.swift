@@ -75,6 +75,8 @@ final class ToastCenter {
     var isOverBottomBar = false
 
     @ObservationIgnored private var timer: Task<Void, Never>?
+    /// The Undo the toast showing now offers, if it offers one; `current` and this share an id while it is on screen.
+    @ObservationIgnored private var currentUndo: UndoItem?
     private let announce: Bool
 
     /// `announce: false` for headless rendering, where there is no accessibility client.
@@ -99,6 +101,7 @@ final class ToastCenter {
         let item = UndoItem(id: id, label: message, body: body)
         // The toast's button takes its item off the stack first, so a later `Z` cannot replay it.
         let action = ToastAction.undo { [weak self] in self?.run(item) }
+        currentUndo = item
         if sessionUndo {
             undoStack.append(item)
             if undoStack.count > Self.undoDepth { undoStack.removeFirst(undoStack.count - Self.undoDepth) }
@@ -111,6 +114,21 @@ final class ToastCenter {
         guard !isUndoing, let item = undoStack.last else { return }
         dismiss(id: item.id)
         run(item)
+    }
+
+    /// The toast showing offers an Undo that is not on the session stack (Dismiss in Activity).
+    private var isOffStackUndoShowing: Bool {
+        guard let item = currentUndo, item.id == current?.id else { return false }
+        return !undoStack.contains { $0.id == item.id }
+    }
+
+    /// Whether the `Z` key has an Undo to run: the session stack's newest, or the one on the toast showing.
+    var canUndoByKey: Bool { !undoStack.isEmpty || isOffStackUndoShowing }
+
+    /// The `Z` key. The Undo on the toast showing wins when it is not on the session stack, so the key runs what the toast
+    /// names; otherwise the newest of the stack.
+    func undoKey() {
+        if isOffStackUndoShowing { runCurrentAction() } else { undoLast() }
     }
 
     /// Takes the item off the stack and runs it. An async item holds `isUndoing` until its closure returns.
@@ -152,9 +170,11 @@ final class ToastCenter {
         if current?.id == id { dismiss() }
     }
 
-    /// Runs the action of the current toast, then hides it.
+    /// Runs the action of the current toast, then hides it. A write's Undo that cannot start yet leaves the toast up.
     func runCurrentAction() {
         guard let toast = current else { return }
+        // A write's Undo cannot start while another runs: the toast stays, so the button can be pressed again.
+        if isUndoing, let item = currentUndo, item.id == toast.id, case .async = item.body { return }
         dismiss()
         toast.action?.run()
     }

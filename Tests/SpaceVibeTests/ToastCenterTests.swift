@@ -101,4 +101,48 @@ struct ToastCenterTests {
         toasts.runCurrentAction()
         #expect(runs == 1)   // an in-memory Undo has run by the time the call returns
     }
+
+    @Test("the Z key runs the Undo on the toast showing when it is off the stack, and leaves the stack alone")
+    func zKeyRunsTheDismissUndo() async {
+        let toasts = ToastCenter(announce: false)
+        var ran: [String] = []
+        toasts.show("Removed", asyncUndo: { ran.append("W1") })
+        toasts.show("Dismissed", sessionUndo: false, undo: { ran.append("dismiss") })
+        #expect(toasts.canUndoByKey)
+        toasts.undoKey()
+        await settle(toasts)
+        #expect(ran == ["dismiss"])
+        #expect(toasts.undoStack.map(\.label) == ["Removed"])
+        #expect(toasts.current == nil)
+        // With no off-stack toast showing, the key runs the stack as before.
+        toasts.undoKey()
+        await settle(toasts)
+        #expect(ran == ["dismiss", "W1"])
+        #expect(!toasts.canUndoByKey)
+    }
+
+    @Test("the toast's Undo pressed while another Undo runs leaves the toast up and runs nothing")
+    func busyButtonKeepsTheToast() async {
+        let toasts = ToastCenter(announce: false)
+        var ran: [String] = []
+        var release: CheckedContinuation<Void, Never>?
+        toasts.show("a", asyncUndo: { ran.append("a") })
+        toasts.show("b", asyncUndo: {
+            ran.append("b")
+            await withCheckedContinuation { release = $0 }
+        })
+        toasts.undoLast()
+        while release == nil { await Task.yield() }
+        toasts.show("c", asyncUndo: { ran.append("c") })
+        let shown = toasts.current?.id
+        toasts.runCurrentAction()
+        #expect(toasts.current?.id == shown)
+        #expect(ran == ["b"])
+        release?.resume()
+        await settle(toasts)
+        toasts.runCurrentAction()
+        await settle(toasts)
+        #expect(ran == ["b", "c"])
+        #expect(toasts.current == nil)
+    }
 }

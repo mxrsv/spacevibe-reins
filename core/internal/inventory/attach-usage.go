@@ -122,10 +122,17 @@ func attachUsage(inv Snapshot, in *usage.Input, now time.Time, firstSeen map[str
 			n := names[hashes.Bare(row.name)]
 			if row.kind == KindSkill && row.entry != "" {
 				// Codex logs a skill under its folder name, which can differ from the frontmatter name. One
-				// session can match both names, so take the larger count instead of adding them.
-				if byEntry := names[hashes.Bare(row.entry)]; byEntry.Sessions > n.Sessions {
+				// session can match both names, so take the larger count instead of adding them; the last day is
+				// the later of the two.
+				byEntry := names[hashes.Bare(row.entry)]
+				last := n.Last
+				if byEntry.Last != nil && (last == nil || *byEntry.Last > *last) {
+					last = byEntry.Last
+				}
+				if byEntry.Sessions > n.Sessions {
 					n = byEntry
 				}
+				n.Last = last
 			}
 			runs, last = n.Sessions, n.Last
 		}
