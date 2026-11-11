@@ -19,12 +19,13 @@ struct CoreFixtureHome {
         home = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent("spacevibe-core-client-\(UUID().uuidString)", isDirectory: true).resolvingSymlinksInPath()
         let fm = FileManager.default
+        let shift = Self.mtimeShift()
         for (relative, mtime) in mtimes {
             let text = try String(contentsOf: source.appendingPathComponent("home/\(relative)"), encoding: .utf8)
             let target = home.appendingPathComponent(relative)
             try fm.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
             try Data(text.replacingOccurrences(of: token, with: home.path).utf8).write(to: target)
-            try fm.setAttributes([.modificationDate: Date(timeIntervalSince1970: mtime / 1000)], ofItemAtPath: target.path)
+            try fm.setAttributes([.modificationDate: Date(timeIntervalSince1970: mtime / 1000 + shift)], ofItemAtPath: target.path)
         }
         var fixture = [
             "HOME": home.path, "CLAUDE_CONFIG_DIR": home.appendingPathComponent(".claude").path,
@@ -34,6 +35,14 @@ struct CoreFixtureHome {
         fixture.merge(extraEnvironment) { _, new in new }
         environment = ProcessInfo.processInfo.environment.merging(fixture) { _, new in new }
     }
+
+    /// The fixture's modification times are fixed (late October to 2026-11-02), and the core reads only the last 14 days of
+    /// session logs, so on a fixed clock this copy would lose its sessions, failures and files day by day. The copy keeps the
+    /// distance the times had to now on `mtimeAnchor`, the day the suites were last checked against it, by moving every time
+    /// forward by the days since; never backward, and never more than that.
+    static let mtimeAnchor = Date(timeIntervalSince1970: 1_794_268_800) // 2026-11-10T00:00:00Z
+
+    static func mtimeShift(now: Date = Date()) -> TimeInterval { max(0, now.timeIntervalSince(mtimeAnchor)) }
 
     /// The way a test builds one. The copy is synchronous file work (about 0.2 s under load); done on the main actor it holds up every
     /// other `@MainActor` suite, and the Loadout model suite waits at most 10 s for its rows. So it runs off the main actor.
