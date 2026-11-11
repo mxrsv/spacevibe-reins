@@ -1,8 +1,10 @@
 # Swift review fixes
 
+Historical implementation record — accepted for delivery on 2026-11-11. Implementation: `2bd9252`.
+
 Requirements: the six confirmed MEDIUM findings in the 2026-11-11 chat review of `ad8ea1b`; the owner authorized all fixes with "fix tất cả". No new product contract or separate spec is needed. The previous [review-fixes plan](2026-11-10-review-fixes.md) is historical and stays unchanged.
 
-Checkout: `spacevibe-reins`, current `main`. Preserve the concurrent accessibility work and `.playwright-mcp/`. Commit only this task's verified paths; no push or merge.
+Checkout: `spacevibe-reins`, current `main`. Preserve the concurrent accessibility work and `.playwright-mcp/`. The owner authorized pushing current `main` on 2026-11-11 after the warning captures were presented. No merge or release is authorized.
 
 ## Approach and acceptance
 
@@ -20,7 +22,7 @@ Checkout: `spacevibe-reins`, current `main`. Preserve the concurrent accessibili
 - [x] Reuse `swift-reviewer` once after implementation; resolve confirmed in-scope findings and rerun affected checks.
 - [x] Capture and inspect synthetic stale-read warning states; distill/clarify the copy, then open the main capture for owner eye approval. No Computer Use or dev server.
 - [x] Update relevant living documentation, check diffs and links, commit only owned paths.
-- [ ] Owner eye approval of the final warning captures before push/merge; neither push nor merge is requested.
+- [x] Owner delivery go-ahead: "push" on 2026-11-11 after the final warning captures were presented and opened. This authorizes delivery; it is not a claim that native interaction or VoiceOver was tested.
 
 ## Evidence and handoff
 
@@ -30,6 +32,6 @@ Checkout: `spacevibe-reins`, current `main`. Preserve the concurrent accessibili
 
 2026-11-11 final verification: `scripts/build-app.sh` passed with app `minos 15.0`, helper `minos 12.0`, valid signature and designated requirement. Synthetic `skills`, `rules` (v5) and classic `loadout` screenshot runs all passed, including their write/Undo assertions. Warning captures were inspected in dark/light and at 960px: the warning and Try again fit. Copy was distilled/clarified to one cached-reading fact, the core's reason and one recovery action. Local markdown links and owned-path diff checks passed. Captures: `~/scratch/spacevibe-reins/2026-11-11-swift-review-fixes/`; main review artifact: `warning-states.html`. Native interaction/VoiceOver and update E2E were not run. A separate narrow Skills layout issue (Codex label wrapping in `Components/DetailPane.swift:134`) was reported once and left outside this scope.
 
-Delivery: the concurrent accessibility task committed `f8ae3a2` on `main`; its files are preserved. This task commits its implementation and verification record together, by explicit owned paths, on top of that revision. The code and verification are complete; owner eye approval of the warning captures remains before any push/merge. No push or merge requested.
+Delivery: the concurrent accessibility task committed `f8ae3a2` on `main`; its files are preserved. This task commits its implementation and verification record together, by explicit owned paths, on top of that revision. The code and verification are complete in `2bd9252`. The owner then instructed "push" on 2026-11-11 after the warning captures were presented; deliver current `main` to its existing upstream without another approval round. Merge and release remain outside the request.
 
-/goal Fix all six confirmed Swift review findings from 2026-11-11, preserve unrelated accessibility work, pass focused regressions and scripts/test.sh plus build, complete swift-reviewer follow-up, inspect synthetic warning captures and collect one final owner eye approval, then commit only this task's verified files without pushing.
+/goal Fix all six confirmed Swift review findings from 2026-11-11, preserve unrelated accessibility work, pass focused regressions and scripts/test.sh plus build, complete swift-reviewer follow-up, inspect synthetic warning captures, commit only this task's verified files, and push current main following the owner's 2026-11-11 delivery go-ahead; do not merge or release.
