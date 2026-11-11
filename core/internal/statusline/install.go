@@ -16,8 +16,11 @@ import (
 // binDir is the managed folder under the data root that holds the installed copy of this executable.
 const binDir = "bin"
 
-// InstallLabel is the journal label of the settings edit.
-const InstallLabel = "Enable Claude limit capture"
+// InstallLabel and UninstallLabel are the journal labels of the settings edits.
+const (
+	InstallLabel   = "Enable Claude limit capture"
+	UninstallLabel = "Disable Claude limit capture"
+)
 
 // Executable is where install puts the copy of the executable that Claude runs: <data>/bin/spacevibe.
 func Executable(r roots.Roots) string { return filepath.Join(r.Data, binDir, identity.Name) }
@@ -88,6 +91,32 @@ func editSettings(r roots.Roots) (*mutate.Entry, error) {
 			return nil, err
 		}
 		return base.Set(ojson.Path("statusLine", "command"), ojson.String(wanted))
+	})
+}
+
+// Uninstall takes capture out of Claude's settings.json in one journaled edit: statusLine.command goes back to the
+// command the user had before install (every wrapper unwrapped), or statusLine is removed when that command was empty.
+// Every other settings member is kept, so it works after any later edit; Undo-by-id does not (its conflict checks refuse
+// a changed file). The entry is nil, and nothing is written, when the settings carry no SpaceVibe wrapper. The installed
+// copy of the executable is kept.
+func Uninstall(r roots.Roots) (*mutate.Entry, error) {
+	return mutate.EditJSON(r, r.Claude.HookFile, UninstallLabel, nil, func(doc *ojson.Document) (*ojson.Document, error) {
+		current, present := doc.Root().Member("statusLine")
+		if !present {
+			return doc, nil
+		}
+		text, hasCommand := stringMember(current, "command")
+		if _, isObject := current.ObjectValue(); !isObject || !hasCommand {
+			return doc, nil
+		}
+		if _, wrapped := unwrapOnce(text); !wrapped {
+			return doc, nil
+		}
+		original := unwrap(text)
+		if original == "" {
+			return doc.Remove(ojson.Path("statusLine"))
+		}
+		return doc.Set(ojson.Path("statusLine", "command"), ojson.String(original))
 	})
 }
 

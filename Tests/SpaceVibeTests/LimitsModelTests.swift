@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 @testable import SpaceVibe
@@ -48,5 +49,21 @@ struct LimitsModelTests {
         await model.readOnce()
         #expect(model.failure == CoreWire.startFailedMessage)
         #expect(model.results.isEmpty && model.readAt == nil)
+    }
+
+    @Test("the palette offers the status-line capture install and uninstall commands, and copies the helper's quoted path and nothing else")
+    func captureCommandsAreCopiedNotRun() {
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("dev.spacevibe.tests.\(UUID().uuidString)"))
+        defer { pasteboard.releaseGlobally() }
+        pasteboard.setString("before", forType: .string)
+        let helper = URL(fileURLWithPath: "/Applications/Space Vibe's.app/Contents/Helpers/spacevibe")
+        let entries = LimitsTab(helper: helper, pasteboard: pasteboard).paletteActions
+        #expect(entries.map(\.title) == ["Copy the status-line capture install command", "Copy the status-line capture uninstall command"])
+        let quoted = "'/Applications/Space Vibe'\\''s.app/Contents/Helpers/spacevibe'"
+        entries[0].perform()
+        #expect(pasteboard.string(forType: .string) == quoted + " statusline install")
+        entries[1].perform()
+        #expect(pasteboard.string(forType: .string) == quoted + " statusline uninstall")
+        #expect(pasteboard.pasteboardItems?.count == 1)
     }
 }

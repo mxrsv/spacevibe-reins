@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-to-end collector/setup checks on the Go binary (`spacevibe statusline install|undo|capture`), only synthetic
+# End-to-end collector/setup checks on the Go binary (`spacevibe statusline install|uninstall|undo|capture`), only synthetic
 # homes; requires Python 3 for the test driver. H6 (plan): a shell started through os/exec keeps the default SIGPIPE
 # and Claude's process group.
 set -euo pipefail
@@ -99,6 +99,15 @@ with tempfile.TemporaryDirectory(prefix="spacevibe-statusline ' ") as scratch:
     settings.write_text(changed)
     assert subprocess.run(undo, env=env, capture_output=True).returncode == 1
     assert settings.read_text() == changed
+    # M9: uninstall works after that edit, restores the original command and keeps every other member; a second run
+    # has nothing to do and writes nothing.
+    done = subprocess.run([binary, 'statusline', 'uninstall'], env=env, capture_output=True, text=True, check=True)
+    after = json.loads(settings.read_text())
+    assert after['statusLine'] == {'type': 'command', 'command': original, 'padding': 2} and after['other'] == 'keep', after
+    assert 'removed' in done.stdout, done.stdout
+    kept = settings.read_text()
+    again = subprocess.run([binary, 'statusline', 'uninstall'], env=env, capture_output=True, text=True, check=True)
+    assert 'not enabled' in again.stdout and settings.read_text() == kept, again.stdout
 
 # G-fix.19: an old wrapper is replaced, never wrapped again, also when the data root moved.
 with tempfile.TemporaryDirectory(prefix="spacevibe-statusline-unwrap ") as scratch:
@@ -115,5 +124,5 @@ with tempfile.TemporaryDirectory(prefix="spacevibe-statusline-unwrap ") as scrat
             command = json.loads(settings.read_text())['statusLine']['command']
             assert command.count('statusline capture') + command.count('--capture') == 1, command
             assert shlex.split(command)[0] == str(root / data / 'bin/spacevibe') and shlex.split(command)[-1] == mine, command
-print('PASS: capture, exact streams/exit, size cap, last-error, early pipe close, group cancellation, default SIGPIPE (H6), idempotence, old-wrapper unwrap, Undo and conflict refusal')
+print('PASS: capture, exact streams/exit, size cap, last-error, early pipe close, group cancellation, default SIGPIPE (H6), idempotence, old-wrapper unwrap, Undo and conflict refusal, uninstall after a later edit')
 PY

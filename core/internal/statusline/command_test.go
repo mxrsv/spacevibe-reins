@@ -156,7 +156,7 @@ func TestCaptureCommandRefusesAMovedClaudeRoot(t *testing.T) {
 }
 
 func TestRunUsage(t *testing.T) {
-	for _, args := range [][]string{nil, {"nope"}, {"install", "x"}, {"undo"}, {"undo", "a", "b"}} {
+	for _, args := range [][]string{nil, {"nope"}, {"install", "x"}, {"uninstall", "x"}, {"undo"}, {"undo", "a", "b"}} {
 		var out, errs bytes.Buffer
 		if code := Run(args, strings.NewReader(""), &out, &errs); code != 2 || !strings.Contains(errs.String(), "Usage:") {
 			t.Errorf("%v: exit %d, stderr %q", args, code, errs.String())

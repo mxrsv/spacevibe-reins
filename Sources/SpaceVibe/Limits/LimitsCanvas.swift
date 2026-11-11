@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The v5 Limits page (V5-R73, V5-R74; the `b-limits` mock), registered by `TabRegistry` with the v5 switch on. It reads the
@@ -16,6 +17,33 @@ final class LimitsTab: SpaceVibeTab {
     }
 
     var content: AnyView { AnyView(LimitsCanvas()) }
+
+    /// The helper inside the app bundle, which the copied commands name.
+    private let helper: URL
+    private let pasteboard: NSPasteboard
+
+    init(helper: URL = CoreEnvironment.binaryURL(), pasteboard: NSPasteboard = .general) {
+        self.helper = helper
+        self.pasteboard = pasteboard
+    }
+
+    /// Copy only, never run (S-R4): the user pastes the line into a terminal to turn Claude limit capture on or off.
+    var paletteActions: [PaletteEntry] {
+        [(id: "limits.captureInstall", title: "Copy the status-line capture install command", subcommand: "install"),
+         (id: "limits.captureUninstall", title: "Copy the status-line capture uninstall command", subcommand: "uninstall")]
+            .map { action in
+                PaletteEntry(id: action.id, title: action.title, glyph: ContentGlyph.copy, keywords: ["claude", "limits", "terminal", "setup", "remove"]) { [helper, pasteboard] in
+                    pasteboard.clearContents()
+                    pasteboard.setString(Self.captureCommand(helper: helper, subcommand: action.subcommand), forType: .string)
+                }
+            }
+    }
+
+    /// `'<helper>' statusline <subcommand>`: the path is one POSIX shell word, so a bundle in a folder with a space or a quote
+    /// pastes as written.
+    static func captureCommand(helper: URL, subcommand: String) -> String {
+        "'" + helper.path.replacingOccurrences(of: "'", with: "'\\''") + "' statusline " + subcommand
+    }
 }
 
 /// The Limits page's name for the shared current-row logic (V5-R36 `j`/`k`).

@@ -280,3 +280,110 @@ func TestInstallUnreadableSourceChangesNothing(t *testing.T) {
 		t.Fatal("a failed install left something behind")
 	}
 }
+
+func (h tempHome) journalLength() int {
+	h.t.Helper()
+	entries, err := mutate.History(h.roots())
+	if err != nil {
+		h.t.Fatal(err)
+	}
+	return len(entries)
+}
+
+// M9: Uninstall survives a later edit of settings.json, which Undo-by-id refuses, and keeps that edit.
+func TestUninstallRestoresTheOriginalAndKeepsLaterEdits(t *testing.T) {
+	h := newTempHome(t)
+	h.write(".claude/settings.json", `{ "statusLine": {"type":"command","command":"printf 'hello'","padding":2}, "model": "opus" }`)
+	entry := h.install(h.write("fake-binary", "synthetic executable"))
+	if entry == nil {
+		t.Fatal("install made no entry")
+	}
+	// Claude Code (or a Rules write) changes another member afterwards.
+	settings := h.path(".claude/settings.json")
+	changed := strings.Replace(h.text(".claude/settings.json"), `"model": "opus"`, `"model": "sonnet"`, 1)
+	if err := os.WriteFile(settings, []byte(changed), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := Undo(h.roots(), entry.ID); err == nil {
+		t.Fatal("Undo accepted a settings file that changed after install")
+	}
+	before := h.journalLength()
+
+	removed, err := Uninstall(h.roots())
+	if err != nil || removed == nil {
+		t.Fatalf("Uninstall = %+v, %v", removed, err)
+	}
+	command, root := h.statusLine()
+	if command != "printf 'hello'" {
+		t.Errorf("command = %q, want the original", command)
+	}
+	if model, _ := stringMember(root, "model"); model != "sonnet" {
+		t.Errorf("model = %q: the later edit was lost", model)
+	}
+	padding, _ := mustMember(t, root, "statusLine").Member("padding")
+	if text, _ := padding.NumberText(); text != "2" {
+		t.Errorf("padding = %v", padding)
+	}
+	if after := h.journalLength(); after != before+1 {
+		t.Errorf("journal grew from %d to %d, want one entry", before, after)
+	}
+	// The installed copy of the executable stays, and a second uninstall has nothing to do.
+	if !h.exists(".spacevibe/bin/spacevibe") {
+		t.Error("the installed copy was removed")
+	}
+	if again, err := Uninstall(h.roots()); err != nil || again != nil {
+		t.Errorf("second Uninstall = %+v, %v", again, err)
+	}
+}
+
+func TestUninstallRemovesAStatusLineThatWasEmpty(t *testing.T) {
+	h := newTempHome(t)
+	h.write(".claude/settings.json", `{"model":"opus"}`)
+	h.install(h.write("fake-binary", "x"))
+	if entry, err := Uninstall(h.roots()); err != nil || entry == nil {
+		t.Fatalf("Uninstall = %+v, %v", entry, err)
+	}
+	parsed, err := ojson.ParseString(h.text(".claude/settings.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, present := parsed.Root().Member("statusLine"); present {
+		t.Errorf("statusLine stayed: %s", h.text(".claude/settings.json"))
+	}
+	if model, _ := stringMember(parsed.Root(), "model"); model != "opus" {
+		t.Errorf("model = %q", model)
+	}
+}
+
+func TestUninstallWritesNothingWhenCaptureIsNotInstalled(t *testing.T) {
+	cases := map[string]string{
+		"no file":          "",
+		"empty object":     `{}`,
+		"the user's own":   `{"statusLine":{"type":"command","command":"printf 'mine'"}}`,
+		"a null":           `{"statusLine":null}`,
+		"not an object":    `{"statusLine":"x"}`,
+		"no command":       `{"statusLine":{"type":"command"}}`,
+		"a lookalike path": `{"statusLine":{"type":"command","command":"/tmp/spacevibe statusline capture /d /c 'x'"}}`,
+	}
+	for name, doc := range cases {
+		t.Run(name, func(t *testing.T) {
+			h := newTempHome(t)
+			if doc != "" {
+				h.write(".claude/settings.json", doc)
+			}
+			entry, err := Uninstall(h.roots())
+			if err != nil || entry != nil {
+				t.Fatalf("Uninstall = %+v, %v", entry, err)
+			}
+			if doc == "" && h.exists(".claude/settings.json") {
+				t.Error("a settings file was created")
+			}
+			if doc != "" && h.text(".claude/settings.json") != doc {
+				t.Errorf("settings changed:\n%s", h.text(".claude/settings.json"))
+			}
+			if h.journalLength() != 0 {
+				t.Error("a journal entry was recorded")
+			}
+		})
+	}
+}

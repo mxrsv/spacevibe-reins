@@ -93,3 +93,21 @@ func runUndo(id string, stdout, stderr io.Writer) int {
 	fmt.Fprintln(stdout, "Settings restored. The inactive collector binary was kept.")
 	return 0
 }
+
+func runUninstall(stdout, stderr io.Writer) int {
+	_, r, err := environment()
+	if err != nil {
+		report(stderr, err.Error())
+		return 1
+	}
+	entry, err := Uninstall(r)
+	if err != nil {
+		return failed(stderr, err)
+	}
+	if entry == nil {
+		fmt.Fprintln(stdout, "Claude limit capture is not enabled; nothing was changed.")
+		return 0
+	}
+	fmt.Fprintln(stdout, "Claude limit capture removed. The inactive collector binary was kept.")
+	return 0
+}
