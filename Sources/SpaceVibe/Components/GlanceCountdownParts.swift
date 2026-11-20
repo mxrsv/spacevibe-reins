@@ -4,7 +4,7 @@ import SwiftUI
 /// a ring that drains over the countdown's lead. The ring takes the window's tone (LC9) on the faint `fg4` track. Still: it
 /// moves only when the controller draws it again, once a second (LC7, GW-R11). Decorative: the pill or row says it in words.
 struct GlanceCountdownRing: View {
-    let cli: CoreLimitsCLI
+    let cli: CLIID
     /// What is left of the lead, 1 at the start and 0 at the reset.
     let share: Double
     let tone: BarTone
@@ -28,7 +28,7 @@ struct GlanceCountdownRing: View {
 /// column (a left or right edge middle) it is as wide as the strip, the label is dropped and the clock stacks one part per
 /// line (`23 / 12 / 05`). Same ground and edge as the strip; it fills on hover, and the whole pill takes the click.
 struct GlanceCountdownPill: View {
-    let cli: CoreLimitsCLI
+    let cli: CLIID
     let share: Double
     let ringTone: BarTone
     /// "42:17", "23:12:05".
@@ -103,7 +103,7 @@ struct GlanceLimitsGroup<Content: View>: View {
 /// right, and under them the CLI with the reset's clock time ("Claude Code · resets at 21:12"). It fills on hover; the whole
 /// row takes the click.
 struct GlanceLimitRow: View {
-    let cli: CoreLimitsCLI
+    let cli: CLIID
     let share: Double
     let ringTone: BarTone
     /// "5-hour", "Weekly".

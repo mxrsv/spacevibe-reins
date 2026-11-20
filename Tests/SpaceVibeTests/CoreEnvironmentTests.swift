@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import SpaceVibe
 
-@Suite("CoreEnvironment")
+@Suite("CoreEnvironment", .fixtureCLIs)
 struct CoreEnvironmentTests {
     private static let override = ["SPACEVIBE_CORE_BINARY": "/tmp/x/spacevibe"]
     private static let testFlag = ["SPACEVIBE_TEST": "1"]

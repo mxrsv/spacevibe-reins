@@ -1,17 +1,7 @@
-import SwiftUI
-
-/// Colour means the CLI everywhere it appears.
-extension InventoryCLI {
-    var label: String {
-        switch self {
-        case .claude: "Claude Code"
-        case .codex: "Codex"
-        }
-    }
-
-    /// For bars and dots.
-    var fill: Color { self == .claude ? Palette.claude : Palette.codex }
-    /// For text in the CLI's colour.
-    var ink: Color { self == .claude ? Palette.claudeInk : Palette.codexInk }
-    var tint: Color { self == .claude ? Palette.claudeTint : Palette.codexTint }
+/// A CLI's name and look, read from `CLICatalog.current` (MC-R1, MC27). Views write `cli.label` or `cli.identity.tone`; the
+/// facts live in the core's `clis.list` and the look in `CLIRegistry` only.
+extension CLIID {
+    var identity: CLIIdentity { CLICatalog.current.identity(self) }
+    /// The CLI's name as the app writes it (GLOSSARY).
+    var label: String { identity.label }
 }

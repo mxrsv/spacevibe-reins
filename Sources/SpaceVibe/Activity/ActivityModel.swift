@@ -19,7 +19,10 @@ final class ActivityModel {
 
     let env: AppEnvironment
 
-    private(set) var report: CoreActivityReport?
+    /// The last report as the core sent it; pages read `report`.
+    private(set) var rawReport: CoreActivityReport?
+    /// The last report, for the CLIs the catalog shows: an unknown or turned-off CLI's sessions, failures and files are gone.
+    var report: CoreActivityReport? { rawReport.map { CLICatalog.current.shown($0) } }
     /// When `report` arrived. Ages in the report were computed then, so the screen adds the time since.
     private(set) var readAt: Date?
     /// A read that could not run. Cleared by the next successful read.
@@ -101,7 +104,7 @@ final class ActivityModel {
     }
 
     private func apply(_ fresh: CoreActivityReport) {
-        report = fresh
+        rawReport = fresh
         readAt = Date()
         failure = nil
     }
@@ -239,7 +242,7 @@ final class ActivityModel {
 
     /// Puts a prepared report on screen without reading, for the headless shots.
     func preview(report: CoreActivityReport?, failure: String? = nil, readAt: Date = Date()) {
-        self.report = report
+        rawReport = report
         self.readAt = report == nil ? nil : readAt
         self.failure = failure
     }

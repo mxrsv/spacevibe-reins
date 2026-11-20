@@ -3,7 +3,7 @@ import Testing
 @testable import SpaceVibe
 
 /// Gallery and shot entry points remain development-only after the UI cut-over.
-@Suite("Development launch modes")
+@Suite("Development launch modes", .fixtureCLIs)
 struct LaunchModeTests {
     @Test("the gallery and shot modes need a development build")
     func modesNeedDevelopmentBuild() {

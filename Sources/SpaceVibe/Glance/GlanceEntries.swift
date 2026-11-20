@@ -28,7 +28,7 @@ struct GlanceEntry: Identifiable, Equatable, Sendable {
     /// Unique across both CLIs, the same shape as `ActivitySessionItem.id`.
     var id: String { "\(cli.rawValue):\(sessionID)" }
     let sessionID: String
-    let cli: CoreCLI
+    let cli: CLIID
     let state: GlanceState
     let title: String
     /// The open tool call as "name · target", or the name alone when the target is empty. Nil with no tool call.

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/hashes"
 	"spacevibe.dev/core/internal/proc"
 	"spacevibe.dev/core/internal/textjs"
@@ -359,7 +360,7 @@ func TestFailureGroups(t *testing.T) { // Swift: "failed commands group by comma
 	sb.codexLog(activityUUID(83), []obj{x.meta(m(60), "/work/app-a", nil), x.exec(m(35), 1, "npm test", 1, "running\nerror: codex side")}, 0)
 	report := sb.read(newFakeProc(nil, nil, nil))
 
-	npm, ok := findFailure(report, func(f Failure) bool { return f.CLI == CLIClaude && f.Title == "npm test" })
+	npm, ok := findFailure(report, func(f Failure) bool { return f.CLI == clis.Claude && f.Title == "npm test" })
 	if !ok {
 		t.Fatal("no npm test failure")
 	}
@@ -380,7 +381,7 @@ func TestFailureGroups(t *testing.T) { // Swift: "failed commands group by comma
 	if deploy.LaterPass != nil {
 		t.Error("the pass came before the failure")
 	}
-	codex, _ := findFailure(report, func(f Failure) bool { return f.CLI == CLICodex })
+	codex, _ := findFailure(report, func(f Failure) bool { return f.CLI == clis.Codex })
 	eq(t, "codex title", codex.Title, "npm test")
 	eq(t, "codex reason", codex.Reason, "error: codex side")
 	if _, found := findFailure(report, func(f Failure) bool { return strings.HasPrefix(f.Title, "grep") }); found {
@@ -460,7 +461,7 @@ func TestFileHistory(t *testing.T) { // Swift: "file history: edits across sessi
 	rankA := file("/work/app-a/src/rank.ts")
 	eq(t, "edits", rankA.Edits, 3)
 	eq(t, "sessions", rankA.Sessions, 2)
-	if !slices.Equal(rankA.CLIs, []CLI{CLIClaude, CLICodex}) {
+	if !slices.Equal(rankA.CLIs, []clis.ID{clis.Claude, clis.Codex}) {
 		t.Errorf("clis = %v", rankA.CLIs)
 	}
 	eq(t, "last", *rankA.Last, activityIso(m(5)))
@@ -574,7 +575,7 @@ func TestCodexTokenTotals(t *testing.T) { // Swift: "Codex tokens: interleaved s
 		return []byte(activityJSON(obj{"timestamp": activityIso(activityNowMs), "type": "event_msg", "payload": obj{"type": "token_count", "info": info}}))
 	}
 	metrics := func(lines ...[]byte) usage {
-		st := newLogState(CLICodex)
+		st := newLogState(clis.Codex)
 		for _, l := range lines {
 			foldCodex(st, l)
 		}

@@ -83,7 +83,7 @@ private final class FakeRulesCore: UnservedCore, @unchecked Sendable {
 }
 
 @MainActor
-@Suite("Rules model")
+@Suite("Rules model", .fixtureCLIs)
 struct RulesModelTests {
     private static let project = "/work/web"
 
@@ -377,7 +377,7 @@ struct RulesModelTests {
     }
 }
 
-@Suite("Rules spine columns")
+@Suite("Rules spine columns", .fixtureCLIs)
 struct RulesColumnsTests {
     @Test("the two CLI columns are 168 while the card has room (1440 wide: 559), and give way to 72 in a narrow one")
     func widths() {

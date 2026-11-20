@@ -9,7 +9,7 @@ import Testing
 ///    declares: a `ButtonStyle`, a `.buttonStyle(.plain)` button, a `Menu`, a click on a row (`RowActivation`) or a menu line.
 /// 2. In a screen folder, a button uses `ActionButtonStyle(...)`, which carries the cursor; a bare
 ///    `.buttonStyle(.plain)`, `.onTapGesture` or `Menu` is a hand-made control and fails unless `allowed` lists it.
-@Suite("Pointer cursor: clickable blocks set it, screens compose them")
+@Suite("Pointer cursor: clickable blocks set it, screens compose them", .fixtureCLIs)
 struct PointerCursorPolicyTests {
     /// A construct in a block that takes a click and so needs the cursor.
     static let blockConstructs = [

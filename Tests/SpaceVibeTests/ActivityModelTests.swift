@@ -29,7 +29,7 @@ private final class FakeActivityCore: CoreService, @unchecked Sendable {
     }
 
     static func session(
-        _ id: String, cli: CoreCLI = .claude, state: CoreSessionState = .running, reason: String = "log written 2 s ago", code: String? = nil
+        _ id: String, cli: CLIID = .claude, state: CoreSessionState = .running, reason: String = "log written 2 s ago", code: String? = nil
     ) -> CoreActivitySession {
         CoreActivitySession(
             cli: cli, id: id, title: "task \(id)", project: nil, pid: 100, state: state, stateReason: reason, reasonCode: code,
@@ -52,19 +52,20 @@ private final class FakeActivityCore: CoreService, @unchecked Sendable {
         }
     }
 
-    func activityStop(cli: CoreCLI, id: String) async throws -> CoreStopResult {
+    func activityStop(cli: CLIID, id: String) async throws -> CoreStopResult {
         lock.withLock { _stops.append("\(cli.rawValue):\(id)") }
         return try lock.withLock { _stopResult }.get()
     }
 
     private func unused() -> CoreError { CoreError("not served by the Activity fake", status: 500) }
     func initialize() async throws -> CoreInitializeResult { throw unused() }
+    func clisList() async throws -> CoreCLIsList { throw unused() }
     func inventoryRead() async throws -> CoreInventorySnapshot { throw unused() }
     func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult { throw unused() }
     func loadoutRows() async throws -> CoreLoadoutRows { throw unused() }
-    func loadoutCopyToOther(id: String) async throws -> CoreEntryResult { throw unused() }
+    func loadoutCopyToOther(id: String, target: CLIID) async throws -> CoreEntryResult { throw unused() }
     func loadoutRemoveItem(id: String) async throws -> CoreEntryResult { throw unused() }
-    func loadoutRemoveDeadHooks(cli: CoreCLI) async throws -> CoreEntryResult { throw unused() }
+    func loadoutRemoveDeadHooks(cli: CLIID) async throws -> CoreEntryResult { throw unused() }
     func journalUndo(id: String) async throws -> CoreUndoResult { throw unused() }
     func journalHistory() async throws -> CoreJournalHistory { throw unused() }
     func rulesSnapshot(scope: CoreRuleScope, dir: String?, refreshProjects: Bool) async throws -> CoreRulesSnapshot { throw unused() }
@@ -79,7 +80,7 @@ private final class FakeActivityCore: CoreService, @unchecked Sendable {
 }
 
 /// The Activity model reads and stops through `env.goCore`, the Go core (plan S.3).
-@Suite("Activity model")
+@Suite("Activity model", .fixtureCLIs)
 @MainActor
 struct ActivityModelTests {
     private func model(_ core: FakeActivityCore) -> ActivityModel {
@@ -273,7 +274,7 @@ struct ActivityModelTests {
 
 /// The page and Stop against the real Go core (plan S.3): a private copy of the synthetic fixture home with the fixture's fake
 /// process list, named by `SPACEVIBE_PROC_FIXTURE` and read by the core's own fixture adapter (S-R1: nothing real is signalled).
-@Suite("Activity model, Go core")
+@Suite("Activity model, Go core", .fixtureCLIs)
 @MainActor
 struct ActivityModelCoreTests {
     private static let procFixture = CoreTestData.directory.appendingPathComponent("fixtures/home/.reins/activity-proc.json").path
@@ -306,7 +307,7 @@ struct ActivityModelCoreTests {
         #expect(model.failure == nil)
         let report = try #require(model.report)
         #expect(!report.sessions.isEmpty && !report.failures.isEmpty && !report.files.isEmpty)
-        #expect(Set(CoreCLI.allCases).isSubset(of: Set(report.sessions.map(\.cli))))
+        #expect(Set([CLIID.claude, .codex]).isSubset(of: Set(report.sessions.map(\.cli))))
         #expect(report.sessions.contains { $0.cli == .codex && $0.state == .running })
         #expect(report.sessions.contains { $0.state == .unmeasurable })
     }

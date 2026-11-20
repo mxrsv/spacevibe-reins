@@ -19,6 +19,7 @@ struct CoreHookTotals: Codable, Equatable, Sendable {
 }
 
 struct CoreCLITotals: Codable, Equatable, Sendable {
+    var cli: CLIID
     /// Keyed by the bare skill name.
     var skill: [String: CoreNameUsage]
     var agent: [String: CoreNameUsage]
@@ -26,35 +27,27 @@ struct CoreCLITotals: Codable, Equatable, Sendable {
     var hook: [String: CoreHookTotals]
 }
 
-struct CoreUsageTotals: Codable, Equatable, Sendable {
-    var claude: CoreCLITotals
-    var codex: CoreCLITotals
-}
-
 /// The span of logs scanned for one CLI. `newest` is milliseconds since 1970.
 struct CoreLogWindow: Codable, Equatable, Sendable {
+    var cli: CLIID
     var files: Int
     @CoreNullable var oldest: String?
     @CoreNullable var newest: Int64?
 }
 
-struct CoreUsageWindows: Codable, Equatable, Sendable {
-    var claude: CoreLogWindow
-    var codex: CoreLogWindow
-}
-
-struct CoreUsageSessions: Codable, Equatable, Sendable {
-    var claude: Int
-    var codex: Int
-}
-
-/// The `usage.scan` result.
+/// The `usage.scan` result. Each array holds one entry per CLI with the usage concept, in registry order.
 struct CoreUsageResult: Codable, Equatable, Sendable {
-    var totals: CoreUsageTotals
-    var sessions: CoreUsageSessions
-    var windows: CoreUsageWindows
+    var totals: [CoreCLITotals]
+    /// Sessions scanned per CLI.
+    var sessions: [CoreCLICount]
+    var windows: [CoreLogWindow]
     /// Log files found, including any that could not be read.
     var files: Int
+}
+
+extension Array where Element == CoreCLITotals {
+    /// The totals of `cli`, or nil when the scan has no entry for it.
+    subscript(cli cli: CLIID) -> CoreCLITotals? { first { $0.cli == cli } }
 }
 
 /// The `usage/progress` notification, without the request id the transport adds.

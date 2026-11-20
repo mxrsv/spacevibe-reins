@@ -103,7 +103,7 @@ private struct Swatches: View {
         ("bgSunk", Palette.bgSunk), ("bgPop", Palette.bgPop), ("hair", Palette.hair), ("hair2", Palette.hair2),
         ("sel", Palette.sel), ("hover", Palette.hover), ("accent", Palette.accent), ("accentSolid", Palette.accentSolid),
         ("fg", Palette.fg), ("fg2", Palette.fg2), ("fg3", Palette.fg3), ("fg4", Palette.fg4),
-        ("claude", Palette.claude), ("codex", Palette.codex), ("ok", Palette.ok), ("warn", Palette.warn), ("bad", Palette.bad),
+        ("claude", CLIRegistry.look(.claude).tone.fill), ("codex", CLIRegistry.look(.codex).tone.fill), ("ok", Palette.ok), ("warn", Palette.warn), ("bad", Palette.bad),
     ]
 
     var body: some View {

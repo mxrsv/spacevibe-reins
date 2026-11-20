@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/hashes"
 	"spacevibe.dev/core/internal/roots"
@@ -34,7 +35,7 @@ func (h tempHome) path(rel string) string { return filepath.Join(h.root, rel) }
 func (h tempHome) data() string           { return h.path(".spacevibe") }
 
 func (h tempHome) cfg() config.Config {
-	return config.Config{Test: true, UserHome: h.root, ClaudeConfigDir: h.path(".claude"), CodexHome: h.path(".codex"), Home: h.data()}
+	return config.Config{Test: true, UserHome: h.root, RootOverrides: map[clis.ID]string{clis.Claude: h.path(".claude"), clis.Codex: h.path(".codex")}, Home: h.data()}
 }
 
 func (h tempHome) roots() roots.Roots {
@@ -104,7 +105,7 @@ func mustTime(t testing.TB, iso string) time.Time {
 
 func ptr[T any](v T) *T { return &v }
 
-func item(inv Snapshot, name string, cli ...CLI) *Item {
+func item(inv Snapshot, name string, cli ...clis.ID) *Item {
 	want := Claude
 	if len(cli) > 0 {
 		want = cli[0]

@@ -5,7 +5,7 @@ import Testing
 /// V5-A18 for Activity: each tab's Answer, its cards, the Today-labels and the lists come from one derivation (`ActivityQuery`,
 /// `ActivityAnswer`, `ActivityFigures`) on the core's DTOs, against a fixed clock. Plus the Stop confirmation's words and the
 /// in-memory dismissal with its Undo.
-@Suite("Activity answers")
+@Suite("Activity answers", .fixtureCLIs)
 @MainActor
 struct ActivityAnswersTests {
     /// Sunday 2026-11-08 12:00 UTC, with a UTC calendar so "today" does not depend on the machine.
@@ -22,14 +22,14 @@ struct ActivityAnswersTests {
         return formatter.string(from: Self.now.addingTimeInterval(-hoursAgo * 3600))
     }
 
-    private func session(_ id: String, cli: CoreCLI = .claude, state: CoreSessionState = .running, title: String? = nil, project: String? = "spacevibe-api",
+    private func session(_ id: String, cli: CLIID = .claude, state: CoreSessionState = .running, title: String? = nil, project: String? = "spacevibe-api",
                          pid: Int = 4100, tool: CoreActivityTool? = nil, age: Double? = 600_000, cost: Double? = nil,
                          reason: String = "A reason.") -> CoreActivitySession {
         CoreActivitySession(cli: cli, id: id, title: title ?? "Task \(id)", project: project, pid: pid, state: state, stateReason: reason, reasonCode: nil,
                             currentTool: tool, ageMs: age, lastWriteAgoMs: nil, cost: cost.map { CoreActivityCost(usd: $0, estimated: true) }, costNote: nil)
     }
 
-    private func failure(_ key: String, cli: CoreCLI = .claude, title: String? = nil, count: Int = 2, reason: String = "Exit 2", later: Bool = false,
+    private func failure(_ key: String, cli: CLIID = .claude, title: String? = nil, count: Int = 2, reason: String = "Exit 2", later: Bool = false,
                          first: Double = 30, last: Double = 3) -> CoreActivityFailure {
         CoreActivityFailure(kind: .command, cli: cli, key: key, title: title ?? "cmd \(key)", count: count, exit: 2, reason: reason, projects: ["spacevibe-api"],
                             sessions: 1, first: iso(first), last: iso(last), laterPass: later ? iso(1) : nil, hook: nil)
@@ -48,7 +48,7 @@ struct ActivityAnswersTests {
         ActivityQuery(report: report, dismissed: dismissed, limits: limits, readAt: Self.now, now: Self.now)
     }
 
-    private func entry(_ cli: CoreLimitsCLI, _ state: CoreLimitsState) -> CoreLimitsEntry {
+    private func entry(_ cli: CLIID, _ state: CoreLimitsState) -> CoreLimitsEntry {
         CoreLimitsEntry(cli: cli, state: state, plan: nil, source: nil, at: nil, windows: [])
     }
 

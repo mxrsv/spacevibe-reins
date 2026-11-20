@@ -3,7 +3,7 @@ import Testing
 @testable import SpaceVibe
 
 @MainActor
-@Suite("Palette search")
+@Suite("Palette search", .fixtureCLIs)
 struct PaletteSearchTests {
     private func titles(_ sections: [PaletteSection], _ section: String) -> [String]? {
         sections.first { $0.title == section }?.entries.map(\.title)

@@ -154,7 +154,7 @@ struct SpaceVibeType {
 
 /// Text colours by meaning. Views pick a tone, never a `Palette` colour, so the palette can change in one place.
 enum TextTone {
-    case primary, secondary, tertiary, accent, onAccent, inverse, danger, warn, success, claude, codex
+    case primary, secondary, tertiary, accent, onAccent, inverse, danger, warn, success
 
     var color: Color {
         switch self {
@@ -167,8 +167,6 @@ enum TextTone {
         case .danger: Palette.dangerInk
         case .warn: Palette.warnInk
         case .success: Palette.successInk
-        case .claude: Palette.claudeInk
-        case .codex: Palette.codexInk
         }
     }
 }

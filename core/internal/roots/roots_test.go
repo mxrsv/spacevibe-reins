@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 )
 
@@ -31,7 +32,7 @@ func (h tempHome) url(rel string) string {
 
 // cfg points every root at this folder, with the real-home guard on.
 func (h tempHome) cfg() config.Config {
-	return config.Config{Test: true, UserHome: h.root, ClaudeConfigDir: h.claude(), CodexHome: h.codex(), Home: h.data()}
+	return config.Config{Test: true, UserHome: h.root, RootOverrides: map[clis.ID]string{clis.Claude: h.claude(), clis.Codex: h.codex()}, Home: h.data()}
 }
 
 func underRealHome(t *testing.T, err error) *UnderRealHomeError {
@@ -51,13 +52,13 @@ func TestAcceptsTempRoots(t *testing.T) {
 		t.Fatal(err)
 	}
 	checks := []struct{ name, got, want string }{
-		{"claude root", r.Claude.Root, scratch.claude()},
-		{"claude hook file", r.Claude.HookFile, filepath.Join(scratch.claude(), "settings.json")},
-		{"claude logs", filepath.Base(r.Claude.Logs), "projects"},
-		{"codex hook file", filepath.Base(r.Codex.HookFile), "hooks.json"},
-		{"codex logs", filepath.Base(r.Codex.Logs), "sessions"},
-		{"codex skills", filepath.Base(r.Codex.Skills), "skills"},
-		{"claude agents", filepath.Base(r.Claude.Agents), "agents"},
+		{"claude root", r.CLIs[clis.Claude].Root, scratch.claude()},
+		{"claude hook file", r.CLIs[clis.Claude].HookFile, filepath.Join(scratch.claude(), "settings.json")},
+		{"claude logs", filepath.Base(r.CLIs[clis.Claude].Logs), "projects"},
+		{"codex hook file", filepath.Base(r.CLIs[clis.Codex].HookFile), "hooks.json"},
+		{"codex logs", filepath.Base(r.CLIs[clis.Codex].Logs), "sessions"},
+		{"codex skills", filepath.Base(r.CLIs[clis.Codex].Skills), "skills"},
+		{"claude agents", filepath.Base(r.CLIs[clis.Claude].Agents), "agents"},
 		{"data", r.Data, scratch.data()},
 	}
 	for _, c := range checks {
@@ -74,33 +75,33 @@ func TestStateFileAndGemini(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := filepath.Join(scratch.claude(), ".claude.json"); configured.ClaudeState != want {
-		t.Errorf("claudeState = %q, want %q", configured.ClaudeState, want)
+	if want := filepath.Join(scratch.claude(), ".claude.json"); configured.CLIs[clis.Claude].State != want {
+		t.Errorf("claudeState = %q, want %q", configured.CLIs[clis.Claude].State, want)
 	}
-	if want := scratch.url(".gemini"); configured.Gemini != want {
-		t.Errorf("gemini = %q, want %q", configured.Gemini, want)
+	if want := scratch.url(".gemini"); configured.CLIs[clis.Gemini].Root != want {
+		t.Errorf("gemini = %q, want %q", configured.CLIs[clis.Gemini].Root, want)
 	}
 	cfg := scratch.cfg()
-	cfg.ClaudeConfigDir = ""
+	cfg.RootOverrides[clis.Claude] = ""
 	got, err := Resolve(cfg, fakeReal.root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := scratch.url(".claude.json"); got.ClaudeState != want {
-		t.Errorf("claudeState without CLAUDE_CONFIG_DIR = %q, want %q", got.ClaudeState, want)
+	if want := scratch.url(".claude.json"); got.CLIs[clis.Claude].State != want {
+		t.Errorf("claudeState without CLAUDE_CONFIG_DIR = %q, want %q", got.CLIs[clis.Claude].State, want)
 	}
 }
 
 // Swift: RootsTests.swift "falls back to folders under HOME and ignores empty values"
 func TestDefaults(t *testing.T) {
 	fakeReal, scratch := newTempHome(t), newTempHome(t)
-	cfg := config.Config{Test: true, UserHome: scratch.root, ClaudeConfigDir: ""}
+	cfg := config.Config{Test: true, UserHome: scratch.root, RootOverrides: map[clis.ID]string{clis.Claude: ""}}
 	r, err := Resolve(cfg, fakeReal.root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.Claude.Root != scratch.claude() || r.Codex.Root != scratch.codex() || r.Data != scratch.data() {
-		t.Fatalf("defaults = %q %q %q", r.Claude.Root, r.Codex.Root, r.Data)
+	if r.CLIs[clis.Claude].Root != scratch.claude() || r.CLIs[clis.Codex].Root != scratch.codex() || r.Data != scratch.data() {
+		t.Fatalf("defaults = %q %q %q", r.CLIs[clis.Claude].Root, r.CLIs[clis.Codex].Root, r.Data)
 	}
 }
 
@@ -110,7 +111,7 @@ func TestHomeFallsBackToRealHome(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.Claude.Root != "/real/me/.claude" || r.Data != "/real/me/.spacevibe" || r.Gemini != "/real/me/.gemini" {
+	if r.CLIs[clis.Claude].Root != "/real/me/.claude" || r.Data != "/real/me/.spacevibe" || r.CLIs[clis.Gemini].Root != "/real/me/.gemini" {
 		t.Fatalf("got %+v", r)
 	}
 }
@@ -123,9 +124,9 @@ func TestRefusesRealRoots(t *testing.T) {
 		cfg := scratch.cfg()
 		switch key {
 		case "CLAUDE_CONFIG_DIR":
-			cfg.ClaudeConfigDir = deep
+			cfg.RootOverrides[clis.Claude] = deep
 		case "CODEX_HOME":
-			cfg.CodexHome = deep
+			cfg.RootOverrides[clis.Codex] = deep
 		default:
 			cfg.Home = deep
 		}
@@ -137,7 +138,7 @@ func TestRefusesRealRoots(t *testing.T) {
 	}
 	// HOME itself being the real home means all three defaults are real.
 	cfg := scratch.cfg()
-	cfg.ClaudeConfigDir, cfg.CodexHome, cfg.Home = "", "", ""
+	cfg.RootOverrides, cfg.Home = nil, ""
 	cfg.UserHome = fakeReal.root
 	if _, err := Resolve(cfg, fakeReal.root); err == nil {
 		t.Error("HOME = real home was accepted")
@@ -150,15 +151,36 @@ func TestRefusesRealRoots(t *testing.T) {
 func TestErrorDetails(t *testing.T) {
 	fakeReal, scratch := newTempHome(t), newTempHome(t)
 	cfg := scratch.cfg()
-	cfg.CodexHome = filepath.Join(fakeReal.root, ".codex")
+	cfg.RootOverrides[clis.Codex] = filepath.Join(fakeReal.root, ".codex")
 	_, err := Resolve(cfg, fakeReal.root)
 	e := underRealHome(t, err)
-	if e.Label != "codex" || e.Path != cfg.CodexHome {
+	if e.Label != "codex" || e.Path != cfg.RootOverrides[clis.Codex] {
 		t.Fatalf("got %+v", e)
 	}
-	want := "SPACEVIBE_TEST=1: the codex root " + cfg.CodexHome + " is under the real home. Point HOME, CLAUDE_CONFIG_DIR, CODEX_HOME and SPACEVIBE_HOME at a temporary folder."
+	want := "SPACEVIBE_TEST=1: the codex root " + cfg.RootOverrides[clis.Codex] + " is under the real home. Point HOME, CLAUDE_CONFIG_DIR, CODEX_HOME and SPACEVIBE_HOME at a temporary folder."
 	if err.Error() != want {
 		t.Fatalf("message = %q", err.Error())
+	}
+}
+
+// The first root under the real home names the error, so the check order is pinned: with HOME at the real home,
+// both CLI roots moved away and SPACEVIBE_HOME unset, the data folder is named before Gemini CLI's folder (the order
+// from before the registry: claude, codex, spacevibe, claude state, gemini).
+func TestErrorDetailsCheckOrder(t *testing.T) {
+	fakeReal, scratch := newTempHome(t), newTempHome(t)
+	cfg := scratch.cfg()
+	cfg.UserHome = fakeReal.root
+	cfg.Home = ""
+	_, err := Resolve(cfg, fakeReal.root)
+	if e := underRealHome(t, err); e.Label != "spacevibe" || e.Path != fakeReal.data() {
+		t.Fatalf("got %+v, want the spacevibe root %s", e, fakeReal.data())
+	}
+	// With the data folder moved too, Claude Code's state file is still beside the moved root, so Gemini CLI's
+	// folder in HOME is the one left.
+	cfg.Home = scratch.data()
+	_, err = Resolve(cfg, fakeReal.root)
+	if e := underRealHome(t, err); e.Label != "gemini" {
+		t.Fatalf("got %+v, want gemini", e)
 	}
 }
 
@@ -174,7 +196,7 @@ func TestRefusesThroughSymlinks(t *testing.T) {
 	}
 	for _, dir := range []string{link, filepath.Join(link, "not", "created", "yet")} {
 		cfg := scratch.cfg()
-		cfg.ClaudeConfigDir = dir
+		cfg.RootOverrides[clis.Claude] = dir
 		_, err := Resolve(cfg, fakeReal.root)
 		underRealHome(t, err)
 	}
@@ -188,7 +210,7 @@ func TestRealHomeBehindSymlink(t *testing.T) {
 		t.Skipf("symlinks unavailable: %v", err)
 	}
 	cfg := scratch.cfg()
-	cfg.ClaudeConfigDir = fakeReal.claude()
+	cfg.RootOverrides[clis.Claude] = fakeReal.claude()
 	_, err := Resolve(cfg, alias)
 	underRealHome(t, err)
 }
@@ -197,7 +219,7 @@ func TestRealHomeBehindSymlink(t *testing.T) {
 func TestPrefixIsNotAncestor(t *testing.T) {
 	scratch := newTempHome(t)
 	cfg := scratch.cfg()
-	cfg.ClaudeConfigDir = scratch.url("me-other/.claude")
+	cfg.RootOverrides[clis.Claude] = scratch.url("me-other/.claude")
 	if _, err := Resolve(cfg, scratch.url("me")); err != nil {
 		t.Fatal(err)
 	}
@@ -208,10 +230,10 @@ func TestNoGuardWithoutFlag(t *testing.T) {
 	fakeReal, scratch := newTempHome(t), newTempHome(t)
 	cfg := scratch.cfg()
 	cfg.Test = false // unset and "0" both load as false (config.LoadFrom)
-	cfg.ClaudeConfigDir = fakeReal.claude()
+	cfg.RootOverrides[clis.Claude] = fakeReal.claude()
 	r, err := Resolve(cfg, fakeReal.root)
-	if err != nil || r.Claude.Root != fakeReal.claude() {
-		t.Fatalf("got %+v, %v", r.Claude, err)
+	if err != nil || r.CLIs[clis.Claude].Root != fakeReal.claude() {
+		t.Fatalf("got %+v, %v", r.CLIs[clis.Claude], err)
 	}
 }
 
@@ -251,10 +273,29 @@ func TestResolveKeepsSymlinkedHomeAsGiven(t *testing.T) {
 		"claude": filepath.Join(link, ".claude"), "data": filepath.Join(link, ".spacevibe"),
 		"state": filepath.Join(link, ".claude.json"), "gemini": filepath.Join(link, ".gemini"),
 	}
-	got := map[string]string{"claude": r.Claude.Root, "data": r.Data, "state": r.ClaudeState, "gemini": r.Gemini}
+	got := map[string]string{"claude": r.CLIs[clis.Claude].Root, "data": r.Data, "state": r.CLIs[clis.Claude].State, "gemini": r.CLIs[clis.Gemini].Root}
 	for k, w := range want {
 		if got[k] != w {
 			t.Errorf("%s = %q, want %q", k, got[k], w)
 		}
+	}
+}
+
+// Every registry CLI gets folders; an id the registry does not know is an error, never empty paths.
+func TestEveryRegistryCLIResolves(t *testing.T) {
+	r, err := Resolve(newTempHome(t).cfg(), "/real/me")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range clis.All() {
+		if got, err := r.CLI(d.ID); err != nil || got.Root == "" {
+			t.Errorf("%s = %+v, %v", d.ID, got, err)
+		}
+	}
+	if _, err := r.CLI("nope"); !errors.Is(err, clis.ErrUnknownCLI) {
+		t.Fatalf("CLI(nope) = %v", err)
+	}
+	if g := r.CLIs[clis.Gemini]; g.Skills != "" || g.HookFile != "" || g.Logs != "" || g.State != "" {
+		t.Fatalf("gemini has folders its layout does not name: %+v", g)
 	}
 }

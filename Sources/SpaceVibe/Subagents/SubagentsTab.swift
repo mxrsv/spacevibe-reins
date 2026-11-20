@@ -176,13 +176,13 @@ struct SubagentsCanvas: View {
 
     // MARK: Rows
 
-    private func listRow(_ row: LoadoutRow, current: LoadoutRow?, detected: [CoreCLI], now: Date) -> some View {
+    private func listRow(_ row: LoadoutRow, current: LoadoutRow?, detected: [CLIID], now: Date) -> some View {
         ListRow(row.name, isCurrent: row.key == current?.key, onActivate: { model.open(row.key) },
                 accessibilityName: SubagentsWording.spoken(row, scanFailed: model.loadout.scanFailed)) {
             MetaCell(text: SubagentsWording.sessionsText(row, scanFailed: model.loadout.scanFailed) ?? "", width: Metrics.Subagents.sessionsWidth)
             LogoStrip {
                 ForEach(detected, id: \.self) { cli in
-                    LogoToggle(cli: CoreLimitsCLI(cli), isLit: row.members[cli] != nil, mode: model.mode(row, cli: cli),
+                    LogoToggle(cli: cli, isLit: row.members[cli] != nil, mode: model.mode(row, cli: cli),
                                justChanged: model.changed.contains("\(row.key):\(cli.rawValue)")) { model.toggle(row, cli: cli) }
                 }
             }

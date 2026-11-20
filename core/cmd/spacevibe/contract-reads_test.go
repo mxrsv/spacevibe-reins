@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/goldentest"
 	"spacevibe.dev/core/internal/rpc"
 )
@@ -44,7 +45,7 @@ func readCases(t *testing.T) {
 		var snap struct {
 			Items []map[string]any `json:"items"`
 			Hooks []map[string]any `json:"hooks"`
-			Roots map[string]string
+			Roots []struct{ CLI, Root string }
 		}
 		decodeInto(t, raw, &snap)
 		g, err := goldentest.LoadGolden("inventory")
@@ -65,7 +66,7 @@ func readCases(t *testing.T) {
 				t.Fatalf("hook usage must be present and null, got %v", u)
 			}
 		}
-		if snap.Roots["claude"] != c.home+"/.claude" {
+		if len(snap.Roots) == 0 || snap.Roots[0].CLI != "claude" || snap.Roots[0].Root != c.home+"/.claude" {
 			t.Fatalf("roots %v", snap.Roots)
 		}
 		c.wantError(c.call("2", "inventory.read", `{"refresh":true}`), -32602)
@@ -89,7 +90,10 @@ func readCases(t *testing.T) {
 				}
 				var res struct {
 					Files    int
-					Sessions map[string]int
+					Sessions []struct {
+						CLI   string
+						Count int
+					}
 				}
 				decodeInto(t, r.Result, &res)
 				if res.Files == 0 || res.Files != last.Total || last.Done != last.Total || n == 0 {
@@ -310,6 +314,45 @@ func readCases(t *testing.T) {
 		}
 		c.wantError(c.call("2", "limits.read", `{"force":true}`), -32602)
 		c.finish("limits_read")
+	})
+
+	t.Run("clis_list", func(t *testing.T) {
+		home, data := sharedHome(t)
+		c := startOn(t, shippedBin, home, data...)
+		c.initialize()
+		var res struct {
+			CLIs []struct {
+				ID        string `json:"id"`
+				Installed bool   `json:"installed"`
+				Kinds     []struct {
+					Kind    string `json:"kind"`
+					Support string `json:"support"`
+				} `json:"kinds"`
+			} `json:"clis"`
+		}
+		decodeInto(t, c.ok(c.call("1", "clis.list", `{}`)), &res)
+		var order []string
+		installed := map[string]bool{}
+		for _, cli := range res.CLIs {
+			order = append(order, cli.ID)
+			installed[cli.ID] = cli.Installed
+			if len(cli.Kinds) != 3 {
+				t.Errorf("%s: %d kinds, want skill, agent and hook", cli.ID, len(cli.Kinds))
+			}
+		}
+		var want []string
+		for _, d := range clis.All() {
+			want = append(want, string(d.ID))
+		}
+		if !slices.Equal(order, want) {
+			t.Fatalf("order %v, want the registry's %v", order, want)
+		}
+		// The fixture home has Claude Code's and Codex's folders and no Gemini CLI folder.
+		if !installed["claude"] || !installed["codex"] || installed["gemini"] {
+			t.Fatalf("installed = %v", installed)
+		}
+		c.wantError(c.call("2", "clis.list", `{"refresh":true}`), -32602)
+		c.finish("clis_list")
 	})
 
 	t.Run("rules_snapshot", func(t *testing.T) {

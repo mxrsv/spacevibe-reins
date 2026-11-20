@@ -4,7 +4,7 @@ import Testing
 
 /// The reset countdown (spec `docs/specs/2026-11-19-limit-reset-countdown.md`): which windows count and when (LC-R1), the
 /// clock text (LC-R2), the Next resets rows that carry it (LC-R3) and the saved weekly lead (LC-R4).
-@Suite("Limits countdown")
+@Suite("Limits countdown", .fixtureCLIs)
 struct LimitsCountdownTests {
     private static let now = Date(timeIntervalSince1970: 1_793_703_600)
     private static let minute = 60.0, hour = 3600.0
@@ -15,7 +15,7 @@ struct LimitsCountdownTests {
     }
 
     /// Whether `window` of `cli` counts at `now` under `weekly`.
-    private func counts(_ window: CoreLimitWindow, cli: CoreLimitsCLI = .claude, weekly: WeeklyCountdownLead = .standard) -> Bool {
+    private func counts(_ window: CoreLimitWindow, cli: CLIID = .claude, weekly: WeeklyCountdownLead = .standard) -> Bool {
         let lead = LimitsCountdown.lead(window, cli: cli, weekly: weekly)
         return LimitsCountdown.remaining(until: window.resetsAtDate, lead: lead, now: Self.now) != nil
     }

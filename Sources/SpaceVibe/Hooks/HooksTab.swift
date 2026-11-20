@@ -228,14 +228,14 @@ struct HooksCanvas: View {
 
     // MARK: Rows
 
-    private func listRow(_ row: LoadoutRow, current: LoadoutRow?, detected: [CoreCLI]) -> some View {
+    private func listRow(_ row: LoadoutRow, current: LoadoutRow?, detected: [CLIID]) -> some View {
         ListRow(row.hookTitle, lead: CategoryGlyph.hook, isCurrent: row.key == current?.key, onActivate: { model.open(row.key) },
                 accessibilityName: HooksWording.spoken(row, home: model.home)) {
             MetaCell(text: row.hookMatcher ?? "", width: Metrics.Hooks.matcherWidth)
             LogoStrip {
                 ForEach(detected, id: \.self) { cli in
                     if model.showsToggle(row, cli: cli) {
-                        LogoToggle(cli: CoreLimitsCLI(cli), isLit: row.members[cli] != nil, mode: model.mode(row, cli: cli),
+                        LogoToggle(cli: cli, isLit: row.members[cli] != nil, mode: model.mode(row, cli: cli),
                                    justChanged: model.changed.contains("\(row.key):\(cli.rawValue)")) { model.toggle(row, cli: cli) }
                     } else {
                         // This CLI cannot take the hook: no toggle at all; the detail says why.
@@ -275,7 +275,7 @@ struct HooksCanvas: View {
 
     private func detail(_ row: LoadoutRow) -> some View {
         let context = model.context
-        let target = row.presentCLIs.count == 1 ? row.presentCLIs.first?.other : nil
+        let target = row.presentCLIs.count == 1 ? row.presentCLIs.first.flatMap(row.copyTarget(from:)) : nil
         let copyTarget = target.flatMap { context.block(row, to: $0) == nil ? $0 : nil }
         return PopoverSurface(onExit: { model.detailKey = nil }) {
             PopoverHead(name: row.hookTitle, sub: HooksWording.eventLine(row)) {
@@ -295,7 +295,7 @@ struct HooksCanvas: View {
 
     /// The actions side by side; one under the other when `Copy to Claude Code` and `Remove` with their key caps do not fit the
     /// popover's 272.
-    private func detailActions(_ row: LoadoutRow, copyTo: CoreCLI?) -> some View {
+    private func detailActions(_ row: LoadoutRow, copyTo: CLIID?) -> some View {
         let buttons = Group {
             if let copyTo {
                 Button { model.copy(row, to: copyTo) } label: { ActionLabel("Copy to \(copyTo.label)", key: "A") }

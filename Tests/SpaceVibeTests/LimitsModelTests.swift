@@ -5,7 +5,7 @@ import Testing
 
 /// The Limits model reads through `env.goCore`, the Go core (plan S.4). The core runs on a private copy of the synthetic
 /// fixture home (S-R1).
-@Suite("Limits model")
+@Suite("Limits model", .fixtureCLIs)
 @MainActor
 struct LimitsModelTests {
     private func model(_ fixture: CoreFixtureHome) throws -> (LimitsModel, CoreClient) {

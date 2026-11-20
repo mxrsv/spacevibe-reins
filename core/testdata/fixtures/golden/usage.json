@@ -1,11 +1,17 @@
 {
   "files": 180,
-  "sessions": {
-    "claude": 146,
-    "codex": 34
-  },
-  "totals": {
-    "claude": {
+  "sessions": [
+    {
+      "cli": "claude",
+      "count": 146
+    },
+    {
+      "cli": "codex",
+      "count": 34
+    }
+  ],
+  "totals": [
+    {
       "agent": {
         "database-reviewer": {
           "days": [
@@ -88,6 +94,7 @@
           "sessions": 34
         }
       },
+      "cli": "claude",
       "hook": {
         "47c885b4654d": {
           "errors": 0,
@@ -297,7 +304,7 @@
         }
       }
     },
-    "codex": {
+    {
       "agent": {
         "security-reviewer": {
           "days": [
@@ -307,6 +314,7 @@
           "sessions": 1
         }
       },
+      "cli": "codex",
       "hook": {},
       "skill": {
         "explain": {
@@ -362,17 +370,19 @@
         }
       }
     }
-  },
-  "windows": {
-    "claude": {
+  ],
+  "windows": [
+    {
+      "cli": "claude",
       "files": 146,
       "newest": 1793620798000,
       "oldest": "2026-10-05"
     },
-    "codex": {
+    {
+      "cli": "codex",
       "files": 34,
       "newest": 1793620796000,
       "oldest": "2026-10-08"
     }
-  }
+  ]
 }

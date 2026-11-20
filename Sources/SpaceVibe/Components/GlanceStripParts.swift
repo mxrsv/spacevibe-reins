@@ -25,7 +25,7 @@ struct GlanceCapsule<Content: View>: View {
 /// The whole capsule takes the click.
 struct GlanceEntryButton: View {
     let state: GlanceState
-    let cli: CoreCLI
+    let cli: CLIID
     let axis: GlanceAxis
     /// False while the widget is not on screen: the working ring stops.
     var isAnimating = true

@@ -63,13 +63,13 @@ enum SkillsWording {
     /// The verdict panel; nil while the scan has not finished. `detected` are the CLIs on the machine, so "Codex does not have
     /// it" is not said of a CLI that is not installed. `since` is the date of the oldest log the scan read: Never ran says how far
     /// back it looked.
-    static func verdict(for row: LoadoutRow, status: SkillStatus, detected: [CoreCLI], since: String? = nil) -> Verdict? {
+    static func verdict(for row: LoadoutRow, status: SkillStatus, detected: [CLIID], since: String? = nil) -> Verdict? {
         let usage = row.skillUsage
         let present = usage.present
         let ranIn = usage.ranIn
         let oneOnly = present.count == 1
         let lock = row.plugin.map { "Owned by the \($0) plugin, so SpaceVibe can read it but not change it." }
-        let other = present.first.map(\.other)
+        let other = present.first.flatMap(row.copyTarget(from:))
         let missingElsewhere = oneOnly && other.map { detected.contains($0) } == true
         switch status {
         case .loading:
@@ -126,16 +126,19 @@ enum SkillsWording {
     static func sessions(_ count: Int) -> String { "\(count) \(count == 1 ? "session" : "sessions")" }
 
     /// "Claude Code", "Codex", "either CLI" or "both CLIs".
-    private static func cliPhrase(_ clis: [CoreCLI], either: Bool) -> String {
+    private static func cliPhrase(_ clis: [CLIID], either: Bool) -> String {
         clis.count == 1 ? clis[0].label : (either ? "either CLI" : "both CLIs")
     }
 
     /// The meter of one CLI in "Sessions by CLI". `scanFailed`: the usage scan failed, so a cell without a count is not
     /// "counting" any more.
-    static func meter(for row: LoadoutRow, cli: CoreCLI, maxSessions: Int, now: Date, scanFailed: Bool = false) -> SessionMeter {
+    static func meter(for row: LoadoutRow, cli: CLIID, maxSessions: Int, now: Date, scanFailed: Bool = false) -> SessionMeter {
         let name = cli.label
         let usage = row.skillUsage
         switch usage.cells[cli] ?? .missing {
+        case .absent:
+            // The CLI has no skills at all: no figure, no 0 and nothing to add (GLOSSARY "Absent").
+            return SessionMeter(cli: cli, status: "\(name) has no skills", figure: nil, share: nil, caption: nil, emphasis: nil)
         case .missing:
             // "Not in <CLI>" in the head says it; only a plugin's skill needs the reason it cannot be added (D69).
             let caption = row.plugin != nil ? "Plugin-owned skills stay in their CLI" : nil
@@ -156,7 +159,7 @@ enum SkillsWording {
 
     // MARK: Toasts (V5-R38)
 
-    static func addLabel(_ rows: [LoadoutRow], to cli: CoreCLI, skipped: Int) -> String {
+    static func addLabel(_ rows: [LoadoutRow], to cli: CLIID, skipped: Int) -> String {
         let what = rows.count == 1 ? rows[0].name : "\(rows.count) skills"
         return "Added \(what) to \(cli.label)" + skippedNote(skipped)
     }
@@ -166,7 +169,7 @@ enum SkillsWording {
         "Added \(count == 1 ? rows[0].name : "\(count) skills") to the other CLI" + skippedNote(skipped)
     }
 
-    static func removeLabel(_ rows: [LoadoutRow], from cli: CoreCLI?, skipped: Int) -> String {
+    static func removeLabel(_ rows: [LoadoutRow], from cli: CLIID?, skipped: Int) -> String {
         let what = rows.count == 1 ? rows[0].name : "\(rows.count) skills"
         return "Removed \(what)" + (cli.map { " from \($0.label)" } ?? "") + skippedNote(skipped)
     }
@@ -176,7 +179,7 @@ enum SkillsWording {
     }
 
     /// What VoiceOver reads after a bottom-bar logo's CLI name (V5-R43): "all selected skills are in Codex, press to remove them".
-    static func bulkSpoken(_ rows: [LoadoutRow], cli: CoreCLI, isLit: Bool, mode: LogoToggleMode) -> String {
+    static func bulkSpoken(_ rows: [LoadoutRow], cli: CLIID, isLit: Bool, mode: LogoToggleMode) -> String {
         let name = cli.label
         let skills = rows.count == 1 ? "the selected skill" : "all selected skills"
         switch mode {

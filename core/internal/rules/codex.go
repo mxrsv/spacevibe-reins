@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/redact"
 	"spacevibe.dev/core/internal/roots"
@@ -128,8 +129,13 @@ type CodexPermissions struct {
 // (git b58269d), minus the file path.
 func ReadCodexPermissions(r roots.Roots) CodexPermissions {
 	out := CodexPermissions{Warnings: []string{}, Profiles: []Profile{}, Projects: []CodexProject{}}
-	out.Rules = summarizeRules(join(r.Codex.Root, "rules"))
-	config := join(r.Codex.Root, "config.toml")
+	codex, err := r.CLI(clis.Codex)
+	if err != nil { // a Roots not built by roots.Resolve: nothing can be read, so nothing is known
+		out.NotReadable = true
+		return out
+	}
+	out.Rules = summarizeRules(join(codex.Root, "rules"))
+	config := join(codex.Root, "config.toml")
 	switch fsx.PathPresence(config) {
 	case fsx.Present:
 		out.Present = true

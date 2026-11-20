@@ -22,7 +22,7 @@ func TestFIFOsAreNotRead(t *testing.T) {
 	if len(loadCache(r.Data)) != 0 {
 		t.Error("a FIFO cache was read")
 	}
-	if got := mustScan(t, NewScanner(r)); len(got.Totals.Claude.Hook) != 1 {
-		t.Errorf("hooks = %+v", got.Totals.Claude.Hook)
+	if got := mustScan(t, NewScanner(r)); len(totalsOf(got, Claude).Hook) != 1 {
+		t.Errorf("hooks = %+v", totalsOf(got, Claude).Hook)
 	}
 }

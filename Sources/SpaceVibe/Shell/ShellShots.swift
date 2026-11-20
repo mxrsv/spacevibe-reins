@@ -56,7 +56,7 @@ enum ShellShots {
             let state = CLIStatusDerivation.state(of: entry)
             print("trace: \(entry.cli.label) limits \(entry.state.rawValue) -> \(state?.label ?? "no state drawn")")
         }
-        try ShotHarness.check(limits.count == CoreLimitsCLI.allCases.count, "one status row per CLI")
+        try ShotHarness.check(limits.count == CLICatalog.current.limitsCLIs.count, "one status row per CLI")
     }
 
     private static func write(_ shell: ShellModel, _ env: AppEnvironment, _ name: String, _ choice: AppearanceChoice,

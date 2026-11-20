@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/fsx"
@@ -56,7 +57,11 @@ func StatuslineWindows() []StatuslineWindow {
 // "<claude root>\n<accountUuid>\n<organizationUuid>". False when the state file names no account. No credential
 // is read: only the two ids.
 func AccountKey(r roots.Roots) (string, bool) {
-	data, err := readState(r.ClaudeState, maxStateBytes)
+	cli, err := r.CLI(clis.Claude)
+	if err != nil {
+		return "", false
+	}
+	data, err := readState(cli.State, maxStateBytes)
 	if err != nil {
 		return "", false
 	}
@@ -74,7 +79,7 @@ func AccountKey(r roots.Roots) (string, bool) {
 	}
 	organization, _ := memberOf(oauth, "organizationUuid")
 	// URL.standardizedFileURL.path in Swift: "." and ".." folded, no trailing slash.
-	root := filepath.Clean(r.Claude.Root)
+	root := filepath.Clean(cli.Root)
 	return hashes.SHA256Hex([]byte(root + "\n" + account + "\n" + organization)), true
 }
 
@@ -199,10 +204,19 @@ type reading struct {
 	windows []Window
 }
 
+// claudeReader is Claude Code: its usage cache and the status line snapshots the collector writes.
+type claudeReader struct{}
+
+func (claudeReader) kind() ReadingKind { return UsageCache }
+
+func (claudeReader) read(ctx context.Context, in readInput) (Entry, error) {
+	return readClaude(ctx, in.cfg, in.roots, in.cli, in.now)
+}
+
 // readClaude is the Claude Code entry: the usage cache, superseded by the newest status line snapshots of this
 // account when they are newer than the cache's fetch.
-func readClaude(ctx context.Context, cfg config.Config, r roots.Roots, now float64) (Entry, error) {
-	cached := readClaudeCache(r)
+func readClaude(ctx context.Context, cfg config.Config, r roots.Roots, cli roots.CLIRoots, now float64) (Entry, error) {
+	cached := readClaudeCache(cli)
 	account, ok := AccountKey(r)
 	if !ok {
 		return cached, nil
@@ -273,7 +287,7 @@ func readClaude(ctx context.Context, cfg config.Config, r roots.Roots, now float
 		merged = append(merged, best)
 	}
 	source := ClaudeStatusline
-	entry := measured(Claude, newest.at, merged)
+	entry := measured(clis.Claude, newest.at, merged)
 	entry.Source = &source
 	return entry, nil
 }

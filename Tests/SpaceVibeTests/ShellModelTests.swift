@@ -19,7 +19,7 @@ extension ShellModel {
 }
 
 @MainActor
-@Suite("Shell model")
+@Suite("Shell model", .fixtureCLIs)
 struct ShellModelTests {
     @Test("the first tab is active until another is selected")
     func startsOnFirstTab() {

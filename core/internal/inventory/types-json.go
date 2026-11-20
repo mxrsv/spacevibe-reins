@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/redact"
 )
 
@@ -13,7 +14,8 @@ var errBadCell = errors.New("the usage cell has an unknown shape")
 // computed. The field order is InventoryItem.encode's.
 type itemWire struct {
 	ID          string          `json:"id"`
-	CLI         CLI             `json:"cli"`
+	CLI         clis.ID         `json:"cli"`
+	ReadBy      []clis.ID       `json:"readBy"`
 	Kind        Kind            `json:"kind"`
 	Name        string          `json:"name"`
 	Entry       string          `json:"entry"`
@@ -24,15 +26,18 @@ type itemWire struct {
 	Removable   bool            `json:"removable"`
 	Scope       Scope           `json:"scope"`
 	Project     *string         `json:"project"`
-	InOther     bool            `json:"inOther"`
 	Override    json.RawMessage `json:"override,omitempty"`
 	Key         string          `json:"key"`
-	Cells       *Cells          `json:"cells,omitempty"`
+	Cells       Cells           `json:"cells,omitempty"`
 }
 
-// MarshalJSON adds key, and override when HasSkillOverride (null when the value is nil).
+// MarshalJSON adds key, and override when HasSkillOverride (null when the value is nil). readBy is never null.
 func (i Item) MarshalJSON() ([]byte, error) {
-	w := itemWire{i.ID, i.CLI, i.Kind, i.Name, i.Entry, i.Description, i.Owner, i.Path, i.File, i.Removable, i.Scope, i.Project, i.InOther, nil, i.Key(), i.Cells}
+	readBy := i.ReadBy
+	if readBy == nil {
+		readBy = []clis.ID{}
+	}
+	w := itemWire{i.ID, i.CLI, readBy, i.Kind, i.Name, i.Entry, i.Description, i.Owner, i.Path, i.File, i.Removable, i.Scope, i.Project, nil, i.Key(), i.Cells}
 	if i.HasSkillOverride {
 		w.Override = json.RawMessage("null")
 		if i.SkillOverride != nil {
@@ -52,8 +57,8 @@ func (i *Item) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &w); err != nil {
 		return err
 	}
-	*i = Item{ID: w.ID, CLI: w.CLI, Kind: w.Kind, Name: w.Name, Entry: w.Entry, Description: w.Description, Owner: w.Owner,
-		Path: w.Path, File: w.File, Removable: w.Removable, Scope: w.Scope, Project: w.Project, InOther: w.InOther, Cells: w.Cells}
+	*i = Item{ID: w.ID, CLI: w.CLI, ReadBy: w.ReadBy, Kind: w.Kind, Name: w.Name, Entry: w.Entry, Description: w.Description,
+		Owner: w.Owner, Path: w.Path, File: w.File, Removable: w.Removable, Scope: w.Scope, Project: w.Project, Cells: w.Cells}
 	if len(w.Override) > 0 {
 		i.HasSkillOverride = true
 		return json.Unmarshal(w.Override, &i.SkillOverride)
@@ -64,7 +69,7 @@ func (i *Item) UnmarshalJSON(data []byte) error {
 // hookWire is Hook as written: kind is always "hook" and key is computed.
 type hookWire struct {
 	ID        string     `json:"id"`
-	CLI       CLI        `json:"cli"`
+	CLI       clis.ID    `json:"cli"`
 	Kind      Kind       `json:"kind"`
 	Event     string     `json:"event"`
 	Matcher   *string    `json:"matcher"`
@@ -80,7 +85,7 @@ type hookWire struct {
 	Scope     Scope      `json:"scope"`
 	Project   *string    `json:"project"`
 	Key       string     `json:"key"`
-	Cells     *Cells     `json:"cells,omitempty"`
+	Cells     Cells      `json:"cells,omitempty"`
 	Usage     *HookUsage `json:"usage"`
 }
 

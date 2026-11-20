@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/hashes"
 	"spacevibe.dev/core/internal/roots"
@@ -77,10 +78,11 @@ func TestItemsAndOwners(t *testing.T) {
 	h.write(".claude/settings.json", `{"enabledPlugins": {"acme@market": true, "off@market": false}}`)
 
 	inv := Read(h.roots())
-	if it := item(inv, "glob"); it == nil || it.Description != "global skill" || it.Owner != "user" || !it.Removable || !it.InOther {
+	if it := item(inv, "glob"); it == nil || it.Description != "global skill" || it.Owner != "user" || !it.Removable ||
+		!slices.Equal(it.ReadBy, []clis.ID{Claude}) {
 		t.Errorf("glob = %+v", it)
 	}
-	if it := item(inv, "glob", Codex); it == nil || !it.InOther {
+	if it := item(inv, "glob", Codex); it == nil || !slices.Equal(it.ReadBy, []clis.ID{Codex}) {
 		t.Errorf("codex glob = %+v", it)
 	}
 	if item(inv, "hidden") != nil || item(inv, "internal") != nil || item(inv, "not-a-skill") != nil {
@@ -335,8 +337,8 @@ func TestProjectHookUsage(t *testing.T) {
 	if hook == nil || hook.Usage == nil || hook.Usage.Runs != 2 || hook.Usage.Errors != 1 {
 		t.Fatalf("hook = %+v", hook)
 	}
-	if want := Counted(2, ptr("2026-10-02"), ptr(1)); !reflect.DeepEqual(hook.Cells.Claude, want) {
-		t.Errorf("cell = %+v", hook.Cells.Claude)
+	if want := Counted(2, ptr("2026-10-02"), ptr(1)); !reflect.DeepEqual(cellIn(hook.Cells, Claude), want) {
+		t.Errorf("cell = %+v", cellIn(hook.Cells, Claude))
 	}
 }
 
@@ -437,14 +439,19 @@ func TestCodableRoundTrip(t *testing.T) {
 	}
 }
 
-// Extra (G2.1): a cell has the shape of UsageCellState.encode.
+// Extra (G2.1): a cell is its CLI plus the shape of UsageCellState.encode; absent, like missing, has only its state.
 func TestCellJSON(t *testing.T) {
+	in := func(cli clis.ID, c Cell) Cell {
+		c.CLI = cli
+		return c
+	}
 	for cell, want := range map[string]Cell{
-		`{"state":"counted","runs":3,"last":"2026-10-20"}`:                 Counted(3, ptr("2026-10-20"), nil),
-		`{"state":"counted","runs":0,"errors":2,"last":null}`:              Counted(0, nil, ptr(2)),
-		`{"state":"pending","reason":"Added in the last 24 hours"}`:        Pending("Added in the last 24 hours"),
-		`{"state":"unmeasurable","reason":"Codex does not log hook runs"}`: Unmeasurable(CodexHooksReason),
-		`{"state":"missing"}`: Missing(),
+		`{"cli":"claude","state":"counted","runs":3,"last":"2026-10-20"}`:                in(Claude, Counted(3, ptr("2026-10-20"), nil)),
+		`{"cli":"claude","state":"counted","runs":0,"errors":2,"last":null}`:             in(Claude, Counted(0, nil, ptr(2))),
+		`{"cli":"codex","state":"pending","reason":"Added in the last 24 hours"}`:        in(Codex, Pending("Added in the last 24 hours")),
+		`{"cli":"codex","state":"unmeasurable","reason":"Codex does not log hook runs"}`: in(Codex, Unmeasurable(CodexHooksReason)),
+		`{"cli":"codex","state":"missing"}`:                                              in(Codex, Missing()),
+		`{"cli":"other","state":"absent"}`:                                               in("other", Absent()),
 	} {
 		got, err := json.Marshal(want)
 		if err != nil || string(got) != cell {
@@ -462,9 +469,9 @@ func TestCellJSON(t *testing.T) {
 }
 
 // Extra (G2.1), H14: a skill whose folder is NFD in one CLI and NFC in the other. Swift compares and hashes
-// strings by canonical equivalence: observed with the 6.3 toolchain, the two are one row, both items report
-// inOther true, and a usage count under either spelling counts for both (2 sessions). Go compares bytes: two
-// rows, inOther false, each item counts only the sessions that spelled its name the same way. This pins
+// strings by canonical equivalence: observed with the 6.3 toolchain, the two are one row present in both CLIs,
+// and a usage count under either spelling counts for both (2 sessions). Go compares bytes: two rows, each present
+// in one CLI, each item counts only the sessions that spelled its name the same way. This pins
 // the Go behaviour; folding needs Unicode normalization tables (not in the standard library).
 func TestNFDSkillNames(t *testing.T) {
 	h := newTempHome(t)
@@ -483,16 +490,16 @@ func TestNFDSkillNames(t *testing.T) {
 	if claude == nil || codex == nil {
 		t.Fatalf("items = %+v", inv.Items)
 	}
-	if claude.InOther || codex.InOther {
+	if cellIn(claude.Cells, Codex).IsPresent() || cellIn(codex.Cells, Claude).IsPresent() {
 		t.Error("Go folded NFC and NFD names into one row (it compares bytes)")
 	}
 	if claude.Key() == codex.Key() {
 		t.Error("the keys are equal")
 	}
-	if got := claude.Cells.Claude; got.State != StateCounted || got.Runs != 1 {
+	if got := cellIn(claude.Cells, Claude); got.State != StateCounted || got.Runs != 1 {
 		t.Errorf("NFD claude cell = %+v, want counted 1 (Swift: 2)", got)
 	}
-	if got := codex.Cells.Claude; got.State != StateMissing {
+	if got := cellIn(codex.Cells, Claude); got.State != StateMissing {
 		// The NFC row exists only in Codex; its Claude cell is missing, where Swift shows the shared row.
 		t.Errorf("NFC codex row, Claude cell = %+v", got)
 	}

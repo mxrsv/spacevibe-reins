@@ -5,9 +5,9 @@ import Testing
 /// GL-T7: what the glance widget draws and where a click goes, without a window (spec
 /// `docs/specs/2026-11-19-session-glance-widget.md`, GW-R2 to GW-R6, GW-R11). Synthetic sessions only.
 @MainActor
-@Suite("Glance widget")
+@Suite("Glance widget", .fixtureCLIs)
 struct GlanceWidgetTests {
-    private func session(_ id: String, cli: CoreCLI = .claude, state: CoreSessionState = .running, lastWrite: Double? = 1_000,
+    private func session(_ id: String, cli: CLIID = .claude, state: CoreSessionState = .running, lastWrite: Double? = 1_000,
                          tool: CoreActivityTool? = nil, pid: Int = 4100, reason: String = "log written 1 s ago") -> CoreActivitySession {
         CoreActivitySession(cli: cli, id: id, title: "Task \(id)", project: nil, pid: pid, state: state, stateReason: reason, reasonCode: nil,
                             currentTool: tool, ageMs: 3_600_000, lastWriteAgoMs: lastWrite, cost: nil, costNote: nil)
@@ -18,7 +18,7 @@ struct GlanceWidgetTests {
                                                  stats: CoreActivityStats(logs: sessions.count, truncated: 0)))
     }
 
-    private func entry(_ id: String = "s1", cli: CoreCLI = .claude, state: CoreSessionState = .running, pid: Int = 4100) throws -> GlanceEntry {
+    private func entry(_ id: String = "s1", cli: CLIID = .claude, state: CoreSessionState = .running, pid: Int = 4100) throws -> GlanceEntry {
         try #require(GlanceEntry(session(id, cli: cli, state: state, pid: pid)))
     }
 

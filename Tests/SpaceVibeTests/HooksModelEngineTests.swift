@@ -6,7 +6,7 @@ import Testing
 /// home back byte for byte. The core refuses every hook copy into Codex (go-core G-fix.16), so the tab's one rule agrees with it:
 /// that refusal is proven here against the real core, and the copy that works (Codex to Claude Code) is proven with Undo. Every
 /// test runs on a private copy of the synthetic fixture home (S-R1).
-@Suite("Hooks model, Go core")
+@Suite("Hooks model, Go core", .fixtureCLIs)
 @MainActor
 struct HooksModelEngineTests {
     private let codexHooks = ".codex/hooks.json"
@@ -121,7 +121,7 @@ struct HooksModelEngineTests {
         let target = try row(model, "guard-destructive.sh")
         let id = try #require(target.members[.claude]?.id)
         do {
-            _ = try await client.loadoutCopyToOther(id: id)
+            _ = try await client.loadoutCopyToOther(id: id, target: .codex)
             Issue.record("the core copied a hook into Codex")
         } catch {
             #expect(AppEnvironment.message(error) == "SpaceVibe does not copy hooks into Codex.")

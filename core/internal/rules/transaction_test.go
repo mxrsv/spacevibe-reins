@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/mutate"
 	"spacevibe.dev/core/internal/ojson"
@@ -38,7 +39,7 @@ func (sb sandbox) ruleOperation() error {
 func (sb sandbox) contents() map[string]string {
 	sb.t.Helper()
 	out := map[string]string{}
-	for _, base := range []string{sb.r.Claude.Root, sb.r.Codex.Root} {
+	for _, base := range []string{sb.r.CLIs[clis.Claude].Root, sb.r.CLIs[clis.Codex].Root} {
 		_ = filepath.WalkDir(base, func(p string, d fs.DirEntry, err error) error {
 			if err == nil && d.Type().IsRegular() {
 				data, rerr := os.ReadFile(p)

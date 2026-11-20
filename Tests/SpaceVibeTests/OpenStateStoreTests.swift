@@ -3,7 +3,7 @@ import Testing
 
 /// V5-R55: open and closed choices per page and band, kept until the app quits, and a write never folds the band of the
 /// row it changed. Each test makes its own store, so nothing leaks from the app's shared one.
-@Suite("Open-state store: bands keep their state (V5-R55)")
+@Suite("Open-state store: bands keep their state (V5-R55)", .fixtureCLIs)
 struct OpenStateStoreTests {
     @Test("a band shown open stays open when its problem goes (a write or a refresh never folds it)")
     func problemResolvedStaysOpen() {

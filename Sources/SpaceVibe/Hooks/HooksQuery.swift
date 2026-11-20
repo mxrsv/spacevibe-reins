@@ -8,6 +8,8 @@ import Foundation
 enum HookRun: Equatable, Sendable {
     /// The hook is not in that CLI.
     case missing
+    /// The CLI has no hooks at all: never 0 and never a place to copy one to.
+    case absent
     /// The usage scan has not finished.
     case loading
     /// The settings file changed recently enough that no run may have been logged yet.
@@ -20,6 +22,7 @@ enum HookRun: Equatable, Sendable {
     init(_ cell: CoreUsageCell) {
         switch cell {
         case .missing: self = .missing
+        case .absent: self = .absent
         case .unmeasurable: self = .unmeasurable
         case .counted(let runs, let last, _): self = runs > 0 ? .ran(runs, last: last) : .neverRan
         case .pending(let reason):
@@ -32,14 +35,14 @@ enum HookRun: Equatable, Sendable {
 
 extension LoadoutRow {
     /// The hook behind each CLI's copy of the row.
-    var hookMembers: [CoreCLI: CoreInventoryHook] {
-        var out: [CoreCLI: CoreInventoryHook] = [:]
+    var hookMembers: [CLIID: CoreInventoryHook] {
+        var out: [CLIID: CoreInventoryHook] = [:]
         for (cli, member) in members { if case .hook(let hook) = member { out[cli] = hook } }
         return out
     }
 
     /// The row's hook, Claude Code's first: its event, matcher and command are the row's (the key is event plus command).
-    var firstHook: CoreInventoryHook? { CoreCLI.allCases.lazy.compactMap { hookMembers[$0] }.first }
+    var firstHook: CoreInventoryHook? { CLICatalog.current.inventoryCLIs.lazy.compactMap { hookMembers[$0] }.first }
 
     var hookEvent: String { firstHook?.event ?? "" }
 
@@ -57,7 +60,7 @@ extension LoadoutRow {
     /// A script that a copy of this hook names is gone: the hook cannot run.
     var isDeadHook: Bool { hookMembers.values.contains(where: \.dead) }
 
-    func hookRun(in cli: CoreCLI) -> HookRun { HookRun(cells[cli]) }
+    func hookRun(in cli: CLIID) -> HookRun { HookRun(cells[cli]) }
 
     /// Nothing can count this hook's runs (a Codex-only hook): the neutral clock in the warning slot.
     var isUnmeasurable: Bool {
@@ -96,8 +99,8 @@ enum HooksFilterField: String, FilterFieldKind {
     var values: [FilterValue] {
         switch self {
         case .cli:
-            [FilterValue("both", "Both CLIs", chip: "Both CLIs"), FilterValue("claude", "Claude Code only", chip: "Claude Code only"),
-             FilterValue("codex", "Codex only", chip: "Codex only")]
+            [FilterValue("both", "Both CLIs", chip: "Both CLIs")]
+                + CLICatalog.current.inventoryCLIs.map { FilterValue($0.rawValue, "\($0.label) only", chip: "\($0.label) only") }
         case .status:
             [FilterValue("cantRun", "Can't run")]
                 + (LoadoutRows.codexTakesHooks ? [FilterValue("missing", "Missing in Codex")] : [])
@@ -115,14 +118,14 @@ typealias HooksFilter = PickFilter<HooksFilterField>
 /// Codex. The one copy rule (`LoadoutRows.hookCopyBlock`) is asked through here, so the logos, `a`, the detail, both small cards
 /// and the Answer all get the same answer.
 struct HooksContext: Equatable, Sendable {
-    var events: [String: [String]]
-    var detected: [CoreCLI]
+    var events: [CLIID: [String]]
+    var detected: [CLIID]
     var codexTakesHooks = LoadoutRows.codexTakesHooks
 
     var codexInstalled: Bool { detected.contains(.codex) }
 
     /// Why `row` cannot go to `cli`, or nil when it can (or is there already).
-    func block(_ row: LoadoutRow, to cli: CoreCLI) -> LoadoutRows.HookCopyBlock? {
+    func block(_ row: LoadoutRow, to cli: CLIID) -> LoadoutRows.HookCopyBlock? {
         row.members[cli] == nil
             ? LoadoutRows.hookCopyBlock(row, to: cli, events: events, detected: detected, codexTakesHooks: codexTakesHooks) : nil
     }
@@ -147,7 +150,7 @@ struct HooksQuery: Equatable, Sendable {
         let id: String
         let event: String
         /// The one CLI that has this event; nil when both have it (V5-R65).
-        let lead: CoreCLI?
+        let lead: CLIID?
         var rows: [LoadoutRow]
         /// Holds a hook that cannot run: the danger glyph, first in the list, open by default.
         var holdsProblem: Bool
@@ -160,22 +163,22 @@ struct HooksQuery: Equatable, Sendable {
 
     /// Every event a hook or a CLI has, in lifecycle order: Claude Code's list, then Codex's events it lacks, then the events only
     /// a hook names (alphabetical, so a hook on an event missing from both lists still gets its band, never dropped).
-    static func lifecycle(events: [String: [String]], rows: [LoadoutRow]) -> [String] {
+    static func lifecycle(events: [CLIID: [String]], rows: [LoadoutRow]) -> [String] {
         var order: [String] = []
-        for event in (events[CoreCLI.claude.rawValue] ?? []) + (events[CoreCLI.codex.rawValue] ?? []) where !order.contains(event) { order.append(event) }
+        for event in CLICatalog.current.inventoryCLIs.flatMap({ events[$0] ?? [] }) where !order.contains(event) { order.append(event) }
         let extra = Set(rows.map(\.hookEvent)).subtracting(order).filter { !$0.isEmpty }.sorted()
         return order + extra
     }
 
     /// The CLIs that have `event`: those whose list names it and those that have a hook on it.
-    static func clis(of event: String, events: [String: [String]], rows: [LoadoutRow]) -> Set<CoreCLI> {
-        var out = Set(CoreCLI.allCases.filter { events[$0.rawValue]?.contains(event) == true })
+    static func clis(of event: String, events: [CLIID: [String]], rows: [LoadoutRow]) -> Set<CLIID> {
+        var out = Set(CLICatalog.current.inventoryCLIs.filter { events[$0]?.contains(event) == true })
         for row in rows where row.hookEvent == event { out.formUnion(row.presentCLIs) }
         return out
     }
 
     /// The events the Filter's `Event` field offers: the ones that have a hook, in lifecycle order.
-    static func eventValues(events: [String: [String]], rows: [LoadoutRow]) -> [FilterValue] {
+    static func eventValues(events: [CLIID: [String]], rows: [LoadoutRow]) -> [FilterValue] {
         let used = Set(rows.map(\.hookEvent))
         return lifecycle(events: events, rows: rows).filter(used.contains).map { FilterValue($0, $0) }
     }
@@ -183,9 +186,9 @@ struct HooksQuery: Equatable, Sendable {
     func layout(_ rows: [LoadoutRow], context: HooksContext) -> Layout {
         let all = Self.lifecycle(events: context.events, rows: rows)
         let shown = rows.filter { matches($0, context: context) }
-        func clis(_ event: String) -> Set<CoreCLI> { Self.clis(of: event, events: context.events, rows: rows) }
+        func clis(_ event: String) -> Set<CLIID> { Self.clis(of: event, events: context.events, rows: rows) }
         // Shared events in lifecycle order, then Claude Code's own, then Codex's own (V5-R65).
-        let ordered = all.filter { clis($0).count == 2 } + all.filter { clis($0) == [.claude] } + all.filter { clis($0) == [.codex] }
+        let ordered = all.filter { clis($0).count > 1 } + CLICatalog.current.inventoryCLIs.flatMap { cli in all.filter { clis($0) == [cli] } }
         let bands = ordered.compactMap { event -> Band? in
             let inBand = shown.filter { $0.hookEvent == event }.sorted(by: Self.rank)
             guard !inBand.isEmpty else { return nil }
@@ -214,11 +217,7 @@ struct HooksQuery: Equatable, Sendable {
     private static func test(_ field: HooksFilterField, value: String, row: LoadoutRow, context: HooksContext) -> Bool {
         switch field {
         case .cli:
-            switch value {
-            case "both": row.presentCLIs.count == 2
-            case "claude": row.presentCLIs == [.claude]
-            default: row.presentCLIs == [.codex]
-            }
+            value == "both" ? row.presentCLIs.count > 1 : row.presentCLIs == [CLIID(rawValue: value)]
         case .status:
             switch value {
             case "cantRun": row.isDeadHook

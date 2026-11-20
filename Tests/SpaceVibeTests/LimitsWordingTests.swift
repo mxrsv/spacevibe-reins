@@ -3,7 +3,7 @@ import Testing
 @testable import SpaceVibe
 
 /// AC10, wording half: share left, tone, resets, reading age, the short states and the stale marker, against fixed dates.
-@Suite("Limits wording")
+@Suite("Limits wording", .fixtureCLIs)
 struct LimitsWordingTests {
     private static let hour = 3600.0
     /// 2026-11-03 18:00 at UTC+7, the clock of the mock.
@@ -19,11 +19,11 @@ struct LimitsWordingTests {
         CoreLimitWindow(id: id, minutes: minutes, scope: scope, usedPercent: used, resetsAt: Self.now.addingTimeInterval(resets).timeIntervalSince1970, active: active, current: resets > 0)
     }
 
-    private func measured(_ cli: CoreLimitsCLI, at: TimeInterval, _ windows: [CoreLimitWindow]) -> CoreLimitsEntry {
+    private func measured(_ cli: CLIID, at: TimeInterval, _ windows: [CoreLimitWindow]) -> CoreLimitsEntry {
         CoreLimitsEntry(cli: cli, state: .measured, plan: nil, source: nil, at: Self.now.addingTimeInterval(at).timeIntervalSince1970, windows: windows)
     }
 
-    private func entry(_ cli: CoreLimitsCLI, _ state: CoreLimitsState, source: CoreLimitsSource? = nil) -> CoreLimitsEntry {
+    private func entry(_ cli: CLIID, _ state: CoreLimitsState, source: CoreLimitsSource? = nil) -> CoreLimitsEntry {
         CoreLimitsEntry(cli: cli, state: state, plan: nil, source: source, at: nil, windows: [])
     }
 

@@ -18,6 +18,9 @@ enum ShotRenderer {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let environment = ProcessInfo.processInfo.environment
             let screen = environment[CoreEnvironment.variable("SHOT_SCREEN")] ?? "shell"
+            // Every screen names its CLIs from the core's `clis.list`, so it is read before any shot.
+            AppEnvironment.shared.startCLIs()
+            try ShotHarness.wait("the core's CLI list") { AppEnvironment.shared.cliList != nil }
             switch screen {
             case "shell":
                 try requireSyntheticHome(environment)

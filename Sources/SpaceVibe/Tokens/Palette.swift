@@ -132,7 +132,7 @@ enum PaletteValue {
     /// A session idle and written to within the last 10 minutes (GW8).
     static let sessionDone = ColorValue(light: 0x27885D, dark: 0x6FBE94)
 
-    // The two CLIs (identity only)
+    // CLI identity colours (identity only). Views read them through `CLIRegistry`, never from here.
     static let claude = ColorValue(light: 0xC65F3E, dark: 0xD97757)
     /// Codex is the text colour (the blue `#1596D6` of 2026-11-05 is gone).
     static let codex = ColorValue(light: 0x1B1C1F, dark: 0xF2F3F4)
@@ -246,8 +246,6 @@ enum Palette {
     static let sessionWorking = PaletteValue.sessionWorking.color
     static let sessionWaiting = PaletteValue.sessionWaiting.color
     static let sessionDone = PaletteValue.sessionDone.color
-    static let claude = PaletteValue.claude.color
-    static let codex = PaletteValue.codex.color
     static let catSkill = PaletteValue.catSkill.color
     static let catSubagent = PaletteValue.catSubagent.color
     static let catHook = PaletteValue.catHook.color
@@ -279,12 +277,6 @@ enum Palette {
     static let successInk = PaletteValue.successInk.color
     static let warnInk = PaletteValue.warnInk.color
     static let dangerInk = PaletteValue.dangerInk.color
-    static let claudeInk = PaletteValue.claudeInk.color
-    static let codexInk = PaletteValue.codexInk.color
-
-    // Tints behind sidebar tiles, banners and state tiles: the fill at 15%; text on them uses the Ink twin.
-    static let claudeTint = PaletteValue.tint(of: PaletteValue.claude).color
-    static let codexTint = PaletteValue.tint(of: PaletteValue.codex).color
 
     static let markGround = PaletteValue.markGround.color
     static let markInk = PaletteValue.markInk.color

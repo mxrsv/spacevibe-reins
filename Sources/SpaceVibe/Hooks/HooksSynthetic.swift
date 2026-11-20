@@ -8,7 +8,7 @@ enum HooksSynthetic {
         let name: String
         let event: String
         var matcher: String?
-        let clis: [CoreCLI]
+        let clis: [CLIID]
         var runs = 0
         var dead = false
         var plugin: String?
@@ -44,14 +44,14 @@ enum HooksSynthetic {
              clis: index % 3 == 0 ? [.claude, .codex] : [.claude], runs: index * 3)
     }
 
-    static func rows(_ specs: [Spec], events: [String: [String]]) -> [LoadoutRow] {
+    static func rows(_ specs: [Spec], events: [CLIID: [String]]) -> [LoadoutRow] {
         var hooks: [CoreInventoryHook] = []
         var flags: [String: CoreRowFlags] = [:]
         for spec in specs {
             let key = "hook::\(spec.event)-\(spec.name)"
-            let cells = CoreCells(
-                claude: spec.clis.contains(.claude) ? .counted(runs: spec.runs, last: spec.runs > 0 ? "2026-11-05" : nil, errors: 0) : .missing,
-                codex: spec.clis.contains(.codex) ? .unmeasurable(reason: "Codex does not log hook runs") : .missing)
+            let cells = CoreCells([
+                .claude: spec.clis.contains(.claude) ? .counted(runs: spec.runs, last: spec.runs > 0 ? "2026-11-05" : nil, errors: 0) : .missing,
+                .codex: spec.clis.contains(.codex) ? .unmeasurable(reason: "Codex does not log hook runs") : .missing])
             flags[key] = CoreRowFlags(one: spec.clis.count == 1, neverRan: false, dead: spec.dead)
             for cli in spec.clis {
                 let command = "sh '\(scripts)/\(spec.name).sh'"
@@ -62,8 +62,10 @@ enum HooksSynthetic {
                     cells: cells, usage: nil))
             }
         }
-        let snapshot = CoreLoadoutRows(usage: .ready, items: [], hooks: hooks, problems: [], events: events,
-                                       roots: ["claude": "/Users/demo/.claude", "codex": "/Users/demo/.codex"], countsByScope: [:], rowFlags: flags)
+        let wireEvents = [CLIID.claude, .codex].compactMap { cli in events[cli].map { CoreCLIEvents(cli: cli, events: $0) } }
+        let snapshot = CoreLoadoutRows(usage: .ready, items: [], hooks: hooks, problems: [], events: wireEvents,
+                                       roots: [CoreCLIRoot(cli: .claude, root: "/Users/demo/.claude"), CoreCLIRoot(cli: .codex, root: "/Users/demo/.codex")],
+                                       countsByScope: [:], rowFlags: flags)
         return LoadoutRows.build(snapshot, home: nil)
     }
 }

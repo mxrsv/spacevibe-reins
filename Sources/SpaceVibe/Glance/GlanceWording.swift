@@ -29,7 +29,7 @@ enum GlanceWording {
 
     /// What VoiceOver reads for a strip entry.
     static func spoken(_ entry: GlanceEntry) -> String {
-        "\(CoreLimitsCLI(entry.cli).label), \(entry.title), \(label(entry.state))"
+        "\(entry.cli.label), \(entry.title), \(label(entry.state))"
     }
 
     static func overflow(_ count: Int) -> String { "+\(count)" }

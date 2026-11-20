@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/proc"
@@ -15,8 +16,8 @@ import (
 // the server would answer as a successful null result (finding 6).
 func TestSubscribeAfterCloseIsRefused(t *testing.T) {
 	dir := t.TempDir()
-	cfg := config.Config{Test: true, UserHome: dir, ClaudeConfigDir: filepath.Join(dir, ".claude"),
-		CodexHome: filepath.Join(dir, ".codex"), Home: filepath.Join(dir, ".spacevibe")}
+	cfg := config.Config{Test: true, UserHome: dir, RootOverrides: map[clis.ID]string{clis.Claude: filepath.Join(dir, ".claude"),
+		clis.Codex: filepath.Join(dir, ".codex")}, Home: filepath.Join(dir, ".spacevibe")}
 	r, err := roots.Resolve(cfg, t.TempDir())
 	if err != nil {
 		t.Fatal(err)

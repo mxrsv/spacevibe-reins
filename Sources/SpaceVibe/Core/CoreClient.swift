@@ -26,8 +26,9 @@ final class CoreClient: CoreService, @unchecked Sendable {
     // MARK: Params
 
     private struct ID: Encodable { let id: String }
-    private struct CLI: Encodable { let cli: CoreCLI }
-    private struct Stop: Encodable { let cli: CoreCLI, id: String }
+    private struct Copy: Encodable { let id: String, target: CLIID }
+    private struct CLI: Encodable { let cli: CLIID }
+    private struct Stop: Encodable { let cli: CLIID, id: String }
     private struct Check: Encodable { let rule: String }
 
     /// The members of every `rules.*` call; a member a call does not take stays nil and is left out (params are strict).
@@ -52,6 +53,8 @@ final class CoreClient: CoreService, @unchecked Sendable {
     // MARK: Handshake
 
     func initialize() async throws -> CoreInitializeResult { try await connection.handshake() }
+
+    func clisList() async throws -> CoreCLIsList { try await connection.call("clis.list") }
 
     // MARK: Inventory, usage, loadout
 
@@ -93,15 +96,17 @@ final class CoreClient: CoreService, @unchecked Sendable {
         }
     }
 
-    func activityStop(cli: CoreCLI, id: String) async throws -> CoreStopResult {
+    func activityStop(cli: CLIID, id: String) async throws -> CoreStopResult {
         try await connection.call("activity.stop", Stop(cli: cli, id: id))
     }
 
     // MARK: Loadout writes and the journal
 
-    func loadoutCopyToOther(id: String) async throws -> CoreEntryResult { try await connection.call("loadout.copyToOther", ID(id: id)) }
+    func loadoutCopyToOther(id: String, target: CLIID) async throws -> CoreEntryResult {
+        try await connection.call("loadout.copyToOther", Copy(id: id, target: target))
+    }
     func loadoutRemoveItem(id: String) async throws -> CoreEntryResult { try await connection.call("loadout.removeItem", ID(id: id)) }
-    func loadoutRemoveDeadHooks(cli: CoreCLI) async throws -> CoreEntryResult { try await connection.call("loadout.removeDeadHooks", CLI(cli: cli)) }
+    func loadoutRemoveDeadHooks(cli: CLIID) async throws -> CoreEntryResult { try await connection.call("loadout.removeDeadHooks", CLI(cli: cli)) }
 
     func journalUndo(id: String) async throws -> CoreUndoResult { try await connection.call("journal.undo", ID(id: id)) }
     func journalHistory() async throws -> CoreJournalHistory { try await connection.call("journal.history") }

@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"encoding/json"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -112,6 +113,11 @@ func TestGoldenInventory(t *testing.T) {
 		"inventory":    jsonTree(t, attached),
 		"filterCounts": jsonTree(t, FilterCountsOf(attached.Items, attached.Hooks)),
 	}
+	if goldentest.Updating() {
+		if err := goldentest.RewriteGolden("inventory", sortedByID(t, tokenHome(got, root))); err != nil {
+			t.Fatal(err)
+		}
+	}
 	want, err := goldentest.LoadGolden("inventory")
 	if err != nil {
 		t.Fatal(err)
@@ -134,7 +140,7 @@ func TestGoldenInventory(t *testing.T) {
 			globalHooks = append(globalHooks, hk)
 		}
 	}
-	if want := FilterCountsOf(globalItems, globalHooks); rows.CountsByScope[GlobalScope] != want {
+	if want := FilterCountsOf(globalItems, globalHooks); !reflect.DeepEqual(rows.CountsByScope[GlobalScope], want) {
 		t.Errorf("global counts = %+v, want %+v", rows.CountsByScope[GlobalScope], want)
 	}
 	if rows.Usage != "ready" || len(rows.RowFlags) == 0 {

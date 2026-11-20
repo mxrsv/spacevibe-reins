@@ -75,11 +75,10 @@ struct SubagentsQuery: Equatable, Sendable {
         case .none:
             return Layout(groups: [band("flat", "", ordered)].compactMap { $0 }, isGrouped: false)
         case .presence:
-            let bands = [
-                band("presence:both", "In both", ordered.filter { $0.presentCLIs.count == 2 }),
-                band("presence:claude", "Claude Code only", ordered.filter { $0.presentCLIs == [.claude] }),
-                band("presence:codex", "Codex only", ordered.filter { $0.presentCLIs == [.codex] }),
-            ].compactMap { $0 }
+            let bands = ([band("presence:both", "In both", ordered.filter { $0.presentCLIs.count == 2 })]
+                + CLICatalog.current.inventoryCLIs.map { cli in
+                    band("presence:\(cli.rawValue)", "\(cli.label) only", ordered.filter { $0.presentCLIs == [cli] })
+                }).compactMap { $0 }
             // Bands that hold a problem come first, in their usual order.
             return Layout(groups: bands.filter(\.holdsProblem) + bands.filter { !$0.holdsProblem }, isGrouped: true)
         }
@@ -121,20 +120,19 @@ struct SubagentsAddable: Equatable, Sendable {
         var id: String { row.key }
         let row: LoadoutRow
         /// The CLI the subagent is in, and the one it would be added to.
-        let here: CoreCLI
-        let target: CoreCLI
+        let here: CLIID
+        let target: CLIID
     }
 
     /// Rows with exactly one CLI whose other CLI is on this Mac (`detected`), that no plugin owns and that did not go unused:
     /// most sessions first, then by name.
     var entries: [Entry]
 
-    init(_ rows: [LoadoutRow], detected: [CoreCLI]) {
+    init(_ rows: [LoadoutRow], detected: [CLIID]) {
         var entries: [Entry] = []
         for row in rows {
             guard row.presentCLIs.count == 1, let here = row.presentCLIs.first else { continue }
-            let target = here.other
-            guard row.plugin == nil, !row.isUnused, detected.contains(target),
+            guard let target = row.copyTarget(from: here), row.plugin == nil, !row.isUnused, detected.contains(target),
                   LoadoutRows.copyPlan(row, to: target, events: [:]) != nil else { continue }
             entries.append(Entry(row: row, here: here, target: target))
         }
@@ -167,7 +165,7 @@ struct SubagentsAnswer: Equatable, Sendable {
     /// Never-ran subagents beyond the one named: "N more are marked in the list."
     let more: Int
 
-    static func of(_ rows: [LoadoutRow], isLoaded: Bool, detected: [CoreCLI], since: String? = nil, scanFailed: Bool = false) -> SubagentsAnswer {
+    static func of(_ rows: [LoadoutRow], isLoaded: Bool, detected: [CLIID], since: String? = nil, scanFailed: Bool = false) -> SubagentsAnswer {
         guard isLoaded, !rows.isEmpty, !rows.contains(where: { $0.skillUsage.state == .loading }) else {
             let uncounted = isLoaded && !rows.isEmpty && scanFailed
             return SubagentsAnswer(sentence: uncounted ? "Usage could not be counted." : nil, verdict: nil, more: 0)

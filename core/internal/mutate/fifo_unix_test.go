@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/inventory"
 )
 
@@ -18,9 +19,9 @@ func TestCopyRefusesAFifo(t *testing.T) {
 	if err := syscall.Mkfifo(h.path(".claude/skills/pipe/events"), 0o600); err != nil {
 		t.Skip("no mkfifo:", err)
 	}
-	_, err := CopyToOther(r, idOf(t, r, "pipe", inventory.KindSkill, inventory.Claude))
+	_, err := copyToTheOther(r, idOf(t, r, "pipe", inventory.KindSkill, clis.Claude))
 	wantErr(t, err, 409)
-	if exists(filepath.Join(r.Codex.Skills, "pipe")) {
+	if exists(filepath.Join(r.CLIs[clis.Codex].Skills, "pipe")) {
 		t.Error("the refused copy wrote something")
 	}
 	// An agent file swapped for a FIFO after the listing is not read (the open does not block and the descriptor is checked).
@@ -29,7 +30,7 @@ func TestCopyRefusesAFifo(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = locked(r, func(tx *Tx) (Entry, error) {
-		return tx.copyItem(inventory.Item{Name: "fifo", Kind: inventory.KindAgent, CLI: inventory.Claude, Path: h.path(".claude/agents/fifo.md")})
+		return tx.copyItem(inventory.Item{Name: "fifo", Kind: inventory.KindAgent, CLI: clis.Claude, Path: h.path(".claude/agents/fifo.md")}, clis.Codex)
 	})
 	wantErr(t, err, 409)
 }

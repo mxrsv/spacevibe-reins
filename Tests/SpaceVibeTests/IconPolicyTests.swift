@@ -7,7 +7,7 @@ import Testing
 /// glyphs from MingCute Line, sidebar, content and Settings glyphs from Phosphor Duotone, the glance widget's session state
 /// glyphs from Phosphor Bold, the CLI marks from `CLIMark`; no SF Symbol outside `Gallery/`, no size under 12, and a credit
 /// for every set in use. Solar went with the old Settings blocks (2026-11-16). The checks read `allCases`, so a glyph added to a set needs no edit here.
-@Suite("Icon policy: generated sets")
+@Suite("Icon policy: generated sets", .fixtureCLIs)
 struct IconPolicyTests {
     static var appSources: URL { StyleBoundaryTests.appSources }
 

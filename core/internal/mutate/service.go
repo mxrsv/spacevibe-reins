@@ -3,10 +3,9 @@ package mutate
 import (
 	"context"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/coreerr"
-	"spacevibe.dev/core/internal/inventory"
 	"spacevibe.dev/core/internal/roots"
-	"spacevibe.dev/core/internal/usage"
 )
 
 // Service holds the five write methods of the RPC surface: loadout.copyToOther, loadout.removeItem,
@@ -23,14 +22,20 @@ type Service struct {
 // NewService returns a service over the roots.
 func NewService(r roots.Roots) *Service { return &Service{roots: r} }
 
-// IDParams is the params of loadout.copyToOther, loadout.removeItem and journal.undo.
+// IDParams is the params of loadout.removeItem and journal.undo.
 type IDParams struct {
 	ID string `json:"id"`
 }
 
+// CopyParams is the params of loadout.copyToOther: the item, and the CLI to copy it to.
+type CopyParams struct {
+	ID     string  `json:"id"`
+	Target clis.ID `json:"target"`
+}
+
 // CLIParams is the params of loadout.removeDeadHooks.
 type CLIParams struct {
-	CLI usage.CLI `json:"cli"`
+	CLI clis.ID `json:"cli"`
 }
 
 // EntryResult is the result of a write: the entry it recorded, without its ops.
@@ -49,11 +54,11 @@ type HistoryResult struct {
 }
 
 // CopyToOther is loadout.copyToOther.
-func (s *Service) CopyToOther(ctx context.Context, p IDParams) (EntryResult, error) {
+func (s *Service) CopyToOther(ctx context.Context, p CopyParams) (EntryResult, error) {
 	if err := ctx.Err(); err != nil {
 		return EntryResult{}, err
 	}
-	entry, err := copyToOther(ctx, s.roots, p.ID)
+	entry, err := copyTo(ctx, s.roots, p.ID, p.Target)
 	return EntryResult{Entry: entry.Ref()}, err
 }
 
@@ -71,8 +76,8 @@ func (s *Service) RemoveDeadHooks(ctx context.Context, p CLIParams) (EntryResult
 	if err := ctx.Err(); err != nil {
 		return EntryResult{}, err
 	}
-	if p.CLI != inventory.Claude && p.CLI != inventory.Codex {
-		return EntryResult{}, coreerr.New("cli must be claude or codex.")
+	if _, err := writers.For(p.CLI); err != nil {
+		return EntryResult{}, coreerr.New("cli must be " + writableIDs() + ".")
 	}
 	entry, err := removeDeadHooks(ctx, s.roots, p.CLI)
 	return EntryResult{Entry: entry.Ref()}, err

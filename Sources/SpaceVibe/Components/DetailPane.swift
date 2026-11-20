@@ -98,7 +98,7 @@ struct SessionMeters: View {
 
 /// One CLI's column in the pane's "Sessions by CLI" card.
 struct SessionMeter: Equatable {
-    let cli: CoreCLI
+    let cli: CLIID
     /// A word at the right of the column's head ("Not in Codex").
     let status: String?
     /// The count; nil draws the dash.
@@ -121,7 +121,7 @@ private struct MeterColumn: View {
         VStack(alignment: .leading, spacing: Metrics.DetailPane.meterSpacing) {
             head
             figure
-            BarCell(share: meter.share, tone: meter.cli == .claude ? .claude : .codex)
+            BarCell(share: meter.share, tone: .cli(meter.cli))
                 .frame(height: Metrics.DetailPane.meterBarHeight)
                 .padding(.vertical, meter.share == nil ? Metrics.DetailPane.meterDashInset : 0)
             caption
@@ -194,9 +194,9 @@ private struct MeterColumn: View {
 /// "Lives in": one row per file (32 high, 12 at the sides): the CLI's logo, then the path in `fg2`, cut at its end.
 struct FileList: View {
     struct Entry: Identifiable {
-        let cli: CoreCLI
+        let cli: CLIID
         let path: String
-        var id: CoreCLI { cli }
+        var id: CLIID { cli }
     }
 
     let files: [Entry]

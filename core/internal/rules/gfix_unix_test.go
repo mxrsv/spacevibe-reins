@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/inventory"
 )
 
@@ -154,7 +155,7 @@ func TestUnreadableSettingsFileIsNotNoRules(t *testing.T) {
 
 	below := newSandbox(t)
 	below.write(".claude/settings.json", `{"permissions":{"allow":["Read"]}}`)
-	deny(t, below.r.Claude.Root)
+	deny(t, below.r.CLIs[clis.Claude].Root)
 	listing, err = below.store.ListRules(Global)
 	if err != nil || len(listing.Rules) != 0 || !listing.NotReadable || len(listing.Problems) != 1 || !strings.HasSuffix(listing.Problems[0], notReadableSentence) {
 		t.Errorf("file below a denied folder: %+v %v", listing, err)

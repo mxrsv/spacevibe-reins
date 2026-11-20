@@ -13,8 +13,8 @@ import (
 // G-fix.3: journal.json is a file a user, a sync tool or another program can edit, and Undo moves, writes and
 // removes the paths it names. Before an undo changes anything, every path of the entry is checked:
 //
-//   - file, path and from must be inside a folder SpaceVibe manages: the Claude Code or Codex folder, the data folder, or
-//     the .claude folder of a project that discovery found (rules edit a project's settings.json). A file-edited
+//   - file, path and from must be inside a folder SpaceVibe manages: the folder of a CLI SpaceVibe writes (writers), the
+//     data folder, or the project folder (.claude) of a project that discovery found (rules edit a project's settings.json). A file-edited
 //     file may also be the real file a configuration link points at (a dotfiles setup: the journal records the target).
 //   - backup and to must be inside <data>/trash.
 //   - a path with a ".." segment, or a relative path, is refused.
@@ -34,13 +34,25 @@ type containment struct {
 	loaded   bool
 }
 
+// newContainment collects the managed folders and configuration files of every CLI SpaceVibe writes. A CLI that r
+// has no folders for (a Roots not built by roots.Resolve) adds none, so its paths are refused: the safe direction.
 func newContainment(r roots.Roots) *containment {
 	c := &containment{r: r}
-	for _, p := range []string{r.Claude.Root, r.Codex.Root, r.Data} {
+	managed := []string{}
+	var configs []string
+	for _, w := range writers.InOrder() {
+		folders, err := r.CLI(w.ID)
+		if err != nil {
+			continue
+		}
+		managed = append(managed, folders.Root)
+		configs = append(configs, w.Adapter.configFiles(folders)...)
+	}
+	for _, p := range append(managed, r.Data) {
 		c.managed = append(c.managed, spellings(p)...)
 	}
 	c.trash = spellings(trashDir(r))
-	for _, p := range []string{r.Claude.HookFile, r.Codex.HookFile, filepath.Join(r.Codex.Root, "config.toml")} {
+	for _, p := range configs {
 		c.configs = append(c.configs, roots.ResolvedPath(p))
 	}
 	return c
@@ -85,8 +97,8 @@ func (c *containment) insideManaged(clean string) bool {
 	}
 	if !c.loaded {
 		c.loaded = true
-		for _, project := range inventory.DiscoverProjects(c.r) {
-			c.projects = append(c.projects, spellings(filepath.Join(project, ".claude"))...)
+		for _, folder := range inventory.ProjectFolders(c.r) {
+			c.projects = append(c.projects, spellings(folder)...)
 		}
 	}
 	return inside(c.projects, clean) || inside(c.projects, roots.ResolvedPath(clean))

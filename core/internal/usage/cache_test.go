@@ -110,7 +110,7 @@ func TestCacheFormatMatchesSwift(t *testing.T) {
 	}
 	loadCacheFromBytes(t, r.Data, trimmed)
 	res := mustScan(t, NewScanner(r))
-	if _, ok := res.Totals.Claude.Skill["foo"]; ok || res.Files != 3 || res.Totals.Codex.Skill["cx-skill"].Sessions != 1 {
+	if _, ok := totalsOf(res, Claude).Skill["foo"]; ok || res.Files != 3 || totalsOf(res, Codex).Skill["cx-skill"].Sessions != 1 {
 		t.Errorf("the scan did not trust the Swift entries: %+v", res)
 	}
 }

@@ -96,7 +96,7 @@ struct ActivityFailureItem: Identifiable, Equatable, Sendable {
 /// One CLI's band of the Running spine. A CLI the core cannot list sessions for (Gemini CLI writes no log, or a CLI that is not
 /// installed) is a band with a note and no rows.
 struct ActivitySessionBand: Identifiable, Equatable, Sendable {
-    let cli: CoreLimitsCLI
+    let cli: CLIID
     var items: [ActivitySessionItem]
     /// The words at the band's right end: "no log", "not installed".
     var extra: String?
@@ -113,7 +113,7 @@ struct ActivitySessionBand: Identifiable, Equatable, Sendable {
 }
 
 struct ActivityFailureBand: Identifiable, Equatable, Sendable {
-    let cli: CoreCLI
+    let cli: CLIID
     var items: [ActivityFailureItem]
 
     var id: String { cli.rawValue }
@@ -142,28 +142,28 @@ struct ActivityQuery: Equatable, Sendable {
         self.now = now
         isLoading = report == nil
         elapsedMs = readAt.map { max(0, now.timeIntervalSince($0) * 1000) } ?? 0
-        // A CLI the Limits reading calls not installed; no reading yet means nothing is known against it.
-        let installed = Set(CoreCLI.allCases.filter { cli in
-            limits.first { $0.cli.rawValue == cli.rawValue }.map { $0.state != .notInstalled } ?? true
-        })
 
         let approval = Dictionary(
-            (report?.unmeasurable ?? []).filter { $0.code == "claude-prompt-vs-busy" || $0.code == "codex-tool-silent" }.map { ($0.cli, $0.text) },
+            (report?.unmeasurable ?? []).filter { $0.code == $0.cli.identity.approvalLimitCode }.map { ($0.cli, $0.text) },
             uniquingKeysWith: { first, _ in first })
         let live = (report?.sessions ?? []).filter { $0.state != .ended }
             .map { ActivitySessionItem(session: $0, approvalLimit: approval[$0.cli]) }
         let ordered = live.enumerated().sorted { ($0.element.rank, $0.offset) < ($1.element.rank, $1.offset) }.map(\.element)
         sessions = ordered
-        var bands = CoreCLI.allCases.compactMap { cli -> ActivitySessionBand? in
-            let items = ordered.filter { $0.session.cli == cli }
-            if !items.isEmpty { return ActivitySessionBand(cli: CoreLimitsCLI(cli), items: items) }
-            guard !installed.contains(cli) else { return nil }
-            return ActivitySessionBand(cli: CoreLimitsCLI(cli), items: [], extra: "not installed", note: "\(cli.label) is not installed on this Mac.")
+        let bands = CLICatalog.current.limitsCLIs.compactMap { shown -> ActivitySessionBand? in
+            // A CLI the Limits reading calls not installed; no reading yet means nothing is known against it.
+            let gone = limits.first { $0.cli == shown }?.state == .notInstalled
+            let name = shown.label
+            guard shown.identity.readsSessionLog else {
+                return ActivitySessionBand(
+                    cli: shown, items: [], extra: gone ? "not installed" : "no log",
+                    note: gone ? "\(name) is not installed on this Mac." : "SpaceVibe cannot read \(name) sessions: it writes no log.")
+            }
+            let items = ordered.filter { $0.session.cli == shown }
+            if !items.isEmpty { return ActivitySessionBand(cli: shown, items: items) }
+            guard gone else { return nil }
+            return ActivitySessionBand(cli: shown, items: [], extra: "not installed", note: "\(name) is not installed on this Mac.")
         }
-        let gone = limits.first { $0.cli == .gemini }?.state == .notInstalled
-        bands.append(ActivitySessionBand(
-            cli: .gemini, items: [], extra: gone ? "not installed" : "no log",
-            note: gone ? "Gemini CLI is not installed on this Mac." : "SpaceVibe cannot read Gemini CLI sessions: it writes no log."))
         // A band with a waiting session comes first, then one with a session that cannot be measured, then the rest, each in the usual order.
         sessionBands = bands.filter { $0.waiting > 0 } + bands.filter { $0.waiting == 0 && $0.unmeasurable > 0 } + bands.filter { !$0.holdsProblem }
 
@@ -174,7 +174,7 @@ struct ActivityQuery: Equatable, Sendable {
             return a.offset < b.offset
         }.map(\.element)
         failures = ranked
-        let failureBands = CoreCLI.allCases.compactMap { cli -> ActivityFailureBand? in
+        let failureBands = CLICatalog.current.inventoryCLIs.compactMap { cli -> ActivityFailureBand? in
             let items = ranked.filter { $0.failure.cli == cli }
             return items.isEmpty ? nil : ActivityFailureBand(cli: cli, items: items)
         }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/roots"
@@ -65,7 +66,11 @@ func CachedAccountKey(cfg config.Config, r roots.Roots) (string, bool) {
 // stampOf is the cache key of the current state file; false when it is no regular file within the cap (the plain
 // computation then answers "no key" as it always did).
 func stampOf(r roots.Roots) (accountKeyCache, bool) {
-	path, err := filepath.Abs(r.ClaudeState)
+	cli, err := r.CLI(clis.Claude)
+	if err != nil {
+		return accountKeyCache{}, false
+	}
+	path, err := filepath.Abs(cli.State)
 	if err != nil {
 		return accountKeyCache{}, false
 	}
@@ -73,7 +78,7 @@ func stampOf(r roots.Roots) (accountKeyCache, bool) {
 	if err != nil || !info.Mode().IsRegular() || info.Size() > maxStateBytes {
 		return accountKeyCache{}, false
 	}
-	return accountKeyCache{State: path, Size: info.Size(), MTime: info.ModTime().UnixNano(), Root: filepath.Clean(r.Claude.Root)}, true
+	return accountKeyCache{State: path, Size: info.Size(), MTime: info.ModTime().UnixNano(), Root: filepath.Clean(cli.Root)}, true
 }
 
 // matches is true when got was computed from the file want describes and holds a well-formed key.

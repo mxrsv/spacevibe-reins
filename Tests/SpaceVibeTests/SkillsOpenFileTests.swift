@@ -5,7 +5,7 @@ import Testing
 /// H3: `Open file` never hands a link's target to the system. A `SKILL.md` that links to a `.command` would run in Terminal,
 /// so only a resolved regular `.md` file opens and anything else is shown in Finder. Temp folders only (S-R1).
 @MainActor
-@Suite("Skills model, Open file")
+@Suite("Skills model, Open file", .fixtureCLIs)
 struct SkillsOpenFileTests {
     private enum Call: Equatable { case open(URL), reveal(URL) }
 
@@ -20,12 +20,12 @@ struct SkillsOpenFileTests {
     private func row(file: URL) -> LoadoutRow {
         let item = CoreInventoryItem(
             id: "claude:skill:global:demo", cli: .claude, kind: .skill, name: "demo", entry: "demo", description: "", owner: "user",
-            path: file.deletingLastPathComponent().path, file: file.path, removable: true, scope: .global, project: nil, inOther: false,
+            path: file.deletingLastPathComponent().path, file: file.path, removable: true, scope: .global, project: nil,
             key: "skill::demo"
         )
         return LoadoutRow(
             key: "skill::demo", kind: .skill, project: nil, members: [.claude: .item(item)],
-            cells: CoreCells(claude: .missing, codex: .missing), flags: CoreRowFlags(one: false, neverRan: false, dead: false),
+            cells: CoreCells([.claude: .missing, .codex: .missing]), flags: CoreRowFlags(one: false, neverRan: false, dead: false),
             name: "demo", detail: "", plugin: nil, errors: 0, runs: 0, addedNote: nil
         )
     }

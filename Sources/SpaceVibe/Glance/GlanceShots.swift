@@ -132,7 +132,7 @@ private enum GlanceLimitsShotData {
                         active: true, current: true)
     }
 
-    private static func entry(_ cli: CoreLimitsCLI, _ windows: [CoreLimitWindow]) -> CoreLimitsEntry {
+    private static func entry(_ cli: CLIID, _ windows: [CoreLimitWindow]) -> CoreLimitsEntry {
         CoreLimitsEntry(cli: cli, state: .measured, plan: nil, source: nil, at: now.timeIntervalSince1970 - 120, windows: windows)
     }
 
@@ -158,7 +158,7 @@ private enum GlanceLimitsShotData {
 private enum GlanceShotData {
     /// A session in `state`; `minutesAgo` is its last write, which also splits an idle session into done (within 10 minutes)
     /// and idle.
-    private static func session(_ index: Int, _ cli: CoreCLI, _ state: GlanceState, _ title: String, tool: CoreActivityTool? = nil,
+    private static func session(_ index: Int, _ cli: CLIID, _ state: GlanceState, _ title: String, tool: CoreActivityTool? = nil,
                                 reason: String = "Log written 2 s ago", minutesAgo: Double = 0) -> CoreActivitySession {
         let core: CoreSessionState = switch state {
         case .waiting: .waiting

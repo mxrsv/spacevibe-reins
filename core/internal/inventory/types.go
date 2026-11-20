@@ -1,5 +1,6 @@
-// Package inventory reads what is installed for Claude Code and Codex (skills, subagents and hooks, plugin
-// owned items, the .claude folders of discovered projects), attaches the usage cells the Matrix shows, and
+// Package inventory reads what is installed for each CLI with the inventory concept (skills, subagents and hooks,
+// plugin owned items, the .claude folders of discovered projects; per-CLI facts in claude.go and codex.go behind
+// adapters.go), attaches the usage cells the Matrix shows, and
 // builds the loadout.rows result. It never executes anything. Settings are read only for hooks, plugin flags
 // and skill overrides: no other value, in particular env, is kept or returned (S-R3).
 //
@@ -12,17 +13,8 @@ package inventory
 import (
 	"encoding/json"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/hashes"
-	"spacevibe.dev/core/internal/usage"
-)
-
-// CLI is claude or codex.
-type CLI = usage.CLI
-
-// The CLIs.
-const (
-	Claude = usage.Claude
-	Codex  = usage.Codex
 )
 
 // Kind is the wire value of kind: skill, agent or hook.
@@ -47,20 +39,12 @@ const (
 const (
 	// MaxProjects: at most this many project folders are discovered, newest first.
 	MaxProjects = 300
-	// CodexHooksReason is why a Codex hook cell is unmeasurable.
-	CodexHooksReason = "Codex does not log hook runs"
 	// ScanNotFinished is the pending reason before the first scan has finished.
 	ScanNotFinished = "Usage scan has not finished"
+	// NotScannedReason is the unmeasurable reason of a CLI whose logs the usage scan does not read (no usage
+	// concept). No CLI on the wire today is in that state.
+	NotScannedReason = "SpaceVibe does not read this CLI's logs"
 )
-
-// Events are the hook events each CLI documents. Claude's list comes from its docs; Codex's from
-// observation only.
-func Events() map[string][]string {
-	return map[string][]string{
-		"claude": {"SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest", "PostToolUse", "PostToolUseFailure", "Notification", "SubagentStart", "SubagentStop", "Elicitation", "ElicitationResult", "TeammateIdle", "PreCompact", "PostCompact", "Stop", "StopFailure", "SessionEnd"},
-		"codex":  {"SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest", "PostToolUse", "SubagentStart", "SubagentStop", "Interrupt", "Stop", "SessionEnd"},
-	}
-}
 
 // Cell states.
 const (
@@ -68,16 +52,20 @@ const (
 	StatePending      = "pending"
 	StateUnmeasurable = "unmeasurable"
 	StateMissing      = "missing"
+	StateAbsent       = "absent"
 )
 
-// Cell is the usage cell of one CLI for one row: counted, pending, unmeasurable or missing.
+// Cell is the usage cell of one CLI for one row: counted, pending, unmeasurable, missing or absent.
 //
 //   - counted: Runs is hook runs, or sessions that used the skill or agent; 0 means it never ran inside the
 //     scanned logs. Errors is set for hooks only. Last is null when unknown.
 //   - pending: installed, but no scanned log can have covered it yet; Reason says why.
 //   - unmeasurable: the CLI does not log it (Codex hooks); Reason says why.
-//   - missing: not installed in that CLI.
+//   - missing: the CLI has this kind of item, but this one is not installed in it.
+//   - absent: the CLI has no such kind of item at all (KindSupport absent). Never an add target, never 0.
 type Cell struct {
+	// CLI is the CLI the cell belongs to. The constructors leave it empty; the cells of a row set it.
+	CLI    clis.ID
 	State  string
 	Runs   int
 	Last   *string
@@ -85,35 +73,50 @@ type Cell struct {
 	Reason string
 }
 
+// CLIID is the CLI the cell belongs to.
+func (c Cell) CLIID() clis.ID { return c.CLI }
+
 // IsMissing reports whether the item is not installed in that CLI.
 func (c Cell) IsMissing() bool { return c.State == StateMissing }
 
-// MarshalJSON writes the shape of UsageCellState.encode: counted has state, runs, errors (when set) and
-// last (null when unknown); pending and unmeasurable have state and reason; missing has only state.
+// IsPresent reports whether the item is installed in that CLI: neither missing nor absent.
+func (c Cell) IsPresent() bool { return c.State != StateMissing && c.State != StateAbsent }
+
+// MarshalJSON writes cli, then the shape of UsageCellState.encode: counted has state, runs, errors (when set) and
+// last (null when unknown); pending and unmeasurable have state and reason; missing and absent have only state.
 func (c Cell) MarshalJSON() ([]byte, error) {
 	switch c.State {
 	case StateCounted:
 		return json.Marshal(struct {
+			CLI    clis.ID `json:"cli"`
 			State  string  `json:"state"`
 			Runs   int     `json:"runs"`
 			Errors *int    `json:"errors,omitempty"`
 			Last   *string `json:"last"`
-		}{c.State, c.Runs, c.Errors, c.Last})
+		}{c.CLI, c.State, c.Runs, c.Errors, c.Last})
 	case StatePending, StateUnmeasurable:
 		return json.Marshal(struct {
-			State  string `json:"state"`
-			Reason string `json:"reason"`
-		}{c.State, c.Reason})
+			CLI    clis.ID `json:"cli"`
+			State  string  `json:"state"`
+			Reason string  `json:"reason"`
+		}{c.CLI, c.State, c.Reason})
+	case StateAbsent:
+		return json.Marshal(struct {
+			CLI   clis.ID `json:"cli"`
+			State string  `json:"state"`
+		}{c.CLI, StateAbsent})
 	default:
 		return json.Marshal(struct {
-			State string `json:"state"`
-		}{StateMissing})
+			CLI   clis.ID `json:"cli"`
+			State string  `json:"state"`
+		}{c.CLI, StateMissing})
 	}
 }
 
 // UnmarshalJSON reads the same shapes back; an unknown state is an error.
 func (c *Cell) UnmarshalJSON(data []byte) error {
 	var raw struct {
+		CLI    clis.ID `json:"cli"`
 		State  string  `json:"state"`
 		Runs   *int    `json:"runs"`
 		Errors *int    `json:"errors"`
@@ -134,11 +137,12 @@ func (c *Cell) UnmarshalJSON(data []byte) error {
 			return errBadCell
 		}
 		*c = Cell{State: raw.State, Reason: *raw.Reason}
-	case StateMissing:
-		*c = Cell{State: StateMissing}
+	case StateMissing, StateAbsent:
+		*c = Cell{State: raw.State}
 	default:
 		return errBadCell
 	}
+	c.CLI = raw.CLI
 	return nil
 }
 
@@ -156,26 +160,24 @@ func Unmeasurable(reason string) Cell { return Cell{State: StateUnmeasurable, Re
 // Missing is a missing cell.
 func Missing() Cell { return Cell{State: StateMissing} }
 
-// Cells holds one cell per CLI.
-type Cells struct {
-	Claude Cell `json:"claude"`
-	Codex  Cell `json:"codex"`
-}
+// Absent is the cell of a CLI that has no such kind of item.
+func Absent() Cell { return Cell{State: StateAbsent} }
 
-// For returns the cell of one CLI.
-func (c Cells) For(cli CLI) Cell {
-	if cli == Claude {
-		return c.Claude
-	}
-	return c.Codex
-}
+// Cells holds one cell per CLI with the inventory concept, in wire order.
+type Cells []Cell
+
+// For is the cell of one CLI; false when the row has none for it. It never answers with another CLI's cell.
+func (c Cells) For(cli clis.ID) (Cell, bool) { return clis.Find(c, cli) }
 
 // Item is a skill or a subagent. The JSON names are the Node output's.
 type Item struct {
-	ID   string `json:"id"`
-	CLI  CLI    `json:"cli"`
-	Kind Kind   `json:"kind"`
-	Name string `json:"name"`
+	ID  string  `json:"id"`
+	CLI clis.ID `json:"cli"`
+	// ReadBy are the CLIs that read this item's file, in wire order (spec MC-R7). Today every item is read by its own
+	// CLI alone; a folder several CLIs read will list each of them. CLI stays the folder's owner, which the id names.
+	ReadBy []clis.ID `json:"readBy"`
+	Kind   Kind      `json:"kind"`
+	Name   string    `json:"name"`
 	// Entry is the folder name (skill) or file name (agent).
 	Entry       string `json:"entry"`
 	Description string `json:"description"`
@@ -188,14 +190,12 @@ type Item struct {
 	Scope     Scope `json:"scope"`
 	// Project is the absolute path of the owning project, or nil for user-level config.
 	Project *string `json:"project"`
-	// InOther: the same row exists in the other CLI.
-	InOther bool `json:"inOther"`
 	// HasSkillOverride is true for Claude global skills: the override member is then written, null when
 	// settings hold no value (SkillOverride nil). Other items leave the member out.
 	HasSkillOverride bool
 	SkillOverride    *string
-	// Cells is set by AttachUsage.
-	Cells *Cells `json:"cells,omitempty"`
+	// Cells is set by AttachUsage. Whether the row exists in another CLI is what its cells say.
+	Cells Cells `json:"cells,omitempty"`
 }
 
 // Key is the matrix row this item belongs to: the same name (or hook) in the same project, whichever CLI
@@ -217,7 +217,7 @@ type HookUsage struct {
 // Hook is one hook command in a settings file (Claude settings.json, Codex hooks.json, a plugin's hooks.json).
 type Hook struct {
 	ID      string   `json:"id"`
-	CLI     CLI      `json:"cli"`
+	CLI     clis.ID  `json:"cli"`
 	Event   string   `json:"event"`
 	Matcher *string  `json:"matcher"`
 	Command string   `json:"command"`
@@ -235,7 +235,7 @@ type Hook struct {
 	File    string  `json:"file"`
 	Scope   Scope   `json:"scope"`
 	Project *string `json:"project"`
-	Cells   *Cells  `json:"cells,omitempty"`
+	Cells   Cells   `json:"cells,omitempty"`
 	// Usage is nil when unknown (scan not finished) or not logged (Codex); always written, as null then.
 	Usage *HookUsage `json:"usage"`
 }
@@ -248,15 +248,34 @@ type Snapshot struct {
 	Items    []Item   `json:"items"`
 	Hooks    []Hook   `json:"hooks"`
 	Problems []string `json:"problems"`
-	// Events are the hook events each CLI documents.
-	Events map[string][]string `json:"events"`
-	// Roots is the config root of each CLI, keyed claude and codex.
-	Roots map[string]string `json:"roots"`
+	// Events are the hook events each CLI with the inventory concept documents, in wire order.
+	Events []CLIEvents `json:"events"`
+	// Roots is the config root of each CLI with the inventory concept, in wire order.
+	Roots []CLIRoot `json:"roots"`
 }
+
+// CLIEvents are the hook events one CLI documents.
+type CLIEvents struct {
+	CLI    clis.ID  `json:"cli"`
+	Events []string `json:"events"`
+}
+
+// CLIID is the CLI the events belong to.
+func (e CLIEvents) CLIID() clis.ID { return e.CLI }
+
+// CLIRoot is one CLI's config root folder.
+type CLIRoot struct {
+	CLI  clis.ID `json:"cli"`
+	Root string  `json:"root"`
+}
+
+// CLIID is the CLI the root belongs to.
+func (r CLIRoot) CLIID() clis.ID { return r.CLI }
 
 // FilterCounts are the counts for the filter chips, deduplicated by row key.
 type FilterCounts struct {
-	All  int      `json:"all"`
+	All int `json:"all"`
+	// Only counts, per CLI with the inventory concept in wire order, the rows present in that CLI alone.
 	Only OnlyCLIs `json:"only"`
 	// NeverRan: ran in no CLI that logs it, and at least one CLI counted it. A dead hook is counted only
 	// under Dead.
@@ -264,10 +283,25 @@ type FilterCounts struct {
 	Dead     int `json:"dead"`
 }
 
-// OnlyCLIs counts the rows present in one CLI only.
-type OnlyCLIs struct {
-	Claude int `json:"claude"`
-	Codex  int `json:"codex"`
+// OnlyCount is the number of rows present in one CLI alone.
+type OnlyCount struct {
+	CLI   clis.ID `json:"cli"`
+	Count int     `json:"count"`
+}
+
+// CLIID is the CLI the count belongs to.
+func (o OnlyCount) CLIID() clis.ID { return o.CLI }
+
+// OnlyCLIs holds one OnlyCount per CLI with the inventory concept, in wire order.
+type OnlyCLIs []OnlyCount
+
+// total is the number of rows present in exactly one CLI, whichever it is.
+func (o OnlyCLIs) total() int {
+	n := 0
+	for _, c := range o {
+		n += c.Count
+	}
+	return n
 }
 
 func deref(s *string) string {

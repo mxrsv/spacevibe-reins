@@ -4,7 +4,7 @@ import Testing
 
 /// V5-R27 and V5-R57: where a popover or a menu lands (the kit's `popover.place`), and when a hover popover opens and
 /// closes (the kit's `popover.show` and `hide`, Esc returning the focus to the anchor).
-@Suite("Overlay placement and hover popovers (V5-R27, V5-R57)")
+@Suite("Overlay placement and hover popovers (V5-R27, V5-R57)", .fixtureCLIs)
 struct OverlayPlacementTests {
     static let window = CGSize(width: 1440, height: 900)
     static let popover = CGSize(width: 272, height: 120)

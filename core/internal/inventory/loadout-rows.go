@@ -27,8 +27,8 @@ type LoadoutRows struct {
 	Items         []Item                  `json:"items"`
 	Hooks         []Hook                  `json:"hooks"`
 	Problems      []string                `json:"problems"`
-	Events        map[string][]string     `json:"events"`
-	Roots         map[string]string       `json:"roots"`
+	Events        []CLIEvents             `json:"events"`
+	Roots         []CLIRoot               `json:"roots"`
 	CountsByScope map[string]FilterCounts `json:"countsByScope"`
 	RowFlags      map[string]RowFlags     `json:"rowFlags"`
 }
@@ -89,7 +89,7 @@ func buildLoadoutRows(raw Snapshot, in usage.Input, now time.Time, firstSeen map
 	flags := make(map[string]RowFlags, len(byKey))
 	for key, rows := range byKey {
 		c := FilterCountsOfRows(rows)
-		flags[key] = RowFlags{One: c.Only.Claude+c.Only.Codex > 0, NeverRan: c.NeverRan > 0, Dead: c.Dead > 0}
+		flags[key] = RowFlags{One: c.Only.total() > 0, NeverRan: c.NeverRan > 0, Dead: c.Dead > 0}
 	}
 
 	return LoadoutRows{

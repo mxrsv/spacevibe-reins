@@ -4,7 +4,7 @@ import Testing
 
 /// `CoreClient` against the real Go core that `scripts/test.sh` builds. Each test has its own fixture home and client,
 /// because swift-testing runs tests in parallel.
-@Suite("CoreClient")
+@Suite("CoreClient", .fixtureCLIs)
 struct CoreClientTests {
     private static let architect = "claude:agent:local:architect.md"
 
@@ -47,7 +47,7 @@ struct CoreClientTests {
         try await withClient { fixture, client in
             let inventory = try await client.inventoryRead()
             #expect(inventory.items.count > 20)
-            #expect(inventory.roots["claude"] == fixture.home.appendingPathComponent(".claude").path)
+            #expect(inventory.roots[cli: .claude] == fixture.home.appendingPathComponent(".claude").path)
             #expect(try await client.loadoutRows().usage == .scanning)
             #expect(try await client.limitsRead().limits.map(\.cli) == [.claude, .codex, .gemini])
             #expect(try await client.journalHistory().entries.isEmpty)

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"unicode"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/inventory"
@@ -82,7 +83,8 @@ func (s *Store) locate(scope Scope) (string, folderState, error) {
 	var name string
 	switch scope.Kind {
 	case KindGlobal:
-		return s.roots.Claude.HookFile, folderReadable, nil
+		claude, err := s.roots.CLI(clis.Claude)
+		return claude.HookFile, folderReadable, err
 	case KindProject:
 		name = "settings.json"
 	case KindLocal:

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/goldentest"
 	"spacevibe.dev/core/internal/proc"
@@ -171,7 +172,7 @@ func TestGoldenActivityShared(t *testing.T) { // Swift: ActivityGoldenTests.swif
 		}
 		return false
 	}
-	if !has(func(s Session) bool { return s.State == StateRunning && s.CLI == CLIClaude }) {
+	if !has(func(s Session) bool { return s.State == StateRunning && s.CLI == clis.Claude }) {
 		t.Error("no running Claude session")
 	}
 	if !has(func(s Session) bool { return s.State == StateWaiting }) {

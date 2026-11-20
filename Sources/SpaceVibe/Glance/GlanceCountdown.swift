@@ -12,7 +12,7 @@ struct GlanceCountdownWindow: Equatable, Identifiable {
 
     /// The Limits page's id for the window (`cli:windowID`, `LimitsWording.Entry.id`), so a click selects that row (LC-R7).
     let id: String
-    let cli: CoreLimitsCLI
+    let cli: CLIID
     let kind: Kind
     /// "5-hour", "Weekly" (`LimitsWording.name`).
     let name: String

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/logs"
 	"spacevibe.dev/core/internal/roots"
@@ -77,8 +78,9 @@ func (s *Scanner) Scan(ctx context.Context, progress func(Progress)) (Result, er
 }
 
 type target struct {
-	path string
-	cli  CLI
+	path   string
+	cli    clis.ID
+	parser lineParser
 }
 
 func (s *Scanner) scan(ctx context.Context, progress func(Progress)) (Result, error) {
@@ -87,12 +89,9 @@ func (s *Scanner) scan(ctx context.Context, progress func(Progress)) (Result, er
 		maxLine = DefaultMaxLineBytes
 	}
 	cache := loadCache(s.roots.Data)
-	var targets []target
-	for _, p := range logs.Walk(s.roots.Claude.Logs) {
-		targets = append(targets, target{p, Claude})
-	}
-	for _, p := range logs.Walk(s.roots.Codex.Logs) {
-		targets = append(targets, target{p, Codex})
+	targets, err := s.targets()
+	if err != nil {
+		return Result{}, err
 	}
 	next := make(map[string]cachedFile, len(targets))
 	for index, t := range targets {
@@ -118,7 +117,22 @@ func (s *Scanner) scan(ctx context.Context, progress func(Progress)) (Result, er
 		return Result{}, err
 	}
 	saveCache(next, s.roots.Data)
-	return aggregate(next, len(targets)), nil
+	return aggregate(next, len(targets))
+}
+
+// targets lists the logs of every CLI with a usage parser, in wire order.
+func (s *Scanner) targets() ([]target, error) {
+	var targets []target
+	for _, p := range parsers.InOrder() {
+		cli, err := s.roots.CLI(p.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, path := range logs.Walk(cli.Logs) {
+			targets = append(targets, target{path, p.ID, p.Adapter})
+		}
+	}
+	return targets, nil
 }
 
 // entry is the cached record when the log is unchanged, otherwise a fresh parse. ok is false when the log
@@ -153,11 +167,7 @@ func scanFile(ctx context.Context, t target, stamp, fallbackDay string, maxLine 
 				first = &d
 			}
 		}
-		if t.cli == Claude {
-			claudeLine(line, &rec, fallbackDay)
-		} else {
-			codexLine(line, &rec, fallbackDay)
-		}
+		t.parser.parseLine(line, &rec, fallbackDay)
 		return nil
 	})
 	if readErr != nil {

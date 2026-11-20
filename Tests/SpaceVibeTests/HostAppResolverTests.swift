@@ -3,7 +3,7 @@ import Testing
 @testable import SpaceVibe
 
 /// The host-app walk (GW-R6): nearest regular-app ancestor of a session's pid, or nil when there is none.
-@Suite("Host app resolver")
+@Suite("Host app resolver", .fixtureCLIs)
 struct HostAppResolverTests {
     /// An injected process table: `parents` maps a pid to its parent (a missing pid is a failed read), `apps` lists the
     /// pids that are regular apps, `paths` the executable of a pid, `bundleIDs` the bundle id of a bundle path. A regular

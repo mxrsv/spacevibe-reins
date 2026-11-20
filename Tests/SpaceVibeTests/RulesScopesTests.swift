@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import SpaceVibe
 
-@Suite("Rules scopes and wording")
+@Suite("Rules scopes and wording", .fixtureCLIs)
 struct RulesScopesTests {
     // MARK: RulesPending
 

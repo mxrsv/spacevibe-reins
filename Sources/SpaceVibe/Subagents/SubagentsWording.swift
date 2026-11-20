@@ -45,7 +45,7 @@ enum SubagentsWording {
 
     // MARK: The Answer
 
-    static func verdict(for row: LoadoutRow, detected: [CoreCLI], since: String? = nil) -> SubagentsAnswer.Verdict {
+    static func verdict(for row: LoadoutRow, detected: [CLIID], since: String? = nil) -> SubagentsAnswer.Verdict {
         let said = SkillsWording.verdict(for: row, status: .neverRan, detected: detected, since: since)
         return SubagentsAnswer.Verdict(key: row.key, name: row.name, text: said?.text ?? "Nothing in the local logs shows a session.",
                                        small: said?.small, offersRemove: row.plugin == nil)
@@ -71,13 +71,14 @@ enum SubagentsWording {
             case .noLogs: return "\(name): no logs to count sessions from."
             case .loading: return scanFailed ? "\(name): sessions could not be counted." : "\(name): counting sessions."
             case .missing: return "\(name): not installed."
+            case .absent: return "\(name) has no subagents."
             }
         }
     }
 
     /// What the detail popover shows for a row: `lines`, then, when `Add to <CLI>` is offered, what that copy carries (G10), so the
     /// sentence is read before the click.
-    static func detailLines(for row: LoadoutRow, adding target: CoreCLI?, now: Date, scanFailed: Bool = false) -> [String] {
+    static func detailLines(for row: LoadoutRow, adding target: CLIID?, now: Date, scanFailed: Bool = false) -> [String] {
         lines(for: row, now: now, scanFailed: scanFailed) + (target.map { [copyNote(to: $0)] } ?? [])
     }
 
@@ -85,22 +86,22 @@ enum SubagentsWording {
 
     /// What a copy into `cli` carries, said before `Add to <CLI>` (G10, owner call C3): name, description and instructions. For
     /// Claude Code it adds what follows from the missing `tools` line (see `addNote`).
-    static func copyNote(to cli: CoreCLI) -> String {
+    static func copyNote(to cli: CLIID) -> String {
         let base = "A copy added to \(cli.label) carries its name, description and instructions, not its model or tools"
-        return cli == .claude ? base + ", so it can use every tool." : base + "."
+        return cli.identity.subagentWithoutToolsGetsEveryTool ? base + ", so it can use every tool." : base + "."
     }
 
-    static func addLabel(_ row: LoadoutRow, to cli: CoreCLI) -> String { "Added \(row.name) to \(cli.label)" }
+    static func addLabel(_ row: LoadoutRow, to cli: CLIID) -> String { "Added \(row.name) to \(cli.label)" }
 
     /// What the copy really writes (G10): the file's name, description and instructions. Nothing of its model or tools. A Claude
     /// Code subagent with no `tools` line "inherits every tool available to subagents" (Claude Code's subagent docs), so the toast
     /// says that of a copy made into Claude Code. Codex's reading of a file with no model is not verified, so it is not said.
-    static func addNote(to cli: CoreCLI) -> String {
-        cli == .claude ? "Its model and tools are not copied, so it can use every tool." : "Its model and tools are not copied."
+    static func addNote(to cli: CLIID) -> String {
+        cli.identity.subagentWithoutToolsGetsEveryTool ? "Its model and tools are not copied, so it can use every tool." : "Its model and tools are not copied."
     }
 
     /// `cli` nil: every copy.
-    static func removeLabel(_ row: LoadoutRow, from cli: CoreCLI?) -> String {
+    static func removeLabel(_ row: LoadoutRow, from cli: CLIID?) -> String {
         cli.map { "Removed the \($0.label) copy of \(row.name)" } ?? "Removed \(row.name)"
     }
 

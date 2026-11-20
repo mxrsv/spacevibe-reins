@@ -51,7 +51,7 @@ struct ContainerSpecimens: View {
         }
     }
 
-    private func resetRow(_ time: String, _ cli: CoreLimitsCLI, _ name: String) -> some View {
+    private func resetRow(_ time: String, _ cli: CLIID, _ name: String) -> some View {
         ListRow(name) {
             MetaCell(text: time, width: 72, alignment: .leading)
             CLIMark(cli, size: .control)
@@ -88,13 +88,13 @@ struct ContainerSpecimens: View {
                     BandStack {
                         Band("Claude Code", count: 3, state: StateMark(.warn, label: "A window is low"), isOpen: open("band-claude")) {
                             windowRows
-                        } lead: { CLIMark(CoreLimitsCLI.claude, size: .control) }
+                        } lead: { CLIMark(CLIID.claude, size: .control) }
                         Band("Codex", count: 4, isOpen: open("band-codex", false)) { windowRows } lead: {
-                            CLIMark(CoreLimitsCLI.codex, size: .control)
+                            CLIMark(CLIID.codex, size: .control)
                         } extras: {
                             StaleNote("read 8 h ago")
                         }
-                        Band("Gemini CLI", isOpen: open("band-gemini", false)) { EmptyView() } lead: { CLIMark(CoreLimitsCLI.gemini, size: .control) }
+                        Band("Gemini CLI", isOpen: open("band-gemini", false)) { EmptyView() } lead: { CLIMark(CLIID.gemini, size: .control) }
                     }
                 })),
             ("problem (danger glyph, open), hover, focus", AnyView(
@@ -128,7 +128,7 @@ struct ContainerSpecimens: View {
                             Band(event, count: 1, isOpen: open("grid-\(event)", false)) { EmptyView() }
                         }
                         Band("Notification", count: 1, isOpen: open("grid-notification", false)) { EmptyView() } lead: {
-                            CLIMark(CoreLimitsCLI.claude, size: .control)
+                            CLIMark(CLIID.claude, size: .control)
                         }
                     }
                 })),

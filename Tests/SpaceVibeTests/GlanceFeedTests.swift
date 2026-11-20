@@ -30,15 +30,15 @@ private final class FakeGlanceCore: UnservedCore, @unchecked Sendable {
         CoreActivityReport(sessions: sessions, failures: [], files: [], unmeasurable: [], stats: CoreActivityStats(logs: 1, truncated: 0))
     }
 
-    static func session(_ id: String, state: CoreSessionState = .running) -> CoreActivitySession {
+    static func session(_ id: String, state: CoreSessionState = .running, cli: CLIID = .claude) -> CoreActivitySession {
         CoreActivitySession(
-            cli: .claude, id: id, title: "task \(id)", project: nil, pid: 100, state: state, stateReason: "log written 2 s ago",
+            cli: cli, id: id, title: "task \(id)", project: nil, pid: 100, state: state, stateReason: "log written 2 s ago",
             reasonCode: nil, currentTool: nil, ageMs: nil, lastWriteAgoMs: 2_000, cost: nil, costNote: nil
         )
     }
 }
 
-@Suite("Glance feed")
+@Suite("Glance feed", .fixtureCLIs)
 @MainActor
 struct GlanceFeedTests {
     /// Spins the main actor until `done`, so the feed's loop can land.
@@ -68,6 +68,22 @@ struct GlanceFeedTests {
         try await settle("the pushed report") { feed.report == second }
         #expect(feed.entries.all.map(\.sessionID) == ["b", "a"], "waiting sorts before working (GW-R3)")
         #expect(feed.failure == nil && core.subscriptions == 1)
+        feed.stop()
+    }
+
+    @Test("a session of a CLI clis.list did not return, or of one turned off, never reaches the widget (MC-R16)")
+    func dropsUnlistedCLIs() async throws {
+        let core = FakeGlanceCore()
+        let feed = GlanceFeed(core: core)
+        feed.start()
+        try await settle("the subscription") { core.subscriptions == 1 }
+        core.push(FakeGlanceCore.report([FakeGlanceCore.session("a"), FakeGlanceCore.session("b", cli: CLIID("cursor")),
+                                         FakeGlanceCore.session("c", cli: .codex)]))
+        try await settle("the snapshot") { feed.report != nil }
+        #expect(feed.entries.all.map(\.sessionID) == ["a", "c"])
+        CLICatalog.$scoped.withValue(CLICatalog(list: CLICatalogFixture.list, disabled: [.codex])) {
+            #expect(feed.entries.all.map(\.sessionID) == ["a"])
+        }
         feed.stop()
     }
 

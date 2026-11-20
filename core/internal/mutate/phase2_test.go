@@ -13,17 +13,17 @@ import (
 	"testing"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/inventory"
 	"spacevibe.dev/core/internal/ojson"
 	"spacevibe.dev/core/internal/roots"
-	"spacevibe.dev/core/internal/usage"
 )
 
 // Tests for the P1 follow-ups (G-fix.3 to G-fix.9, G-fix.16, G-fix.17). Each one fails on the Swift behavior it replaces.
 
-func idOf(t *testing.T, r roots.Roots, name string, kind inventory.Kind, cli usage.CLI) string {
+func idOf(t *testing.T, r roots.Roots, name string, kind inventory.Kind, cli clis.ID) string {
 	t.Helper()
 	for _, it := range inventory.Read(r).Items {
 		if it.Name == name && it.Kind == kind && it.CLI == cli {
@@ -128,11 +128,11 @@ func TestCopySkillRefusesALinkOutOfItsFolder(t *testing.T) {
 	h.write(".claude/skills/leaky/SKILL.md", skillMd("leaky", "d"))
 	h.write("outside/secret.txt", "secret")
 	h.symlink(h.path("outside/secret.txt"), ".claude/skills/leaky/notes")
-	_, err := CopyToOther(r, idOf(t, r, "leaky", inventory.KindSkill, inventory.Claude))
+	_, err := copyToTheOther(r, idOf(t, r, "leaky", inventory.KindSkill, clis.Claude))
 	if m := wantErr(t, err, 409); !strings.Contains(m, "points outside") {
 		t.Errorf("message %q", m)
 	}
-	if exists(filepath.Join(r.Codex.Skills, "leaky")) || len(trashFiles(r)) != 0 || len(historyOf(t, r)) != 0 {
+	if exists(filepath.Join(r.CLIs[clis.Codex].Skills, "leaky")) || len(trashFiles(r)) != 0 || len(historyOf(t, r)) != 0 {
 		t.Error("the refusal left something behind")
 	}
 }
@@ -150,16 +150,16 @@ func TestCopyModes(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	must(CopyToOther(r, idOf(t, r, "modes", inventory.KindSkill, inventory.Claude)))
-	dest := filepath.Join(r.Codex.Skills, "modes")
+	must(copyToTheOther(r, idOf(t, r, "modes", inventory.KindSkill, clis.Claude)))
+	dest := filepath.Join(r.CLIs[clis.Codex].Skills, "modes")
 	for p, want := range map[string]os.FileMode{"": 0o700, "scripts": 0o700, "scripts/run.sh": 0o700, "ref.txt": 0o600, "SKILL.md": 0o600} {
 		if got := h.mode(filepath.Join(dest, p)); got != want {
 			t.Errorf("%q mode %o, want %o", p, got, want)
 		}
 	}
 	// Agents and new skills are 0600 too.
-	must(AddAgent(r, []usage.CLI{inventory.Claude, inventory.Codex}, "agent-a", "d", "do it"))
-	must(AddSkill(r, []usage.CLI{inventory.Claude}, "skill-a", "d", ""))
+	must(AddAgent(r, []clis.ID{clis.Claude, clis.Codex}, "agent-a", "d", "do it"))
+	must(AddSkill(r, []clis.ID{clis.Claude}, "skill-a", "d", ""))
 	for _, p := range []string{".claude/agents/agent-a.md", ".codex/agents/agent-a.toml", ".claude/skills/skill-a/SKILL.md"} {
 		if got := h.mode(h.path(p)); got != 0o600 {
 			t.Errorf("%s mode %o, want 600", p, got)
@@ -173,7 +173,7 @@ func TestCopyCaps(t *testing.T) {
 	r := h.roots()
 	h.installCodex()
 	h.write(".claude/agents/big.md", "---\nname: big\ndescription: d\n---\n"+strings.Repeat("x", maxAgentBytes))
-	_, err := CopyToOther(r, idOf(t, r, "big", inventory.KindAgent, inventory.Claude))
+	_, err := copyToTheOther(r, idOf(t, r, "big", inventory.KindAgent, clis.Claude))
 	wantErr(t, err, 413)
 
 	h.write(".claude/skills/heavy/SKILL.md", skillMd("heavy", "d"))
@@ -181,9 +181,9 @@ func TestCopyCaps(t *testing.T) {
 	if err := os.Truncate(heavy, maxSkillFileBytes+1); err != nil {
 		t.Fatal(err)
 	}
-	_, err = CopyToOther(r, idOf(t, r, "heavy", inventory.KindSkill, inventory.Claude))
+	_, err = copyToTheOther(r, idOf(t, r, "heavy", inventory.KindSkill, clis.Claude))
 	wantErr(t, err, 413)
-	if exists(filepath.Join(r.Codex.Agents, "big.toml")) || exists(filepath.Join(r.Codex.Skills, "heavy")) || len(historyOf(t, r)) != 0 {
+	if exists(filepath.Join(r.CLIs[clis.Codex].Agents, "big.toml")) || exists(filepath.Join(r.CLIs[clis.Codex].Skills, "heavy")) || len(historyOf(t, r)) != 0 {
 		t.Error("a refused copy wrote something")
 	}
 }
@@ -192,7 +192,7 @@ func TestCopyCaps(t *testing.T) {
 func TestDuplicateCLIsAreOne(t *testing.T) {
 	h := newHome(t)
 	r := h.roots()
-	twice := []usage.CLI{inventory.Claude, inventory.Claude}
+	twice := []clis.ID{clis.Claude, clis.Claude}
 	skill := must(AddSkill(r, twice, "dup", "d", ""))
 	agent := must(AddAgent(r, twice, "dup-agent", "d", ""))
 	hook := must(AddHook(r, twice, "Stop", nil, "echo once", nil))
@@ -210,9 +210,9 @@ func TestRollbackNeverTrashesAPathItDidNotCreate(t *testing.T) {
 	h.write(".codex/skills/raced/SKILL.md", "theirs")
 	mine := h.path(".claude/skills/raced")
 	_, err := locked(r, func(tx *Tx) ([]Op, error) {
-		return tx.createAll([]usage.CLI{inventory.Claude, inventory.Codex}, func(cli usage.CLI) (createPlan, error) {
+		return tx.createAll([]clis.ID{clis.Claude, clis.Codex}, func(cli clis.ID) (createPlan, error) {
 			// The "does it exist" check passed for both, then the second folder appeared: the write meets it.
-			if cli == inventory.Claude {
+			if cli == clis.Claude {
 				return createPlan{path: mine, write: func() (bool, error) { return writeSkill(mine, "mine") }}, nil
 			}
 			return createPlan{path: foreign, write: func() (bool, error) { return writeSkill(foreign, "mine") }}, nil
@@ -241,9 +241,9 @@ func TestFailedCopyIsRolledBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Chmod(locked, 0o644)
-	_, err := CopyToOther(r, idOf(t, r, "half", inventory.KindSkill, inventory.Claude))
+	_, err := copyToTheOther(r, idOf(t, r, "half", inventory.KindSkill, clis.Claude))
 	wantErr(t, err, 409)
-	if exists(filepath.Join(r.Codex.Skills, "half")) || len(historyOf(t, r)) != 0 {
+	if exists(filepath.Join(r.CLIs[clis.Codex].Skills, "half")) || len(historyOf(t, r)) != 0 {
 		t.Error("a half-made copy is left, or an entry was recorded")
 	}
 	if len(trashFiles(r)) != 1 {
@@ -330,7 +330,7 @@ func TestServiceWireShape(t *testing.T) {
 	h.installCodex()
 	h.write(".claude/skills/wire/SKILL.md", skillMd("wire", "d"))
 	svc := NewService(r)
-	res, err := svc.CopyToOther(context.Background(), IDParams{ID: idOf(t, r, "wire", inventory.KindSkill, inventory.Claude)})
+	res, err := svc.CopyToOther(context.Background(), CopyParams{ID: idOf(t, r, "wire", inventory.KindSkill, clis.Claude), Target: clis.Codex})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -383,21 +383,21 @@ func TestCopyAgentWithoutInstructionsIsRefused(t *testing.T) {
 	h.installCodex()
 	h.write(".claude/agents/hollow.md", "---\nname: hollow\ndescription: Does nothing\n---\n\n   \n")
 	before := len(historyOf(t, r))
-	_, err := CopyToOther(r, idOf(t, r, "hollow", inventory.KindAgent, inventory.Claude))
+	_, err := copyToTheOther(r, idOf(t, r, "hollow", inventory.KindAgent, clis.Claude))
 	if m := wantErr(t, err, 409); !strings.Contains(m, "no instructions") {
 		t.Errorf("message %q", m)
 	}
-	if exists(filepath.Join(r.Codex.Agents, "hollow.toml")) || len(historyOf(t, r)) != before {
+	if exists(filepath.Join(r.CLIs[clis.Codex].Agents, "hollow.toml")) || len(historyOf(t, r)) != before {
 		t.Error("a refused copy wrote something")
 	}
 	// The existing-file check comes first.
 	h.write(".codex/agents/hollow.toml", "name = \"hollow\"\n")
-	_, err = CopyToOther(r, idOf(t, r, "hollow", inventory.KindAgent, inventory.Claude))
+	_, err = copyToTheOther(r, idOf(t, r, "hollow", inventory.KindAgent, clis.Claude))
 	if m := wantErr(t, err, 409); !strings.Contains(m, "already has an agent") {
 		t.Errorf("message %q", m)
 	}
 	// Adding an agent with no instructions by hand stays allowed (the golden does it).
-	if _, err := AddAgent(r, []usage.CLI{inventory.Claude}, "plain", "d", ""); err != nil {
+	if _, err := AddAgent(r, []clis.ID{clis.Claude}, "plain", "d", ""); err != nil {
 		t.Error(err)
 	}
 }
@@ -407,7 +407,7 @@ func TestTomlEscapesDelete(t *testing.T) {
 	h := newHome(t)
 	r := h.roots()
 	instructions := "before\x7fafter"
-	must(AddAgent(r, []usage.CLI{inventory.Codex}, "del", "desc\x7f", instructions))
+	must(AddAgent(r, []clis.ID{clis.Codex}, "del", "desc\x7f", instructions))
 	text := h.read(".codex/agents/del.toml")
 	if strings.ContainsRune(text, 0x7f) || !strings.Contains(text, `before\u007fafter`) || !strings.Contains(text, `desc\u007f`) {
 		t.Errorf("toml %q", text)
@@ -441,15 +441,18 @@ func TestCancelledWhileQueuedChangesNothing(t *testing.T) {
 	r := h.roots()
 	h.installCodex()
 	skill := h.write(".claude/skills/wire/SKILL.md", skillMd("wire", "d"))
-	id := idOf(t, r, "wire", inventory.KindSkill, inventory.Claude)
-	done := must(CopyToOther(r, id)) // an entry to undo, recorded before the cancelled calls
+	id := idOf(t, r, "wire", inventory.KindSkill, clis.Claude)
+	done := must(copyToTheOther(r, id)) // an entry to undo, recorded before the cancelled calls
 	journalBefore := h.read(".spacevibe/journal.json")
 	svc := NewService(r)
 	calls := map[string]func(ctx context.Context) error{
-		"CopyToOther": func(ctx context.Context) error { _, err := svc.CopyToOther(ctx, IDParams{ID: id}); return err },
-		"RemoveItem":  func(ctx context.Context) error { _, err := svc.RemoveItem(ctx, IDParams{ID: id}); return err },
+		"CopyToOther": func(ctx context.Context) error {
+			_, err := svc.CopyToOther(ctx, CopyParams{ID: id, Target: clis.Codex})
+			return err
+		},
+		"RemoveItem": func(ctx context.Context) error { _, err := svc.RemoveItem(ctx, IDParams{ID: id}); return err },
 		"RemoveDeadHooks": func(ctx context.Context) error {
-			_, err := svc.RemoveDeadHooks(ctx, CLIParams{CLI: inventory.Claude})
+			_, err := svc.RemoveDeadHooks(ctx, CLIParams{CLI: clis.Claude})
 			return err
 		},
 		"Undo": func(ctx context.Context) error { _, err := svc.Undo(ctx, IDParams{ID: done.ID}); return err },
@@ -473,7 +476,7 @@ func TestCancelledOnAHeldLockChangesNothing(t *testing.T) {
 	r := h.roots()
 	h.installCodex()
 	skill := h.write(".claude/skills/wire/SKILL.md", skillMd("wire", "d"))
-	id := idOf(t, r, "wire", inventory.KindSkill, inventory.Claude)
+	id := idOf(t, r, "wire", inventory.KindSkill, clis.Claude)
 	svc := NewService(r)
 	ctx, cancel := context.WithCancel(context.Background())
 	held := make(chan struct{})

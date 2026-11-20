@@ -46,9 +46,9 @@ func TestLoadoutRowsScanning(t *testing.T) {
 		if it.Cells == nil {
 			t.Fatalf("%s has no cells", it.ID)
 		}
-		for _, cli := range usage.CLIs {
-			if c := it.Cells.For(cli); !c.IsMissing() && c.State != StatePending {
-				t.Errorf("%s %s = %+v, want pending or missing while scanning", it.ID, cli, c)
+		for _, c := range it.Cells {
+			if !c.IsMissing() && c.State != StatePending {
+				t.Errorf("%s %s = %+v, want pending or missing while scanning", it.ID, c.CLI, c)
 			}
 		}
 	}

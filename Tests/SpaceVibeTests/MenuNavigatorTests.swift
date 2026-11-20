@@ -3,7 +3,7 @@ import Testing
 
 /// V5-R39: the menu keyboard, without a window. Up and Down wrap and skip headings, Right opens a field's submenu and moves
 /// into it, Left leaves it, Return toggles a value or opens a field, Esc closes and gives the focus back to the button.
-@Suite("Menu keyboard (V5-R39)")
+@Suite("Menu keyboard (V5-R39)", .fixtureCLIs)
 struct MenuNavigatorTests {
     static let fields = [
         MenuEntry(id: "status", title: "Status", kind: .field(picked: 1)),

@@ -6,7 +6,7 @@ import Testing
 ///
 /// This reads source text: every forbidden pattern is lexical. `allowed` was a ratchet while the screens moved onto components;
 /// it is now empty, so any literal in a screen folder fails. A count that differs from an entry in either direction fails too.
-@Suite("Style boundary: screens compose components")
+@Suite("Style boundary: screens compose components", .fixtureCLIs)
 struct StyleBoundaryTests {
     /// Folders that are screens. A listed folder need not exist yet: `measured()` skips a missing one and checks it the day it
     /// appears.

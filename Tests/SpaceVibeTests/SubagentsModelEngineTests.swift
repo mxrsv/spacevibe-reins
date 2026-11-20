@@ -5,7 +5,7 @@ import Testing
 /// V5-A6 for the Subagents tab: a logo toggle, `Add to <CLI>` and `Remove` go through the Go core, show ONE toast, and Undo puts the
 /// home back byte for byte. G10 is settled here: the copy writes the name, the description and the instructions and nothing of the
 /// model or the tools. Every test runs on a private copy of the synthetic fixture home (S-R1) with the real core.
-@Suite("Subagents model, Go core")
+@Suite("Subagents model, Go core", .fixtureCLIs)
 @MainActor
 struct SubagentsModelEngineTests {
     /// Extra files a test puts into the fixture home before the core reads it.
@@ -198,7 +198,7 @@ struct SubagentsModelEngineTests {
         let before = try await fixture.tree()
         let plugin = try row(model, "neon-helper")
         #expect(plugin.plugin == "neon", "the core reads it as the plugin's")
-        for cli in CoreCLI.allCases { #expect(model.mode(plugin, cli: cli) == .readOnly) }
+        for cli in CLICatalog.current.inventoryCLIs { #expect(model.mode(plugin, cli: cli) == .readOnly) }
         model.toggle(plugin, cli: .codex)
         #expect(env.toasts.current == nil, "a read-only logo does nothing")
         model.remove(plugin)

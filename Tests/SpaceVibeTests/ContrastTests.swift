@@ -6,7 +6,7 @@ import Testing
 /// V5-A2 and V5-R40: every text and meaning-carrying pair on its real, composited ground, in both appearances: text
 /// 4.5:1, marks (state glyphs and dots, CLI bars, the verdict cut-out) 3:1. A miss is fixed in `PaletteValue`, never
 /// exempted here. The grounds are where the tokens are drawn, in the frozen mock and in the screens not yet rebuilt.
-@Suite("Contrast: every text and mark on its real ground (V5-A2)")
+@Suite("Contrast: every text and mark on its real ground (V5-A2)", .fixtureCLIs)
 struct ContrastTests {
     struct Ground: Sendable {
         let name: String

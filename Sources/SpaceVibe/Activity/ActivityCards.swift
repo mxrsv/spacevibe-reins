@@ -218,7 +218,7 @@ extension ActivityCards {
             let needs = query.failureBands.contains(where: \.holdsProblem)
             BandStack {
                 ForEach(Array(query.failureBands.enumerated()), id: \.element.id) { offset, item in
-                    Band(LimitsWording.cliName(CoreLimitsCLI(item.cli)), count: item.items.count,
+                    Band(LimitsWording.cliName(item.cli), count: item.items.count,
                          state: item.stillFailing > 0 ? StateMark(.warn, label: "\(item.stillFailing) still failing") : nil,
                          isOpen: band("fail:\(item.id)", problem: item.holdsProblem, offset: offset, needs: needs)) {
                         ListRows { ForEach(item.items) { failureRow($0) } }

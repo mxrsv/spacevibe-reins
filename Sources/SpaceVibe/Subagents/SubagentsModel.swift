@@ -50,7 +50,7 @@ final class SubagentsModel {
     var layout: SubagentsQuery.Layout { query.layout(rows) }
 
     /// The CLIs the logo strip lists, Claude Code first (V5-R24): one that is not installed has no logo.
-    var detected: [CoreCLI] { LoadoutRows.detectedCLIs(limits: limitsResults(), rows: rows) }
+    var detected: [CLIID] { LoadoutRows.detectedCLIs(limits: limitsResults(), rows: rows) }
 
     var answer: SubagentsAnswer {
         SubagentsAnswer.of(rows, isLoaded: isLoaded, detected: detected, since: LoadoutFormat.usageSince(loadout.usageResult),
@@ -59,7 +59,7 @@ final class SubagentsModel {
 
     var addable: SubagentsAddable { SubagentsAddable(rows, detected: detected) }
 
-    private var events: [String: [String]] { loadout.data?.events ?? [:] }
+    private var events: [CLIID: [String]] { loadout.data?.events ?? [:] }
 
     // MARK: Current row and the detail
 
@@ -110,16 +110,16 @@ final class SubagentsModel {
 
     // MARK: Logos and writes (V5-R25, V5-R38, V5-R64)
 
-    func mode(_ row: LoadoutRow, cli: CoreCLI) -> LogoToggleMode { LoadoutRows.logoMode(row, cli: cli, events: events) }
+    func mode(_ row: LoadoutRow, cli: CLIID) -> LogoToggleMode { LoadoutRows.logoMode(row, cli: cli, events: events) }
 
     /// Pressing a logo: a lit one removes that copy, a dim one adds the subagent there.
-    func toggle(_ row: LoadoutRow, cli: CoreCLI) {
+    func toggle(_ row: LoadoutRow, cli: CLIID) {
         guard mode(row, cli: cli) == .toggles else { return }
         if row.members[cli] == nil { add(row, to: cli) } else { remove(row, from: cli) }
     }
 
     /// Copies the subagent into `cli`: one write, one toast with Undo that says what the copy left out (G10).
-    func add(_ row: LoadoutRow, to cli: CoreCLI) {
+    func add(_ row: LoadoutRow, to cli: CLIID) {
         detailKey = nil
         let plan = LoadoutRows.addWrites([row], to: cli, events: events)
         guard !plan.steps.isEmpty else {
@@ -136,7 +136,7 @@ final class SubagentsModel {
     }
 
     /// Removes the subagent from `cli`, or from every CLI that has it when `cli` is nil. A plugin's is never written.
-    func remove(_ row: LoadoutRow, from cli: CoreCLI? = nil) {
+    func remove(_ row: LoadoutRow, from cli: CLIID? = nil) {
         detailKey = nil
         let plan = LoadoutRows.removeWrites([row], from: cli)
         guard !plan.steps.isEmpty else {
@@ -161,7 +161,7 @@ final class SubagentsModel {
             env.toasts.show("\(row.name) is already in both CLIs")
             return
         }
-        let target = here.other
+        guard let target = row.copyTarget(from: here) else { return }
         guard detected.contains(target) else {
             env.toasts.show("\(target.label) is not installed on this Mac.")
             return

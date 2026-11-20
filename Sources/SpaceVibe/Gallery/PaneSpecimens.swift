@@ -26,19 +26,19 @@ struct PaneSpecimens: View {
 
     // MARK: Synthetic skills (never the user's)
 
-    private static func item(_ cli: CoreCLI, _ cells: CoreCells, owner: String = "user") -> CoreInventoryItem {
+    private static func item(_ cli: CLIID, _ cells: CoreCells, owner: String = "user") -> CoreInventoryItem {
         CoreInventoryItem(
             id: "\(cli.rawValue):skill:global:specimen", cli: cli, kind: .skill, name: "specimen", entry: "specimen",
             description: "Reviews a change you just made before you commit it.", owner: owner,
             path: "~/.\(cli.rawValue)/skills/specimen", file: "~/.\(cli.rawValue)/skills/specimen/SKILL.md", removable: owner == "user",
-            scope: .global, project: nil, inOther: false, key: "skill::specimen", cells: cells
+            scope: .global, project: nil, key: "skill::specimen", cells: cells
         )
     }
 
     private static func row(claude: CoreUsageCell? = nil, codex: CoreUsageCell? = nil, owner: String = "user") -> LoadoutRow {
-        let cells = CoreCells(claude: claude ?? .missing, codex: codex ?? .missing)
+        let cells = CoreCells([.claude: claude ?? .missing, .codex: codex ?? .missing])
         let items = [claude.map { _ in item(.claude, cells, owner: owner) }, codex.map { _ in item(.codex, cells, owner: owner) }].compactMap { $0 }
-        let snapshot = CoreLoadoutRows(usage: .ready, items: items, hooks: [], problems: [], events: [:], roots: [:], countsByScope: [:], rowFlags: [:])
+        let snapshot = CoreLoadoutRows(usage: .ready, items: items, hooks: [], problems: [], events: [], roots: [], countsByScope: [:], rowFlags: [:])
         return LoadoutRows.build(snapshot, home: nil)[0]
     }
 
@@ -54,13 +54,13 @@ struct PaneSpecimens: View {
     // MARK: The pane, drawn from the model's own sentences
 
     private func pane(_ row: LoadoutRow, status: SkillStatus) -> some View {
-        let detected: [CoreCLI] = [.claude, .codex]
+        let detected: [CLIID] = [.claude, .codex]
         let now = Date()
         return DetailPane {
             PaneHead(name: row.name, glyph: CategoryGlyph.skill, tone: .skill, pluginTag: row.plugin.map { "plugin: \($0)" }) {
                 LogoStrip {
                     ForEach(detected, id: \.self) { cli in
-                        LogoToggle(cli: CoreLimitsCLI(cli), isLit: row.members[cli] != nil, mode: row.plugin != nil ? .readOnly : .toggles) {}
+                        LogoToggle(cli: cli, isLit: row.members[cli] != nil, mode: row.plugin != nil ? .readOnly : .toggles) {}
                     }
                 }
             }
@@ -72,7 +72,7 @@ struct PaneSpecimens: View {
                 SessionMeters(meters: detected.map { SkillsWording.meter(for: row, cli: $0, maxSessions: 142, now: now) })
             }
             PaneSection(title: "Lives in") {
-                FileList(files: CoreCLI.allCases.compactMap { cli in row.members[cli].map { _ in FileList.Entry(cli: cli, path: "~/.\(cli.rawValue)/skills/specimen/SKILL.md") } })
+                FileList(files: CLICatalog.current.inventoryCLIs.compactMap { cli in row.members[cli].map { _ in FileList.Entry(cli: cli, path: "~/.\(cli.rawValue)/skills/specimen/SKILL.md") } })
             }
             VStack(alignment: .leading, spacing: Metrics.DetailPane.noteAbove) {
                 HStack(spacing: Metrics.DetailPane.actionSpacing) {

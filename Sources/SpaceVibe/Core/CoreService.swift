@@ -10,6 +10,8 @@ import Foundation
 protocol CoreService: Sendable {
     /// `initialize`: the core's name, version, env prefix and data folder (SV12).
     func initialize() async throws -> CoreInitializeResult
+    /// `clis.list`: every CLI of the core's registry, in its order, with the facts the shell needs (MC27). Starts no process.
+    func clisList() async throws -> CoreCLIsList
 
     func inventoryRead() async throws -> CoreInventorySnapshot
     /// `progress` is called after every 20 files and once at the end, from a background executor. A second scan while one
@@ -23,11 +25,12 @@ protocol CoreService: Sendable {
     /// unsubscribes. A failed subscription ends the stream with the error.
     func activitySubscribe() -> AsyncThrowingStream<CoreActivityReport, Error>
     /// Asks one running session to end. Not undoable: the screen confirms first. The pid is never a parameter.
-    func activityStop(cli: CoreCLI, id: String) async throws -> CoreStopResult
+    func activityStop(cli: CLIID, id: String) async throws -> CoreStopResult
 
-    func loadoutCopyToOther(id: String) async throws -> CoreEntryResult
+    /// Copies item `id` into `target`, a CLI whose kind is written and reads the same copy format (`CLICatalog.copyTargets`).
+    func loadoutCopyToOther(id: String, target: CLIID) async throws -> CoreEntryResult
     func loadoutRemoveItem(id: String) async throws -> CoreEntryResult
-    func loadoutRemoveDeadHooks(cli: CoreCLI) async throws -> CoreEntryResult
+    func loadoutRemoveDeadHooks(cli: CLIID) async throws -> CoreEntryResult
 
     func journalUndo(id: String) async throws -> CoreUndoResult
     func journalHistory() async throws -> CoreJournalHistory

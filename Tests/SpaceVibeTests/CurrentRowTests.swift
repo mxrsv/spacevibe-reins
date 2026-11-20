@@ -2,7 +2,7 @@ import Testing
 @testable import SpaceVibe
 
 /// D2: where the current row goes when a removal takes it off the list.
-@Suite("Current row after a removal")
+@Suite("Current row after a removal", .fixtureCLIs)
 struct CurrentRowTests {
     private let rows = ["a", "b", "c", "d"]
 

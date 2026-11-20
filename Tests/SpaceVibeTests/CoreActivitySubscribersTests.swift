@@ -6,7 +6,7 @@ import Testing
 /// stands in for the core: it logs the method of every line it reads, answers `initialize`, answers the first
 /// `activity.subscribe` with a report holding one session and every later one with an empty report, and never pushes. That is
 /// the real core after the last live session ended: its baseline is the newest snapshot, so it stays silent.
-@Suite("CoreConnection subscribers")
+@Suite("CoreConnection subscribers", .fixtureCLIs)
 struct CoreActivitySubscribersTests {
     /// One consumed stream: a task collects what it yields until it is cancelled.
     private final class Reader: Sendable {

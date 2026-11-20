@@ -5,25 +5,25 @@ import Testing
 /// The Subagents tab's derived facts (V5-A18): the Answer in each case, the bands and their default open state, the warning
 /// slot's states, the filters, the rule behind `In one CLI only` and the sentences. Rows are built through `LoadoutRows.build`, as
 /// the app builds them. Synthetic names only (S-R2).
-@Suite("Subagents model")
+@Suite("Subagents model", .fixtureCLIs)
 @MainActor
 struct SubagentsModelTests {
     private func counted(_ runs: Int, last: String? = nil) -> CoreUsageCell { SkillRowsFixture.counted(runs, last: last) }
-    private let both: [CoreCLI] = [.claude, .codex]
+    private let both: [CLIID] = [.claude, .codex]
 
     private func rows(_ specs: [(name: String, claude: CoreUsageCell?, codex: CoreUsageCell?, owner: String)]) -> [LoadoutRow] {
         var items: [CoreInventoryItem] = []
         for spec in specs {
-            let cells = CoreCells(claude: spec.claude ?? .missing, codex: spec.codex ?? .missing)
-            for (cli, cell) in [(CoreCLI.claude, spec.claude), (CoreCLI.codex, spec.codex)] where cell != nil {
+            let cells = CoreCells([.claude: spec.claude ?? .missing, .codex: spec.codex ?? .missing])
+            for (cli, cell) in [(CLIID.claude, spec.claude), (CLIID.codex, spec.codex)] where cell != nil {
                 items.append(CoreInventoryItem(
                     id: "\(cli.rawValue):agent:global:\(spec.name)", cli: cli, kind: .agent, name: spec.name, entry: spec.name, description: "",
                     owner: spec.owner, path: "/home/demo/.\(cli.rawValue)/agents/\(spec.name)", file: "/home/demo/.\(cli.rawValue)/agents/\(spec.name).md",
-                    removable: spec.owner == "user", scope: .global, project: nil, inOther: false, key: "agent::\(spec.name)", cells: cells))
+                    removable: spec.owner == "user", scope: .global, project: nil, key: "agent::\(spec.name)", cells: cells))
             }
         }
-        let snapshot = CoreLoadoutRows(usage: .ready, items: items, hooks: [], problems: [], events: [:],
-                                       roots: ["claude": "/home/demo/.claude", "codex": "/home/demo/.codex"], countsByScope: [:], rowFlags: [:])
+        let snapshot = CoreLoadoutRows(usage: .ready, items: items, hooks: [], problems: [], events: [],
+                                       roots: .of([.claude: "/home/demo/.claude", .codex: "/home/demo/.codex"]), countsByScope: [:], rowFlags: [:])
         return LoadoutRows.build(snapshot, home: nil)
     }
 
@@ -31,7 +31,7 @@ struct SubagentsModelTests {
         rows([(name, claude, codex, owner)])[0]
     }
 
-    private func answer(_ rows: [LoadoutRow], loaded: Bool = true, detected: [CoreCLI] = [.claude, .codex]) -> SubagentsAnswer {
+    private func answer(_ rows: [LoadoutRow], loaded: Bool = true, detected: [CLIID] = [.claude, .codex]) -> SubagentsAnswer {
         SubagentsAnswer.of(rows, isLoaded: loaded, detected: detected)
     }
 

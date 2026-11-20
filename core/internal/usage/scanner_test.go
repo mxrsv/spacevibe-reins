@@ -5,10 +5,12 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/hashes"
@@ -16,7 +18,7 @@ import (
 )
 
 func hookOf(r Result, event, command string) (HookTotals, bool) {
-	h, ok := r.Totals.Claude.Hook[hashes.HookHash(event, command)]
+	h, ok := totalsOf(r, Claude).Hook[hashes.HookHash(event, command)]
 	return h, ok
 }
 
@@ -53,7 +55,7 @@ func TestHookErrors(t *testing.T) {
 	if want := (HookTotals{Runs: 1, Last: ptr("2026-10-06")}); !reflect.DeepEqual(c, want) {
 		t.Errorf("cmd-c = %+v, want %+v", c, want)
 	}
-	if n := len(result.Totals.Claude.Hook); n != 4 {
+	if n := len(totalsOf(result, Claude).Hook); n != 4 {
 		t.Errorf("hook count = %d, want 4", n)
 	}
 }
@@ -91,16 +93,16 @@ func TestSkillsAndAgents(t *testing.T) {
 	h.write(".claude/projects/p/s2/subagents/agent-1.jsonl", skillCall("2026-10-05", "foo"))
 	r := scan(t, h)
 	want := NameUsage{Sessions: 2, Days: []string{"2026-10-01", "2026-10-04", "2026-10-05"}, Last: ptr("2026-10-05")}
-	if got := r.Totals.Claude.Skill["foo"]; !reflect.DeepEqual(got, want) {
+	if got := totalsOf(r, Claude).Skill["foo"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("foo = %+v, want %+v", got, want)
 	}
-	if r.Totals.Claude.Skill["bar"].Sessions != 1 {
-		t.Errorf("bar = %+v", r.Totals.Claude.Skill["bar"])
+	if totalsOf(r, Claude).Skill["bar"].Sessions != 1 {
+		t.Errorf("bar = %+v", totalsOf(r, Claude).Skill["bar"])
 	}
-	if r.Totals.Claude.Agent["rev"].Sessions != 2 {
-		t.Errorf("rev = %+v", r.Totals.Claude.Agent["rev"])
+	if totalsOf(r, Claude).Agent["rev"].Sessions != 2 {
+		t.Errorf("rev = %+v", totalsOf(r, Claude).Agent["rev"])
 	}
-	if r.Sessions != (Sessions{Claude: 2}) || r.Files != 3 {
+	if !slices.Equal(r.Sessions, Sessions{{CLI: Claude, Count: 2}, {CLI: Codex, Count: 0}}) || r.Files != 3 {
 		t.Errorf("sessions %+v files %d", r.Sessions, r.Files)
 	}
 }
@@ -111,11 +113,11 @@ func TestWindowAndCacheVersion(t *testing.T) {
 	h.write(".claude/projects/p/s1.jsonl", attach("2026-10-01", map[string]any{"type": "hook_blocking_error", "hookEvent": "PostToolUse", "blockingError": map[string]any{"command": "cmd-b"}}))
 	r := h.roots()
 	first := mustScan(t, NewScanner(r))
-	if w := first.Windows.Claude; w.Files != 1 || w.Oldest == nil || *w.Oldest != "2026-10-01" || w.Newest == nil || *w.Newest <= 0 {
+	if w := windowOf(first, Claude); w.Files != 1 || w.Oldest == nil || *w.Oldest != "2026-10-01" || w.Newest == nil || *w.Newest <= 0 {
 		t.Errorf("claude window = %+v", w)
 	}
-	if first.Windows.Codex != (LogWindow{}) {
-		t.Errorf("codex window = %+v", first.Windows.Codex)
+	if windowOf(first, Codex) != (LogWindow{CLI: Codex}) {
+		t.Errorf("codex window = %+v", windowOf(first, Codex))
 	}
 
 	// The cache lives under the data root and carries the version.
@@ -135,8 +137,8 @@ func TestWindowAndCacheVersion(t *testing.T) {
 	trusted := entry
 	trusted.Rec = newFileRecord()
 	saveCache(map[string]cachedFile{key: trusted}, r.Data)
-	if got := mustScan(t, NewScanner(r)); len(got.Totals.Claude.Hook) != 0 {
-		t.Errorf("a trusted entry was parsed again: %+v", got.Totals.Claude.Hook)
+	if got := mustScan(t, NewScanner(r)); len(totalsOf(got, Claude).Hook) != 0 {
+		t.Errorf("a trusted entry was parsed again: %+v", totalsOf(got, Claude).Hook)
 	}
 	// ... and one written by an older parser is not.
 	old := trusted
@@ -155,8 +157,8 @@ func TestCorruptCache(t *testing.T) {
 	h.write(".spacevibe/usage-cache.json", "{ truncated")
 	r := h.roots()
 	result := mustScan(t, NewScanner(r))
-	if len(result.Totals.Claude.Hook) != 1 {
-		t.Errorf("hooks = %+v", result.Totals.Claude.Hook)
+	if len(totalsOf(result, Claude).Hook) != 1 {
+		t.Errorf("hooks = %+v", totalsOf(result, Claude).Hook)
 	}
 	info, err := os.Stat(CachePath(r.Data))
 	if err != nil {
@@ -179,23 +181,23 @@ func TestCompressedRollouts(t *testing.T) {
 	h.write(dir+"/rollout-both.jsonl.zst", zstdRawFrame([]byte(codexCall("2026-03-02", "stale-skill"))))
 	h.write(dir+"/rollout-broken.jsonl.zst", "not zstd")
 	r := scan(t, h)
-	if want := (NameUsage{Sessions: 1, Days: []string{"2026-03-01"}, Last: ptr("2026-03-01")}); !reflect.DeepEqual(r.Totals.Codex.Skill["old-skill"], want) {
-		t.Errorf("old-skill = %+v", r.Totals.Codex.Skill["old-skill"])
+	if want := (NameUsage{Sessions: 1, Days: []string{"2026-03-01"}, Last: ptr("2026-03-01")}); !reflect.DeepEqual(totalsOf(r, Codex).Skill["old-skill"], want) {
+		t.Errorf("old-skill = %+v", totalsOf(r, Codex).Skill["old-skill"])
 	}
-	if r.Totals.Codex.Skill["both-skill"].Sessions != 1 {
-		t.Errorf("both-skill = %+v", r.Totals.Codex.Skill["both-skill"])
+	if totalsOf(r, Codex).Skill["both-skill"].Sessions != 1 {
+		t.Errorf("both-skill = %+v", totalsOf(r, Codex).Skill["both-skill"])
 	}
-	if _, ok := r.Totals.Codex.Skill["stale-skill"]; ok {
+	if _, ok := totalsOf(r, Codex).Skill["stale-skill"]; ok {
 		t.Error("the compressed twin of a plain log was read")
 	}
-	if r.Sessions.Codex != 2 {
-		t.Errorf("codex sessions = %d, want 2 (the broken file is skipped, the others still count)", r.Sessions.Codex)
+	if sessionsOf(r, Codex) != 2 {
+		t.Errorf("codex sessions = %d, want 2 (the broken file is skipped, the others still count)", sessionsOf(r, Codex))
 	}
 	if r.Files != 3 {
 		t.Errorf("files = %d, want 3", r.Files)
 	}
-	if r.Windows.Codex.Oldest == nil || *r.Windows.Codex.Oldest != "2026-03-01" {
-		t.Errorf("codex window = %+v", r.Windows.Codex)
+	if windowOf(r, Codex).Oldest == nil || *windowOf(r, Codex).Oldest != "2026-03-01" {
+		t.Errorf("codex window = %+v", windowOf(r, Codex))
 	}
 }
 
@@ -206,10 +208,10 @@ func TestCodexCalls(t *testing.T) {
 	chatter := `{"timestamp":"2026-10-01T10:00:00Z","type":"event_msg","payload":{"message":"please read skills/chat-only/SKILL.md and agent_type explorer"}}` + "\n"
 	h.write(".codex/sessions/2026/10/rollout-a.jsonl", call+chatter)
 	r := scan(t, h)
-	if r.Totals.Codex.Agent["explorer"].Sessions != 1 {
-		t.Errorf("explorer = %+v", r.Totals.Codex.Agent["explorer"])
+	if totalsOf(r, Codex).Agent["explorer"].Sessions != 1 {
+		t.Errorf("explorer = %+v", totalsOf(r, Codex).Agent["explorer"])
 	}
-	if _, ok := r.Totals.Codex.Skill["chat-only"]; ok {
+	if _, ok := totalsOf(r, Codex).Skill["chat-only"]; ok {
 		t.Error("a skill named in chatter was counted")
 	}
 }
@@ -329,7 +331,7 @@ func TestOneScanAtATime(t *testing.T) {
 func TestNeverTouchesRealHome(t *testing.T) {
 	h := newTempHome(t)
 	r := h.roots()
-	for _, p := range []string{r.Claude.Logs, r.Codex.Logs, CachePath(r.Data)} {
+	for _, p := range []string{r.CLIs[clis.Claude].Logs, r.CLIs[clis.Codex].Logs, CachePath(r.Data)} {
 		if !strings.HasPrefix(p, h.root) {
 			t.Errorf("%q is outside the temp home", p)
 		}
@@ -356,7 +358,7 @@ func TestNFDNamesStaySeparateInGo(t *testing.T) {
 	h.write(".claude/projects/p/s1.jsonl", call(nfc))
 	h.write(".claude/projects/p/s2.jsonl", call(nfd))
 	r := scan(t, h)
-	if len(r.Totals.Claude.Skill) != 2 || r.Totals.Claude.Skill[nfc].Sessions != 1 || r.Totals.Claude.Skill[nfd].Sessions != 1 {
-		t.Errorf("skills = %+v, want the NFC and NFD names apart with 1 session each", r.Totals.Claude.Skill)
+	if len(totalsOf(r, Claude).Skill) != 2 || totalsOf(r, Claude).Skill[nfc].Sessions != 1 || totalsOf(r, Claude).Skill[nfd].Sessions != 1 {
+		t.Errorf("skills = %+v, want the NFC and NFD names apart with 1 session each", totalsOf(r, Claude).Skill)
 	}
 }

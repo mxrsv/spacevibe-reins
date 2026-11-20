@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/inventory"
 	"spacevibe.dev/core/internal/ojson"
-	"spacevibe.dev/core/internal/usage"
 )
 
 // WriteGuardTests.swift. The three tests that go through RulesStore (a project .claude that is a link, a settings file
@@ -44,7 +44,7 @@ func mustMode(t *testing.T, path string) os.FileMode {
 
 func victimItem(path string) inventory.Item {
 	return inventory.Item{
-		ID: "claude:skill:user:victim", CLI: inventory.Claude, Kind: inventory.KindSkill, Name: "victim", Entry: "victim",
+		ID: "claude:skill:user:victim", CLI: clis.Claude, Kind: inventory.KindSkill, Name: "victim", Entry: "victim",
 		Owner: "user", Path: path, File: path + "/SKILL.md", Removable: true, Scope: inventory.ScopeGlobal,
 	}
 }
@@ -53,7 +53,7 @@ func victimItem(path string) inventory.Item {
 func TestRemoveOutsideCLIFolder(t *testing.T) {
 	sb := newSandbox(t)
 	victim := filepath.Dir(sb.write("outside/victim/SKILL.md", "---\nname: victim\n---\n"))
-	skills := sb.r.Claude.Skills
+	skills := sb.r.CLIs[clis.Claude].Skills
 	sb.symlink(filepath.Dir(victim), ".claude/skills/hop")
 	// A link in the middle of the path (lexically inside the folder), and a `..` path (lexically outside).
 	for _, path := range []string{skills + "/hop/victim", skills + "/../../outside/victim"} {
@@ -94,20 +94,20 @@ func TestCreateAllRollback(t *testing.T) {
 		t.Skip("root ignores folder permissions")
 	}
 	sb := newSandbox(t)
-	for _, d := range []string{sb.r.Claude.Skills, sb.r.Codex.Skills} {
+	for _, d := range []string{sb.r.CLIs[clis.Claude].Skills, sb.r.CLIs[clis.Codex].Skills} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	var err error
-	withMode(t, 0o500, sb.r.Codex.Skills, func() {
-		_, err = AddSkill(sb.r, []usage.CLI{inventory.Claude, inventory.Codex}, "both", "when needed", "")
+	withMode(t, 0o500, sb.r.CLIs[clis.Codex].Skills, func() {
+		_, err = AddSkill(sb.r, []clis.ID{clis.Claude, clis.Codex}, "both", "when needed", "")
 	})
 	wantErr(t, err, 500)
-	if exists(filepath.Join(sb.r.Claude.Skills, "both")) {
+	if exists(filepath.Join(sb.r.CLIs[clis.Claude].Skills, "both")) {
 		t.Error("the first CLI's skill is still there")
 	}
-	if len(names(sb.r.Codex.Skills)) != 0 || !sb.journalEmpty() {
+	if len(names(sb.r.CLIs[clis.Codex].Skills)) != 0 || !sb.journalEmpty() {
 		t.Error("the second folder or the journal changed")
 	}
 	// The skill went to the app trash instead of being deleted; the codex path that never existed made no slot.
@@ -119,16 +119,16 @@ func TestCreateAllRollback(t *testing.T) {
 // Swift: WriteGuardTests.swift "a settings path that is a folder is refused (409): no temp file, no journal entry, no trash slot"
 func TestSettingsPathIsFolder(t *testing.T) {
 	sb := newSandbox(t)
-	if err := os.MkdirAll(sb.r.Claude.HookFile, 0o755); err != nil {
+	if err := os.MkdirAll(sb.r.CLIs[clis.Claude].HookFile, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	_, err := EditJSON(sb.r, sb.r.Claude.HookFile, "Added", nil, func(d *ojson.Document) (*ojson.Document, error) {
+	_, err := EditJSON(sb.r, sb.r.CLIs[clis.Claude].HookFile, "Added", nil, func(d *ojson.Document) (*ojson.Document, error) {
 		return d.Set(ojson.Path("model"), ojson.String("x"))
 	})
 	if m := wantErr(t, err, 409); !strings.Contains(m, "not a regular file") {
 		t.Errorf("message %q", m)
 	}
-	if len(names(sb.r.Claude.HookFile)) != 0 || len(sb.stray()) != 0 || !sb.journalEmpty() || len(sb.trashSlots()) != 0 {
+	if len(names(sb.r.CLIs[clis.Claude].HookFile)) != 0 || len(sb.stray()) != 0 || !sb.journalEmpty() || len(sb.trashSlots()) != 0 {
 		t.Error("something was left behind")
 	}
 }
@@ -164,8 +164,8 @@ func TestReadOnlyFolder(t *testing.T) {
 // hookTimeout adds a Stop hook, reads the hook object back and undoes the entry.
 func hookTimeout(t *testing.T, sb sandbox, timeout *float64) ojson.Value {
 	t.Helper()
-	entry := must(AddHook(sb.r, []usage.CLI{inventory.Claude}, "Stop", nil, "echo t", timeout))
-	doc := must(ojson.ParseString(sb.bytes(sb.r.Claude.HookFile)))
+	entry := must(AddHook(sb.r, []clis.ID{clis.Claude}, "Stop", nil, "echo t", timeout))
+	doc := must(ojson.ParseString(sb.bytes(sb.r.CLIs[clis.Claude].HookFile)))
 	must(Undo(sb.r, entry.ID))
 	hooks, _ := doc.Get(ojson.Key("hooks"), ojson.Key("Stop"))
 	group, _ := hooks.Element(0)
@@ -199,10 +199,10 @@ func TestHookTimeoutFormats(t *testing.T) {
 func TestHookTimeoutNonFinite(t *testing.T) {
 	sb := newSandbox(t)
 	for _, v := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
-		_, err := AddHook(sb.r, []usage.CLI{inventory.Claude}, "Stop", nil, "echo t", f(v))
+		_, err := AddHook(sb.r, []clis.ID{clis.Claude}, "Stop", nil, "echo t", f(v))
 		wantErr(t, err, 400)
 	}
-	if exists(sb.r.Claude.HookFile) || !sb.journalEmpty() {
+	if exists(sb.r.CLIs[clis.Claude].HookFile) || !sb.journalEmpty() {
 		t.Error("something was written")
 	}
 }
@@ -210,12 +210,12 @@ func TestHookTimeoutNonFinite(t *testing.T) {
 // Swift: WriteGuardTests.swift "undo after a hand edit, on a hook file the same entry created: the hook goes, the hand edit stays"
 func TestUndoHookFileCreatedBySameEntryAfterHandEdit(t *testing.T) {
 	sb := newSandbox(t)
-	file := sb.r.Claude.HookFile
+	file := sb.r.CLIs[clis.Claude].HookFile
 	if exists(file) {
 		t.Fatal("hook file exists")
 	}
 	five := 5.0
-	entry := must(AddHook(sb.r, []usage.CLI{inventory.Claude}, "Stop", nil, "echo made", &five))
+	entry := must(AddHook(sb.r, []clis.ID{clis.Claude}, "Stop", nil, "echo made", &five))
 	restore, _ := entry.Ops[0].JSON.Member("restore")
 	if existed, _ := restore.Member("existed"); existed.Kind() != ojson.KindBool {
 		t.Fatal("no restore data")

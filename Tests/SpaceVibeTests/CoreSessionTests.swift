@@ -4,7 +4,7 @@ import Testing
 
 /// `CoreSession` against small shell scripts that stand in for the helper: what leaves the pipe, in which order, and what
 /// the reader does with very long lines.
-@Suite("CoreSession")
+@Suite("CoreSession", .fixtureCLIs)
 struct CoreSessionTests {
     private final class Log: @unchecked Sendable {
         private let lock = NSLock()

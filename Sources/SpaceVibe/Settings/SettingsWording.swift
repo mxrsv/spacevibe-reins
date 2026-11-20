@@ -41,6 +41,11 @@ enum SettingsWording {
     static let weeklyCountdownDetail = "When the countdown to a weekly reset starts. The 5-hour countdown always starts 1 h before."
     static let glanceWidget = "Session widget"
     static let glanceWidgetDetail = "Shows live sessions in a corner of the screen over every app."
+    static let clis = "CLIs"
+    static let cliNotInstalled = "Not installed"
+
+    /// What VoiceOver reads for a CLI's row in the CLIs group: its name, and that it is not installed when it is not.
+    static func cliSpoken(_ name: String, installed: Bool) -> String { installed ? name : "\(name), \(cliNotInstalled.lowercased())" }
 
     /// The status of the Update card: its glyph, or the warn mark when the check failed; nil when there is nothing to say
     /// beyond the time.

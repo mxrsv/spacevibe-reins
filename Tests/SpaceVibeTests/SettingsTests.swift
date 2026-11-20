@@ -5,7 +5,7 @@ import Testing
 /// Settings (spec `docs/specs/2026-11-04-reins-settings.md`): the stored Theme and Font size, the type scale, and the
 /// Update wording. No test changes `TypeScale.shared`, which every other suite reads in parallel.
 @MainActor
-@Suite("Settings")
+@Suite("Settings", .fixtureCLIs)
 struct SettingsTests {
     /// A fresh suite and its name; each test removes it with `defer`. The name is an absolute path, so the suite's plist
     /// lives in the temporary folder: a plain name leaves a file in `~/Library/Preferences` even after the removal.
@@ -111,5 +111,64 @@ struct SettingsTests {
     func appName() {
         #expect(SettingsWording.appName(version: "0.1.0") == "SpaceVibe 0.1.0")
         #expect(SettingsWording.appName(version: nil) == "SpaceVibe")
+    }
+
+    // MARK: CLIs (MC-R4, MC9)
+
+    /// A core that answers `clis.list` with `list` and refuses everything else.
+    private final class ListingCore: UnservedCore, @unchecked Sendable {
+        let list: [CoreCLIInfo]
+        init(_ list: [CoreCLIInfo]) { self.list = list }
+        override func clisList() async throws -> CoreCLIsList { CoreCLIsList(clis: list) }
+    }
+
+    @Test("every CLI is on until turned off, including one listed for the first time; the choice is saved and read back")
+    func cliPreferences() {
+        let (defaults, suite) = throwawayDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let first = CLIPreferences(defaults: defaults)
+        #expect(first.disabled.isEmpty && first.isOn(.claude) && first.isOn(CLIID("a-cli-never-seen")))
+        first.set(.codex, on: false)
+        #expect(!first.isOn(.codex) && defaults.stringArray(forKey: CLIPreferences.disabledKey) == ["codex"])
+        let second = CLIPreferences(defaults: defaults)
+        #expect(!second.isOn(.codex) && second.isOn(.claude))
+        second.set(.codex, on: true)
+        #expect(CLIPreferences(defaults: defaults).isOn(.codex) && defaults.stringArray(forKey: CLIPreferences.disabledKey) == [])
+        // A hand edit that is not a list reads as every CLI on.
+        defaults.set("codex", forKey: CLIPreferences.disabledKey)
+        #expect(CLIPreferences(defaults: defaults).disabled.isEmpty)
+    }
+
+    @Test("the CLIs group lists every CLI of clis.list in order; turning one off hides it from the catalog every page reads")
+    func cliGroupAndFilter() async throws {
+        let (defaults, suite) = throwawayDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let newCLI = CLICatalogTests.twin("newcli", label: "New CLI")
+        let env = AppEnvironment(catalogStore: CLICatalogStore(), cliPreferences: CLIPreferences(defaults: defaults),
+                                 makeCoreClient: { ListingCore(CLICatalogFixture.list + [newCLI]) })
+        #expect(env.catalog.all.isEmpty, "nothing before clis.list lands")
+        #expect(await env.loadCLIs())
+        #expect(env.catalog.all.map(\.id) == [.claude, .codex, .gemini, CLIID("newcli")])
+        #expect(env.catalog.all.map(\.installed) == [true, true, false, true])
+        #expect(env.catalog.all.allSatisfy { env.catalog.isEnabled($0.id) }, "a newly listed CLI is on")
+        #expect(SettingsWording.cliSpoken("Gemini CLI", installed: false) == "Gemini CLI, not installed")
+        #expect(SettingsWording.cliSpoken("Codex", installed: true) == "Codex")
+
+        env.setCLI(.codex, on: false)
+        #expect(!env.catalog.isEnabled(.codex) && env.catalog.info(for: .codex) == nil)
+        #expect(env.catalog.inventoryCLIs == [.claude, CLIID("newcli")])
+        #expect(env.catalog.all.count == 4, "Settings still lists it, to turn it back on")
+        #expect(defaults.stringArray(forKey: CLIPreferences.disabledKey) == ["codex"])
+        let rows = SkillRowsFixture.snapshot([("both", SkillRowsFixture.counted(1), SkillRowsFixture.counted(2), "user", nil)])
+        #expect(env.catalog.shown(rows).items.map(\.cli) == [.claude])
+        env.setCLI(.codex, on: true)
+        #expect(env.catalog.inventoryCLIs == [.claude, .codex, CLIID("newcli")])
+    }
+
+    @Test("a failed clis.list keeps the last list and says why")
+    func cliListFailure() async {
+        let env = AppEnvironment(catalogStore: CLICatalogStore(), cliPreferences: CLIPreferences(defaults: throwawayDefaults().defaults), makeCoreClient: { UnservedCore() })
+        #expect(await env.loadCLIs() == false)
+        #expect(env.cliList == nil && env.cliListFailure == "not served by this fake")
     }
 }

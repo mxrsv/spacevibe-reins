@@ -5,13 +5,9 @@ import Foundation
 
 /// Counts for the filter chips, deduplicated by row key.
 struct CoreFilterCounts: Codable, Equatable, Sendable {
-    struct Only: Codable, Equatable, Sendable {
-        var claude: Int
-        var codex: Int
-    }
-
     var all: Int
-    var only: Only
+    /// Rows present in exactly one CLI, per CLI with the inventory concept, in registry order.
+    var only: [CoreCLICount]
     var neverRan: Int
     var dead: Int
 }
@@ -34,8 +30,8 @@ struct CoreLoadoutRows: Codable, Equatable, Sendable {
     var items: [CoreInventoryItem]
     var hooks: [CoreInventoryHook]
     var problems: [String]
-    var events: [String: [String]]
-    var roots: [String: String]
+    var events: [CoreCLIEvents]
+    var roots: [CoreCLIRoot]
     /// Keyed `global` or an absolute project folder.
     var countsByScope: [String: CoreFilterCounts]
     /// Keyed by row key.

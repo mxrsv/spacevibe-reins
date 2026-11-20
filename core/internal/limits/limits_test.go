@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"spacevibe.dev/core/internal/clis"
 )
 
 // Swift: LimitsTests.swift. The tests read through limits.Read at a fixed instant and pick the CLI entry.
@@ -29,7 +31,7 @@ const twoWeekly = `[{"kind": "weekly_all", "group": "weekly", "percent": 8, "sev
   "resets_at": "2026-11-06T15:59:59.803620+00:00",
   "scope": {"model": {"id": null, "display_name": "Fable"}, "surface": null}, "is_active": false}]`
 
-func entryFor(t *testing.T, h tempHome, cli CLI) Entry {
+func entryFor(t *testing.T, h tempHome, cli clis.ID) Entry {
 	t.Helper()
 	for _, e := range h.read(testNow).Limits {
 		if e.CLI == cli {
@@ -285,14 +287,14 @@ func TestGemini(t *testing.T) {
 // Swift: LimitsTests.swift "read reports Claude Code, Codex and Gemini CLI in order"
 func TestReadAllOrder(t *testing.T) {
 	h := newTempHome(t)
-	var order []CLI
+	var order []clis.ID
 	for _, e := range h.read(testNow).Limits {
 		order = append(order, e.CLI)
 		if e.Windows == nil {
 			t.Errorf("%s: windows must be an empty slice, not nil", e.CLI)
 		}
 	}
-	if !slices.Equal(order, []CLI{Claude, Codex, Gemini}) {
+	if !slices.Equal(order, []clis.ID{Claude, Codex, Gemini}) {
 		t.Fatalf("order = %v", order)
 	}
 }

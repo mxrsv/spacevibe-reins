@@ -3,6 +3,7 @@ package limits
 import (
 	"strings"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/ojson"
 	"spacevibe.dev/core/internal/roots"
@@ -20,24 +21,24 @@ const (
 	sessionMinutes = 5 * 60
 )
 
-func readClaudeCache(r roots.Roots) Entry {
-	switch fsx.PathPresence(r.ClaudeState) {
+func readClaudeCache(cli roots.CLIRoots) Entry {
+	switch fsx.PathPresence(cli.State) {
 	case fsx.Missing:
-		return Entry{CLI: Claude, State: folderState(r.Claude.Root, NotRecorded)}
+		return Entry{CLI: clis.Claude, State: folderState(cli.Root, NotRecorded)}
 	case fsx.Unknown:
-		return Entry{CLI: Claude, State: Unreadable}
+		return Entry{CLI: clis.Claude, State: Unreadable}
 	}
-	data, err := fsx.ReadRegular(r.ClaudeState, maxStateBytes)
+	data, err := fsx.ReadRegular(cli.State, maxStateBytes)
 	if err != nil {
-		return Entry{CLI: Claude, State: Unreadable}
+		return Entry{CLI: clis.Claude, State: Unreadable}
 	}
 	document, err := ojson.Parse(data)
 	if err != nil {
-		return Entry{CLI: Claude, State: Unreadable}
+		return Entry{CLI: clis.Claude, State: Unreadable}
 	}
 	cache, ok := member(document.Root(), "cachedUsageUtilization")
 	if !ok {
-		return Entry{CLI: Claude, State: NotRecorded}
+		return Entry{CLI: clis.Claude, State: NotRecorded}
 	}
 	// Every outcome of a present cache names it as the source, an unreadable one included.
 	entry := cacheState(cache)
@@ -47,7 +48,7 @@ func readClaudeCache(r roots.Roots) Entry {
 }
 
 func cacheState(cache ojson.Value) Entry {
-	fail := func(state State) Entry { return Entry{CLI: Claude, State: state} }
+	fail := func(state State) Entry { return Entry{CLI: clis.Claude, State: state} }
 	fetchedMs, ok := memberNumber(cache, "fetchedAtMs")
 	if !ok {
 		return fail(Unreadable)
@@ -75,7 +76,7 @@ func cacheState(cache ojson.Value) Entry {
 	if len(windows) == 0 {
 		return fail(NotRecorded)
 	}
-	return measured(Claude, dateSeconds(fetchedMs/1000), windows)
+	return measured(clis.Claude, dateSeconds(fetchedMs/1000), windows)
 }
 
 // cacheWindow reads `{ kind, group, percent, resets_at, scope: { model: { display_name } }, is_active }`.

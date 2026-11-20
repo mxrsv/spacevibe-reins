@@ -7,6 +7,7 @@ import (
 
 	"spacevibe.dev/core/internal/mutate"
 	"spacevibe.dev/core/internal/ojson"
+	"spacevibe.dev/core/internal/roots"
 )
 
 func (h tempHome) install(binary string) *mutate.Entry {
@@ -60,7 +61,7 @@ func TestInstallPreservesAndUndoes(t *testing.T) {
 	if !strings.HasSuffix(command, Quote("printf 'hello'")) {
 		t.Errorf("command does not end with the quoted original: %s", command)
 	}
-	if want := WrapperCommand(h.roots(), "printf 'hello'"); command != want {
+	if want := wrapper(t, h.roots(), "printf 'hello'"); command != want {
 		t.Errorf("command = %s\nwant      %s", command, want)
 	}
 	if !strings.HasPrefix(command, Quote(h.path(".spacevibe/bin/spacevibe"))+" statusline capture "+Quote(h.path(".spacevibe"))+" "+Quote(h.path(".claude"))+" ") {
@@ -147,7 +148,7 @@ func TestInstallNeverDoubleWraps(t *testing.T) {
 				t.Fatal("no entry")
 			}
 			got, _ := h.statusLine()
-			if want := WrapperCommand(h.roots(), user); got != want {
+			if want := wrapper(t, h.roots(), user); got != want {
 				t.Fatalf("command = %s\nwant      %s", got, want)
 			}
 			if h.install(h.path("bin")) != nil {
@@ -204,7 +205,7 @@ func TestInstallStatusLineShapes(t *testing.T) {
 			if err != nil || entry == nil {
 				t.Fatalf("entry %v, err %v", entry, err)
 			}
-			if got, _ := h.statusLine(); got != WrapperCommand(h.roots(), c.original) {
+			if got, _ := h.statusLine(); got != wrapper(t, h.roots(), c.original) {
 				t.Fatalf("command = %s", got)
 			}
 		})
@@ -243,7 +244,7 @@ func TestQuoteRoundTrip(t *testing.T) {
 		if !ok || len(w) != 1 || w[0] != s {
 			t.Errorf("words(Quote(%q)) = %q, %v", s, w, ok)
 		}
-		if unwrap(WrapperCommand(newTempHome(t).roots(), s)) != s {
+		if unwrap(wrapper(t, newTempHome(t).roots(), s)) != s {
 			t.Errorf("unwrap(wrapper(%q)) changed it", s)
 		}
 	}
@@ -386,4 +387,14 @@ func TestUninstallWritesNothingWhenCaptureIsNotInstalled(t *testing.T) {
 			}
 		})
 	}
+}
+
+// wrapper is WrapperCommand for roots built by roots.Resolve, which always have Claude Code's folders.
+func wrapper(t *testing.T, r roots.Roots, original string) string {
+	t.Helper()
+	command, err := WrapperCommand(r, original)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return command
 }

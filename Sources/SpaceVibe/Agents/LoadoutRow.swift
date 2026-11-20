@@ -27,7 +27,14 @@ enum LoadoutKind: CaseIterable {
         }
     }
 
-
+    /// The core's kind, which `clis.list` describes per CLI.
+    var coreKind: CoreKind {
+        switch self {
+        case .skill: .skill
+        case .agent: .agent
+        case .hook: .hook
+        }
+    }
 }
 
 /// One installed thing in one CLI: a skill or agent folder/file, or one hook command.
@@ -42,7 +49,7 @@ enum LoadoutMember: Equatable, Sendable {
         }
     }
 
-    var cli: CoreCLI {
+    var cli: CLIID {
         switch self {
         case .item(let item): item.cli
         case .hook(let hook): hook.cli
@@ -95,21 +102,21 @@ enum LoadoutFilter: CaseIterable, Hashable {
     func count(in counts: CoreFilterCounts) -> Int {
         switch self {
         case .all: counts.all
-        case .one: counts.only.claude + counts.only.codex
+        case .one: counts.only.reduce(0) { $0 + $1.count }
         case .never: counts.neverRan
         case .dead: counts.dead
         }
     }
 }
 
-/// One row of the matrix: the same skill, agent or hook seen across both CLIs.
+/// One row of the matrix: the same skill, agent or hook seen across the CLIs.
 struct LoadoutRow: Identifiable, Equatable, Sendable {
     var id: String { key }
     var key: String
     var kind: LoadoutKind
     /// Absolute project path, or nil for user-level config.
     var project: String?
-    var members: [CoreCLI: LoadoutMember]
+    var members: [CLIID: LoadoutMember]
     var cells: CoreCells
     /// Which chip the row answers to: the core's `rowFlags`, decided with the function that counts the chips, so a chip's
     /// number and the rows it shows cannot disagree.
@@ -125,7 +132,7 @@ struct LoadoutRow: Identifiable, Equatable, Sendable {
     var addedNote: String?
 
     var removableMembers: [LoadoutMember] {
-        CoreCLI.allCases.compactMap { members[$0] }.filter(\.removable)
+        CLICatalog.current.inventoryCLIs.compactMap { members[$0] }.filter(\.removable)
     }
 }
 

@@ -37,13 +37,7 @@ enum LimitsWording {
     static let outShare = 5.0
     static let copyHint = "/usage"
 
-    static func cliName(_ cli: CoreLimitsCLI) -> String {
-        switch cli {
-        case .claude: "Claude Code"
-        case .codex: "Codex"
-        case .gemini: "Gemini CLI"
-        }
-    }
+    static func cliName(_ cli: CLIID) -> String { cli.label }
 
     /// The plan the record names, as a tag: "pro" reads "Pro".
     static func planName(_ plan: String) -> String { plan.prefix(1).uppercased() + plan.dropFirst() }
@@ -99,7 +93,7 @@ enum LimitsWording {
     }
 
     /// The second line of a window in the page's list: "Codex · resets in 3 h 12 min", or "Codex · reset passed".
-    static func entryLine(_ window: CoreLimitWindow, cli: CoreLimitsCLI, now: Date) -> String {
+    static func entryLine(_ window: CoreLimitWindow, cli: CLIID, now: Date) -> String {
         let reset = resetsIn(window, now: now).map { "resets in \($0)" } ?? "reset passed"
         return "\(cliName(cli)) · \(reset)"
     }
@@ -114,7 +108,7 @@ enum LimitsWording {
 
     /// One line of the Limits page's list: a window of a CLI, or the CLI itself when it lists no window.
     struct Entry: Equatable, Identifiable {
-        let cli: CoreLimitsCLI
+        let cli: CLIID
         let window: CoreLimitWindow?
 
         var id: String { "\(cli.rawValue):\(window?.id ?? "state")" }
@@ -176,9 +170,11 @@ enum LimitsWording {
         case .notInstalled:
             return ("Not installed", "No \(name) folder on this Mac.")
         case .notRecorded:
-            let body = limits.cli == .claude
-                ? "Claude Code has not fetched usage on this Mac. Run \(copyHint) once in Claude Code."
-                : "No Codex turn has logged limits yet."
+            let body = switch limits.cli.identity.limitsReading {
+            case .usageCache: "\(name) has not fetched usage on this Mac. Run \(copyHint) once in \(name)."
+            case .lastTurn: "No \(name) turn has logged limits yet."
+            case .notKept, nil: "\(name) keeps no usage limit on disk."
+            }
             return ("No reading yet", body)
         case .unreadable:
             return ("Unreadable", "The file is in a shape SpaceVibe does not know.")
@@ -198,14 +194,15 @@ enum LimitsWording {
         return source(limits.cli)
     }
 
-    static func source(_ cli: CoreLimitsCLI) -> (title: String, body: String)? {
-        switch cli {
-        case .claude:
-            ("From Claude Code's own cache",
+    static func source(_ cli: CLIID) -> (title: String, body: String)? {
+        let name = cliName(cli)
+        return switch cli.identity.limitsReading {
+        case .usageCache:
+            ("From \(name)'s own cache",
              "Saved cache fallback; it can lag behind current usage. Refresh only rereads the file. A successful \(copyHint) fetch may update it.")
-        case .codex:
-            ("From the last Codex turn", "Codex logs its limits after every turn. The reading moves when you use Codex.")
-        case .gemini: nil
+        case .lastTurn:
+            ("From the last \(name) turn", "\(name) logs its limits after every turn. The reading moves when you use \(name).")
+        case .notKept, nil: nil
         }
     }
 

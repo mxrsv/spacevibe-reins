@@ -7,8 +7,8 @@ enum LoadoutRows {
 
     /// `~` for the home folder so a command or path reads short. Only when the Claude folder sits directly in the home folder
     /// (the default); with a custom `CLAUDE_CONFIG_DIR` nothing is abbreviated rather than guessing.
-    static func home(roots: [String: String]) -> String? {
-        guard let claude = roots[CoreCLI.claude.rawValue], claude.hasSuffix("/.claude") else { return nil }
+    static func home(roots: [CoreCLIRoot]) -> String? {
+        guard let claude = roots[cli: .claude], claude.hasSuffix("/.claude") else { return nil }
         let home = String(claude.dropLast("/.claude".count))
         return home.isEmpty ? nil : home
     }
@@ -34,14 +34,14 @@ enum LoadoutRows {
     /// The members of one row before it is built, with the discriminator they share.
     private struct Slot {
         var discriminator: String
-        var members: [CoreCLI: LoadoutMember] = [:]
+        var members: [CLIID: LoadoutMember] = [:]
     }
 
     /// The groups of one core key. A group with at most one member per CLI is one row under the core key. A group where a CLI
     /// has two members is split by `discriminator`: the first slot keeps the core key, later ones get `<key>#<n>`, and a
     /// duplicate left inside one discriminator takes the next free slot.
     private static func slots(_ members: [LoadoutMember]) -> (slots: [Slot], split: Bool) {
-        var perCLI: [CoreCLI: Int] = [:]
+        var perCLI: [CLIID: Int] = [:]
         for member in members { perCLI[member.cli, default: 0] += 1 }
         guard perCLI.values.contains(where: { $0 > 1 }) else {
             var only = Slot(discriminator: "")
@@ -72,7 +72,7 @@ enum LoadoutRows {
         for item in snapshot.items { add(.item(item), key: item.key) }
         for hook in snapshot.hooks { add(.hook(hook), key: hook.key) }
 
-        var entries: [(coreKey: String, key: String, group: [CoreCLI: LoadoutMember], split: Bool)] = []
+        var entries: [(coreKey: String, key: String, group: [CLIID: LoadoutMember], split: Bool)] = []
         for coreKey in order {
             let (parts, split) = slots(byKey[coreKey] ?? [])
             for (index, slot) in parts.enumerated() {
@@ -80,16 +80,18 @@ enum LoadoutRows {
             }
         }
 
+        let clis = CLICatalog.current.inventoryCLIs
         let rows = entries.compactMap { entry -> LoadoutRow? in
             let (coreKey, key, group, split) = entry
-            guard let first = group[.claude] ?? group[.codex] else { return nil }
-            let present = CoreCLI.allCases.compactMap { group[$0] }
+            guard let first = clis.lazy.compactMap({ group[$0] }).first else { return nil }
+            let present = clis.compactMap { group[$0] }
             // The core builds `cells` per key group, so a split row reads `.missing` for a CLI it has no member in.
-            func cell(_ cli: CoreCLI) -> CoreUsageCell {
-                guard let member = group[cli] else { return .missing }
+            func cell(_ cli: CLIID) -> CoreUsageCell {
+                // A CLI without the row's kind stays absent; one that has it and no member here is missing.
+                guard let member = group[cli] else { return first.cells?[cli] == .absent ? .absent : .missing }
                 return member.cells?[cli] ?? .pending(reason: "Usage scan has not finished")
             }
-            let cells = split ? CoreCells(claude: cell(.claude), codex: cell(.codex)) : first.cells ?? CoreCells(claude: cell(.claude), codex: cell(.codex))
+            let cells = split ? CoreCells(clis, cell) : first.cells ?? CoreCells(clis, cell)
             var name = ""
             var detail = ""
             var kind = LoadoutKind.skill
@@ -113,7 +115,7 @@ enum LoadoutRows {
             let plugin = owners.allSatisfy { $0 != "user" && $0 != "link" } ? owners.first : nil
             var errors = 0
             var runs = 0
-            for cli in CoreCLI.allCases {
+            for cli in clis {
                 if case .counted(let counted, _, let failed) = cells[cli] {
                     runs += counted
                     errors += failed ?? 0
@@ -140,7 +142,7 @@ enum LoadoutRows {
         var used: Set<String> = []
         // Reserve surviving keys before assigning new rows: a new first slot must not steal an old sibling's key.
         for (index, row) in rows.enumerated() {
-            let candidates = CoreCLI.allCases.compactMap { row.members[$0].flatMap { byMember[$0.id] } }
+            let candidates = CLICatalog.current.inventoryCLIs.compactMap { row.members[$0].flatMap { byMember[$0.id] } }
             if let key = candidates.first(where: { !used.contains($0) }) {
                 keys[index] = key
                 used.insert(key)
@@ -161,7 +163,7 @@ enum LoadoutRows {
 
     /// A short tag when a cell says the item is new, so a zero is not read as "never ran".
     static func addedNote(_ cells: CoreCells) -> String? {
-        for cli in CoreCLI.allCases {
+        for cli in CLICatalog.current.inventoryCLIs {
             guard case .pending(let reason) = cells[cli] else { continue }
             if reason.hasPrefix("Added in") { return "added recently" }
             if reason.hasPrefix("Added after") { return "added after the last log" }
@@ -181,7 +183,7 @@ enum LoadoutRows {
     static func maxRuns(_ rows: [LoadoutRow]) -> [LoadoutKind: Int] {
         var out: [LoadoutKind: Int] = [:]
         for row in rows {
-            for cli in CoreCLI.allCases {
+            for cli in CLICatalog.current.inventoryCLIs {
                 if case .counted(let runs, _, _) = row.cells[cli] { out[row.kind] = max(out[row.kind] ?? 0, runs) }
             }
         }
@@ -205,10 +207,16 @@ enum LoadoutRows {
 
     /// The id of the item to copy when `to`'s cell is empty, or nil when no copy may be offered: project configuration is
     /// read-only here, and a hook goes only where `hookCopyBlock` finds nothing in the way.
-    static func copyPlan(_ row: LoadoutRow, to: CoreCLI, events: [String: [String]]) -> String? {
-        guard row.project == nil, !row.flags.dead, row.cells[to] == .missing, let source = row.members[to.other] else { return nil }
+    static func copyPlan(_ row: LoadoutRow, to: CLIID, events: [CLIID: [String]]) -> String? {
+        guard row.project == nil, !row.flags.dead, row.cells[to] == .missing, let source = copySource(row, to: to) else { return nil }
         if case .hook = source, hookCopyBlock(row, to: to, events: events) != nil { return nil }
         return source.id
+    }
+
+    /// The member a copy into `to` comes from: the row's member in the first CLI, in registry order, whose copy format `to`
+    /// reads and writes (`CLICatalog.copySources`, MC-R8); nil when no member can go there.
+    static func copySource(_ row: LoadoutRow, to: CLIID) -> LoadoutMember? {
+        CLICatalog.current.copySources(for: row.kind.coreKind, to: to).lazy.compactMap { row.members[$0] }.first
     }
 
     /// Whether SpaceVibe writes hooks into Codex. The core refuses it (`loadout.copyToOther`: "SpaceVibe does not copy hooks into
@@ -220,24 +228,27 @@ enum LoadoutRows {
     /// read it, and `copyPlan` agrees (a block is nil exactly when `copyPlan` offers the copy).
     enum HookCopyBlock: Equatable, Sendable {
         /// The CLI is not on this Mac (only when the caller passes the CLIs it detected).
-        case notInstalled(CoreCLI)
+        case notInstalled(CLIID)
+        /// The CLI has no hooks at all (`clis.list`): absent, never a place to copy to.
+        case absent(CLIID)
         /// The target's event list does not have the hook's event.
-        case noEvent(CoreCLI, event: String)
+        case noEvent(CLIID, event: String)
         /// The hook's script is gone, so there is nothing to copy.
         case scriptGone
         /// A plugin owns the hook: SpaceVibe does not change it.
         case plugin(String)
         /// SpaceVibe does not write hooks into this CLI (`codexTakesHooks`).
-        case notWritten(CoreCLI)
+        case notWritten(CLIID)
     }
 
     /// The handler kind needs no test: the core lists `command` hooks only (the others are counted in one problems line), and
     /// the inventory carries no handler kind (G2).
-    static func hookCopyBlock(_ row: LoadoutRow, to: CoreCLI, events: [String: [String]], detected: [CoreCLI]? = nil,
+    static func hookCopyBlock(_ row: LoadoutRow, to: CLIID, events: [CLIID: [String]], detected: [CLIID]? = nil,
                               codexTakesHooks: Bool = LoadoutRows.codexTakesHooks) -> HookCopyBlock? {
-        guard case .hook(let source) = row.members[to.other] else { return nil }
+        if !to.identity.hasKind(.hook) { return .absent(to) }
+        guard case .hook(let source) = copySource(row, to: to) else { return nil }
         if let detected, !detected.contains(to) { return .notInstalled(to) }
-        if events[to.rawValue]?.contains(source.event) != true { return .noEvent(to, event: source.event) }
+        if events[to]?.contains(source.event) != true { return .noEvent(to, event: source.event) }
         if source.dead { return .scriptGone }
         if let plugin = row.plugin { return .plugin(plugin) }
         if to == .codex && !codexTakesHooks { return .notWritten(to) }
@@ -251,8 +262,10 @@ enum LoadoutRows {
 /// them apart (`core/internal/inventory/attach-usage.go`): the scan is still running, the CLI has no logs to scan, or the file
 /// changed too recently for a session to have used it (G7: the file's modification time, not a creation time).
 enum SkillCell: Equatable, Sendable {
-    /// Not installed in that CLI.
+    /// Not installed in that CLI, which has skills.
     case missing
+    /// The CLI has no skills at all: never 0 and never a place to add one.
+    case absent
     /// "Usage scan has not finished": no claim either way.
     case loading
     /// "No logs scanned for this CLI yet": SpaceVibe cannot count sessions there.
@@ -274,6 +287,7 @@ extension SkillCell {
     init(_ cell: CoreUsageCell) {
         switch cell {
         case .missing: self = .missing
+        case .absent: self = .absent
         case .counted(let runs, let last, _): self = .sessions(runs, last: last)
         case .unmeasurable: self = .noLogs
         case .pending(let reason):
@@ -299,10 +313,10 @@ struct SkillUsage: Equatable, Sendable {
         case loading
     }
 
-    let cells: [CoreCLI: SkillCell]
+    let cells: [CLIID: SkillCell]
 
     /// The CLIs that have the skill, Claude Code first.
-    var present: [CoreCLI] { CoreCLI.allCases.filter { cells[$0].map { $0 != .missing } ?? false } }
+    var present: [CLIID] { CLICatalog.current.inventoryCLIs.filter { cells[$0].map { $0 != .missing && $0 != .absent } ?? false } }
 
     var state: State {
         let kinds = present.compactMap { cells[$0] }
@@ -327,7 +341,7 @@ struct SkillUsage: Equatable, Sendable {
         }
     }
 
-    func sessions(in cli: CoreCLI) -> Int? {
+    func sessions(in cli: CLIID) -> Int? {
         if case .sessions(let n, _) = cells[cli] { n } else { nil }
     }
 
@@ -347,12 +361,12 @@ struct SkillUsage: Equatable, Sendable {
     }
 
     /// The CLIs where at least one session used the skill. Presence is `present`; a sentence about where the skill ran uses this.
-    var ranIn: [CoreCLI] {
+    var ranIn: [CLIID] {
         present.filter { cli in if case .sessions(let n, _) = cells[cli] { n > 0 } else { false } }
     }
 
     /// The CLIs whose logs were counted (a counted cell, zero or not, or a new file): where "never ran" can be said at all.
-    var measured: [CoreCLI] {
+    var measured: [CLIID] {
         present.filter { cli in
             switch cells[cli] {
             case .sessions, .added: true
@@ -362,31 +376,35 @@ struct SkillUsage: Equatable, Sendable {
     }
 
     /// The CLIs whose cell has no logs behind it.
-    var withoutLogs: [CoreCLI] { present.filter { cells[$0] == .noLogs } }
+    var withoutLogs: [CLIID] { present.filter { cells[$0] == .noLogs } }
 }
 
 extension LoadoutRow {
     var skillUsage: SkillUsage {
-        SkillUsage(cells: Dictionary(uniqueKeysWithValues: CoreCLI.allCases.map { ($0, SkillCell(cells[$0])) }))
+        SkillUsage(cells: Dictionary(uniqueKeysWithValues: CLICatalog.current.inventoryCLIs.map { ($0, SkillCell(cells[$0])) }))
     }
 
     /// The CLIs that have this row, from its members (a row with no member at all has none).
-    var presentCLIs: [CoreCLI] { CoreCLI.allCases.filter { members[$0] != nil } }
+    var presentCLIs: [CLIID] { CLICatalog.current.inventoryCLIs.filter { members[$0] != nil } }
+
+    /// Where this row's copy in `cli` can go: the first CLI, in registry order, that reads the same format and writes this kind
+    /// (`CLICatalog.copyTargets`, MC-R8); nil when none can.
+    func copyTarget(from cli: CLIID) -> CLIID? { CLICatalog.current.copyTargets(for: kind.coreKind, from: cli).first }
 }
 
 extension LoadoutRows {
     /// The CLIs the logo strip lists (V5-R24): the ones `limits.read` does not call `notInstalled`; before a reading exists, the
     /// ones that hold at least one skill, agent or hook. Claude Code first.
-    static func detectedCLIs(limits: [CoreLimitsEntry], rows: [LoadoutRow]) -> [CoreCLI] {
-        CoreCLI.allCases.filter { cli in
-            if let entry = limits.first(where: { $0.cli == CoreLimitsCLI(cli) }) { return entry.state != .notInstalled }
+    static func detectedCLIs(limits: [CoreLimitsEntry], rows: [LoadoutRow]) -> [CLIID] {
+        CLICatalog.current.inventoryCLIs.filter { cli in
+            if let entry = limits.first(where: { $0.cli == cli }) { return entry.state != .notInstalled }
             return rows.contains { $0.members[cli] != nil }
         }
     }
 
     /// What pressing the logo of `cli` on a skill row does (V5-R25): a plugin's or a project's skill is read-only; the only copy
     /// is removed from the pane, not toggled (D53); a dim logo adds only where a copy is allowed.
-    static func logoMode(_ row: LoadoutRow, cli: CoreCLI, events: [String: [String]]) -> LogoToggleMode {
+    static func logoMode(_ row: LoadoutRow, cli: CLIID, events: [CLIID: [String]]) -> LogoToggleMode {
         guard row.plugin == nil, row.project == nil else { return .readOnly }
         if let member = row.members[cli] {
             guard member.removable else { return .readOnly }
@@ -397,7 +415,7 @@ extension LoadoutRows {
 
     /// Whether `cli`'s copy is the one that cannot go on its own (D53, M2): no other CLI has the row, or another member is a link
     /// to this real copy, so removing it would leave the link dangling. ONE rule: the logos, `removeWrites` and the bulk bar read it.
-    static func isOnlyCopy(_ row: LoadoutRow, in cli: CoreCLI) -> Bool {
+    static func isOnlyCopy(_ row: LoadoutRow, in cli: CLIID) -> Bool {
         guard let member = row.members[cli] else { return false }
         if row.presentCLIs == [cli] { return true }
         return member.owner != "link" && row.members.values.contains { $0.cli != cli && $0.owner == "link" }
@@ -407,8 +425,8 @@ extension LoadoutRows {
     /// A plugin's skill, a project's, a copy that is not removable and (for a removal from one CLI) the only copy are skipped.
     struct SkillWrites: Equatable, Sendable {
         enum Step: Equatable, Sendable {
-            case copy(id: String, to: CoreCLI)
-            case remove(id: String, from: CoreCLI)
+            case copy(id: String, to: CLIID)
+            case remove(id: String, from: CLIID)
         }
 
         var steps: [Step] = []
@@ -417,7 +435,7 @@ extension LoadoutRows {
         var skipped = 0
     }
 
-    static func addWrites(_ rows: [LoadoutRow], to cli: CoreCLI, events: [String: [String]]) -> SkillWrites {
+    static func addWrites(_ rows: [LoadoutRow], to cli: CLIID, events: [CLIID: [String]]) -> SkillWrites {
         var out = SkillWrites()
         for row in rows where row.members[cli] == nil {
             guard row.plugin == nil, let id = copyPlan(row, to: cli, events: events) else { out.skipped += 1; continue }
@@ -429,7 +447,7 @@ extension LoadoutRows {
 
     /// Removes each row from `cli`, or from every CLI that has it when `cli` is nil (the pane's and the bar's `Remove`). A link goes
     /// before the real folder it points to, so the second step never looks for a skill the first one took away (M2).
-    static func removeWrites(_ rows: [LoadoutRow], from cli: CoreCLI?) -> SkillWrites {
+    static func removeWrites(_ rows: [LoadoutRow], from cli: CLIID?) -> SkillWrites {
         var out = SkillWrites()
         for row in rows {
             guard row.plugin == nil, row.project == nil else { out.skipped += 1; continue }
@@ -452,7 +470,8 @@ struct LoadoutData: Sendable {
     var scopes: [LoadoutScope]
     var countsByScope: [String: CoreFilterCounts]
     var problems: [String]
-    var events: [String: [String]]
+    /// Hook events per CLI.
+    var events: [CLIID: [String]]
     var globalCount: Int
     /// The home folder as `~` abbreviates it, when the Claude folder sits directly in it.
     var home: String?
@@ -466,7 +485,7 @@ struct LoadoutData: Sendable {
             countsByScope: raw.countsByScope,
             // The core sends the sentences with absolute paths; the home folder is shortened here.
             problems: raw.problems.map { LoadoutRows.shorten($0, home: home) },
-            events: raw.events,
+            events: Dictionary(raw.events.map { ($0.cli, $0.events) }, uniquingKeysWith: { first, _ in first }),
             globalCount: rows.filter { $0.project == nil }.count,
             home: home
         )

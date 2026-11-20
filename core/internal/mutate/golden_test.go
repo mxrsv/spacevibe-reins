@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/goldentest"
 	"spacevibe.dev/core/internal/hashes"
@@ -16,7 +17,6 @@ import (
 	"spacevibe.dev/core/internal/ojson"
 	"spacevibe.dev/core/internal/roots"
 	"spacevibe.dev/core/internal/textjs"
-	"spacevibe.dev/core/internal/usage"
 )
 
 const canary = "fixture-secret-do-not-show"
@@ -240,18 +240,18 @@ func (h copyHome) itemID(find map[string]any) string {
 
 // perform runs the operation the Node core ran (MutateTests.perform).
 func (h copyHome) perform(op map[string]any) (Entry, error) {
-	var clis []usage.CLI
+	var targets []clis.ID
 	if list, ok := op["clis"].([]any); ok {
 		for _, c := range list {
-			clis = append(clis, usage.CLI(asString(c)))
+			targets = append(targets, clis.ID(asString(c)))
 		}
 	}
 	text := func(key string) string { return asString(op[key]) }
 	switch op["fn"] {
 	case "addSkill":
-		return AddSkill(h.r, clis, text("name"), text("description"), text("body"))
+		return AddSkill(h.r, targets, text("name"), text("description"), text("body"))
 	case "addAgent":
-		return AddAgent(h.r, clis, text("name"), text("description"), text("instructions"))
+		return AddAgent(h.r, targets, text("name"), text("description"), text("instructions"))
 	case "addHook":
 		var matcher *string
 		if m, ok := op["matcher"].(string); ok {
@@ -262,13 +262,13 @@ func (h copyHome) perform(op map[string]any) (Entry, error) {
 			f, _ := n.Float64()
 			timeout = &f
 		}
-		return AddHook(h.r, clis, text("event"), matcher, strings.ReplaceAll(text("command"), goldentest.Token, h.root), timeout)
+		return AddHook(h.r, targets, text("event"), matcher, strings.ReplaceAll(text("command"), goldentest.Token, h.root), timeout)
 	case "removeItem":
 		return RemoveItem(h.r, h.itemID(asMap(op["find"])))
 	case "removeDeadHooks":
-		return RemoveDeadHooks(h.r, usage.CLI(text("cli")))
+		return RemoveDeadHooks(h.r, clis.ID(text("cli")))
 	case "copyToOther":
-		return CopyToOther(h.r, h.itemID(asMap(op["find"])))
+		return copyToTheOther(h.r, h.itemID(asMap(op["find"])))
 	}
 	h.t.Fatalf("test bug: unknown operation %v", op["fn"])
 	return Entry{}, nil

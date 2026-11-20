@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/inventory"
 	"spacevibe.dev/core/internal/ojson"
 	"spacevibe.dev/core/internal/roots"
-	"spacevibe.dev/core/internal/usage"
 )
 
 // MutationTransactionTests.swift. The Swift "rule" operation used RulesStore.changeVerdict, which the rules package
@@ -28,7 +28,7 @@ func seedTransaction(t *testing.T) (tempHome, roots.Roots) {
 	r := h.roots()
 	h.installCodex()
 	h.write(".claude/settings.json", `{"permissions":{"deny":["Bash"]}}`)
-	claude := []usage.CLI{inventory.Claude}
+	claude := []clis.ID{clis.Claude}
 	must(AddSkill(r, claude, "existing-skill", "Synthetic skill", ""))
 	must(AddAgent(r, claude, "existing-agent", "Synthetic agent", "Synthetic instructions."))
 	for _, name := range []string{"missing-first.sh", "missing-second.sh"} {
@@ -43,18 +43,18 @@ func runOperation(t *testing.T, op operation, r roots.Roots) error {
 	snap := inventory.Read(r)
 	itemID := func(kind inventory.Kind) string {
 		for _, it := range snap.Items {
-			if it.Kind == kind && it.CLI == inventory.Claude {
+			if it.Kind == kind && it.CLI == clis.Claude {
 				return it.ID
 			}
 		}
 		t.Fatalf("no claude %s", kind)
 		return ""
 	}
-	both := []usage.CLI{inventory.Claude, inventory.Codex}
+	both := []clis.ID{clis.Claude, clis.Codex}
 	var err error
 	switch op {
 	case "rule":
-		_, err = EditJSON(r, r.Claude.HookFile, "Changed Bash from deny to allow (global)", nil, func(d *ojson.Document) (*ojson.Document, error) {
+		_, err = EditJSON(r, r.CLIs[clis.Claude].HookFile, "Changed Bash from deny to allow (global)", nil, func(d *ojson.Document) (*ojson.Document, error) {
 			return d.Set(ojson.Path("permissions", "deny"), ojson.Array())
 		})
 	case "addSkill":
@@ -66,9 +66,9 @@ func runOperation(t *testing.T, op operation, r roots.Roots) error {
 	case "removeAgent":
 		_, err = RemoveItem(r, itemID(inventory.KindAgent))
 	case "copySkill":
-		_, err = CopyToOther(r, itemID(inventory.KindSkill))
+		_, err = copyToTheOther(r, itemID(inventory.KindSkill))
 	case "copyAgent":
-		_, err = CopyToOther(r, itemID(inventory.KindAgent))
+		_, err = copyToTheOther(r, itemID(inventory.KindAgent))
 	case "addHook":
 		_, err = AddHook(r, both, "Stop", nil, "echo synthetic", nil)
 	case "removeHook":
@@ -76,14 +76,14 @@ func runOperation(t *testing.T, op operation, r roots.Roots) error {
 	case "removeDeadHooks":
 		dead := 0
 		for _, h := range snap.Hooks {
-			if h.CLI == inventory.Claude && h.Dead {
+			if h.CLI == clis.Claude && h.Dead {
 				dead++
 			}
 		}
 		if dead != 2 {
 			t.Fatalf("%d dead hooks, want 2", dead)
 		}
-		_, err = RemoveDeadHooks(r, inventory.Claude)
+		_, err = RemoveDeadHooks(r, clis.Claude)
 	}
 	return err
 }
@@ -92,7 +92,7 @@ func runOperation(t *testing.T, op operation, r roots.Roots) error {
 func contents(t *testing.T, r roots.Roots) map[string]string {
 	t.Helper()
 	out := map[string]string{}
-	for _, base := range []string{r.Claude.Root, r.Codex.Root} {
+	for _, base := range []string{r.CLIs[clis.Claude].Root, r.CLIs[clis.Codex].Root} {
 		_ = filepath.WalkDir(base, func(p string, d fs.DirEntry, err error) error {
 			if err == nil && d.Type().IsRegular() {
 				data, rerr := os.ReadFile(p)
@@ -227,7 +227,7 @@ func TestRollbackFailurePreservesConcurrentEdit(t *testing.T) {
 		if err != nil || first == nil {
 			t.Fatalf("first apply: %v", err)
 		}
-		op, err := tx.Apply(r.Claude.HookFile, nil, set("{}\n"))
+		op, err := tx.Apply(r.CLIs[clis.Claude].HookFile, nil, set("{}\n"))
 		if err != nil || op == nil {
 			t.Fatalf("second apply: %v", err)
 		}

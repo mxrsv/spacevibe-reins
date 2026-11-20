@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/fsx"
@@ -27,8 +28,19 @@ func Executable(r roots.Roots) string { return filepath.Join(r.Data, binDir, ide
 
 // WrapperCommand is the status line command that runs the original through capture. Every argument is one POSIX
 // shell word; the original is the last, so it reaches /bin/sh -c byte for byte.
-func WrapperCommand(r roots.Roots, original string) string {
-	return Quote(Executable(r)) + " " + "statusline " + cmdCapture + " " + Quote(r.Data) + " " + Quote(r.Claude.Root) + " " + Quote(original)
+// It fails only for a Roots without Claude Code's folders (one not built by roots.Resolve).
+func WrapperCommand(r roots.Roots, original string) (string, error) {
+	claude, err := r.CLI(clis.Claude)
+	if err != nil {
+		return "", err
+	}
+	return Quote(Executable(r)) + " " + "statusline " + cmdCapture + " " + Quote(r.Data) + " " + Quote(claude.Root) + " " + Quote(original), nil
+}
+
+// claudeSettings is Claude Code's settings.json, where the status line command lives.
+func claudeSettings(r roots.Roots) (string, error) {
+	claude, err := r.CLI(clis.Claude)
+	return claude.HookFile, err
 }
 
 // Install is explicit setup (StatuslineSetup.install): it copies binary, the running executable with its links
@@ -64,7 +76,11 @@ func Install(cfg config.Config, r roots.Roots, binary string) (*mutate.Entry, er
 
 // editSettings is the settings.json half of Install.
 func editSettings(r roots.Roots) (*mutate.Entry, error) {
-	return mutate.EditJSON(r, r.Claude.HookFile, InstallLabel, nil, func(doc *ojson.Document) (*ojson.Document, error) {
+	settings, err := claudeSettings(r)
+	if err != nil {
+		return nil, err
+	}
+	return mutate.EditJSON(r, settings, InstallLabel, nil, func(doc *ojson.Document) (*ojson.Document, error) {
 		current, present := doc.Root().Member("statusLine")
 		command := ""
 		if present && current.Kind() != ojson.KindNull {
@@ -76,11 +92,13 @@ func editSettings(r roots.Roots) (*mutate.Entry, error) {
 			command = text
 		}
 		// Whatever wrapper is there, for any data root or either spelling, is replaced, never wrapped again.
-		wanted := WrapperCommand(r, unwrap(command))
+		wanted, err := WrapperCommand(r, unwrap(command))
+		if err != nil {
+			return nil, err
+		}
 		if command == wanted {
 			return doc, nil
 		}
-		var err error
 		base := doc
 		if present && current.Kind() == ojson.KindNull {
 			if base, err = doc.Remove(ojson.Path("statusLine")); err != nil {
@@ -100,7 +118,11 @@ func editSettings(r roots.Roots) (*mutate.Entry, error) {
 // a changed file). The entry is nil, and nothing is written, when the settings carry no SpaceVibe wrapper. The installed
 // copy of the executable is kept.
 func Uninstall(r roots.Roots) (*mutate.Entry, error) {
-	return mutate.EditJSON(r, r.Claude.HookFile, UninstallLabel, nil, func(doc *ojson.Document) (*ojson.Document, error) {
+	settings, err := claudeSettings(r)
+	if err != nil {
+		return nil, err
+	}
+	return mutate.EditJSON(r, settings, UninstallLabel, nil, func(doc *ojson.Document) (*ojson.Document, error) {
 		current, present := doc.Root().Member("statusLine")
 		if !present {
 			return doc, nil

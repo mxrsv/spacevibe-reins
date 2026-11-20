@@ -92,6 +92,7 @@ Params and results use the types defined under "Wire types". "Journal entry" is 
 | Method | Params | Result | Errors (status) | Side effects | Journal entry |
 | --- | --- | --- | --- | --- | --- |
 | `initialize` | `{protocolVersion, client?:{name, version}}` | `{protocolVersion, core:{name, version}, identity:{envPrefix, dataDir}, methods:string[]}` | -32001, -32600 | Starts the session | none |
+| `clis.list` | `{}` | `{clis:CliInfo[]}`, every CLI of the registry in its order | none | Stats each CLI's root folder and the binaries its entry names on `PATH`; starts no process | none |
 | `inventory.read` | `{}` | `InventorySnapshot`, no `cells`, hook `usage` null | none: unreadable files become `problems` | Refreshes the discovered-project list | none |
 | `usage.scan` | `{}` | `UsageResult`; sends `usage/progress`; stores the result as the process's usage state | 409 a scan is already running; -32800 | Reads logs; writes `<data>/usage-cache.json` | none |
 | `loadout.rows` | `{}` | `LoadoutRows`; `problems` are the raw sentences | none | Reads inventory; attaches the stored usage state; writes `<data>/first-seen.json` when a new item id appears (best effort) | none |
@@ -99,8 +100,8 @@ Params and results use the types defined under "Wire types". "Journal entry" is 
 | `activity.subscribe` | `{}` | `ActivityReport`; later `activity/report` | none | Starts a 3 s poll | none |
 | `activity.unsubscribe` | `{}` | `{}` | none | Stops the poll | none |
 | `activity.stop` | `{cli, id}` | `{exited:boolean}` | 404 not running; 409 could not be verified (ps, lsof or the sessions folder unreadable, or the start time unknown, or the status file's recorded `procStart` is missing or unreadable as a start time while the pid is alive: nothing is sent; a recorded start that parses and differs is a reused pid, 404); 403 other user; 500 | SIGTERM to the pid found now; waits up to 3 s | none: not undoable, the shell confirms first |
-| `loadout.copyToOther` | `{id}` | `{entry:JournalEntryRef}` | 400 a hook Codex cannot take or an event it lacks; 403 a path outside the CLI folder; 404; 409 the other CLI's folder is missing ("<CLI> is not installed on this Mac, so nothing was copied."; nothing is created), a skill folder or agent name that is not lowercase letters, numbers and dashes (the message names the item), the name exists in the other CLI, a source that cannot be read or is not a plain file, an agent with no instructions; 413 a skill file over 16 MiB, a skill over 64 MiB, an agent over 1 MiB; 500 | Creates the skill folder (named after the source folder, not the `name:` in `SKILL.md`), agent file (named after the agent's `name`) or Claude hook in the other CLI; never creates the CLI's own folder | label `Copied skill\|agent <name> to <CLI>` or `Added <event> hook to Claude Code`; ops `created`, `hook-added` |
-| `loadout.removeItem` | `{id}` | `{entry:JournalEntryRef}` | 403 plugin or project item; 404; 409; 500 | Moves the item to the data-folder trash; a link keeps its target text | label `Removed skill\|agent <name> from <CLI>` or `Removed <event> hook from <CLI>`; ops `moved`, `link-removed`, `hook-removed` |
+| `loadout.copyToOther` | `{id, target:Cli}` | `{entry:JournalEntryRef}` | 400 a `target` that is unknown or empty ("target must be claude or codex."), a CLI SpaceVibe does not write ("SpaceVibe does not write <CLI>, so nothing was copied."), the item's own CLI, a hook Codex cannot take or an event it lacks; 403 a path outside the CLI folder, or a target whose kind is read-only; 404; 409 a target without the item's kind or with another copy format (see below), the target CLI's folder is missing ("<CLI> is not installed on this Mac, so nothing was copied."; nothing is created), a skill folder or agent name that is not lowercase letters, numbers and dashes (the message names the item), the name exists in the target CLI, a source that cannot be read or is not a plain file, an agent with no instructions; 413 a skill file over 16 MiB, a skill over 64 MiB, an agent over 1 MiB; 500 | Creates the skill folder (named after the source folder, not the `name:` in `SKILL.md`), agent file (named after the agent's `name`) or Claude hook in the target CLI; never creates the CLI's own folder | label `Copied skill\|agent <name> to <CLI>` or `Added <event> hook to Claude Code`; ops `created`, `hook-added` |
+| `loadout.removeItem` | `{id}` | `{entry:JournalEntryRef}` | 403 plugin or project item, or a kind the CLI's `kinds` entry marks `readOnly`; 404; 409; 500 | Moves the item to the data-folder trash; a link keeps its target text | label `Removed skill\|agent <name> from <CLI>` or `Removed <event> hook from <CLI>`; ops `moved`, `link-removed`, `hook-removed` |
 | `loadout.removeDeadHooks` | `{cli}` | `{entry:JournalEntryRef}` | 409 none dead; 500 | One write to the CLI's hook file | label `Removed N dead hooks from <CLI>`; ops `hook-removed` |
 | `journal.undo` | `{id}` | `{label:string}` | 404 gone; 409 already undone, or a target changed or exists again; 400 an entry this version cannot undo or a path outside the managed folders; 500 the undo was rolled back or stopped part way | Reverses all ops last first, all or nothing; marks the entry undone | none: the entry is marked `undone` |
 | `journal.history` | `{}` | `{entries:JournalEntryRef[]}`, newest first, at most 200 | 409 the journal exists but is not a JSON array of entries (an element without a string `id` counts): it is refused, never read as empty or with elements dropped | none | none |
@@ -112,7 +113,7 @@ Params and results use the types defined under "Wire types". "Journal entry" is 
 | `rules.changeVerdict` | `{scope, dir, rule, from, to}` | `{entry:JournalEntryRef}` | 400 same verdict; 404; 409 | Same | label `Changed <rule> from <a> to <b> (<scope>)`; op `file-edited` |
 | `rules.changeVerdicts` | `{scope, dir, to, rules:RuleMove[]}` | `{entry:JournalEntryRef}` | 400 an empty list, a bad verdict, or a `from` equal to `to`; 404; 409 a rule is no longer under its `from` (nothing is written), not valid JSON, or a project or local file that is a link; 500 | One edit of the scope's `settings.json` under the write lock: every rule is checked, then all move together | label `Changed N rules to <to> (<scope>)` (`Changed 1 rule to ...` for one); one op `file-edited`, so one Undo restores all |
 | `rules.check` | `{rule}` | `{valid:boolean, message:string\|null}` | none | none | none |
-| `limits.read` | `{}` | `{limits:LimitsEntry[]}` in order claude, codex, gemini | none | Reads local files only: no request, no credential, no CLI started | none |
+| `limits.read` | `{}` | `{limits:LimitsEntry[]}`, one per CLI with the limits concept, in registry order (claude, codex, gemini) | none | Reads local files only: no request, no credential, no CLI started | none |
 
 Behavior the table cannot say:
 
@@ -126,6 +127,8 @@ Behavior the table cannot say:
 - **`rules.check`** is the live check of a rule's shape (the Rules model calls it before every add), built on `Rules.checkedRule`: empty text, over 1000 UTF-16 units, a newline, or no `Tool` or `Tool(pattern)` shape. `message` is the same sentence the write would refuse with. The write path checks again; this method is advice.
 - **Journal ops are not exposed.** `JournalEntryRef` carries `count` only: ops hold absolute paths and trash names, and no Swift caller reads them (`AppEnvironment` uses the id and the label). The journal file is `<data>/journal.json`, newest first, 200 entries, and a journal that exists but is not a JSON array of entries (every element needs a string `id`) makes every write 409; Swift silently dropped an element without an id on the next write.
 - **`addSkill` and `addAgent` are not methods.** The app has no caller.
+- **`clis.list` is how the shell learns per-CLI facts** `(new)`, spec MC27. Each fact comes from the adapter that implements it: `kinds` from the inventory adapter, `limitsReading` from the limits reader, `approvalLimitCode` from the activity adapter's state function, `subagentWithoutToolsGetsEveryTool` from the mutate writer. `installed` is a stat of the root folder, or of each binary the registry entry names in each absolute `PATH` folder, never a run of the CLI (MC8). The core does not know which CLIs the owner turned off; that stays in the shell.
+- **A copy names its target, and only a matching format copies** (MC-R8). `copyAllowed` refuses the item's own CLI, a target whose `kinds` entry for the item's kind is `absent` (409) or `readOnly` (403), and a target whose `copyFormat` differs from the source's or is null (409, "<CLI> reads another <kind> format, so this <kind> cannot be copied to it."). Nothing is ever converted. `agentFields` is one format on purpose: an agent copy carries name, description and instructions, which each writer puts in its own file (`.md` for Claude Code, `.toml` for Codex), as before 0b.
 - **The pid is never a parameter.** `activity.stop` finds the live process from the id, so a reused pid cannot be signalled. A Codex id before its first prompt is `pid:<n>:<start-ms>`, bound to the process start; an id ending `:unknown` cannot authorize a stop.
 
 ## Wire types
@@ -133,7 +136,7 @@ Behavior the table cannot say:
 Keys are camelCase exactly as written. A nullable member is always present with `null`; the exceptions are marked "omitted". Timestamps are ISO 8601 UTC with milliseconds (`2026-11-07T10:00:00.000Z`), the same text as a journal `at`; Limits is the one exception, below. Counts and ids are integers.
 
 ```ts
-type Cli = "claude" | "codex"
+type Cli = string                                // open: a registry id ("claude", "codex", "gemini"); the shell drops an id it does not know
 type Scope = "global" | "project" | "local"      // rules scope; dir is null for "global", absolute otherwise
 type Verdict = "allow" | "ask" | "deny"
 type Capability = "read" | "edit" | "run" | "network" | "push" | "secrets"
@@ -142,23 +145,44 @@ type RuleMove = { rule: string, from: Verdict }  // from: the verdict the caller
 
 type JournalEntryRef = { id: string, at: string, label: string, undone: boolean, count: number }
 // (new) built from JournalEntry / HistoryItem; ops are left out.
+
+// (new) clis.list, spec MC27. Every per-CLI value elsewhere on the wire is an array of { cli, ... } in this order.
+type CliInfo = {
+  id: Cli, label: string, installed: boolean,
+  concepts: ("inventory" | "mutate" | "usage" | "activity" | "limits")[],
+  kinds: KindInfo[],                              // skill, agent, hook, in that order; every kind absent without inventory
+  limitsReading: "usageCache" | "lastTurn" | "notKept" | null,   // null without the limits concept
+  logsHookRuns: boolean,                          // the hook kind exists and its runs are counted
+  readsSessionLog: boolean,                       // the activity concept
+  approvalLimitCode: string | null,               // the unmeasurable code a waiting-or-busy session carries
+  subagentWithoutToolsGetsEveryTool: boolean      // an agent copied into it (no tools line) gets every tool
+}
+type KindInfo = {
+  kind: "skill" | "agent" | "hook",
+  support: "full" | "readOnly" | "absent",        // full: read and written; absent: the CLI has no such kind
+  runs: "counted" | "notLogged" | null,           // null when absent
+  notLoggedReason: string | null,                 // set exactly when runs is notLogged
+  copyFormat: "skillFolder" | "agentFields" | "commandHook" | null   // open string; equal formats copy, null never copies
+}
 ```
 
 Inventory and usage (from `InventoryTypes.swift` and `UsageScanTypes.swift`):
 
 ```ts
-type Cell =
+type Cell = { cli: Cli } & (
   | { state: "counted", runs: number, last: string | null, errors?: number }   // errors omitted unless a hook
   | { state: "pending", reason: string }
-  | { state: "unmeasurable", reason: string }
-  | { state: "missing" }
-type Cells = { claude: Cell, codex: Cell }
+  | { state: "unmeasurable", reason: string }    // the CLI has the kind but does not log it (runs notLogged)
+  | { state: "missing" }                         // the CLI has the kind; this item is not installed in it
+  | { state: "absent" })                         // the CLI has no such kind: never an add target, never 0
+type Cells = Cell[]                               // one per CLI with the inventory concept, registry order
 
 type InventoryItem = {                            // a skill or a subagent
   id: string, cli: Cli, kind: "skill" | "agent", name: string, entry: string, description: string,
+  readBy: Cli[],                                  // the CLIs that read this file (MC-R7); today always [cli]
   owner: string,                                  // "user", "link", or a plugin name
   path: string, file: string, removable: boolean, scope: "global" | "project", project: string | null,
-  inOther: boolean, key: string,                  // key = "<kind>:<project or empty>:<bare name>"
+  key: string,                                    // key = "<kind>:<project or empty>:<bare name>"; whether another CLI holds the row is what cells say
   override?: string | null,                       // written on every Claude global skill (null when settings hold no value); omitted on all other items
   cells?: Cells                                   // omitted until usage is attached
 }
@@ -167,32 +191,34 @@ type InventoryHook = {
   id: string, cli: Cli, kind: "hook", event: string, matcher: string | null, command: string /* credentials masked; hash is of the raw text */, timeout: number | null,
   async: boolean, owner: string, removable: boolean, dead: boolean, paths: string[], hash: string, file: string,
   scope: "global" | "project", project: string | null,
-  key: string,                                    // "hook:<project or empty>:<hash>"
+  key: string,                                    // "hook:<project or empty>:<hash>"; the hash is of event plus command, so rows of two CLIs match only on identical event names (MC28)
   cells?: Cells, usage: HookUsage | null          // usage is always present; null when unknown or not logged
 }
+type CliEvents = { cli: Cli, events: string[] }   // registry order, CLIs with the inventory concept
+type CliRoot = { cli: Cli, root: string }
 type InventorySnapshot = {
   items: InventoryItem[], hooks: InventoryHook[], problems: string[],
-  events: { claude: string[], codex: string[] }, roots: { claude: string, codex: string }
+  events: CliEvents[], roots: CliRoot[]
 }
 
 type NameUsage = { sessions: number, days: string[], last: string | null }       // days: YYYY-MM-DD, sorted
 type HookTotals = { runs: number, ms: number, timed: number, errors: number, last: string | null }
-type CliTotals = { skill: { [name: string]: NameUsage }, agent: { [name: string]: NameUsage }, hook: { [hash: string]: HookTotals } }
-type LogWindow = { files: number, oldest: string | null, newest: number | null }  // newest: ms since 1970
-type UsageResult = {
-  totals: { claude: CliTotals, codex: CliTotals }, sessions: { claude: number, codex: number },
-  windows: { claude: LogWindow, codex: LogWindow }, files: number
+type CliTotals = { cli: Cli, skill: { [name: string]: NameUsage }, agent: { [name: string]: NameUsage }, hook: { [hash: string]: HookTotals } }
+type LogWindow = { cli: Cli, files: number, oldest: string | null, newest: number | null }  // newest: ms since 1970
+type UsageResult = {                              // each array: one per CLI with the usage concept, registry order
+  totals: CliTotals[], sessions: { cli: Cli, count: number }[], windows: LogWindow[], files: number
 }
 
-type FilterCounts = { all: number, only: { claude: number, codex: number }, neverRan: number, dead: number }
+type FilterCounts = { all: number, only: { cli: Cli, count: number }[], neverRan: number, dead: number }   // only: one per inventory CLI
 type LoadoutRows = {                              // (new) assembled from LoadoutData.build and LoadoutRows.build
   usage: "scanning" | "ready",
   items: InventoryItem[], hooks: InventoryHook[],  // cells attached, hook usage attached
-  problems: string[], events: { claude: string[], codex: string[] }, roots: { claude: string, codex: string },
+  problems: string[], events: CliEvents[], roots: CliRoot[],
   countsByScope: { [scope: string]: FilterCounts },   // key "global", or an absolute project folder
   rowFlags: { [rowKey: string]: { one: boolean, neverRan: boolean, dead: boolean } }
 }
-// rowFlags[key].one = (only.claude + only.codex > 0) of filterCounts over that row's members; neverRan and dead are counts > 0.
+// rowFlags[key].one = (the sum of only[].count > 0) of filterCounts over that row's members; neverRan and dead are counts > 0.
+// A row is present in a CLI whose cell is neither missing nor absent.
 ```
 
 Activity (from `ActivityReport.jsonObject`, the same names as the frozen `activity.json`):
@@ -265,7 +291,7 @@ Limits `(new)`. `Limits`, `CLILimits` and `LimitWindow` are not `Codable`, so th
 ```ts
 // every nullable member (plan, source, at, minutes, scope) is always present, null when unknown
 type LimitsEntry = {
-  cli: "claude" | "codex" | "gemini",
+  cli: Cli,
   state: "measured" | "notRecorded" | "unreadable" | "notMeasurable" | "notInstalled",
   plan: string | null, source: "claudeCache" | "claudeStatusline" | null,
   at: number | null,                              // when the record was taken; set only when measured

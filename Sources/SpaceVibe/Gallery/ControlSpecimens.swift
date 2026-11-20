@@ -274,7 +274,7 @@ struct ControlSpecimens: View {
                 VStack(alignment: .leading, spacing: Space.s8) {
                     SpecimenLayout.caption("row detail popover")
                     PopoverSurface {
-                        PopoverHead(name: "Fix leaderboard 500", sub: "Claude Code, spacevibe-api") { CLIMark(CoreLimitsCLI.claude, size: .logo) }
+                        PopoverHead(name: "Fix leaderboard 500", sub: "Claude Code, spacevibe-api") { CLIMark(CLIID.claude, size: .logo) }
                         PopoverSentence("Asks: Allow Bash? pnpm test --filter api")
                         PopoverSentence("Answer in the terminal. SpaceVibe only shows the question.")
                         PopoverActions {

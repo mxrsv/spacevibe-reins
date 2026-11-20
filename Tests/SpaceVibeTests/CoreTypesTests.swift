@@ -77,7 +77,7 @@ enum CoreTestData {
     }
 }
 
-@Suite("Core DTOs")
+@Suite("Core DTOs", .fixtureCLIs)
 struct CoreTypesTests {
     // MARK: Recorded transcripts
 
@@ -118,7 +118,7 @@ struct CoreTypesTests {
         "journal.undo": CoreUndoResult.self, "journal.history": CoreJournalHistory.self,
         "rules.snapshot": CoreRulesSnapshot.self, "rules.preview": CoreCapabilityPreview.self, "rules.setCapability": CoreSetCapabilityResult.self,
         "rules.add": CoreEntryResult.self, "rules.remove": CoreEntryResult.self, "rules.changeVerdict": CoreEntryResult.self, "rules.changeVerdicts": CoreEntryResult.self,
-        "rules.check": CoreRuleCheck.self, "limits.read": CoreLimitsResult.self,
+        "rules.check": CoreRuleCheck.self, "limits.read": CoreLimitsResult.self, "clis.list": CoreCLIsList.self,
     ]
 
     private static func unmaskedParams(_ json: [String: Any]) throws -> Any {
@@ -182,8 +182,8 @@ struct CoreTypesTests {
         #expect(snapshot.items.contains { $0.hasSkillOverride }, "an item that carries the override member")
         #expect(snapshot.items.contains { !$0.hasSkillOverride }, "an item that omits it")
         let input = try #require(golden["usageInput"] as? [String: Any])
-        #expect(try CoreTestData.roundTripDifference(try #require(input["totals"]), as: CoreUsageTotals.self) == nil)
-        #expect(try CoreTestData.roundTripDifference(try #require(input["windows"]), as: CoreUsageWindows.self) == nil)
+        #expect(try CoreTestData.roundTripDifference(try #require(input["totals"]), as: [CoreCLITotals].self) == nil)
+        #expect(try CoreTestData.roundTripDifference(try #require(input["windows"]), as: [CoreLogWindow].self) == nil)
         #expect(try CoreTestData.roundTripDifference(try #require(golden["filterCounts"]), as: CoreFilterCounts.self) == nil)
     }
 
@@ -236,10 +236,10 @@ struct CoreTypesTests {
     // MARK: Shapes the goldens do not carry
 
     private static let loadoutRows = """
-    {"usage":"ready","items":[{"id":"claude:skill:local:a","cli":"claude","kind":"skill","name":"a","entry":"a","description":"","owner":"user","path":"/h/.claude/skills/a","file":"/h/.claude/skills/a/SKILL.md","removable":true,"scope":"global","project":null,"inOther":false,"override":null,"key":"skill::a","cells":{"claude":{"state":"counted","runs":2,"last":"2026-11-01"},"codex":{"state":"missing"}}}],
-     "hooks":[{"id":"claude:hook:abc","cli":"claude","kind":"hook","event":"Stop","matcher":null,"command":"x.sh","timeout":5.5,"async":false,"owner":"user","removable":true,"dead":true,"paths":["/h/x.sh"],"hash":"abc","file":"/h/.claude/settings.json","scope":"project","project":"/p","key":"hook:/p:abc","cells":{"claude":{"state":"counted","runs":1,"errors":1,"last":null},"codex":{"state":"unmeasurable","reason":"Codex does not log hook runs"}},"usage":{"runs":1,"avgMs":null,"totalMs":0,"errors":1,"last":null}}],
-     "problems":["/h/.claude/settings.json is not valid JSON."],"events":{"claude":["Stop"],"codex":["Stop"]},"roots":{"claude":"/h/.claude","codex":"/h/.codex"},
-     "countsByScope":{"global":{"all":1,"only":{"claude":1,"codex":0},"neverRan":0,"dead":0},"/p":{"all":1,"only":{"claude":1,"codex":0},"neverRan":0,"dead":1}},
+    {"usage":"ready","items":[{"id":"claude:skill:local:a","cli":"claude","kind":"skill","name":"a","entry":"a","description":"","readBy":["claude"],"owner":"user","path":"/h/.claude/skills/a","file":"/h/.claude/skills/a/SKILL.md","removable":true,"scope":"global","project":null,"override":null,"key":"skill::a","cells":[{"cli":"claude","state":"counted","runs":2,"last":"2026-11-01"},{"cli":"codex","state":"missing"}]}],
+     "hooks":[{"id":"claude:hook:abc","cli":"claude","kind":"hook","event":"Stop","matcher":null,"command":"x.sh","timeout":5.5,"async":false,"owner":"user","removable":true,"dead":true,"paths":["/h/x.sh"],"hash":"abc","file":"/h/.claude/settings.json","scope":"project","project":"/p","key":"hook:/p:abc","cells":[{"cli":"claude","state":"counted","runs":1,"errors":1,"last":null},{"cli":"codex","state":"unmeasurable","reason":"Codex does not log hook runs"},{"cli":"nohooks","state":"absent"}],"usage":{"runs":1,"avgMs":null,"totalMs":0,"errors":1,"last":null}}],
+     "problems":["/h/.claude/settings.json is not valid JSON."],"events":[{"cli":"claude","events":["Stop"]},{"cli":"codex","events":["Stop"]}],"roots":[{"cli":"claude","root":"/h/.claude"},{"cli":"codex","root":"/h/.codex"}],
+     "countsByScope":{"global":{"all":1,"only":[{"cli":"claude","count":1},{"cli":"codex","count":0}],"neverRan":0,"dead":0},"/p":{"all":1,"only":[{"cli":"claude","count":1},{"cli":"codex","count":0}],"neverRan":0,"dead":1}},
      "rowFlags":{"skill::a":{"one":true,"neverRan":false,"dead":false},"hook:/p:abc":{"one":true,"neverRan":false,"dead":true}}}
     """
 
@@ -264,7 +264,7 @@ struct CoreTypesTests {
         try JSONSerialization.jsonObject(with: Data(text.utf8))
     }
 
-    @Test("loadout.rows round-trips, including the cell shapes and the hook usage null")
+    @Test("loadout.rows round-trips, including the cell shapes (an absent one too) and the hook usage null")
     func loadoutRowsShape() throws {
         #expect(try CoreTestData.roundTripDifference(try object(Self.loadoutRows), as: CoreLoadoutRows.self) == nil)
     }
@@ -302,7 +302,7 @@ struct CoreTypesTests {
 
     @Test("a member the wire omits stays omitted, and a null stays null")
     func omittedVersusNull() throws {
-        let omitted = #"{"id":"i","cli":"codex","kind":"agent","name":"n","entry":"n.md","description":"","owner":"user","path":"p","file":"f","removable":false,"scope":"project","project":"/p","inOther":true,"key":"agent:/p:n"}"#
+        let omitted = #"{"id":"i","cli":"codex","kind":"agent","name":"n","entry":"n.md","description":"","owner":"user","path":"p","file":"f","removable":false,"scope":"project","project":"/p","readBy":["codex"],"key":"agent:/p:n"}"#
         let item = try JSONDecoder().decode(CoreInventoryItem.self, from: Data(omitted.utf8))
         #expect(!item.hasSkillOverride)
         #expect(item.cells == nil)

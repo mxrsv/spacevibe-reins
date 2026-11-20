@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/limits"
 )
@@ -125,13 +126,17 @@ func collect(data, claudeRoot string, input []byte, oversized, readErr bool) str
 	if err != nil {
 		return ReasonRootsRefused
 	}
+	claude, err := r.CLI(clis.Claude)
+	if err != nil {
+		return ReasonRootsRefused
+	}
 	reason := ""
 	switch {
 	case readErr:
 		reason = ReasonInputUnreadable
 	case oversized:
 		reason = ReasonInputTooLarge
-	case filepath.Clean(r.Claude.Root) != filepath.Clean(claudeRoot):
+	case filepath.Clean(claude.Root) != filepath.Clean(claudeRoot):
 		reason = ReasonClaudeRootChanged
 	default:
 		if err := Capture(cfg, r, input, time.Now()); err != nil {

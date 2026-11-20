@@ -21,7 +21,7 @@ struct GlanceListSurface<Content: View>: View {
 /// and shows where a click goes ("Ghostty", or "Activity" when no host app is found, GW5, GW6) under the state. `hint` is
 /// asked only for the hovered row. The whole row takes the click.
 struct GlanceSessionRow: View {
-    let cli: CoreCLI
+    let cli: CLIID
     let title: String
     let detail: String
     let state: GlanceState
@@ -63,7 +63,7 @@ struct GlanceSessionRow: View {
         .onHover { hovering = $0 }
         .animation(reduceMotion ? nil : .easeOut(duration: Metrics.Motion.quick), value: hovering)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(CoreLimitsCLI(cli).label), \(title), \(stateLabel)")
+        .accessibilityLabel("\(cli.label), \(title), \(stateLabel)")
         .accessibilityValue(detail)
         .accessibilityAddTraits(.isButton)
     }

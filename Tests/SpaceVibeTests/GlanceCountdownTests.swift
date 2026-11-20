@@ -5,7 +5,7 @@ import Testing
 /// The glance widget's reset countdown (spec `docs/specs/2026-11-19-limit-reset-countdown.md`, LC-R5 to LC-R8): which window
 /// the pill shows, when the widget draws again, where the pill sits, the Limits group's rows, the 60 s read and its stop, and
 /// the click route to Limits. No window is opened.
-@Suite("Glance countdown")
+@Suite("Glance countdown", .fixtureCLIs)
 @MainActor
 struct GlanceCountdownTests {
     private static let now = Date(timeIntervalSince1970: 1_793_703_600)
@@ -17,7 +17,7 @@ struct GlanceCountdownTests {
                         active: active, current: resets > 0)
     }
 
-    private func entry(_ cli: CoreLimitsCLI, _ windows: [CoreLimitWindow]) -> CoreLimitsEntry {
+    private func entry(_ cli: CLIID, _ windows: [CoreLimitWindow]) -> CoreLimitsEntry {
         CoreLimitsEntry(cli: cli, state: .measured, plan: nil, source: nil, at: Self.now.timeIntervalSince1970 - 60, windows: windows)
     }
 
@@ -205,13 +205,13 @@ struct GlanceCountdownTests {
         let store = OpenStateStore()
         let page = LimitsCanvas.page
         store.setOpen(false, page: page, id: LimitsCanvas.windowsCardID)
-        store.setOpen(false, page: page, id: LimitsCanvas.bandOpenID(CoreLimitsCLI.codex.rawValue))
-        store.setOpen(false, page: page, id: LimitsCanvas.bandOpenID(CoreLimitsCLI.claude.rawValue))
+        store.setOpen(false, page: page, id: LimitsCanvas.bandOpenID(CLIID.codex.rawValue))
+        store.setOpen(false, page: page, id: LimitsCanvas.bandOpenID(CLIID.claude.rawValue))
         shell.openLimits(windowID: "codex:secondary", in: limits, openState: store)
         #expect(store.isOpen(page: page, id: LimitsCanvas.windowsCardID, byDefault: false))
-        #expect(store.isOpen(page: page, id: LimitsCanvas.bandOpenID(CoreLimitsCLI.codex.rawValue), byDefault: false))
+        #expect(store.isOpen(page: page, id: LimitsCanvas.bandOpenID(CLIID.codex.rawValue), byDefault: false))
         // Another CLI's band keeps the user's choice.
-        #expect(!store.isOpen(page: page, id: LimitsCanvas.bandOpenID(CoreLimitsCLI.claude.rawValue), byDefault: true))
+        #expect(!store.isOpen(page: page, id: LimitsCanvas.bandOpenID(CLIID.claude.rawValue), byDefault: true))
         #expect(limits.selectedID == "codex:secondary")
     }
 }

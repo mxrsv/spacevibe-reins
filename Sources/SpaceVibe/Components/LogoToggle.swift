@@ -18,7 +18,7 @@ enum LogoToggleMode: Equatable {
 /// pressed or focused `sel` (D57). Read-only and only-copy logos take no fill and show the not-allowed pointer.
 /// `justChanged` plays the pop once (logo 0.8 to 1, then the badge); reduced motion drops it (V5-R42).
 struct LogoToggle: View {
-    let cli: CoreLimitsCLI
+    let cli: CLIID
     let isLit: Bool
     var mode: LogoToggleMode = .toggles
     var justChanged = false
@@ -87,7 +87,7 @@ struct LogoToggle: View {
     }
 
     /// The value VoiceOver reads after the CLI's name (V5-R43): "not in Codex, press to add".
-    static func spokenValue(cli: CoreLimitsCLI, isLit: Bool, mode: LogoToggleMode) -> String {
+    static func spokenValue(cli: CLIID, isLit: Bool, mode: LogoToggleMode) -> String {
         let presence = isLit ? "in \(cli.label)" : "not in \(cli.label)"
         switch mode {
         case .toggles: return "\(presence), press to \(isLit ? "remove" : "add")"

@@ -16,8 +16,10 @@ final class LimitsModel {
 
     let env: AppEnvironment
 
-    /// Claude Code, Codex, Gemini CLI, in that order; empty until the first read lands.
-    private(set) var results: [CoreLimitsEntry] = []
+    /// The last reading as the core sent it, in registry order; empty until the first read lands. Pages read `results`.
+    private(set) var rawResults: [CoreLimitsEntry] = []
+    /// The last reading of the CLIs the catalog shows, in registry order.
+    var results: [CoreLimitsEntry] { CLICatalog.current.shown(rawResults) }
     /// When `results` was read. A window's remaining time is computed from the clock, not from this.
     private(set) var readAt: Date?
     /// A read that could not run (no roots). Cleared by the next successful read.
@@ -35,7 +37,7 @@ final class LimitsModel {
     /// produce from it. A refresh still reads through `env`.
     init(env: AppEnvironment, results: [CoreLimitsEntry], failure: String? = nil) {
         self.env = env
-        self.results = results
+        rawResults = results
         self.failure = failure
         readAt = results.isEmpty ? nil : Date()
     }
@@ -45,7 +47,7 @@ final class LimitsModel {
 
     var isLoading: Bool { results.isEmpty && failure == nil }
 
-    func limits(for cli: CoreLimitsCLI) -> CoreLimitsEntry? { results.first { $0.cli == cli } }
+    func limits(for cli: CLIID) -> CoreLimitsEntry? { results.first { $0.cli == cli } }
 
     /// The entry the page shows among `entries`: the one picked, else the window with the least left.
     func selection(in entries: [LimitsWording.Entry], now: Date) -> String? {
@@ -59,7 +61,7 @@ final class LimitsModel {
         isReading = true
         defer { isReading = false }
         do {
-            results = try await env.goCore.limitsRead().limits
+            rawResults = try await env.goCore.limitsRead().limits
             readAt = Date()
             failure = nil
         } catch is CancellationError {

@@ -32,11 +32,14 @@ final class LoadoutModel {
     private(set) var data: LoadoutData?
     /// The inventory could not be read at all (no config folders).
     private(set) var readFailure: String?
-    private(set) var usageResult: CoreUsageResult?
+    /// The last scan as the core sent it; pages read `usageResult`, the shown CLIs' part of it.
+    private(set) var rawUsage: CoreUsageResult?
+    /// The last scan, for the CLIs the catalog shows.
+    var usageResult: CoreUsageResult? { rawUsage.map { CLICatalog.current.shown($0) } }
     private(set) var scanProgress: CoreUsageProgress?
     private(set) var scanFailure: String?
     /// The usage scan failed and no earlier result stands in: the counts are missing, not still on their way.
-    var scanFailed: Bool { usageResult == nil && scanFailure != nil }
+    var scanFailed: Bool { rawUsage == nil && scanFailure != nil }
 
     var scope = LoadoutRows.globalScope
     var filter = LoadoutFilter.all
@@ -50,6 +53,7 @@ final class LoadoutModel {
 
     @ObservationIgnored private var raw: CoreLoadoutRows?
     @ObservationIgnored private var started = false
+    @ObservationIgnored private var watchingCatalog = false
     @ObservationIgnored private var scanRunning = false
     @ObservationIgnored private var readsInFlight = 0
     @ObservationIgnored private var buildsRequested = 0
@@ -135,7 +139,7 @@ final class LoadoutModel {
             // A core that has no scan result (it restarted, so the old one is gone) answers `scanning` until someone scans.
             // The old note and counts describe a core that is gone, so they are dropped and the scan is asked for again.
             if rows.usage == .scanning, !scanRunning, scanFailure == nil {
-                usageResult = nil
+                rawUsage = nil
                 scanFailure = nil
                 scan()
             }
@@ -155,7 +159,7 @@ final class LoadoutModel {
                 let result = try await core.usageScan(progress: { [weak self] progress in
                     Task { @MainActor in self?.scanProgress = progress }
                 })
-                usageResult = result
+                rawUsage = result
                 scanFailure = nil
             } catch is CancellationError {
                 // Nothing to report; the next refresh scans again.
@@ -172,16 +176,36 @@ final class LoadoutModel {
         }
     }
 
+    /// Builds the rows from the last read, through the catalog's filter, and builds them again whenever the app's catalog
+    /// changes (`clis.list` landed, a CLI turned on or off), so a CLI turned off leaves every row and count at once.
     private func rebuild() async {
         guard let snapshot = raw else { return }
         buildsRequested += 1
         buildGeneration += 1
         let generation = buildGeneration
         let previousRows = data?.rows ?? []
-        let built = await Task.detached(priority: .userInitiated) { LoadoutData.build(raw: snapshot, previousRows: previousRows) }.value
+        let catalog = CLICatalog.current
+        watchCatalog()
+        // The build runs off the main actor, where the task's own catalog is the one read here.
+        let built = await Task.detached(priority: .userInitiated) {
+            CLICatalog.$scoped.withValue(catalog) { LoadoutData.build(raw: catalog.shown(snapshot), previousRows: previousRows) }
+        }.value
         buildsApplied += 1
         guard generation == buildGeneration else { return }
         data = built
+    }
+
+    /// Armed once at a time: the next change of the app's catalog rebuilds the rows and arms it again.
+    private func watchCatalog() {
+        guard !watchingCatalog else { return }
+        watchingCatalog = true
+        withObservationTracking { _ = CLICatalog.current } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                self.watchingCatalog = false
+                await self.rebuild()
+            }
+        }
     }
 
     // MARK: Choices
@@ -194,7 +218,7 @@ final class LoadoutModel {
             scope: effective,
             all: all,
             shown: all.filter { filter.matches($0.flags) },
-            counts: data.countsByScope[effective.value] ?? CoreFilterCounts(all: 0, only: .init(claude: 0, codex: 0), neverRan: 0, dead: 0),
+            counts: data.countsByScope[effective.value] ?? CoreFilterCounts(all: 0, only: [], neverRan: 0, dead: 0),
             max: LoadoutRows.maxRuns(all)
         )
     }
@@ -208,10 +232,10 @@ final class LoadoutModel {
 
     // MARK: Writes
 
-    func add(_ row: LoadoutRow, to cli: CoreCLI) {
+    func add(_ row: LoadoutRow, to cli: CLIID) {
         guard let id = LoadoutRows.copyPlan(row, to: cli, events: data?.events ?? [:]) else { return }
         perform(guardKey: "copy:\(id):\(cli.rawValue)", label: LoadoutFormat.addLabel(row: row, to: cli)) { core in
-            try await core.loadoutCopyToOther(id: id).entry
+            try await core.loadoutCopyToOther(id: id, target: cli).entry
         }
     }
 
@@ -226,11 +250,11 @@ final class LoadoutModel {
     var guardedWrites: Int { inFlight.count }
 
     /// The dead hooks `loadout.removeDeadHooks` removes for this CLI: every one, not one per row (two files can share a row).
-    func deadHookCount(cli: CoreCLI) -> Int {
+    func deadHookCount(cli: CLIID) -> Int {
         raw?.hooks.filter { $0.cli == cli && $0.dead && $0.removable }.count ?? 0
     }
 
-    func removeDeadHooks(cli: CoreCLI) {
+    func removeDeadHooks(cli: CLIID) {
         let count = deadHookCount(cli: cli)
         let label = "Removed \(count) dead \(count == 1 ? "hook" : "hooks") from \(cli.label)"
         perform(guardKey: "remove-dead:\(cli.rawValue)", label: label) { core in
@@ -288,7 +312,7 @@ final class LoadoutModel {
 
     private nonisolated static func run(_ step: LoadoutRows.SkillWrites.Step, on core: any CoreService) async throws -> CoreJournalEntry {
         switch step {
-        case .copy(let id, _): try await core.loadoutCopyToOther(id: id).entry
+        case .copy(let id, let target): try await core.loadoutCopyToOther(id: id, target: target).entry
         case .remove(let id, _): try await core.loadoutRemoveItem(id: id).entry
         }
     }
@@ -355,8 +379,7 @@ extension LoadoutData {
         var copy = self
         copy.rows = rows.map { row in
             var row = row
-            row.cells.claude = Self.uncounted(row.cells.claude)
-            row.cells.codex = Self.uncounted(row.cells.codex)
+            row.cells = CoreCells(entries: row.cells.entries.map { .init(cli: $0.cli, cell: Self.uncounted($0.cell)) })
             return row
         }
         return copy
@@ -365,7 +388,7 @@ extension LoadoutData {
     private static func uncounted(_ cell: CoreUsageCell) -> CoreUsageCell {
         switch cell {
         case .counted, .pending: .pending(reason: "Usage scan has not finished")
-        case .missing, .unmeasurable: cell
+        case .missing, .unmeasurable, .absent: cell
         }
     }
 }

@@ -8,16 +8,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/identity"
 )
 
 const (
 	envTest = identity.EnvPrefix + "TEST"
 	envHome = identity.EnvPrefix + "HOME"
-	// The folders of the CLIs, as the CLIs read them.
-	envUserHome        = "HOME"
-	envClaudeConfigDir = "CLAUDE_CONFIG_DIR"
-	envCodexHome       = "CODEX_HOME"
+	// envUserHome picks where the CLI folders are looked for. Each CLI's own root override (CLAUDE_CONFIG_DIR,
+	// CODEX_HOME) is named in its registry entry (clis.Layout.RootEnv).
+	envUserHome = "HOME"
+	// envPath is searched for the binaries a CLI's registry entry names (clis.Installed). Only stat looks at it.
+	envPath = "PATH"
 	// envProcFixture is the same name as proc.EnvProcFixture; config cannot import proc (proc imports config).
 	envProcFixture = identity.EnvPrefix + "PROC_FIXTURE"
 )
@@ -31,10 +33,12 @@ type Config struct {
 	// UserHome is HOME, as given (empty counts as unset). It only picks where the CLI folders are
 	// looked for; it is never the real home (see roots.RealHome).
 	UserHome string
-	// ClaudeConfigDir is CLAUDE_CONFIG_DIR, as given (empty counts as unset).
-	ClaudeConfigDir string
-	// CodexHome is CODEX_HOME, as given (empty counts as unset).
-	CodexHome string
+	// RootOverrides is each CLI's root override (clis.Layout.RootEnv: CLAUDE_CONFIG_DIR, CODEX_HOME), as given and
+	// keyed by CLI id. A missing or empty value counts as unset.
+	RootOverrides map[clis.ID]string
+	// SearchPath is the folders of PATH, in order. Empty entries are dropped; relative ones are kept and skipped by
+	// clis.Installed.
+	SearchPath []string
 	// ProcFixture is SPACEVIBE_PROC_FIXTURE, a process-list fixture file for dev runs (empty counts as unset).
 	// internal/proc takes it as an argument and never reads the environment.
 	ProcFixture string
@@ -44,7 +48,7 @@ type Config struct {
 func Load() (Config, error) { return LoadFrom(os.Getenv) }
 
 // LoadFrom reads through getenv, so a test can fake the environment. It fails closed: an unknown
-// SPACEVIBE_TEST value, or a relative SPACEVIBE_HOME, HOME, CLAUDE_CONFIG_DIR or CODEX_HOME, is an error, never a guess.
+// SPACEVIBE_TEST value, or a relative SPACEVIBE_HOME, HOME or CLI root override, is an error, never a guess.
 func LoadFrom(getenv func(string) string) (Config, error) {
 	var c Config
 	switch v := getenv(envTest); v {
@@ -60,16 +64,40 @@ func LoadFrom(getenv func(string) string) (Config, error) {
 		}
 		c.Home = filepath.Clean(v)
 	}
-	for _, folder := range []struct {
-		name string
-		into *string
-	}{{envUserHome, &c.UserHome}, {envClaudeConfigDir, &c.ClaudeConfigDir}, {envCodexHome, &c.CodexHome}} {
-		v := getenv(folder.name)
-		if v != "" && !filepath.IsAbs(v) {
-			return Config{}, fmt.Errorf("%s must be an absolute path", folder.name)
+	v, err := absoluteOrEmpty(getenv, envUserHome)
+	if err != nil {
+		return Config{}, err
+	}
+	c.UserHome = v
+	for _, d := range clis.All() {
+		if d.Layout.RootEnv == "" {
+			continue
 		}
-		*folder.into = v
+		v, err := absoluteOrEmpty(getenv, d.Layout.RootEnv)
+		if err != nil {
+			return Config{}, err
+		}
+		if v != "" {
+			if c.RootOverrides == nil {
+				c.RootOverrides = map[clis.ID]string{}
+			}
+			c.RootOverrides[d.ID] = v
+		}
+	}
+	for _, dir := range filepath.SplitList(getenv(envPath)) {
+		if dir != "" {
+			c.SearchPath = append(c.SearchPath, dir)
+		}
 	}
 	c.ProcFixture = getenv(envProcFixture)
 	return c, nil
+}
+
+// absoluteOrEmpty is the variable as given, or an error when it is set and not an absolute path.
+func absoluteOrEmpty(getenv func(string) string, name string) (string, error) {
+	v := getenv(name)
+	if v != "" && !filepath.IsAbs(v) {
+		return "", fmt.Errorf("%s must be an absolute path", name)
+	}
+	return v, nil
 }

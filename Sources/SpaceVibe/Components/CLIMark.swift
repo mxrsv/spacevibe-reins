@@ -1,41 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// The colour a CLI carries on the Limits surface. Gemini CLI has no brand colour in the app, so it reads neutral.
-extension CoreLimitsCLI {
-    var fill: Color {
-        switch self {
-        case .claude: Palette.claude
-        case .codex: Palette.codex
-        case .gemini: Palette.textSecondary
-        }
-    }
-
-    var tint: Color {
-        switch self {
-        case .claude: Palette.claudeTint
-        case .codex: Palette.codexTint
-        case .gemini: Palette.surfaceRaised
-        }
-    }
-}
-
-extension CoreLimitsCLI {
-    /// The same CLI as the inventory names it (Claude Code or Codex).
-    init(_ cli: CoreCLI) { self = cli == .claude ? .claude : .codex }
-
-    /// The CLI's name as the app writes it (GLOSSARY).
-    var label: String {
-        switch self {
-        case .claude: "Claude Code"
-        case .codex: "Codex"
-        case .gemini: "Gemini CLI"
-        }
-    }
-}
-
-/// A bare CLI brand mark, independent of data/semantic colours: Claude and Gemini retain the asset's colour;
-/// Codex uses its monochrome mark, white in dark mode and black in light mode. No background or border.
+/// A bare CLI brand mark (`CLIRegistry`'s `mark`; a CLI with none, or a file that is missing, draws its tone's dot), independent of data/semantic colours: a mark keeps the asset's colour, and
+/// a monochrome one (Codex) is white in dark mode and black in light mode. No background or border.
 /// The transparent layout slot keeps existing row alignment and glyph sizes. Decorative: the name is beside it.
 struct CLIMark: View {
     /// `glyph` is the bare mark at 14 beside 12 pt text; `control` the bare mark at 16 beside 13 pt text (a band header's
@@ -43,16 +10,12 @@ struct CLIMark: View {
     /// inside the reset countdown's ring (the glance widget).
     enum Size { case large, medium, small, glyph, control, logo, ring }
 
-    let cli: CoreLimitsCLI
+    let cli: CLIID
     var size: Size = .large
 
-    init(_ cli: CoreLimitsCLI, size: Size = .large) {
+    init(_ cli: CLIID, size: Size = .large) {
         self.cli = cli
         self.size = size
-    }
-
-    init(_ cli: CoreCLI, size: Size = .large) {
-        self.init(CoreLimitsCLI(cli), size: size)
     }
 
     var body: some View {
@@ -83,39 +46,34 @@ struct CLIMark: View {
 
     @ViewBuilder
     private func glyph(side: CGFloat) -> some View {
-        if let image = BrandMark.image(cli) {
+        let identity = cli.identity
+        if let mark = identity.mark, let image = BrandMark.image(mark) {
             Image(nsImage: image)
                 .resizable()
-                .renderingMode(cli == .codex ? .template : .original)
+                .renderingMode(mark.isMonochrome ? .template : .original)
                 .scaledToFit()
                 .foregroundStyle(Palette.brandMonochrome)
                 .frame(width: side, height: side)
         } else {
-            Circle().fill(cli.fill).frame(width: Space.s8, height: Space.s8)
+            Circle().fill(identity.tone.fill).frame(width: Space.s8, height: Space.s8)
         }
     }
 }
 
-/// The brand SVGs in `Resources/Brand`: inside the app bundle, else (debug builds only) in the checkout. A missing file
-/// draws a dot instead of failing.
+/// The brand SVGs in `Resources/Brand` (file names in `CLIRegistry`): inside the app bundle, else (debug builds only) in the
+/// checkout. A missing file draws a dot instead of failing.
 enum BrandMark {
-    private static let fileNames: [CoreLimitsCLI: String] = [
-        .claude: "claude-spark-clay.svg",
-        .codex: "codex-blossom-white.svg",
-        .gemini: "gemini.svg",
-    ]
-
-    @MainActor private static var cache: [CoreLimitsCLI: NSImage] = [:]
+    @MainActor private static var cache: [String: NSImage] = [:]
 
     @MainActor
-    static func image(_ cli: CoreLimitsCLI) -> NSImage? {
-        if let cached = cache[cli] { return cached }
-        guard let name = fileNames[cli],
-              let url = [Bundle.main.resourceURL?.appendingPathComponent("Brand/\(name)"), checkoutURL(name)]
+    static func image(_ mark: CLIMarkArt) -> NSImage? {
+        let name = mark.fileName
+        if let cached = cache[name] { return cached }
+        guard let url = [Bundle.main.resourceURL?.appendingPathComponent("Brand/\(name)"), checkoutURL(name)]
                   .compactMap({ $0 })
                   .first(where: { FileManager.default.fileExists(atPath: $0.path) }),
               let image = NSImage(contentsOf: url) else { return nil }
-        cache[cli] = image
+        cache[name] = image
         return image
     }
 

@@ -4,10 +4,10 @@ import Testing
 
 /// V5-A5: the Never ran warning and the newly added note, plugin skills read-only, the detected CLIs and the write plans; every
 /// sentence is vocabulary-checked against GLOSSARY.md (V5-R45).
-@Suite("Skills wording and write plans")
+@Suite("Skills wording and write plans", .fixtureCLIs)
 struct SkillsWordingTests {
     private typealias F = SkillRowsFixture
-    private let events = ["claude": ["Stop"], "codex": ["Stop"]]
+    private let events: [CLIID: [String]] = [.claude: ["Stop"], .codex: ["Stop"]]
 
     // MARK: Warning slot
 
@@ -53,7 +53,7 @@ struct SkillsWordingTests {
 
     @Test("the verdict says what the sessions say, one sentence per case, and never mentions a CLI that is not installed")
     func verdicts() throws {
-        func verdict(_ row: LoadoutRow, detected: [CoreCLI] = [.claude, .codex]) throws -> SkillsWording.Verdict {
+        func verdict(_ row: LoadoutRow, detected: [CLIID] = [.claude, .codex]) throws -> SkillsWording.Verdict {
             let marks = SkillRank.marks(for: [row])
             return try #require(SkillsWording.verdict(for: row, status: SkillStatus.of(row, marks: marks[row.key] ?? []), detected: detected))
         }
@@ -150,7 +150,7 @@ struct SkillsWordingTests {
             let status = SkillStatus.of(row, marks: marks)
             if let warning = SkillsWording.warning(for: row) { text += [warning.label, warning.sentence] }
             if let verdict = SkillsWording.verdict(for: row, status: status, detected: [.claude, .codex]) { text += [verdict.title, verdict.text, verdict.small ?? ""] }
-            for cli in CoreCLI.allCases {
+            for cli in CLICatalog.current.inventoryCLIs {
                 let meter = SkillsWording.meter(for: row, cli: cli, maxSessions: 10, now: F.now)
                 text += [meter.caption ?? "", meter.status ?? "", meter.emphasis ?? ""]
             }
@@ -166,7 +166,7 @@ struct SkillsWordingTests {
 
     @Test("the strip lists the CLIs limits.read does not call not installed; before a reading, the ones that hold a skill")
     func detected() {
-        func entry(_ cli: CoreLimitsCLI, _ state: CoreLimitsState) -> CoreLimitsEntry { CoreLimitsEntry(cli: cli, state: state, plan: nil, source: nil, at: nil, windows: []) }
+        func entry(_ cli: CLIID, _ state: CoreLimitsState) -> CoreLimitsEntry { CoreLimitsEntry(cli: cli, state: state, plan: nil, source: nil, at: nil, windows: []) }
         let rows = [F.row("a", claude: F.counted(1))]
         #expect(LoadoutRows.detectedCLIs(limits: [entry(.claude, .measured), entry(.codex, .notInstalled), entry(.gemini, .notMeasurable)], rows: rows) == [.claude])
         #expect(LoadoutRows.detectedCLIs(limits: [entry(.claude, .notRecorded), entry(.codex, .measured)], rows: rows) == [.claude, .codex])

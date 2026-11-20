@@ -1,5 +1,5 @@
 // Package proc is the only place Activity touches the operating system: process lookup, start
-// times, Codex thread locks and SIGTERM for Stop. Ported from Sources/ReinsCore/ProcessAdapter.swift
+// times, each CLI's process match (Codex thread locks, codex.go) and SIGTERM for Stop. Ported from Sources/ReinsCore/ProcessAdapter.swift
 // and Sources/Reins/Activity/FixtureProcessAdapter.swift.
 //
 // Only Terminate changes anything. The real adapter exists on darwin (ps, lsof, kill(2)); every other
@@ -15,16 +15,6 @@ import (
 	"syscall"
 )
 
-// Thread is a live codex process and the thread it holds a writer lock on. ThreadID is empty before
-// the first prompt (the Swift optional is nil there; a real thread id is never empty).
-type Thread struct {
-	Pid      int
-	ThreadID string
-	// LockUnknown is true when the lock listing (lsof) failed, so ThreadID being empty does not mean "no
-	// thread yet": the process may hold one. Callers must not treat such a row as thread-less.
-	LockUnknown bool
-}
-
 // Identity is what one reading of the process table says about a pid: the `ps lstart` text and the
 // executable's basename. Two readings of the same process are equal; a reused pid differs in Start.
 type Identity struct {
@@ -32,7 +22,12 @@ type Identity struct {
 	Name  string
 }
 
-// Adapter is the process view Activity uses. Tests pass a fake with the same shape.
+// Adapter is the process view Activity uses: the calls that do not depend on the CLI. Tests pass a fake with the
+// same shape. A CLI whose sessions are found from its own files (Claude Code's status files) needs nothing more. A
+// CLI found from the process table defines its own matcher interface in its own file (CodexMatcher, codex.go),
+// implements it on System and Fixture, and its activity adapter asserts it from the Adapter it is handed, so adding
+// a CLI never changes this interface or the fakes that do not use the match. A wrapper that embeds Adapter hides
+// every matcher; embed the concrete adapter instead.
 type Adapter interface {
 	// Measurable reports whether this adapter can see processes at all.
 	Measurable() bool
@@ -46,10 +41,6 @@ type Adapter interface {
 	// ErrNoSuchProcess when ps shows no such pid, ErrUnknown when the reading failed (ps missing, timed
 	// out, unparsable), and ErrNotMeasurable on an OS where processes cannot be read.
 	Identify(ctx context.Context, pid int) (Identity, error)
-	// CodexThreads lists the live codex processes with the thread each one holds a lock on. The error is
-	// ErrUnknown when the process list itself could not be read (the list is then not "empty": it is
-	// unknown). When only the lock listing failed, the processes are returned with LockUnknown set.
-	CodexThreads(ctx context.Context) ([]Thread, error)
 	// Terminate sends SIGTERM. It returns ErrNoSuchProcess, ErrNotPermitted, a SignalError, or
 	// ErrNotMeasurable.
 	Terminate(ctx context.Context, pid int) error

@@ -2,7 +2,7 @@ import CoreText
 import Testing
 @testable import SpaceVibe
 
-@Suite("Inter, the only typeface")
+@Suite("Inter, the only typeface", .fixtureCLIs)
 struct InterFontTests {
     @Test("the bundled font registers and each weight resolves to its named instance")
     func registersEveryWeight() {

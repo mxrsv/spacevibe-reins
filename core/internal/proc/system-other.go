@@ -24,8 +24,5 @@ func (System) StartTime(context.Context, int) (string, bool) { return "", false 
 // Identify always returns ErrNotMeasurable.
 func (System) Identify(context.Context, int) (Identity, error) { return Identity{}, ErrNotMeasurable }
 
-// CodexThreads is always empty (nothing is measurable, which Measurable says).
-func (System) CodexThreads(context.Context) ([]Thread, error) { return nil, nil }
-
 // Terminate always returns ErrNotMeasurable.
 func (System) Terminate(context.Context, int) error { return ErrNotMeasurable }

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/roots"
 )
@@ -232,8 +233,8 @@ func TestFixtureRootsPassRealHomeGuard(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.Claude.Root != "/private/tmp/reins-fixture-home/.claude" {
-		t.Errorf("claude root %q", r.Claude.Root)
+	if r.CLIs[clis.Claude].Root != "/private/tmp/reins-fixture-home/.claude" {
+		t.Errorf("claude root %q", r.CLIs[clis.Claude].Root)
 	}
 }
 

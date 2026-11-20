@@ -5,26 +5,26 @@ import Testing
 /// The Hooks tab's derived facts (V5-A18): the Answer in each case, the bands, the ONE copy rule and the two small-card lists
 /// it feeds, the filters and the sentences. Rows are built through `LoadoutRows.build`, as the app builds them (`HooksSynthetic`).
 /// Synthetic names only (S-R2).
-@Suite("Hooks model")
+@Suite("Hooks model", .fixtureCLIs)
 @MainActor
 struct HooksModelTests {
     /// The core's `Events()`: Codex lacks `PostToolUseFailure`, `Notification` and others; the lists are in lifecycle order.
-    private let events: [String: [String]] = [
-        "claude": ["SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest", "PostToolUse", "PostToolUseFailure", "Notification",
+    private let events: [CLIID: [String]] = [
+        .claude: ["SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest", "PostToolUse", "PostToolUseFailure", "Notification",
                    "SubagentStart", "SubagentStop", "Stop", "SessionEnd"],
-        "codex": ["SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest", "PostToolUse", "SubagentStart", "SubagentStop", "Interrupt",
+        .codex: ["SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest", "PostToolUse", "SubagentStart", "SubagentStop", "Interrupt",
                   "Stop", "SessionEnd"],
     ]
-    private let both: [CoreCLI] = [.claude, .codex]
+    private let both: [CLIID] = [.claude, .codex]
 
     private func rows(_ specs: [HooksSynthetic.Spec]) -> [LoadoutRow] { HooksSynthetic.rows(specs, events: events) }
 
-    private func spec(_ name: String, _ event: String, _ clis: [CoreCLI] = [.claude], runs: Int = 5, dead: Bool = false, plugin: String? = nil,
+    private func spec(_ name: String, _ event: String, _ clis: [CLIID] = [.claude], runs: Int = 5, dead: Bool = false, plugin: String? = nil,
                       matcher: String? = nil) -> HooksSynthetic.Spec {
         HooksSynthetic.Spec(name: name, event: event, matcher: matcher, clis: clis, runs: runs, dead: dead, plugin: plugin)
     }
 
-    private func context(_ detected: [CoreCLI] = [.claude, .codex], codexTakesHooks: Bool = false) -> HooksContext {
+    private func context(_ detected: [CLIID] = [.claude, .codex], codexTakesHooks: Bool = false) -> HooksContext {
         HooksContext(events: events, detected: detected, codexTakesHooks: codexTakesHooks)
     }
 
@@ -93,7 +93,7 @@ struct HooksModelTests {
     @Test("each reason, in the rule's order, and the rule's default: SpaceVibe writes no hook into Codex")
     func reasons() throws {
         let list = rows([spec("stop", "Stop"), spec("failure", "PostToolUseFailure"), spec("gone", "Stop", dead: true), spec("plug", "Stop", plugin: "neon")])
-        func block(_ name: String, to: CoreCLI = .codex, in c: HooksContext? = nil) throws -> LoadoutRows.HookCopyBlock? {
+        func block(_ name: String, to: CLIID = .codex, in c: HooksContext? = nil) throws -> LoadoutRows.HookCopyBlock? {
             let row = try #require(list.first { $0.hookTitle == "\(name).sh" })
             return (c ?? context()).block(row, to: to)
         }
@@ -117,7 +117,7 @@ struct HooksModelTests {
     func ruleAgreesWithCopyPlan() {
         let list = rows(HooksSynthetic.sample)
         for row in list {
-            for cli in CoreCLI.allCases where row.members[cli] == nil {
+            for cli in CLICatalog.current.inventoryCLIs where row.members[cli] == nil {
                 let block = LoadoutRows.hookCopyBlock(row, to: cli, events: events)
                 let plan = LoadoutRows.copyPlan(row, to: cli, events: events)
                 #expect((block == nil) == (plan != nil), "\(row.hookTitle) to \(cli.label): \(String(describing: block)) vs \(String(describing: plan))")
@@ -279,7 +279,7 @@ struct HooksModelTests {
             hook.paths = []
             hook.command = "prettier --write \"$FILE\""
             return hook
-        }()], problems: [], events: events, roots: [:], countsByScope: [:], rowFlags: [:]), home: nil)
+        }()], problems: [], events: .of(events), roots: [], countsByScope: [:], rowFlags: [:]), home: nil)
         #expect(inline.first?.hookTitle == "prettier --write \"$FILE\"")
         #expect(HooksWording.isOtherTypesProblem("2 hooks of other types are not shown.") && HooksWording.isOtherTypesProblem("1 hook of another type is not shown."))
         #expect(!HooksWording.isOtherTypesProblem("/x/settings.json is not valid JSON, so its hooks cannot be shown or changed."))

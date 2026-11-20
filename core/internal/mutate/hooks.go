@@ -5,13 +5,13 @@ import (
 	"os"
 	"slices"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/inventory"
 	"spacevibe.dev/core/internal/ojson"
 	"spacevibe.dev/core/internal/roots"
 	"spacevibe.dev/core/internal/textjs"
-	"spacevibe.dev/core/internal/usage"
 )
 
 // Hook writes and their undo (MutateHooks.swift). A hook op keeps the shape the Node core writes (type, file, event,
@@ -21,11 +21,11 @@ import (
 
 // AddHook adds one hook to the hook file of each CLI. It is Go API only, never an RPC method (G-fix.16): a hook
 // written for Codex is skipped by Codex until it is trusted.
-func AddHook(r roots.Roots, clis []usage.CLI, event string, matcher *string, command string, timeout *float64) (Entry, error) {
-	return locked(r, func(tx *Tx) (Entry, error) { return tx.addHook(clis, event, matcher, command, timeout) })
+func AddHook(r roots.Roots, targets []clis.ID, event string, matcher *string, command string, timeout *float64) (Entry, error) {
+	return locked(r, func(tx *Tx) (Entry, error) { return tx.addHook(targets, event, matcher, command, timeout) })
 }
 
-func (tx *Tx) addHook(clis []usage.CLI, event string, matcher *string, command string, timeout *float64) (Entry, error) {
+func (tx *Tx) addHook(targets []clis.ID, event string, matcher *string, command string, timeout *float64) (Entry, error) {
 	if err := tx.PrepareMutation(); err != nil {
 		return Entry{}, err
 	}
@@ -33,14 +33,27 @@ func (tx *Tx) addHook(clis []usage.CLI, event string, matcher *string, command s
 	if err := need(command != "", "Enter the command this hook runs."); err != nil {
 		return Entry{}, err
 	}
-	if err := requireCLIs(clis); err != nil {
+	if err := requireCLIs(targets); err != nil {
 		return Entry{}, err
 	}
-	clis = dedupe(clis)
-	for _, cli := range clis {
-		if err := need(slices.Contains(events(cli), event), label(cli)+" has no "+event+" event."); err != nil {
+	targets = dedupe(targets)
+	files := make([]string, len(targets))
+	for i, cli := range targets {
+		folders, err := tx.cliRoots(cli)
+		if err != nil {
 			return Entry{}, err
 		}
+		if err := writableKind(cli, inventory.KindHook); err != nil {
+			return Entry{}, err
+		}
+		events, err := inventory.EventsOf(cli)
+		if err != nil {
+			return Entry{}, err
+		}
+		if err := need(slices.Contains(events, event), label(cli)+" has no "+event+" event."); err != nil {
+			return Entry{}, err
+		}
+		files[i] = folders.HookFile
 	}
 	if matcher != nil {
 		trimmed := textjs.Trim(*matcher)
@@ -55,8 +68,7 @@ func (tx *Tx) addHook(clis []usage.CLI, event string, matcher *string, command s
 	}
 
 	var ops []Op
-	for _, cli := range clis {
-		file := tx.cliRoots(cli).HookFile
+	for _, file := range files {
 		edit, err := tx.ApplyJSON(file, nil, func(doc *ojson.Document) (*ojson.Document, error) {
 			return hookAdding(doc, file, event, matcher, hook)
 		})
@@ -69,14 +81,21 @@ func (tx *Tx) addHook(clis []usage.CLI, event string, matcher *string, command s
 		}
 		ops = append(ops, hookOp("hook-added", file, event, matcher, hook, *edit))
 	}
-	return tx.RecordMutation("Added "+event+" hook to "+labels(clis), ops)
+	return tx.RecordMutation("Added "+event+" hook to "+labels(targets), ops)
 }
 
 func (tx *Tx) removeHook(hook inventory.Hook) (Entry, error) {
 	if err := tx.PrepareMutation(); err != nil {
 		return Entry{}, err
 	}
-	file := tx.cliRoots(hook.CLI).HookFile
+	folders, err := tx.cliRoots(hook.CLI)
+	if err != nil {
+		return Entry{}, err
+	}
+	if err := writableKind(hook.CLI, inventory.KindHook); err != nil {
+		return Entry{}, err
+	}
+	file := folders.HookFile
 	var removed ojson.Value
 	var found bool
 	edit, err := tx.ApplyJSON(file, nil, func(doc *ojson.Document) (*ojson.Document, error) {
@@ -101,15 +120,15 @@ func (tx *Tx) removeHook(hook inventory.Hook) (Entry, error) {
 }
 
 // RemoveDeadHooks removes every dead, user-level hook of one CLI in one file write and one journal entry.
-func RemoveDeadHooks(r roots.Roots, cli usage.CLI) (Entry, error) {
+func RemoveDeadHooks(r roots.Roots, cli clis.ID) (Entry, error) {
 	return removeDeadHooks(context.Background(), r, cli)
 }
 
-func removeDeadHooks(ctx context.Context, r roots.Roots, cli usage.CLI) (Entry, error) {
+func removeDeadHooks(ctx context.Context, r roots.Roots, cli clis.ID) (Entry, error) {
 	return lockedContext(ctx, r, func(tx *Tx) (Entry, error) { return tx.removeDeadHooks(cli) })
 }
 
-func (tx *Tx) removeDeadHooks(cli usage.CLI) (Entry, error) {
+func (tx *Tx) removeDeadHooks(cli clis.ID) (Entry, error) {
 	if err := tx.PrepareMutation(); err != nil {
 		return Entry{}, err
 	}
@@ -122,7 +141,14 @@ func (tx *Tx) removeDeadHooks(cli usage.CLI) (Entry, error) {
 	if err := need(len(dead) > 0, "No dead hooks to remove.", coreerr.StatusConflict); err != nil {
 		return Entry{}, err
 	}
-	file := tx.cliRoots(cli).HookFile
+	folders, err := tx.cliRoots(cli)
+	if err != nil {
+		return Entry{}, err
+	}
+	if err := writableKind(cli, inventory.KindHook); err != nil {
+		return Entry{}, err
+	}
+	file := folders.HookFile
 	type removal struct {
 		hook  inventory.Hook
 		value ojson.Value

@@ -130,11 +130,11 @@ struct RulesCanvas: View {
             AnswerCard(sentence: answer.sentence, isOpen: open("answer")) {
                 VStack(alignment: .leading, spacing: Metrics.Tile.contentSpacing) {
                     ListRows {
-                        ListRow("Claude Code", leading: { CLIMark(CoreCLI.claude, size: .control) }, trailing: {
+                        ListRow(CLIID.claude.label, leading: { CLIMark(CLIID.claude, size: .control) }, trailing: {
                             VerdictMenuButton(model: model, target: .family(band.family), heading: "\(band.family.title) in Claude Code",
                                               current: band.allStance.single, label: band.allStance.single.map(RulesWording.title) ?? "Mixed", size: .regular)
                         })
-                        ListRow("Codex", leading: { CLIMark(CoreCLI.codex, size: .control) }, trailing: {
+                        ListRow(CLIID.codex.label, leading: { CLIMark(CLIID.codex, size: .control) }, trailing: {
                             HStack(spacing: Metrics.Rules.headSpacing) {
                                 Text(fact.text).spaceVibeText(.meta, tone: .tertiary).lineLimit(1)
                                 SpaceVibeIcon(content: .lock, ink: TextTone.tertiary.color, label: "read only")
@@ -260,7 +260,7 @@ struct RulesCanvas: View {
 
     private func detail(_ rule: CoreRule, family: RuleFamily) -> some View {
         PopoverSurface(onExit: { model.detailID = nil }) {
-            PopoverHead(name: rule.rule, sub: "\(family.title) \u{00B7} Claude Code") { CLIMark(CoreCLI.claude, size: .logo) }
+            PopoverHead(name: rule.rule, sub: "\(family.title) \u{00B7} Claude Code") { CLIMark(CLIID.claude, size: .logo) }
             PopoverSentence(RulesTabWording.meaning(rule.verdict))
             PopoverPath("\(RulesTabWording.settingsFile) \u{00B7} permissions.\(rule.verdict.rawValue)")
             ViewThatFits(in: .horizontal) {
@@ -304,7 +304,7 @@ private struct ColumnHead: View {
     var body: some View {
         HStack(spacing: Metrics.ListRow.spacing) {
             Spacer(minLength: 0)
-            cell { CLIMark(CoreCLI.claude, size: .glyph); Text("Claude Code") }
+            cell { CLIMark(CLIID.claude, size: .glyph); Text(CLIID.claude.label) }
         }
         .spaceVibeText(.meta, tone: .tertiary)
         .padding(.horizontal, Metrics.ListRow.leading)

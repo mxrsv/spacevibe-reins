@@ -4,7 +4,7 @@ import Testing
 
 /// The Loadout screen runs on the Go core (plan S.5 and S.6). Every test runs on a private copy of the synthetic fixture home
 /// (S-R1: never the real one), so a write test's byte comparison is the whole home outside SpaceVibe's own folder.
-@Suite("Loadout, Go core")
+@Suite("Loadout, Go core", .fixtureCLIs)
 @MainActor
 struct LoadoutModelEngineTests {
     /// The home a claude-only skill and a plugin skill live in, and a skill present in both CLIs.
@@ -46,7 +46,7 @@ struct LoadoutModelEngineTests {
         #expect(scan.files > 100)
         let after = try await client.loadoutRows()
         #expect(after.usage == .ready)
-        #expect(after.items.contains { $0.cells.map { cells in cells.claude != .missing } ?? false })
+        #expect(after.items.contains { $0.cells.map { cells in cells[.claude] != .missing } ?? false })
         #expect(after.countsByScope["global"]?.all ?? 0 > 0)
         #expect(after.rowFlags.count == Set(after.items.map(\.key) + after.hooks.map(\.key)).count)
         #expect(after.hooks.contains { $0.usage != nil })
@@ -121,12 +121,12 @@ struct LoadoutModelEngineTests {
         defer { client.shutdown() }
         let before = try await fixture.tree()
         let rows = try await client.loadoutRows()
-        let copy = try #require(rows.items.first { $0.cli == .claude && $0.kind == .skill && !$0.inOther && $0.scope == .global && $0.removable })
+        let copy = try #require(rows.items.first { $0.cli == .claude && $0.kind == .skill && $0.cells?[.codex] == .missing && $0.scope == .global && $0.removable })
         let dead = rows.hooks.filter { $0.cli == .claude && $0.dead && $0.removable }
         #expect(!dead.isEmpty)
 
         var ids: [String] = []
-        let copied = try await client.loadoutCopyToOther(id: copy.id).entry
+        let copied = try await client.loadoutCopyToOther(id: copy.id, target: .codex).entry
         ids.append(copied.id)
         #expect(try await fixture.tree() != before)
         ids.append(try await client.loadoutRemoveItem(id: copy.id).entry.id)
@@ -276,12 +276,12 @@ struct LoadoutModelEngineTests {
         func run(_ what: String, _ work: () async throws -> Void) async -> String {
             do { try await work(); return "\(what): accepted" } catch let error as CoreError { return "\(what): \(error.status) \(error.message)" } catch { return "\(what): \(error)" }
         }
-        let both = rows.items.first { $0.cli == .claude && $0.kind == .skill && $0.inOther }
+        let both = rows.items.first { $0.cli == .claude && $0.kind == .skill && $0.cells?[.codex].isPresent == true }
         let plugin = rows.items.first { !$0.removable }
         let project = rows.items.first { $0.scope == .project }
         var out: [String] = []
-        if let both { out.append(await run("copy a skill the other CLI has") { _ = try await service.loadoutCopyToOther(id: both.id) }) }
-        out.append(await run("copy an unknown id") { _ = try await service.loadoutCopyToOther(id: "claude:skill:global:nope") })
+        if let both { out.append(await run("copy a skill the other CLI has") { _ = try await service.loadoutCopyToOther(id: both.id, target: .codex) }) }
+        out.append(await run("copy an unknown id") { _ = try await service.loadoutCopyToOther(id: "claude:skill:global:nope", target: .codex) })
         out.append(await run("remove an unknown id") { _ = try await service.loadoutRemoveItem(id: "claude:skill:global:nope") })
         if let plugin { out.append(await run("remove a plugin item") { _ = try await service.loadoutRemoveItem(id: plugin.id) }) }
         if let project { out.append(await run("remove a project item") { _ = try await service.loadoutRemoveItem(id: project.id) }) }

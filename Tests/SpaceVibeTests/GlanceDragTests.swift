@@ -7,7 +7,7 @@ import Testing
 /// GW-R7): a short press stays a click, a longer move drags, the highlighted slot follows the pointer across screens, and
 /// the release saves that slot. No window: the panel and the controller only feed these types.
 @MainActor
-@Suite("Glance drag")
+@Suite("Glance drag", .fixtureCLIs)
 struct GlanceDragTests {
     /// The main screen (menu bar and Dock taken out) and a larger one to its right, bottoms aligned.
     private let main = GlanceScreen(id: GlanceScreenID(displayID: 1, name: "Built-in Retina Display"),

@@ -4,7 +4,7 @@ import Testing
 
 /// No secret-looking string from `config.toml` reaches the Rules page (AGENTS.md S-R3): a value shows only when it reads as a
 /// plain word.
-@Suite("Codex config wording")
+@Suite("Codex config wording", .fixtureCLIs)
 struct CodexWordingTests {
     @Test("a plain mode word shows as written; a URL, a token or other free text shows as hidden text")
     func words() {

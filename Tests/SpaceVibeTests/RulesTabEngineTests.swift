@@ -5,7 +5,7 @@ import Testing
 /// The Rules tab's writes against the real Go core on a private copy of the synthetic home (S-R1; V5-A6): one rule's verdict, a whole
 /// family's, a removal, and Undo putting the home back byte for byte, plus the page the fixture reads as. Every home comparison reads the
 /// tree off the main actor (`CoreFixtureHome.tree`).
-@Suite("Rules tab, Go core")
+@Suite("Rules tab, Go core", .fixtureCLIs)
 @MainActor
 struct RulesTabEngineTests {
     private func model(_ fixture: CoreFixtureHome) async throws -> (RulesModel, AppEnvironment, CoreClient) {

@@ -159,8 +159,8 @@ enum SubagentsShots {
 
     // MARK: Synthetic states
 
-    private static func entry(_ cli: CoreCLI, installed: Bool) -> CoreLimitsEntry {
-        CoreLimitsEntry(cli: CoreLimitsCLI(cli), state: installed ? .measured : .notInstalled, plan: nil, source: nil,
+    private static func entry(_ cli: CLIID, installed: Bool) -> CoreLimitsEntry {
+        CoreLimitsEntry(cli: cli, state: installed ? .measured : .notInstalled, plan: nil, source: nil,
                          at: installed ? Date().timeIntervalSince1970 : nil, windows: [])
     }
 
@@ -170,7 +170,7 @@ enum SubagentsShots {
             guard row.members[.claude] != nil else { return nil }
             var row = row
             row.members[.codex] = nil
-            row.cells.codex = .missing
+            row.cells[.codex] = .missing
             return row
         }
     }
@@ -179,7 +179,7 @@ enum SubagentsShots {
     private static func healthy(_ rows: [LoadoutRow]) -> [LoadoutRow] {
         rows.map { row in
             var row = row
-            if case .counted(0, let last, let errors) = row.cells.claude { row.cells.claude = .counted(runs: 3, last: last ?? "2026-11-05", errors: errors) }
+            if case .counted(0, let last, let errors) = row.cells[.claude] { row.cells[.claude] = .counted(runs: 3, last: last ?? "2026-11-05", errors: errors) }
             return row
         }
     }
@@ -188,7 +188,7 @@ enum SubagentsShots {
     private static func several(_ rows: [LoadoutRow]) -> [LoadoutRow] {
         rows.map { row in
             var row = row
-            if row.name == "database-reviewer" || row.name == "react-reviewer" { row.cells.claude = .counted(runs: 0, last: nil, errors: nil) }
+            if row.name == "database-reviewer" || row.name == "react-reviewer" { row.cells[.claude] = .counted(runs: 0, last: nil, errors: nil) }
             return row
         }
     }
@@ -202,8 +202,8 @@ enum SubagentsShots {
             row.name = name
             row.key = "agent::\(name)"
             let sessions = index % 9 == 5 ? 0 : (index * 7 + 3) % 47
-            row.cells.claude = .counted(runs: sessions, last: sessions == 0 ? nil : "2026-11-0\(index % 8 + 1)", errors: nil)
-            if row.presentCLIs.count == 2 { row.cells.codex = .counted(runs: index % 5, last: "2026-11-02", errors: nil) }
+            row.cells[.claude] = .counted(runs: sessions, last: sessions == 0 ? nil : "2026-11-0\(index % 8 + 1)", errors: nil)
+            if row.presentCLIs.count == 2 { row.cells[.codex] = .counted(runs: index % 5, last: "2026-11-02", errors: nil) }
             if index == 6 { row.plugin = "neon" }
             return row
         }
@@ -220,8 +220,8 @@ enum SubagentsShots {
         for entry in fixture {
             guard let row = rows.first(where: { $0.name == entry.name }) else { throw ShotHarness.Failure("no row for \(entry.name)") }
             let cells = row.skillUsage
-            for (cli, expected) in [(CoreCLI.claude, entry.claude as Int?), (CoreCLI.codex, entry.codex)] {
-                let scanned = (cli == .claude ? usage.totals.claude : usage.totals.codex).agent[entry.name]?.sessions ?? 0
+            for (cli, expected) in [(CLIID.claude, entry.claude as Int?), (CLIID.codex, entry.codex)] {
+                let scanned = usage.totals[cli: cli]?.agent[entry.name]?.sessions ?? 0
                 let cell = cells.cells[cli] ?? .missing
                 print("trace: \(entry.name) \(cli.rawValue): fixture \(expected.map(String.init) ?? "not installed"), usage.scan \(scanned), cell \(cell)")
                 guard let expected else {

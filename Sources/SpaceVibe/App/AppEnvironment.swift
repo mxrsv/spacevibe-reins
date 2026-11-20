@@ -30,15 +30,80 @@ final class AppEnvironment {
     /// The updater and what Settings > Update shows. `SpaceVibeApp` starts it in a normal launch; elsewhere it never runs.
     @ObservationIgnored lazy var updates = UpdateController(toasts: toasts)
 
-    init(toasts: ToastCenter? = nil, makeCoreClient: @escaping () -> any CoreService = { CoreClient() }) {
+    /// Which CLIs the owner turned off in Settings (MC-R4).
+    let cliPreferences: CLIPreferences
+    /// The core's last `clis.list`; nil until it lands.
+    private(set) var cliList: [CoreCLIInfo]?
+    /// Why the last `clis.list` failed, until one succeeds.
+    private(set) var cliListFailure: String?
+
+    /// Where this environment publishes its catalog: the app's shared store, or a test's own so a test never changes the
+    /// catalog other suites read.
+    private let catalogStore: CLICatalogStore
+
+    init(catalogStore: CLICatalogStore = .shared, toasts: ToastCenter? = nil, cliPreferences: CLIPreferences? = nil,
+         makeCoreClient: @escaping () -> any CoreService = { CoreClient() }) {
         self.toasts = toasts ?? ToastCenter()
+        self.catalogStore = catalogStore
+        self.cliPreferences = cliPreferences ?? .shared
         self.makeCoreClient = makeCoreClient
     }
+
+    // MARK: CLIs
+
+    /// The CLIs this environment shows: its last `clis.list` with the looks and the owner's choices; empty before the list
+    /// lands. Every page reads the same value as `CLICatalog.current`, which `publishCatalog` keeps equal to it.
+    var catalog: CLICatalog { CLICatalog(list: cliList ?? [], disabled: cliPreferences.disabled) }
+
+    /// One `clis.list`. True when it landed; a failure keeps the last list and says why in `cliListFailure`.
+    @discardableResult
+    func loadCLIs() async -> Bool {
+        do {
+            let fresh = try await goCore.clisList().clis
+            cliListFailure = nil
+            // An unchanged list changes nothing on any page, so nothing is rebuilt.
+            if fresh != cliList {
+                cliList = fresh
+                publishCatalog()
+            }
+            return true
+        } catch {
+            cliListFailure = Self.message(error)
+            return false
+        }
+    }
+
+    /// The app's first `clis.list`, asked for at launch before any page reads, and asked again every `cliRetryInterval`
+    /// until one lands, so a core that could not start at first still gets its CLIs described.
+    func startCLIs() {
+        Task { [weak self] in
+            while let self, !(await self.loadCLIs()) {
+                try? await Task.sleep(for: Self.cliRetryInterval)
+            }
+        }
+    }
+
+    static let cliRetryInterval: Duration = .seconds(5)
+
+    /// Turns `cli` on or off (Settings): saved at once, and every page shows the change.
+    func setCLI(_ cli: CLIID, on: Bool) {
+        cliPreferences.set(cli, on: on)
+        publishCatalog()
+    }
+
+    private func publishCatalog() { catalogStore.catalog = catalog }
 
     /// The Go core, the only engine of every screen (Activity and Stop, Limits, Loadout, Rules), and the engine every Undo runs on. It starts on the first call.
     var goCore: any CoreService { coreClient }
 
-    static func live(toasts: ToastCenter? = nil) -> AppEnvironment { AppEnvironment(toasts: toasts) }
+    /// The app's environment. A screenshot run never reads or writes the machine's defaults: its CLIs are all on, from a
+    /// throwaway suite, so the shots are the same on every machine.
+    static func live(toasts: ToastCenter? = nil) -> AppEnvironment {
+        guard case .shots = LaunchMode.current(), let suite = UserDefaults(suiteName: "dev.spacevibe.shots.clis.\(UUID().uuidString)") else {
+            return AppEnvironment(toasts: toasts)
+        }
+        return AppEnvironment(toasts: toasts, cliPreferences: CLIPreferences(defaults: suite))
+    }
 
     /// Runs a write through `service` (the Go core, `goCore`). On success it shows a toast with `label` and an
     /// Undo that calls `goCore.journalUndo` with the entry the write returned, and `afterChange` runs on the main actor after the

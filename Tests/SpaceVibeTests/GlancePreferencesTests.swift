@@ -5,7 +5,7 @@ import Testing
 /// The glance widget's saved switch and slot (spec `docs/specs/2026-11-19-session-glance-widget.md`, GW16, GW18, GW-R10).
 /// Every test reads and writes a throwaway defaults suite, never `.standard`.
 @MainActor
-@Suite("GlancePreferences")
+@Suite("GlancePreferences", .fixtureCLIs)
 struct GlancePreferencesTests {
     /// A fresh suite and its name; each test removes it with `defer`. The name is an absolute path, so the suite's plist
     /// lives in the temporary folder: a plain name leaves a file in `~/Library/Preferences` even after the removal.

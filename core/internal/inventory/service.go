@@ -78,7 +78,10 @@ func (s *Service) Projects(ctx context.Context) ([]string, error) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		known = discoverProjects(ctx, s.roots)
+		var err error
+		if known, err = discoverProjects(ctx, s.roots); err != nil {
+			return nil, err
+		}
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -103,7 +106,10 @@ func (s *Service) RefreshProjects(ctx context.Context) ([]string, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	found := discoverProjects(ctx, s.roots)
+	found, err := discoverProjects(ctx, s.roots)
+	if err != nil {
+		return nil, err
+	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

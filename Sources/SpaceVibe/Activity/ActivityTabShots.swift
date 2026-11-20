@@ -163,7 +163,7 @@ enum ActivityTabShots {
 
     // MARK: Synthetic reports
 
-    private static func entry(_ cli: CoreLimitsCLI, _ state: CoreLimitsState) -> CoreLimitsEntry {
+    private static func entry(_ cli: CLIID, _ state: CoreLimitsState) -> CoreLimitsEntry {
         CoreLimitsEntry(cli: cli, state: state, plan: nil, source: nil, at: state == .measured ? Date().timeIntervalSince1970 : nil, windows: [])
     }
 

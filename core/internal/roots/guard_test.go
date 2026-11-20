@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/coreerr"
 )
@@ -100,7 +101,7 @@ func TestGuardIgnoresCaseOnCaseInsensitiveVolume(t *testing.T) {
 		t.Skip("volume is case-sensitive")
 	}
 	wantRefused(t, RefuseRealHomeUnderTest(config.Config{Test: true}, filepath.Join(swapped, ".claude", "x")))
-	_, err := Resolve(config.Config{Test: true, ClaudeConfigDir: filepath.Join(swapped, ".claude")}, real)
+	_, err := Resolve(config.Config{Test: true, RootOverrides: map[clis.ID]string{clis.Claude: filepath.Join(swapped, ".claude")}}, real)
 	underRealHome(t, err)
 }
 
@@ -114,7 +115,7 @@ func TestGuardRefusesDataVolumeSpelling(t *testing.T) {
 	}
 	wantRefused(t, RefuseRealHomeUnderTest(config.Config{Test: true}, filepath.Join(spelled, "missing", "x")))
 	wantRefused(t, RefuseRealHomeUnderTest(config.Config{Test: true}, spelled))
-	_, err := Resolve(config.Config{Test: true, ClaudeConfigDir: filepath.Join(spelled, ".claude")}, real)
+	_, err := Resolve(config.Config{Test: true, RootOverrides: map[clis.ID]string{clis.Claude: filepath.Join(spelled, ".claude")}}, real)
 	underRealHome(t, err)
 }
 

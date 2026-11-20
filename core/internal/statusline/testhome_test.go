@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/roots"
 )
@@ -28,7 +29,7 @@ func newTempHome(t *testing.T) tempHome {
 func (h tempHome) path(rel string) string { return filepath.Join(h.root, rel) }
 
 func (h tempHome) cfg() config.Config {
-	return config.Config{Test: true, UserHome: h.root, CodexHome: h.path(".codex"), Home: h.path(".spacevibe"), ClaudeConfigDir: h.path(".claude")}
+	return config.Config{Test: true, UserHome: h.root, RootOverrides: map[clis.ID]string{clis.Claude: h.path(".claude"), clis.Codex: h.path(".codex")}, Home: h.path(".spacevibe")}
 }
 
 func (h tempHome) roots() roots.Roots {

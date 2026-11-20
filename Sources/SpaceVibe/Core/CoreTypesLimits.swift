@@ -3,10 +3,6 @@ import Foundation
 // limits.read. Go: core/internal/limits/limits.go. The two timestamps are seconds since 1970 as numbers (fractions
 // allowed), the one place the protocol does not use ISO text.
 
-enum CoreLimitsCLI: String, Codable, CaseIterable, Sendable {
-    case claude, codex, gemini
-}
-
 enum CoreLimitsState: String, Codable, Sendable {
     case measured, notRecorded, unreadable, notMeasurable, notInstalled
 }
@@ -30,7 +26,7 @@ struct CoreLimitWindow: Codable, Equatable, Sendable {
 }
 
 struct CoreLimitsEntry: Codable, Equatable, Sendable {
-    var cli: CoreLimitsCLI
+    var cli: CLIID
     var state: CoreLimitsState
     @CoreNullable var plan: String?
     @CoreNullable var source: CoreLimitsSource?
@@ -40,7 +36,7 @@ struct CoreLimitsEntry: Codable, Equatable, Sendable {
     var windows: [CoreLimitWindow]
 }
 
-/// The `limits.read` result, in order claude, codex, gemini.
+/// The `limits.read` result: one entry per CLI with the limits concept, in registry order.
 struct CoreLimitsResult: Codable, Equatable, Sendable {
     var limits: [CoreLimitsEntry]
 }

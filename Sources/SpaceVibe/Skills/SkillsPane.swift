@@ -5,7 +5,7 @@ import SwiftUI
 struct SkillsPane: View {
     let model: SkillsModel
     let row: LoadoutRow?
-    let detected: [CoreCLI]
+    let detected: [CLIID]
     let status: SkillStatus
     let now: Date
 
@@ -28,7 +28,7 @@ struct SkillsPane: View {
             PaneHead(name: row.name, glyph: CategoryGlyph.skill, tone: .skill, pluginTag: row.plugin.map { "plugin: \($0)" }) {
                 LogoStrip {
                     ForEach(detected, id: \.self) { cli in
-                        LogoToggle(cli: CoreLimitsCLI(cli), isLit: row.members[cli] != nil, mode: model.mode(row, cli: cli),
+                        LogoToggle(cli: cli, isLit: row.members[cli] != nil, mode: model.mode(row, cli: cli),
                                    justChanged: model.changed.contains("\(row.key):\(cli.rawValue)")) { model.toggle(row, cli: cli) }
                     }
                 }

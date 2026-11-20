@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/hashes"
 	"spacevibe.dev/core/internal/roots"
@@ -31,9 +32,9 @@ func newTempHome(t *testing.T) tempHome {
 func (h tempHome) path(rel string) string { return filepath.Join(h.root, rel) }
 
 func (h tempHome) cfg() config.Config {
-	c := config.Config{Test: true, UserHome: h.root, CodexHome: h.path(".codex"), Home: h.path(".spacevibe")}
+	c := config.Config{Test: true, UserHome: h.root, RootOverrides: map[clis.ID]string{clis.Codex: h.path(".codex")}, Home: h.path(".spacevibe")}
 	if !h.unsetClaude {
-		c.ClaudeConfigDir = h.path(".claude")
+		c.RootOverrides[clis.Claude] = h.path(".claude")
 	}
 	return c
 }
@@ -89,5 +90,5 @@ func (h tempHome) read(now float64) Result {
 
 // accountKeyFor is the key the collector derives for account and organization in this home.
 func (h tempHome) accountKeyFor(account, organization string) string {
-	return hashes.SHA256Hex([]byte(h.roots().Claude.Root + "\n" + account + "\n" + organization))
+	return hashes.SHA256Hex([]byte(h.roots().CLIs[clis.Claude].Root + "\n" + account + "\n" + organization))
 }

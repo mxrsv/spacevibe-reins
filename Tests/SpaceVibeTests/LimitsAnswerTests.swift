@@ -5,7 +5,7 @@ import Testing
 
 /// V5-A18 for Limits: the Answer, the Next resets rows, the Source lines and the bands come from one derivation
 /// (`LimitsAnswer`) on the core's DTOs, against a fixed clock. Shares are the share LEFT (V5-R75).
-@Suite("Limits answer")
+@Suite("Limits answer", .fixtureCLIs)
 struct LimitsAnswerTests {
     private static let hour = 3600.0
     private static let day = 86_400.0
@@ -23,11 +23,11 @@ struct LimitsAnswerTests {
                         active: active, current: resets > 0)
     }
 
-    private func measured(_ cli: CoreLimitsCLI, plan: String? = nil, at: TimeInterval = -4 * 60, _ windows: [CoreLimitWindow]) -> CoreLimitsEntry {
+    private func measured(_ cli: CLIID, plan: String? = nil, at: TimeInterval = -4 * 60, _ windows: [CoreLimitWindow]) -> CoreLimitsEntry {
         CoreLimitsEntry(cli: cli, state: .measured, plan: plan, source: nil, at: Self.now.addingTimeInterval(at).timeIntervalSince1970, windows: windows)
     }
 
-    private func entry(_ cli: CoreLimitsCLI, _ state: CoreLimitsState) -> CoreLimitsEntry {
+    private func entry(_ cli: CLIID, _ state: CoreLimitsState) -> CoreLimitsEntry {
         CoreLimitsEntry(cli: cli, state: state, plan: nil, source: nil, at: nil, windows: [])
     }
 

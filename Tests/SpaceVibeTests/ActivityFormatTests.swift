@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import SpaceVibe
 
-@Suite("Activity wording")
+@Suite("Activity wording", .fixtureCLIs)
 struct ActivityFormatTests {
     private static let minute = 60_000.0
     private static let hour = 3_600_000.0
@@ -34,7 +34,7 @@ struct ActivityFormatTests {
     }
 
     private func failure(
-        kind: CoreFailureKind = .command, cli: CoreCLI = .claude, count: Int = 3, reason: String = "", exit: Int? = nil,
+        kind: CoreFailureKind = .command, cli: CLIID = .claude, count: Int = 3, reason: String = "", exit: Int? = nil,
         last: String?, laterPass: String? = nil, hook: CoreActivityHookRef? = nil
     ) -> CoreActivityFailure {
         CoreActivityFailure(

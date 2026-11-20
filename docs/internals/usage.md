@@ -10,10 +10,10 @@ How the core finds out which skills, subagents and hooks ran, by reading both CL
 | Line reading | Stream the lines of a plain or zstd log; skip oversized lines; refuse a FIFO or device before opening it | [log-files.go](../../core/internal/logs/log-files.go) `ForEachLine`, [line-splitter.go](../../core/internal/logs/line-splitter.go), [open-regular.go](../../core/internal/logs/open-regular.go) |
 | Zstd stream | Decompress with an output cap and fixed-sentence errors | [zstd-stream.go](../../core/internal/logs/zstd-stream.go) `ZstdStream` |
 | Offset readers | Read only what a log gained since the last read. Used by Activity and Limits, not by the scan | [tail-reader.go](../../core/internal/logs/tail-reader.go), [compressed-log-reader.go](../../core/internal/logs/compressed-log-reader.go) |
-| Line parsers | Turn one line into skill, subagent and hook names, per CLI | [lines.go](../../core/internal/usage/lines.go) `claudeLine`, `codexLine`, `hookRecord` |
+| Line parsers | Turn one line into skill, subagent and hook names: one `lineParser` per CLI with the usage concept | [adapters.go](../../core/internal/usage/adapters.go) `parsers`, [claude.go](../../core/internal/usage/claude.go) `claudeLine`, `hookRecord`, [codex.go](../../core/internal/usage/codex.go) `codexLine`, [lines.go](../../core/internal/usage/lines.go) (shared day and name helpers) |
 | Scanner | Walk, cache check, parse, progress, one scan at a time, last result of the process | [scanner.go](../../core/internal/usage/scanner.go) `Scanner.Scan` |
 | Scan cache | `<data>/usage-cache.json`, one record per log | [cache.go](../../core/internal/usage/cache.go) |
-| Aggregation | Fold records into totals, session counts and the log window per CLI | [aggregate.go](../../core/internal/usage/aggregate.go) |
+| Aggregation | Fold records into totals, session counts and the log window per CLI, one array element each in registry order (`Totals.For` and `Windows.For` read one and never answer with another CLI's) | [aggregate.go](../../core/internal/usage/aggregate.go), [types.go](../../core/internal/usage/types.go) |
 | Price table | Embedded rates, name lookup, cost estimate | [pricing.go](../../core/internal/pricing/pricing.go) `Price`, `EstimateCost`; [pricing.json](../../core/internal/pricing/pricing.json) |
 
 ## Where each fact comes from
@@ -34,8 +34,8 @@ How the core finds out which skills, subagents and hooks ran, by reading both CL
 
 1. The shell calls `usage.scan` ([core-protocol.md](core-protocol.md)); [`usageScan`](../../core/internal/rpc/methods/reads.go) calls `Scanner.Scan`. A second call while one runs is a 409.
 2. `loadCache` reads the cache; anything unusable is an empty cache.
-3. `logs.Walk` lists the Claude logs, then the Codex logs, each sorted by path.
-4. Per log: `os.Stat`, stamp `<size>:<mtime ms>`. Same stamp and `ScanVersion`: reuse the record. Otherwise `scanFile` streams every line through `claudeLine` or `codexLine`.
+3. `logs.Walk` lists the logs of each CLI with a parser in wire order (Claude, then Codex), each sorted by path.
+4. Per log: `os.Stat`, stamp `<size>:<mtime ms>`. Same stamp and `ScanVersion`: reuse the record. Otherwise `scanFile` streams every line through its CLI's parser.
 5. Progress goes out after every 20 logs and once at the end.
 6. If the context is still live, `saveCache` writes the records of this run, `aggregate` builds the `Result`, and `Scanner` keeps it as `last`.
 7. `loadout.rows` reads `last` through `Last()`: `usage.Ready(result)`, or `usage.Scanning` before any scan finished in this process. The cells are built in [inventory.md](inventory.md#usage-cell-states).

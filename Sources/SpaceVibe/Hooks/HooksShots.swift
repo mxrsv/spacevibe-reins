@@ -159,8 +159,8 @@ enum HooksShots {
         reset()
     }
 
-    private static func entry(_ cli: CoreCLI, installed: Bool) -> CoreLimitsEntry {
-        CoreLimitsEntry(cli: CoreLimitsCLI(cli), state: installed ? .measured : .notInstalled, plan: nil, source: nil,
+    private static func entry(_ cli: CLIID, installed: Bool) -> CoreLimitsEntry {
+        CoreLimitsEntry(cli: cli, state: installed ? .measured : .notInstalled, plan: nil, source: nil,
                          at: installed ? Date().timeIntervalSince1970 : nil, windows: [])
     }
 
@@ -175,7 +175,7 @@ enum HooksShots {
         for entry in fixture {
             guard let row = rows.first(where: { $0.hookTitle == entry.script && $0.hookEvent == entry.event }),
                   let hook = row.hookMembers[.claude] else { throw ShotHarness.Failure("no row for \(entry.script)") }
-            let scanned = usage.totals.claude.hook[hook.hash]?.runs ?? 0
+            let scanned = usage.totals[cli: .claude]?.hook[hook.hash]?.runs ?? 0
             let run = row.hookRun(in: .claude)
             print("trace: \(entry.script) claude: fixture \(entry.runs), usage.scan \(scanned), cell \(run), detail \"\(HooksWording.runs(run))\"")
             try ShotHarness.check(scanned == entry.runs, "\(entry.script): usage.scan says \(entry.runs) runs")

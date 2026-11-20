@@ -6,7 +6,7 @@ How the app knows how much of each subscription's usage Window is left. Claude C
 
 | Part | Responsibility | Source |
 | --- | --- | --- |
-| Read | Combine Claude Code, Codex and Gemini CLI in that order; set each window's `current` flag | [limits.go](../../core/internal/limits/limits.go) `Read`, `Entry.settled` |
+| Read | One entry per CLI with the limits concept, in wire order (Claude Code, Codex, Gemini CLI), each from its reader; set each window's `current` flag | [limits.go](../../core/internal/limits/limits.go) `Read`, `Entry.settled`; [adapters.go](../../core/internal/limits/adapters.go) `readers`, [gemini.go](../../core/internal/limits/gemini.go) |
 | Claude usage cache | Windows from Claude's own cache of usage | [claude-cache.go](../../core/internal/limits/claude-cache.go) `readClaudeCache` |
 | Snapshot read and merge | Choose between cache and snapshots; merge snapshots; validate one `rate_limits` object | [claude-statusline.go](../../core/internal/limits/claude-statusline.go) `readClaude`, `ParseWindows` |
 | Account key | Bind a snapshot to the logged-in account without storing an id | [claude-statusline.go](../../core/internal/limits/claude-statusline.go) `AccountKey`, [claude-account-key-cache.go](../../core/internal/limits/claude-account-key-cache.go) `CachedAccountKey` |
@@ -23,7 +23,7 @@ How the app knows how much of each subscription's usage Window is left. Claude C
 
 | Fact | Read from |
 | --- | --- |
-| Claude Code, usage cache | `cachedUsageUtilization` in `<CLAUDE_CONFIG_DIR or HOME>/.claude.json` (`roots.ClaudeState`): `fetchedAtMs` and `utilization.limits[]` with `kind`, `group`, `percent`, `resets_at` (ISO text), `scope.model.display_name`, `is_active`. Claude refreshes it only when it fetches usage itself |
+| Claude Code, usage cache | `cachedUsageUtilization` in `<CLAUDE_CONFIG_DIR or HOME>/.claude.json` (`State` of Claude Code's `roots.CLIRoots`, from the registry's `StateFile`): `fetchedAtMs` and `utilization.limits[]` with `kind`, `group`, `percent`, `resets_at` (ISO text), `scope.model.display_name`, `is_active`. Claude refreshes it only when it fetches usage itself |
 | Claude Code, snapshot | `<data>/claude-limits/<session_id>.json`, written by capture from the `rate_limits` of the status-line input: `account` (hash), `observedAt`, and `five_hour` and `seven_day`, each `used_percentage` and `resets_at` (integer seconds). At most 4096 bytes each, newest 64 kept |
 | Codex | Last `token_count` line of `<CODEX_HOME>/sessions/**` (`.jsonl` or `.jsonl.zst`): `timestamp`, `payload.rate_limits.primary` and `secondary` (`used_percent`, `window_minutes`, `resets_at` or the older `resets_in_seconds`), `plan_type` |
 | Gemini CLI | Whether `~/.gemini` exists; nothing inside it is read |

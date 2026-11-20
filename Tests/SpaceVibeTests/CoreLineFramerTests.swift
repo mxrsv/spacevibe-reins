@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import SpaceVibe
 
-@Suite("CoreLineFramer")
+@Suite("CoreLineFramer", .fixtureCLIs)
 struct CoreLineFramerTests {
     private func feed(_ framer: inout CoreLineFramer, _ text: String) throws -> [String] {
         let bytes = Array(text.utf8)

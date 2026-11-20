@@ -26,6 +26,7 @@ const MethodCancel = "$/cancelRequest"
 // registered set equals it.
 var AllMethods = []string{
 	"initialize",
+	"clis.list",
 	"inventory.read",
 	"usage.scan",
 	"loadout.rows",

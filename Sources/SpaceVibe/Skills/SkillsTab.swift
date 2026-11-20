@@ -123,11 +123,11 @@ struct SkillsCanvas: View {
 
     // MARK: Bottom bar
 
-    private func bar(_ picked: [LoadoutRow], detected: [CoreCLI]) -> some View {
+    private func bar(_ picked: [LoadoutRow], detected: [CLIID]) -> some View {
         BulkBar("\(picked.count) selected", stripLabel: "Add to") {
             LogoStrip {
                 ForEach(detected, id: \.self) { cli in
-                    LogoToggle(cli: CoreLimitsCLI(cli), isLit: model.isLit(picked, cli: cli), mode: model.bulkMode(picked, cli: cli),
+                    LogoToggle(cli: cli, isLit: model.isLit(picked, cli: cli), mode: model.bulkMode(picked, cli: cli),
                                spokenValue: SkillsWording.bulkSpoken(picked, cli: cli, isLit: model.isLit(picked, cli: cli),
                                                                       mode: model.bulkMode(picked, cli: cli))) {
                         model.toggleBulk(picked, cli: cli)

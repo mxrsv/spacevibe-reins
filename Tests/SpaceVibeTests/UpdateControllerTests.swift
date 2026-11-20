@@ -3,7 +3,7 @@ import Sparkle
 import Testing
 @testable import SpaceVibe
 
-@Suite("App updates")
+@Suite("App updates", .fixtureCLIs)
 struct UpdateControllerTests {
     private var validInfo: [String: Any] {
         ["SUFeedURL": "https://releases.example.com/appcast.xml",
@@ -99,7 +99,7 @@ struct UpdateControllerTests {
     }
 }
 
-@Suite("Toast action")
+@Suite("Toast action", .fixtureCLIs)
 @MainActor
 struct ToastActionTests {
     @Test("running the action hides the toast and calls it once")

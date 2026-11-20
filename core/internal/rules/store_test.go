@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/mutate"
 	"spacevibe.dev/core/internal/ojson"
 	"spacevibe.dev/core/internal/roots"
@@ -31,7 +32,7 @@ func newSandbox(t *testing.T) sandbox {
 	return sandbox{h, r, NewStore(r, nil)}
 }
 
-func (sb sandbox) settings() string { return sb.r.Claude.HookFile }
+func (sb sandbox) settings() string { return sb.r.CLIs[clis.Claude].HookFile }
 func (sb sandbox) bytes(p string) []byte {
 	sb.t.Helper()
 	data, err := os.ReadFile(p)
@@ -230,7 +231,7 @@ func TestAddChangeRemoveUndo(t *testing.T) {
 		if sb.mode(sb.settings()) != 0o640 {
 			t.Errorf("mode after undo %o", sb.mode(sb.settings()))
 		}
-		if stray := strayTemp(sb.r.Claude.Root); len(stray) != 0 {
+		if stray := strayTemp(sb.r.CLIs[clis.Claude].Root); len(stray) != 0 {
 			t.Errorf("stray temp files %v", stray)
 		}
 	}
@@ -298,7 +299,7 @@ func TestNonStringsAndDuplicates(t *testing.T) {
 func TestSymlinkedSettings(t *testing.T) {
 	sb := newSandbox(t)
 	target := sb.write("shared-settings.json", "{}\n")
-	if err := os.MkdirAll(sb.r.Claude.Root, 0o755); err != nil {
+	if err := os.MkdirAll(sb.r.CLIs[clis.Claude].Root, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Symlink(target, sb.settings()); err != nil {
@@ -339,7 +340,7 @@ func TestRefusals(t *testing.T) {
 	if n := len(historyOf(t, sb.r)); n != 0 {
 		t.Errorf("%d journal entries", n)
 	}
-	if stray := strayTemp(sb.r.Claude.Root); len(stray) != 0 {
+	if stray := strayTemp(sb.r.CLIs[clis.Claude].Root); len(stray) != 0 {
 		t.Errorf("stray temp files %v", stray)
 	}
 	if strings.Contains(sb.journal(), canary) {
@@ -470,7 +471,7 @@ func TestSetCapability(t *testing.T) {
 	if !bytes.Equal(sb.bytes(sb.settings()), before) {
 		t.Error("undo did not restore the original bytes")
 	}
-	if stray := strayTemp(sb.r.Claude.Root); len(stray) != 0 {
+	if stray := strayTemp(sb.r.CLIs[clis.Claude].Root); len(stray) != 0 {
 		t.Errorf("stray temp files %v", stray)
 	}
 }
@@ -612,12 +613,12 @@ func TestStaysInTempHome(t *testing.T) {
 		t.Fatal(err)
 	}
 	real = roots.ResolvedPath(real)
-	for _, p := range []string{sb.r.Claude.Root, sb.r.Codex.Root, sb.r.Data} {
+	for _, p := range []string{sb.r.CLIs[clis.Claude].Root, sb.r.CLIs[clis.Codex].Root, sb.r.Data} {
 		if strings.HasPrefix(roots.ResolvedPath(p), real+"/") {
 			t.Errorf("%s is under the real home", p)
 		}
 	}
-	if !strings.HasPrefix(sb.r.Claude.HookFile, sb.root) {
-		t.Errorf("hook file %s", sb.r.Claude.HookFile)
+	if !strings.HasPrefix(sb.r.CLIs[clis.Claude].HookFile, sb.root) {
+		t.Errorf("hook file %s", sb.r.CLIs[clis.Claude].HookFile)
 	}
 }

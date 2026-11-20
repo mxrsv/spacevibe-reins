@@ -2,20 +2,20 @@ import Foundation
 import Testing
 @testable import SpaceVibe
 
-@Suite("Loadout rows")
+@Suite("Loadout rows", .fixtureCLIs)
 struct LoadoutRowsTests {
     // MARK: Builders (synthetic names only, S-R2)
 
     /// What the core documents for the two CLIs; copy plans read it from the rows, never from the engine.
-    private let events = ["claude": ["PreToolUse", "Stop"], "codex": ["Interrupt", "Stop"]]
+    private let events: [CLIID: [String]] = [.claude: ["PreToolUse", "Stop"], .codex: ["Interrupt", "Stop"]]
 
     /// A Claude skill; `runs` fills its usage cell (Claude counted, Codex missing), nil leaves the cells to `build`.
     private func skill(_ name: String, project: String? = nil, runs: Int? = nil) -> CoreInventoryItem {
         CoreInventoryItem(
             id: "claude:skill:\(project ?? "global"):\(name)", cli: .claude, kind: .skill, name: name, entry: name, description: "",
             owner: "user", path: "/home/demo/.claude/skills/\(name)", file: "/home/demo/.claude/skills/\(name)/SKILL.md",
-            removable: true, scope: project == nil ? .global : .project, project: project, inOther: false, key: "skill:\(project ?? ""):\(name)",
-            cells: runs.map { CoreCells(claude: .counted(runs: $0, last: nil, errors: nil), codex: .missing) }
+            removable: true, scope: project == nil ? .global : .project, project: project, key: "skill:\(project ?? ""):\(name)",
+            cells: runs.map { CoreCells([.claude: .counted(runs: $0, last: nil, errors: nil), .codex: .missing]) }
         )
     }
 
@@ -44,7 +44,7 @@ struct LoadoutRowsTests {
 
     /// `loadout.rows` as the core sends it, with the row flags it would compute: one CLI only, and dead.
     private func snapshot(items: [CoreInventoryItem] = [], hooks: [CoreInventoryHook] = []) -> CoreLoadoutRows {
-        var seen: [String: (clis: Set<CoreCLI>, dead: Bool)] = [:]
+        var seen: [String: (clis: Set<CLIID>, dead: Bool)] = [:]
         for item in items { seen[item.key, default: ([], false)].clis.insert(item.cli) }
         for hook in hooks {
             let dead = seen[hook.key]?.dead == true || hook.dead
@@ -53,8 +53,8 @@ struct LoadoutRowsTests {
         }
         let flags = seen.mapValues { CoreRowFlags(one: $0.clis.count == 1, neverRan: false, dead: $0.dead) }
         return CoreLoadoutRows(
-            usage: .ready, items: items, hooks: hooks, problems: [], events: events,
-            roots: ["claude": "/home/demo/.claude", "codex": "/home/demo/.codex"], countsByScope: [:], rowFlags: flags
+            usage: .ready, items: items, hooks: hooks, problems: [], events: .of(events),
+            roots: .of([.claude: "/home/demo/.claude", .codex: "/home/demo/.codex"]), countsByScope: [:], rowFlags: flags
         )
     }
 
@@ -108,8 +108,8 @@ struct LoadoutRowsTests {
 
     @Test("a Codex hook whose event Claude Code does not document is not copied; a known event is")
     func copyPlanChecksClaudeEvents() throws {
-        #expect(events["codex"]?.contains("Interrupt") == true)
-        #expect(events["claude"]?.contains("Interrupt") == false)
+        #expect(events[.codex]?.contains("Interrupt") == true)
+        #expect(events[.claude]?.contains("Interrupt") == false)
         let unknown = try onlyRow(snapshot(hooks: [inCodex(hook(event: "Interrupt", hash: "h1"))]))
         #expect(LoadoutRows.copyPlan(unknown, to: .claude, events: events) == nil)
         let known = try onlyRow(snapshot(hooks: [inCodex(hook(event: "Stop", hash: "h2"))]))
@@ -148,7 +148,7 @@ struct LoadoutRowsTests {
 
     @Test("a chip's count is the core's count for the scope")
     func chipCounts() {
-        let counts = CoreFilterCounts(all: 9, only: .init(claude: 3, codex: 2), neverRan: 4, dead: 1)
+        let counts = CoreFilterCounts(all: 9, only: .of([.claude: 3, .codex: 2]), neverRan: 4, dead: 1)
         #expect(LoadoutFilter.allCases.map { $0.count(in: counts) } == [9, 5, 4, 1])
     }
 
@@ -270,17 +270,17 @@ struct LoadoutRowsTests {
 
     @Test("the home folder is abbreviated only when the Claude folder sits directly in it")
     func homeAbbreviation() {
-        #expect(LoadoutRows.home(roots: ["claude": "/home/demo/.claude"]) == "/home/demo")
-        #expect(LoadoutRows.home(roots: ["claude": "/custom/place"]) == nil)
-        #expect(LoadoutRows.home(roots: [:]) == nil)
+        #expect(LoadoutRows.home(roots: .of([.claude: "/home/demo/.claude"])) == "/home/demo")
+        #expect(LoadoutRows.home(roots: .of([.claude: "/custom/place"])) == nil)
+        #expect(LoadoutRows.home(roots: []) == nil)
         #expect(LoadoutRows.shorten("run /home/demo/bin/x", home: "/home/demo") == "run ~/bin/x")
     }
 
     @Test("a pending cell that says the item is new is tagged")
     func addedNotes() {
-        #expect(LoadoutRows.addedNote(CoreCells(claude: .pending(reason: "Added in the last scan window"), codex: .missing)) == "added recently")
-        #expect(LoadoutRows.addedNote(CoreCells(claude: .missing, codex: .pending(reason: "Added after the last log"))) == "added after the last log")
-        #expect(LoadoutRows.addedNote(CoreCells(claude: .pending(reason: "Usage scan has not finished"), codex: .missing)) == nil)
+        #expect(LoadoutRows.addedNote(CoreCells([.claude: .pending(reason: "Added in the last scan window"), .codex: .missing])) == "added recently")
+        #expect(LoadoutRows.addedNote(CoreCells([.claude: .missing, .codex: .pending(reason: "Added after the last log")])) == "added after the last log")
+        #expect(LoadoutRows.addedNote(CoreCells([.claude: .pending(reason: "Usage scan has not finished"), .codex: .missing])) == nil)
     }
 }
 

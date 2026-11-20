@@ -28,7 +28,7 @@ struct AppSidebar: View {
             .accessibilityLabel("Sections")
             Spacer(minLength: 0)
             SidebarCLIStatusGroup {
-                ForEach(CoreLimitsCLI.allCases, id: \.self) { cli in
+                ForEach(CLICatalog.current.limitsCLIs, id: \.self) { cli in
                     SidebarCLIStatusRow(name: cli.label, cli: cli, state: CLIStatusDerivation.state(of: limits.limits(for: cli)))
                 }
             }

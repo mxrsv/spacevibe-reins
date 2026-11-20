@@ -10,7 +10,6 @@ import (
 	"spacevibe.dev/core/internal/ojson"
 	"spacevibe.dev/core/internal/textjs"
 	"spacevibe.dev/core/internal/toml"
-	"spacevibe.dev/core/internal/usage"
 )
 
 // Text formats of the Node core, spelled the same way: JSON.stringify strings and the agent files of both CLIs
@@ -32,14 +31,9 @@ func tomlQuote(text string) string { return strings.ReplaceAll(quote(text), "\x7
 // yamlValue is the description value of a generated header: one line, quoted.
 func yamlValue(text string) string { return quote(textjs.Squash(text)) }
 
-// agentText is a new agent file in the format of its CLI: markdown with a header for Claude Code, TOML for Codex.
-func agentText(cli usage.CLI, name, description, instructions string) string {
-	body := textjs.Trim(instructions)
-	if cli == inventory.Claude {
-		return "---\nname: " + name + "\ndescription: " + yamlValue(description) + "\n---\n\n" + body + "\n"
-	}
-	return "name = " + tomlQuote(name) + "\ndescription = " + tomlQuote(description) + "\ndeveloper_instructions = " + tomlQuote(body) + "\n"
-}
+// agentBody is the instructions of a new agent file as written: trimmed. Each CLI's format is in its writer
+// (claude.go, codex.go).
+func agentBody(instructions string) string { return textjs.Trim(instructions) }
 
 func skillText(name, description, body string) string {
 	return "---\nname: " + name + "\ndescription: " + yamlValue(description) + "\n---\n\n" + textjs.Trim(body) + "\n"

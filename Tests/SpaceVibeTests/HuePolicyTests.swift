@@ -6,7 +6,7 @@ import Testing
 /// identity colour and the accent sit outside every state family, and no two of them share a hue (also within 20°).
 /// Activity's session states (the glance widget, GW-R2) are states too, and stay apart from each other. Codex's identity
 /// is the text colour, so it and the other neutrals carry no hue to collide.
-@Suite("Hue policy: one colour, one meaning (V5-A16)")
+@Suite("Hue policy: one colour, one meaning (V5-A16)", .fixtureCLIs)
 struct HuePolicyTests {
     static let familyHalfWidth = 20.0
     /// Below this OKLCH chroma a colour reads as grey and its hue angle means nothing.

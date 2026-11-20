@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/proc"
 	"spacevibe.dev/core/internal/roots"
 )
@@ -76,6 +77,6 @@ func (s *Service) Watch(ctx context.Context, interval time.Duration, emit func(R
 }
 
 // Stop ends the running session cli/id; see Stop. It never takes a pid.
-func (s *Service) Stop(ctx context.Context, cli CLI, id string) (StopResult, error) {
+func (s *Service) Stop(ctx context.Context, cli clis.ID, id string) (StopResult, error) {
 	return Stop(ctx, s.roots, cli, id, s.proc, DefaultStopOptions())
 }

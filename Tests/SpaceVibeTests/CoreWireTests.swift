@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import SpaceVibe
 
-@Suite("CoreWire")
+@Suite("CoreWire", .fixtureCLIs)
 struct CoreWireTests {
     @Test("every recorded response decodes through the client's own reply and error paths")
     func transcriptResponses() throws {

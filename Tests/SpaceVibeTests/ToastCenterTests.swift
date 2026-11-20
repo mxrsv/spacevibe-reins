@@ -2,7 +2,7 @@ import Testing
 @testable import SpaceVibe
 
 @MainActor
-@Suite("Toast center")
+@Suite("Toast center", .fixtureCLIs)
 struct ToastCenterTests {
     /// Waits until the Undo that is running has returned.
     private func settle(_ toasts: ToastCenter) async {

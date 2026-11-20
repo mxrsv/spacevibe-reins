@@ -6,14 +6,15 @@ What is installed for Claude Code and Codex: skills, subagents and hooks, read f
 
 | Part | Responsibility | Source |
 | --- | --- | --- |
-| Roots | Where each CLI's config, logs and SpaceVibe's own data live; refuses a real home under `SPACEVIBE_TEST=1` (S-R1) | [roots.go](../../core/internal/roots/roots.go) `Resolve` |
-| Read | Walk both CLIs, enabled Claude plugins and discovered projects into one `InventorySnapshot` | [reader.go](../../core/internal/inventory/reader.go) |
+| Roots | Where each CLI's config, logs and SpaceVibe's own data live, placed from each CLI's registry layout; refuses a real home under `SPACEVIBE_TEST=1` (S-R1) | [roots.go](../../core/internal/roots/roots.go) `Resolve`, `Roots.CLI`; [registry.go](../../core/internal/clis/registry.go) `Layout` |
+| Read | Walk every inventory CLI's root folders, then each adapter's extras (enabled Claude plugins, skill overrides), then discovered projects, into one `InventorySnapshot` | [reader.go](../../core/internal/inventory/reader.go) `read`, [adapters.go](../../core/internal/inventory/adapters.go) `inventoryAdapter`, [claude.go](../../core/internal/inventory/claude.go), [codex.go](../../core/internal/inventory/codex.go) |
 | Frontmatter | `name` and `description` of a `SKILL.md` or subagent `.md`; flat `key: value` only, not YAML | [frontmatter.go](../../core/internal/inventory/frontmatter.go) |
-| Project discovery | Find projects that have their own `.claude` folder | [projects.go](../../core/internal/inventory/projects.go) |
+| Project discovery | Find projects that have a project folder of some CLI (`.claude`); candidates come from each adapter. `ProjectFolders` (Undo's write containment in projects) lists only the folders that passed the existence check | [projects.go](../../core/internal/inventory/projects.go) `discoverBound`, `ProjectFolders` |
 | Hook identity and dead hooks | Hook hash, script paths named by a command | [hashes.go](../../core/internal/hashes/hashes.go), [script-paths.go](../../core/internal/inventory/script-paths.go) |
 | Usage join | Add a usage cell per CLI to every row | [attach-usage.go](../../core/internal/inventory/attach-usage.go) |
 | Filter counts | Counts for the filter chips | [filter-counts.go](../../core/internal/inventory/filter-counts.go) |
-| Types | Row, cell and snapshot shapes, hook events per CLI | [types.go](../../core/internal/inventory/types.go) |
+| Types | Row, cell and snapshot shapes; `cells`, `only`, `events` and `roots` are arrays of `{cli, …}` in registry order | [types.go](../../core/internal/inventory/types.go), [types-json.go](../../core/internal/inventory/types-json.go) |
+| Per-kind support | Each adapter's declaration per item kind: support, run logging, copy format, hook events; it decides `absent` and `unmeasurable` cells and what mutate may write ([overview](overview.md#cli-registry-and-adapters)) | [kinds.go](../../core/internal/inventory/kinds.go) |
 | File access | Bounded reads that tell "missing" from "cannot be read" | [fileio.go](../../core/internal/inventory/fileio.go) |
 
 ## Where each fact comes from
@@ -31,9 +32,9 @@ Settings are read only for hooks, plugin flags and skill overrides. No other val
 
 ## Runtime path
 
-1. `Roots.resolve` fixes the folders from `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `SPACEVIBE_HOME`.
+1. `roots.Resolve` fixes the folders from `HOME`, each CLI's root variable named in the registry (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`) and `SPACEVIBE_HOME`.
 2. `Inventory.read` lists each CLI, then enabled plugins, then each discovered project. It reads the disk synchronously; call it off the main thread.
-3. `attachUsage` takes a `UsageInput` from the usage scan (`UsageScanner`) and fills `cells` on every row and `usage` on every Claude hook.
+3. `attachUsage` takes a `UsageInput` from the usage scan (`UsageScanner`) and fills `cells` on every row and `usage` on every hook of a CLI that logs hook runs (Claude Code).
 4. `filterCounts` turns rows into chip counts.
 
 ## Rules that are easy to get wrong
@@ -46,14 +47,14 @@ Settings are read only for hooks, plugin flags and skill overrides. No other val
 - **Project discovery is bounded.** At most `Inventory.maxProjects` folders, newest first, 3 logs per folder, 64 KB per log. A project never opened with either CLI is not found, and a `cwd` that falls outside the first 64 KB is missed. The home folder and paths under `.claude/worktrees/` are skipped.
 - **Unreadable is not empty.** An unreadable CLI root, folder or settings file adds a sentence to `problems` and keeps going; it never reads as "nothing installed". The UI shows `problems`.
 - **Item ownership.** `owner` is `user`, `link` (a symlink) or the plugin name. Only user-level items outside any project are `removable`; plugin items are read-only.
-- **Hook events.** `Inventory.events` lists the events each CLI documents. Claude's list comes from its docs, Codex's from observation only.
+- **Hook events.** Each adapter's `events` lists the events its CLI documents (`Events` gathers them for the wire). Claude's list comes from its docs, Codex's from observation only.
 
 ## Usage cell states
 
 `attachUsage` gives each row one `UsageCellState` per CLI: counted, pending, unmeasurable or missing. [D63](../specs/2026-11-06-reins-linear-identity-decisions.md) replaces `pending` with a note on `Never ran`; the code still emits `pending` until that change lands.
 
 - **Missing**: the row is not installed in that CLI.
-- **Unmeasurable**: a Codex hook; Codex logs no hook runs.
+- **Unmeasurable**: a hook of a CLI whose adapter says its logs record no hook runs (`unloggedHooks`: Codex). A CLI on the wire whose logs the usage scan does not read would also be unmeasurable (`NotScannedReason`); none is today.
 - **Pending**: zero runs and no scanned log can have covered the row: its CLI has no scanned logs, its file changed in the last 24 hours, or it changed after the newest log. The scan not having finished also yields pending.
 - **Counted**: otherwise, with the run count. For a skill or subagent the count is sessions that used it; for a hook it is runs. A skill is looked up under its name and under its folder name (Codex logs the folder name, which can differ from the frontmatter `name`); the larger session count wins, they are not added, because one session can match both.
 

@@ -1,6 +1,11 @@
 package config
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+
+	"spacevibe.dev/core/internal/clis"
+)
 
 func fake(env map[string]string) func(string) string {
 	return func(k string) string { return env[k] }
@@ -18,7 +23,8 @@ func TestLoadFrom(t *testing.T) {
 		{"test off", map[string]string{"SPACEVIBE_TEST": "0"}, Config{}, false},
 		{"test junk fails closed", map[string]string{"SPACEVIBE_TEST": "yes"}, Config{}, true},
 		{"home", map[string]string{"SPACEVIBE_HOME": "/tmp/x/"}, Config{Home: "/tmp/x"}, false},
-		{"cli folders", map[string]string{"HOME": "/h", "CLAUDE_CONFIG_DIR": "/c", "CODEX_HOME": "/x"}, Config{UserHome: "/h", ClaudeConfigDir: "/c", CodexHome: "/x"}, false},
+		{"cli folders", map[string]string{"HOME": "/h", "CLAUDE_CONFIG_DIR": "/c", "CODEX_HOME": "/x"}, Config{UserHome: "/h", RootOverrides: map[clis.ID]string{clis.Claude: "/c", clis.Codex: "/x"}}, false},
+		{"path folders", map[string]string{"PATH": "/usr/bin::bin:/opt/x/bin"}, Config{SearchPath: []string{"/usr/bin", "bin", "/opt/x/bin"}}, false},
 		{"proc fixture", map[string]string{"SPACEVIBE_PROC_FIXTURE": "/tmp/p.json"}, Config{ProcFixture: "/tmp/p.json"}, false},
 		{"relative home fails closed", map[string]string{"SPACEVIBE_HOME": "x"}, Config{}, true},
 		{"relative HOME fails closed", map[string]string{"HOME": "h"}, Config{}, true},
@@ -32,7 +38,7 @@ func TestLoadFrom(t *testing.T) {
 			if (err != nil) != c.wantErr {
 				t.Fatalf("err = %v, wantErr %v", err, c.wantErr)
 			}
-			if got != c.want {
+			if !reflect.DeepEqual(got, c.want) {
 				t.Fatalf("got %+v, want %+v", got, c.want)
 			}
 		})

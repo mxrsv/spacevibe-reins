@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"spacevibe.dev/core/internal/activity"
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/limits"
 	"spacevibe.dev/core/internal/mutate"
@@ -44,6 +46,7 @@ func (s *Services) noteFailure(name string, err error) {
 
 func (s *Services) buildHandlers() map[string]rpc.Handler {
 	return map[string]rpc.Handler{
+		"clis.list":               typed(s, "clis.list", s.clisList),
 		"inventory.read":          typed(s, "inventory.read", s.inventoryRead),
 		"usage.scan":              s.usageScan,
 		"loadout.rows":            typed(s, "loadout.rows", s.loadoutRows),
@@ -74,16 +77,25 @@ func (s *Services) limitsRead(ctx context.Context, _ none) (limits.Result, error
 
 // StopParams is the params of activity.stop: the session by CLI and id, never by pid (S-R4).
 type StopParams struct {
-	CLI activity.CLI `json:"cli"`
-	ID  string       `json:"id"`
+	CLI clis.ID `json:"cli"`
+	ID  string  `json:"id"`
 }
 
 func (s *Services) activityStop(ctx context.Context, p StopParams) (activity.StopResult, error) {
-	if p.CLI != activity.CLIClaude && p.CLI != activity.CLICodex {
-		return activity.StopResult{}, coreerr.New("cli must be claude or codex.")
+	if _, err := clis.Require(p.CLI, clis.Activity); err != nil {
+		return activity.StopResult{}, coreerr.New("cli must be " + strings.Join(activityIDs(), " or ") + ".")
 	}
 	if p.ID == "" {
 		return activity.StopResult{}, coreerr.New("A session id is required.")
 	}
 	return s.activity.Stop(ctx, p.CLI, p.ID)
+}
+
+// activityIDs are the CLIs whose sessions can be stopped, from the registry.
+func activityIDs() []string {
+	var out []string
+	for _, id := range clis.IDsWith(clis.Activity) {
+		out = append(out, string(id))
+	}
+	return out
 }

@@ -5,7 +5,7 @@ import Testing
 /// A press on the glance strip (spec `docs/specs/2026-11-19-session-glance-widget.md`, GW-R6, GW-R7): renders wait while it is
 /// held, so the replayed click reaches the entry it went down on, and a press whose release never comes is ended. Pure, no
 /// window.
-@Suite("Glance press")
+@Suite("Glance press", .fixtureCLIs)
 struct GlancePressTests {
     // MARK: Render gate
 

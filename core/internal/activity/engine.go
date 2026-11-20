@@ -39,9 +39,15 @@ type Engine struct {
 // NewEngine returns an engine with an empty cache.
 func NewEngine() *Engine { return &Engine{cache: map[string]*cacheEntry{}} }
 
-// advance folds what was appended to a log since the last read. It returns nil for a log that is missing or that
-// cannot be read; an unreadable log stays out of the lists but keeps its cache entry, as in Swift.
-func (e *Engine) advance(f logFile, maxBytes int64) (entry *cacheEntry, unreadable bool) {
+// advance folds what was appended to a log since the last read, with the folder of the log's CLI. It returns nil for
+// a log that is missing or that cannot be read; an unreadable log stays out of the lists but keeps its cache entry,
+// as in Swift. A log of a CLI with no activity adapter is an error (clis.ErrUnknownCLI or clis.ErrConceptAbsent),
+// never folded as another CLI's.
+func (e *Engine) advance(f logFile, maxBytes int64) (entry *cacheEntry, unreadable bool, err error) {
+	folder, err := folderOf(f.cli)
+	if err != nil {
+		return nil, false, err
+	}
 	entry, ok := e.cache[f.path]
 	if !ok {
 		var reader logs.LogReader
@@ -53,19 +59,19 @@ func (e *Engine) advance(f logFile, maxBytes int64) (entry *cacheEntry, unreadab
 		entry = &cacheEntry{reader: reader, state: newLogState(f.cli)}
 		e.cache[f.path] = entry
 	}
-	result, err := entry.reader.Read(
-		func(line []byte) { fold(entry.state, line) },
+	result, readErr := entry.reader.Read(
+		func(line []byte) { folder.fold(entry.state, line) },
 		func() { entry.state = newLogState(f.cli) },
 	)
-	if err != nil {
-		return nil, true
+	if readErr != nil {
+		return nil, true, nil
 	}
 	if result.Missing {
 		delete(e.cache, f.path)
-		return nil, false
+		return nil, false, nil
 	}
 	entry.truncated = result.Truncated
-	return entry, false
+	return entry, false, nil
 }
 
 type foldedLog struct {
@@ -75,16 +81,13 @@ type foldedLog struct {
 
 // readContext is what the session builders read from one Read call.
 type readContext struct {
-	roots        roots.Roots
 	nowMs        float64
 	opts         Options
 	proc         proc.Adapter
 	memo         projectMemo
-	index        logIndex
 	foldedByPath map[string]*cacheEntry
 	// unreadable holds the logs that exist but could not be read (not the ones that are gone).
 	unreadable map[string]bool
-	codexPids  map[int]bool
 }
 
 // Read builds the report: roots are where the logs live, now is the clock every age is computed against, and
@@ -97,36 +100,31 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 		return Report{}, err
 	}
 	nowMs := float64(now.UnixNano()) / 1e6
-	index := listLogs(r)
+	reads, err := listAll(r)
+	if err != nil {
+		return Report{}, err
+	}
+	var files []logFile
+	for _, read := range reads {
+		files = append(files, read.files()...)
+	}
 	memo := projectMemo{}
 
 	// 1. Live processes.
-	claudeLive, threads, codexUnknown := liveProcesses(ctx, r, index, adapter)
-	codexPids := map[int]bool{}
-	for _, t := range threads {
-		if t.ThreadID != "" {
-			codexPids[t.Pid] = true
-		}
+	for _, read := range reads {
+		read.findLive(ctx, adapter)
 	}
 
 	// 2. Which logs to fold: live ones in full, the rest only if recent.
 	live := map[string]bool{}
-	for _, c := range claudeLive {
-		if c.main != nil {
-			live[c.main.path] = true
-		}
-		for _, f := range c.subs[:min(len(c.subs), maxSubagentLogs)] {
-			live[f.path] = true
-		}
-	}
-	for _, t := range threads {
-		if f, ok := index.codexByID[t.ThreadID]; ok && t.ThreadID != "" {
-			live[f.path] = true
+	for _, read := range reads {
+		for _, path := range read.livePaths() {
+			live[path] = true
 		}
 	}
 	cutoff := nowMs - float64(opts.HistoryDays)*dayMs
 	var recent []logFile
-	for _, f := range index.files {
+	for _, f := range files {
 		if f.mtimeMs >= cutoff && !live[f.path] {
 			recent = append(recent, f)
 		}
@@ -136,7 +134,7 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 		recent = recent[:opts.MaxHistoryFiles]
 	}
 	var targets []logFile
-	for _, f := range index.files {
+	for _, f := range files {
 		if live[f.path] {
 			targets = append(targets, f)
 		}
@@ -153,7 +151,10 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 		if live[f.path] {
 			maxBytes = opts.LiveTailBytes
 		}
-		entry, failed := e.advance(f, maxBytes)
+		entry, failed, err := e.advance(f, maxBytes)
+		if err != nil {
+			return Report{}, err
+		}
 		if entry != nil {
 			folded = append(folded, foldedLog{f, entry})
 			foldedByPath[f.path] = entry
@@ -172,8 +173,11 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 	}
 
 	// 3. Sessions.
-	rc := &readContext{roots: r, nowMs: nowMs, opts: opts, proc: adapter, memo: memo, index: index, foldedByPath: foldedByPath, unreadable: unreadable, codexPids: codexPids}
-	sessions := append(claudeSessions(claudeLive, rc), codexSessions(ctx, threads, rc)...)
+	rc := &readContext{nowMs: nowMs, opts: opts, proc: adapter, memo: memo, foldedByPath: foldedByPath, unreadable: unreadable}
+	var sessions []Session
+	for _, read := range reads {
+		sessions = append(sessions, read.sessions(ctx, rc)...)
+	}
 	sort.SliceStable(sessions, func(i, j int) bool {
 		a, b := sessions[i], sessions[j]
 		if a.CLI != b.CLI {
@@ -184,7 +188,7 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 
 	// 4. Cross-session lists.
 	sessionByPath := map[string]string{}
-	for _, f := range index.files {
+	for _, f := range files {
 		if _, seen := sessionByPath[f.path]; !seen {
 			sessionByPath[f.path] = f.session
 		}
@@ -206,18 +210,31 @@ func (e *Engine) Read(ctx context.Context, r roots.Roots, now time.Time, adapter
 	if err := ctx.Err(); err != nil {
 		return Report{}, err
 	}
-	limits := make([]Limit, len(limitCodes))
-	for i, l := range limitCodes {
-		limits[i] = Limit{CLI: l.cli, Code: l.code, Text: l.code.Text()}
+	limits := fixedLimits()
+	for _, read := range reads {
+		limits = append(limits, read.extraLimits()...)
 	}
-	if codexUnknown {
-		// ps failed: the Codex rows cannot be listed at all, so say that instead of showing none.
-		limits = append(limits, Limit{CLI: CLICodex, Code: ReasonCodexProcessUnknown, Text: ReasonCodexProcessUnknown.Text()})
+	fileRows, err := groupFiles(entries, opts.FileLimit)
+	if err != nil {
+		return Report{}, err
 	}
 	return Report{
-		Sessions: nonNil(sessions), Failures: nonNil(groupFailures(entries, opts.FailureLimit)), Files: nonNil(groupFiles(entries, opts.FileLimit)),
+		Sessions: nonNil(sessions), Failures: nonNil(groupFailures(entries, opts.FailureLimit)), Files: nonNil(fileRows),
 		Unmeasurable: limits, Stats: Stats{Logs: len(folded), Truncated: truncated},
 	}, nil
+}
+
+// listAll indexes the logs of every CLI with an Activity adapter, in wire order.
+func listAll(r roots.Roots) ([]cliRead, error) {
+	var reads []cliRead
+	for _, a := range adapters.InOrder() {
+		cli, err := r.CLI(a.ID)
+		if err != nil {
+			return nil, err
+		}
+		reads = append(reads, a.Adapter.listLogs(cli))
+	}
+	return reads, nil
 }
 
 func nonNil[T any](s []T) []T {

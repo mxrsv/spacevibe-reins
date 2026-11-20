@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/proc"
 	"spacevibe.dev/core/internal/roots"
@@ -42,7 +43,7 @@ func TestStopIgnoresUnsafePidInStatusFile(t *testing.T) { // Swift: ProcessGuard
 		id := activityUUID(10)
 		sb.put(".claude/sessions/"+c.file, `{"pid": `+strconv.Itoa(c.pid)+`, "sessionId": "`+id+`", "procStart": "Mon Nov  2 11:00:00 2026", "status": "idle"}`, 0)
 		g := &guardedProc{}
-		_, err := Stop(context.Background(), sb.roots, CLIClaude, id, g, fastStop)
+		_, err := Stop(context.Background(), sb.roots, clis.Claude, id, g, fastStop)
 		if err == nil {
 			t.Errorf("pid %d: Stop returned without an error", c.pid)
 		} else if got := stopStatusOf(err); got != 404 {

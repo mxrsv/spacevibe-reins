@@ -4,7 +4,7 @@ import Testing
 
 /// The Rules tab's derived facts (V5-R67, V5-R68; C18, G12): families from `RuleItem.tool`, stances, the one Codex fact per family and
 /// what it may be compared with, redundant rules, and the Answer's cases (V5-A18). Pure: no core, no window.
-@Suite("Rule families")
+@Suite("Rule families", .fixtureCLIs)
 struct RuleFamiliesTests {
     private static func rule(_ text: String, _ verdict: CoreVerdict) -> CoreRule { RulesSynthetic.rule(text, verdict) }
 

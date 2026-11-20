@@ -161,28 +161,3 @@ func parseLine(line []byte) (jv, bool) {
 	}
 	return present(root), true
 }
-
-// editsOf is the edits of one log state, preferring FileChange items over the older tool-text patches.
-func editsOf(st *logState) []editEvent {
-	if st.cli != CLICodex || st.sawFileChange {
-		return st.edits
-	}
-	base := st.cwd
-	out := make([]editEvent, len(st.legacyEdits))
-	for i, e := range st.legacyEdits {
-		if strings.HasPrefix(e.path, "/") || base == "" {
-			out[i] = e
-			continue
-		}
-		out[i] = editEvent{id: e.id, path: strings.TrimSuffix(base, "/") + "/" + e.path, at: e.at}
-	}
-	return out
-}
-
-func fold(st *logState, line []byte) {
-	if st.cli == CLIClaude {
-		foldClaude(st, line)
-	} else {
-		foldCodex(st, line)
-	}
-}

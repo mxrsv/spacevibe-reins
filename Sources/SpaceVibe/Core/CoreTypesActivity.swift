@@ -18,7 +18,7 @@ struct CoreActivityCost: Codable, Equatable, Sendable {
 }
 
 struct CoreActivitySession: Codable, Equatable, Sendable, Identifiable {
-    var cli: CoreCLI
+    var cli: CLIID
     var id: String
     var title: String
     @CoreNullable var project: String?
@@ -48,7 +48,7 @@ struct CoreActivityHookRef: Codable, Equatable, Sendable {
 
 struct CoreActivityFailure: Codable, Equatable, Sendable {
     var kind: CoreFailureKind
-    var cli: CoreCLI
+    var cli: CLIID
     var key: String
     var title: String
     var count: Int
@@ -68,13 +68,13 @@ struct CoreActivityFile: Codable, Equatable, Sendable {
     var edits: Int
     var sessions: Int
     @CoreNullable var last: String?
-    var clis: [CoreCLI]
+    var clis: [CLIID]
     var projects: [String]
 }
 
 /// Something that cannot be measured, listed even when no session is live. `code` is an open string like `reasonCode`.
 struct CoreActivityLimit: Codable, Equatable, Sendable {
-    var cli: CoreCLI
+    var cli: CLIID
     var code: String
     var text: String
 }

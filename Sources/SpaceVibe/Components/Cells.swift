@@ -3,15 +3,14 @@ import SwiftUI
 // v5 cells of a `ListRow` (V5-R56). Pages give their widths from `Metrics`; the cells own the look.
 
 /// What a bar's fill says: neutral (`fg2`), or the state when little is left (the page decides; Limits by `LimitTone`).
-enum BarTone {
+enum BarTone: Equatable {
     case neutral, warn, danger
-    /// A CLI's identity (the Skills pane's meters): Claude clay, Codex foreground, never a state.
-    case claude, codex
+    /// A CLI's identity (the Skills pane's meters), from `CLIRegistry`: never a state.
+    case cli(CLIID)
 
     var fill: Color {
         switch self {
-        case .claude: Palette.claude
-        case .codex: Palette.codex.opacity(Metrics.Bar.codexOpacity)
+        case .cli(let cli): cli.identity.tone.bar
         case .neutral: Palette.fg2
         case .warn: Palette.warn
         case .danger: Palette.bad

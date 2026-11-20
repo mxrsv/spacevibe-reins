@@ -74,7 +74,7 @@ func leakCases(t *testing.T) {
 			{"rules.changeVerdict", `{"scope":"global","dir":null,"rule":"Bash(ls)","from":"allow","to":"deny"}`},
 			{"loadout.removeDeadHooks", `{"cli":"claude"}`}, {"loadout.removeDeadHooks", `{"cli":"codex"}`},
 			{"loadout.removeItem", `{"id":"claude:hook:0123456789ab"}`},
-			{"loadout.copyToOther", `{"id":"claude:skill:user:nothing"}`},
+			{"loadout.copyToOther", `{"id":"claude:skill:user:nothing","target":"codex"}`}, {"clis.list", `{}`},
 			{"journal.history", `{}`}, {"journal.undo", `{"id":"00000000-0000-4000-8000-000000000000"}`},
 			{"activity.stop", `{"cli":"claude","id":"nothing"}`},
 		}

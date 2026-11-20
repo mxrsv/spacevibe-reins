@@ -71,7 +71,7 @@ func (f *seenFixture) cell(t *testing.T, rows LoadoutRows, name string) Cell {
 	t.Helper()
 	for _, it := range rows.Items {
 		if it.Name == name && it.CLI == Claude {
-			return it.Cells.Claude
+			return cellIn(it.Cells, Claude)
 		}
 	}
 	t.Fatalf("no Claude item %q", name)

@@ -4,12 +4,6 @@ import Foundation
 // "Inventory and usage"; Go: core/internal/inventory). A member the wire always writes is `@CoreNullable`; one it omits
 // when absent (`cells`, `override`, a counted cell's `errors`) is a plain optional.
 
-enum CoreCLI: String, Codable, CaseIterable, Hashable, Sendable {
-    case claude, codex
-
-    var other: CoreCLI { self == .claude ? .codex : .claude }
-}
-
 enum CoreKind: String, Codable, Hashable, Sendable {
     case skill, agent, hook
 }
@@ -23,8 +17,20 @@ enum CoreInventoryScope: String, Codable, Hashable, Sendable {
 enum CoreUsageCell: Equatable, Sendable {
     case counted(runs: Int, last: String?, errors: Int?)
     case pending(reason: String)
+    /// The CLI has the kind but does not log it.
     case unmeasurable(reason: String)
+    /// The CLI has the kind; this item is not installed in it.
     case missing
+    /// The CLI has no such kind (GLOSSARY "Absent"): never shown as 0, as missing or as a place to add to.
+    case absent
+
+    /// The row is installed in that CLI: the cell is neither missing nor absent.
+    var isPresent: Bool {
+        switch self {
+        case .missing, .absent: false
+        case .counted, .pending, .unmeasurable: true
+        }
+    }
 }
 
 extension CoreUsageCell: Codable {
@@ -38,6 +44,7 @@ extension CoreUsageCell: Codable {
         case "pending": self = .pending(reason: try c.decode(String.self, forKey: .reason))
         case "unmeasurable": self = .unmeasurable(reason: try c.decode(String.self, forKey: .reason))
         case "missing": self = .missing
+        case "absent": self = .absent
         case let other: throw DecodingError.dataCorruptedError(forKey: .state, in: c, debugDescription: "unknown cell state \(other)")
         }
     }
@@ -58,26 +65,85 @@ extension CoreUsageCell: Codable {
             try c.encode(reason, forKey: .reason)
         case .missing:
             try c.encode("missing", forKey: .state)
+        case .absent:
+            try c.encode("absent", forKey: .state)
         }
     }
 }
 
-struct CoreCells: Codable, Equatable, Sendable {
-    var claude: CoreUsageCell
-    var codex: CoreUsageCell
+/// One cell per CLI with the inventory concept, in registry order (`[{cli, state, ...}]`). A CLI the list does not hold has no
+/// such row kind in this snapshot, so it reads `absent`.
+struct CoreCells: Equatable, Sendable {
+    struct Entry: Equatable, Sendable {
+        var cli: CLIID
+        var cell: CoreUsageCell
+    }
 
-    subscript(cli: CoreCLI) -> CoreUsageCell { cli == .claude ? claude : codex }
+    var entries: [Entry]
+
+    init(entries: [Entry]) { self.entries = entries }
+
+    /// One cell per CLI of `clis`, from `cell`, in that order.
+    init(_ clis: [CLIID], _ cell: (CLIID) -> CoreUsageCell) {
+        entries = clis.map { Entry(cli: $0, cell: cell($0)) }
+    }
+
+    /// One cell per CLI, in the order written: `CoreCells([.claude: .missing, .codex: .absent])`.
+    init(_ cells: KeyValuePairs<CLIID, CoreUsageCell>) {
+        entries = cells.map { Entry(cli: $0.key, cell: $0.value) }
+    }
+
+    /// The CLIs the cells list, in their order.
+    var clis: [CLIID] { entries.map(\.cli) }
+
+    subscript(cli: CLIID) -> CoreUsageCell {
+        get { entries.first { $0.cli == cli }?.cell ?? .absent }
+        set {
+            if let index = entries.firstIndex(where: { $0.cli == cli }) { entries[index].cell = newValue }
+            else { entries.append(Entry(cli: cli, cell: newValue)) }
+        }
+    }
+
+    /// The cells of the CLIs `keep` accepts, in the same order.
+    func filter(_ keep: (CLIID) -> Bool) -> CoreCells { CoreCells(entries: entries.filter { keep($0.cli) }) }
+}
+
+extension CoreCells.Entry: Codable {
+    private enum Keys: String, CodingKey { case cli }
+
+    init(from decoder: Decoder) throws {
+        cli = try decoder.container(keyedBy: Keys.self).decode(CLIID.self, forKey: .cli)
+        cell = try CoreUsageCell(from: decoder)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        try cell.encode(to: encoder)
+        var c = encoder.container(keyedBy: Keys.self)
+        try c.encode(cli, forKey: .cli)
+    }
+}
+
+extension CoreCells: Codable {
+    init(from decoder: Decoder) throws {
+        entries = try [Entry](from: decoder)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        try entries.encode(to: encoder)
+    }
 }
 
 /// A skill or a subagent.
 struct CoreInventoryItem: Codable, Equatable, Sendable, Identifiable {
     var id: String
-    var cli: CoreCLI
+    var cli: CLIID
     /// `skill` or `agent`.
     var kind: CoreKind
     var name: String
     var entry: String
     var description: String
+    /// The CLIs that read this file (MC-R7); today always `[cli]`.
+    var readBy: [CLIID]
     /// `user`, `link`, or a plugin name.
     var owner: String
     var path: String
@@ -85,7 +151,6 @@ struct CoreInventoryItem: Codable, Equatable, Sendable, Identifiable {
     var removable: Bool
     var scope: CoreInventoryScope
     @CoreNullable var project: String?
-    var inOther: Bool
     /// The matrix row: `<kind>:<project or empty>:<bare name>`.
     var key: String
     /// Written on every Claude global skill (`null` when settings hold no value) and omitted on all other items, so
@@ -96,30 +161,32 @@ struct CoreInventoryItem: Codable, Equatable, Sendable, Identifiable {
     var cells: CoreCells?
 
     private enum Keys: String, CodingKey {
-        case id, cli, kind, name, entry, description, owner, path, file, removable, scope, project, inOther, skillOverride = "override", key, cells
+        case id, cli, kind, name, entry, description, readBy, owner, path, file, removable, scope, project, skillOverride = "override", key, cells
     }
 
-    init(id: String, cli: CoreCLI, kind: CoreKind, name: String, entry: String, description: String, owner: String, path: String, file: String, removable: Bool, scope: CoreInventoryScope, project: String?, inOther: Bool, key: String, hasSkillOverride: Bool = false, skillOverride: String? = nil, cells: CoreCells? = nil) {
+    /// `readBy` defaults to the item's own CLI, as the core writes it today.
+    init(id: String, cli: CLIID, kind: CoreKind, name: String, entry: String, description: String, readBy: [CLIID]? = nil, owner: String, path: String, file: String, removable: Bool, scope: CoreInventoryScope, project: String?, key: String, hasSkillOverride: Bool = false, skillOverride: String? = nil, cells: CoreCells? = nil) {
         self.id = id; self.cli = cli; self.kind = kind; self.name = name; self.entry = entry; self.description = description
+        self.readBy = readBy ?? [cli]
         self.owner = owner; self.path = path; self.file = file; self.removable = removable; self.scope = scope
-        self.project = project; self.inOther = inOther; self.key = key; self.hasSkillOverride = hasSkillOverride; self.skillOverride = skillOverride; self.cells = cells
+        self.project = project; self.key = key; self.hasSkillOverride = hasSkillOverride; self.skillOverride = skillOverride; self.cells = cells
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: Keys.self)
         id = try c.decode(String.self, forKey: .id)
-        cli = try c.decode(CoreCLI.self, forKey: .cli)
+        cli = try c.decode(CLIID.self, forKey: .cli)
         kind = try c.decode(CoreKind.self, forKey: .kind)
         name = try c.decode(String.self, forKey: .name)
         entry = try c.decode(String.self, forKey: .entry)
         description = try c.decode(String.self, forKey: .description)
+        readBy = try c.decode([CLIID].self, forKey: .readBy)
         owner = try c.decode(String.self, forKey: .owner)
         path = try c.decode(String.self, forKey: .path)
         file = try c.decode(String.self, forKey: .file)
         removable = try c.decode(Bool.self, forKey: .removable)
         scope = try c.decode(CoreInventoryScope.self, forKey: .scope)
         project = try c.decode(CoreNullable<String>.self, forKey: .project).wrappedValue
-        inOther = try c.decode(Bool.self, forKey: .inOther)
         key = try c.decode(String.self, forKey: .key)
         hasSkillOverride = c.contains(.skillOverride)
         skillOverride = try c.decodeIfPresent(String.self, forKey: .skillOverride)
@@ -134,13 +201,13 @@ struct CoreInventoryItem: Codable, Equatable, Sendable, Identifiable {
         try c.encode(name, forKey: .name)
         try c.encode(entry, forKey: .entry)
         try c.encode(description, forKey: .description)
+        try c.encode(readBy, forKey: .readBy)
         try c.encode(owner, forKey: .owner)
         try c.encode(path, forKey: .path)
         try c.encode(file, forKey: .file)
         try c.encode(removable, forKey: .removable)
         try c.encode(scope, forKey: .scope)
         try c.encode(CoreNullable(wrappedValue: project), forKey: .project)
-        try c.encode(inOther, forKey: .inOther)
         if hasSkillOverride { try c.encode(CoreNullable(wrappedValue: skillOverride), forKey: .skillOverride) }
         try c.encode(key, forKey: .key)
         try c.encodeIfPresent(cells, forKey: .cells)
@@ -159,7 +226,7 @@ struct CoreHookUsage: Codable, Equatable, Sendable {
 
 struct CoreInventoryHook: Codable, Equatable, Sendable, Identifiable {
     var id: String
-    var cli: CoreCLI
+    var cli: CLIID
     /// Always `hook`.
     var kind: CoreKind
     var event: String
@@ -187,8 +254,8 @@ struct CoreInventorySnapshot: Codable, Equatable, Sendable {
     var items: [CoreInventoryItem]
     var hooks: [CoreInventoryHook]
     var problems: [String]
-    /// Hook events per CLI (`claude`, `codex`).
-    var events: [String: [String]]
-    /// Config root per CLI (`claude`, `codex`).
-    var roots: [String: String]
+    /// Hook events per CLI with the inventory concept, in registry order.
+    var events: [CoreCLIEvents]
+    /// Config root per CLI with the inventory concept, in registry order.
+    var roots: [CoreCLIRoot]
 }

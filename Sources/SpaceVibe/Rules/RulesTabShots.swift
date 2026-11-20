@@ -223,8 +223,8 @@ enum RulesTabShots {
         }
     }
 
-    private static func entry(_ cli: CoreCLI, installed: Bool) -> CoreLimitsEntry {
-        CoreLimitsEntry(cli: CoreLimitsCLI(cli), state: installed ? .measured : .notInstalled, plan: nil, source: nil,
+    private static func entry(_ cli: CLIID, installed: Bool) -> CoreLimitsEntry {
+        CoreLimitsEntry(cli: cli, state: installed ? .measured : .notInstalled, plan: nil, source: nil,
                         at: installed ? Date().timeIntervalSince1970 : nil, windows: [])
     }
 

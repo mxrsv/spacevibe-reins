@@ -5,7 +5,7 @@ import Testing
 /// V5-A6 for the Skills tab: a logo toggle, a bulk add, a bulk remove and the pane's Remove go through the Go core, show ONE
 /// toast, and Undo puts the whole home back byte for byte. Every test runs on a private copy of the synthetic fixture home
 /// (S-R1) with the real core (`SPACEVIBE_CORE_BINARY`, as `scripts/test.sh` sets it).
-@Suite("Skills model, Go core")
+@Suite("Skills model, Go core", .fixtureCLIs)
 @MainActor
 struct SkillsModelEngineTests {
     private func skills(_ fixture: CoreFixtureHome) async throws -> (SkillsModel, AppEnvironment, CoreClient) {
@@ -151,7 +151,7 @@ struct SkillsModelEngineTests {
         defer { client.shutdown() }
         let before = try await fixture.tree()
         let plugin = try #require(model.rows.first { $0.plugin != nil })
-        for cli in CoreCLI.allCases { #expect(model.mode(plugin, cli: cli) == .readOnly) }
+        for cli in CLICatalog.current.inventoryCLIs { #expect(model.mode(plugin, cli: cli) == .readOnly) }
         model.toggle(plugin, cli: .codex)
         #expect(env.toasts.current == nil, "a read-only logo does nothing")
         model.remove([plugin])
@@ -238,13 +238,13 @@ private final class FailingSecondCopyCore: UnservedCore, @unchecked Sendable {
 
     override func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult {
         CoreUsageResult(
-            totals: CoreUsageTotals(claude: CoreCLITotals(skill: [:], agent: [:], hook: [:]), codex: CoreCLITotals(skill: [:], agent: [:], hook: [:])),
-            sessions: CoreUsageSessions(claude: 1, codex: 0),
-            windows: CoreUsageWindows(claude: CoreLogWindow(files: 1, oldest: nil, newest: nil), codex: CoreLogWindow(files: 0, oldest: nil, newest: nil)), files: 1)
+            totals: [CoreCLITotals(cli: .claude, skill: [:], agent: [:], hook: [:]), CoreCLITotals(cli: .codex, skill: [:], agent: [:], hook: [:])],
+            sessions: .of([.claude: 1, .codex: 0]),
+            windows: [CoreLogWindow(cli: .claude, files: 1, oldest: nil, newest: nil), CoreLogWindow(cli: .codex, files: 0, oldest: nil, newest: nil)], files: 1)
     }
 
-    override func loadoutCopyToOther(id: String) async throws -> CoreEntryResult {
-        let n = lock.withLock { () -> Int in _calls.append("copy \(id)"); return _calls.filter { $0.hasPrefix("copy") }.count }
+    override func loadoutCopyToOther(id: String, target: CLIID) async throws -> CoreEntryResult {
+        let n = lock.withLock { () -> Int in _calls.append("copy \(id) to \(target.rawValue)"); return _calls.filter { $0.hasPrefix("copy") }.count }
         if n == 2 { throw CoreError("Codex already has a skill named b.", status: 409) }
         return CoreEntryResult(entry: CoreJournalEntry(id: "entry-\(n)", at: "2026-11-07T10:00:00.000Z", label: "Copied", undone: false, count: 1))
     }
@@ -255,7 +255,7 @@ private final class FailingSecondCopyCore: UnservedCore, @unchecked Sendable {
     }
 }
 
-@Suite("Skills model, a bulk write that fails")
+@Suite("Skills model, a bulk write that fails", .fixtureCLIs)
 @MainActor
 struct SkillsBulkFailureTests {
     @Test("a failed step undoes the steps already written and shows the core's sentence, with no Undo")
@@ -290,13 +290,13 @@ private final class RecordingCore: UnservedCore, @unchecked Sendable {
 
     override func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult {
         CoreUsageResult(
-            totals: CoreUsageTotals(claude: CoreCLITotals(skill: [:], agent: [:], hook: [:]), codex: CoreCLITotals(skill: [:], agent: [:], hook: [:])),
-            sessions: CoreUsageSessions(claude: 1, codex: 1),
-            windows: CoreUsageWindows(claude: CoreLogWindow(files: 1, oldest: nil, newest: nil), codex: CoreLogWindow(files: 1, oldest: nil, newest: nil)), files: 2)
+            totals: [CoreCLITotals(cli: .claude, skill: [:], agent: [:], hook: [:]), CoreCLITotals(cli: .codex, skill: [:], agent: [:], hook: [:])],
+            sessions: .of([.claude: 1, .codex: 1]),
+            windows: [CoreLogWindow(cli: .claude, files: 1, oldest: nil, newest: nil), CoreLogWindow(cli: .codex, files: 1, oldest: nil, newest: nil)], files: 2)
     }
 
-    override func loadoutCopyToOther(id: String) async throws -> CoreEntryResult {
-        let n = lock.withLock { () -> Int in _calls.append("copy \(id)"); return _calls.filter { $0.hasPrefix("copy") }.count }
+    override func loadoutCopyToOther(id: String, target: CLIID) async throws -> CoreEntryResult {
+        let n = lock.withLock { () -> Int in _calls.append("copy \(id) to \(target.rawValue)"); return _calls.filter { $0.hasPrefix("copy") }.count }
         return CoreEntryResult(entry: CoreJournalEntry(id: "entry-\(n)", at: "2026-11-07T10:00:00.000Z", label: "Copied", undone: false, count: 1))
     }
 
@@ -306,7 +306,7 @@ private final class RecordingCore: UnservedCore, @unchecked Sendable {
     }
 }
 
-@Suite("Skills model, a write that spans both CLIs")
+@Suite("Skills model, a write that spans both CLIs", .fixtureCLIs)
 @MainActor
 struct SkillsAddToOtherTests {
     @Test("`a` on picks that each lack the other CLI is one toast whose Undo undoes every file, newest first")
@@ -326,7 +326,7 @@ struct SkillsAddToOtherTests {
         model.addToOtherCLI(model.rows)
         try await wait { env.toasts.current != nil }
         #expect(env.toasts.current?.message == "Added 2 skills to the other CLI")
-        #expect(core.calls == ["copy codex:skill:global:b", "copy claude:skill:global:a"], "b goes to Claude Code, then a to Codex, in one write")
+        #expect(core.calls == ["copy codex:skill:global:b to claude", "copy claude:skill:global:a to codex"], "b goes to Claude Code, then a to Codex, in one write")
         #expect(env.toasts.current?.action != nil)
 
         env.toasts.runCurrentAction()

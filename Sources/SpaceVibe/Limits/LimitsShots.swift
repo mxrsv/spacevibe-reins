@@ -24,7 +24,7 @@ enum LimitsShots {
         agents?.start()
         Task { await env.limits.readOnce() }
         try ShotHarness.wait("the Limits read and the Agents counts") { env.limits.readAt != nil && agents?.counts.skills != nil }
-        try ShotHarness.check(env.limits.results.map(\.cli) == CoreLimitsCLI.allCases, "Limits read Claude Code, Codex and Gemini CLI, in that order")
+        try ShotHarness.check(env.limits.results.map(\.cli) == [.claude, .codex, .gemini], "Limits read Claude Code, Codex and Gemini CLI, in that order")
         try trace(env.limits.results, now: Date())
 
         for choice in [AppearanceChoice.dark, .light] {
@@ -111,7 +111,7 @@ enum LimitsShots {
         func codex(_ windows: [CoreLimitWindow], ago: Double = 120) -> CoreLimitsEntry {
             CoreLimitsEntry(cli: .codex, state: .measured, plan: "plus", source: nil, at: t - ago, windows: windows)
         }
-        func state(_ cli: CoreLimitsCLI, _ state: CoreLimitsState) -> CoreLimitsEntry {
+        func state(_ cli: CLIID, _ state: CoreLimitsState) -> CoreLimitsEntry {
             CoreLimitsEntry(cli: cli, state: state, plan: nil, source: nil, at: nil, windows: [])
         }
         func claudeSample(used: [Double], fiveHourResets: Double = 2 * hour + 40 * 60) -> [CoreLimitWindow] {

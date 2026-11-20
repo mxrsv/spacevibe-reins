@@ -154,7 +154,7 @@ enum SidebarCLIState: Equatable, Sendable {
 /// 11 pt `fg3`. With no state only the name shows. Not interactive.
 struct SidebarCLIStatusRow: View {
     let name: String
-    let cli: CoreLimitsCLI
+    let cli: CLIID
     var state: SidebarCLIState?
 
     var body: some View {

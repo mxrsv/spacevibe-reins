@@ -55,14 +55,14 @@ final class SkillsModel {
         SkillStatus.of(row, marks: SkillRank.marks(for: rows)[row.key] ?? [])
     }
 
-    var events: [String: [String]] { loadout.data?.events ?? [:] }
+    var events: [CLIID: [String]] { loadout.data?.events ?? [:] }
 
     /// The CLIs the logo strip lists, Claude Code first.
-    var detected: [CoreCLI] { LoadoutRows.detectedCLIs(limits: env.limits.results, rows: rows) }
+    var detected: [CLIID] { LoadoutRows.detectedCLIs(limits: env.limits.results, rows: rows) }
 
     /// The busiest skill's session count in any one CLI: the meters' scale.
     var maxSessions: Int {
-        rows.flatMap { row in CoreCLI.allCases.compactMap { row.skillUsage.sessions(in: $0) } }.max() ?? 0
+        rows.flatMap { row in CLICatalog.current.inventoryCLIs.compactMap { row.skillUsage.sessions(in: $0) } }.max() ?? 0
     }
 
     // MARK: Current row and picks
@@ -114,20 +114,20 @@ final class SkillsModel {
 
     // MARK: Logos and writes (V5-R25, V5-R26, V5-R38)
 
-    func mode(_ row: LoadoutRow, cli: CoreCLI) -> LogoToggleMode { LoadoutRows.logoMode(row, cli: cli, events: events) }
+    func mode(_ row: LoadoutRow, cli: CLIID) -> LogoToggleMode { LoadoutRows.logoMode(row, cli: cli, events: events) }
 
     /// Pressing a row's or the pane's logo: a lit one removes the skill from that CLI, a dim one adds it there.
-    func toggle(_ row: LoadoutRow, cli: CoreCLI) {
+    func toggle(_ row: LoadoutRow, cli: CLIID) {
         guard mode(row, cli: cli) == .toggles else { return }
         if row.members[cli] == nil { add([row], to: cli) } else { remove([row], from: cli) }
     }
 
     /// The bottom bar's logo: lit when every picked skill has that CLI.
-    func isLit(_ rows: [LoadoutRow], cli: CoreCLI) -> Bool {
+    func isLit(_ rows: [LoadoutRow], cli: CLIID) -> Bool {
         !rows.isEmpty && rows.allSatisfy { $0.members[cli] != nil }
     }
 
-    func bulkMode(_ rows: [LoadoutRow], cli: CoreCLI) -> LogoToggleMode {
+    func bulkMode(_ rows: [LoadoutRow], cli: CLIID) -> LogoToggleMode {
         if isLit(rows, cli: cli) {
             if !LoadoutRows.removeWrites(rows, from: cli).steps.isEmpty { return .toggles }
             return rows.contains { $0.plugin != nil || $0.project != nil } ? .readOnly : .onlyCopy
@@ -135,17 +135,17 @@ final class SkillsModel {
         return LoadoutRows.addWrites(rows, to: cli, events: events).steps.isEmpty ? .readOnly : .toggles
     }
 
-    func toggleBulk(_ rows: [LoadoutRow], cli: CoreCLI) {
+    func toggleBulk(_ rows: [LoadoutRow], cli: CLIID) {
         guard !rows.isEmpty else { return }
         if isLit(rows, cli: cli) { remove(rows, from: cli) } else { add(rows, to: cli) }
     }
 
-    func add(_ rows: [LoadoutRow], to cli: CoreCLI) { add(rows, to: [cli]) }
+    func add(_ rows: [LoadoutRow], to cli: CLIID) { add(rows, to: [cli]) }
 
     /// Adds each row to each of `clis` it lacks as ONE write: one toast and one Undo for every file, however many CLIs.
-    private func add(_ rows: [LoadoutRow], to clis: [CoreCLI]) {
+    private func add(_ rows: [LoadoutRow], to clis: [CLIID]) {
         var steps: [LoadoutRows.SkillWrites.Step] = []
-        var written: [(row: LoadoutRow, cli: CoreCLI)] = []
+        var written: [(row: LoadoutRow, cli: CLIID)] = []
         var skipped = 0
         for cli in clis {
             let lacking = rows.filter { $0.members[cli] == nil }
@@ -167,7 +167,7 @@ final class SkillsModel {
     }
 
     /// Removes the rows from `cli`, or from every CLI that has them when `cli` is nil.
-    func remove(_ rows: [LoadoutRow], from cli: CoreCLI? = nil) {
+    func remove(_ rows: [LoadoutRow], from cli: CLIID? = nil) {
         let plan = LoadoutRows.removeWrites(rows, from: cli)
         guard !plan.steps.isEmpty else {
             env.toasts.show(SkillsWording.nothingToChange(rows, adding: false))
@@ -201,7 +201,7 @@ final class SkillsModel {
     /// so a `SKILL.md` linked to a `.command` would run in Terminal: only a resolved regular `.md` file opens; anything
     /// else is shown in Finder.
     func openFile(of row: LoadoutRow) {
-        guard let member = CoreCLI.allCases.compactMap({ row.members[$0] }).first, let url = Self.fileURL(member) else { return }
+        guard let member = CLICatalog.current.inventoryCLIs.compactMap({ row.members[$0] }).first, let url = Self.fileURL(member) else { return }
         let resolved = url.resolvingSymlinksInPath()
         let isRegular = (try? resolved.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true
         if isRegular, resolved.pathExtension.lowercased() == "md" {
@@ -219,9 +219,9 @@ final class SkillsModel {
     }
 
     /// The files a skill lives in, one per CLI, with the home folder shortened.
-    func files(of row: LoadoutRow) -> [(cli: CoreCLI, path: String)] {
+    func files(of row: LoadoutRow) -> [(cli: CLIID, path: String)] {
         let home = loadout.data?.home
-        return CoreCLI.allCases.compactMap { cli in
+        return CLICatalog.current.inventoryCLIs.compactMap { cli in
             guard case .item(let item)? = row.members[cli] else { return nil }
             return (cli, LoadoutRows.shorten(item.file, home: home))
         }

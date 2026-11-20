@@ -6,7 +6,7 @@ struct SkillsList: View {
     let model: SkillsModel
     let layout: SkillsQuery.Layout
     let current: LoadoutRow?
-    let detected: [CoreCLI]
+    let detected: [CLIID]
 
     @Environment(\.openStateStore) private var store
 
@@ -56,7 +56,7 @@ struct SkillsList: View {
                        onActivate: { model.select(row.key) }, accessibilityName: spoken(row)) {
             LogoStrip {
                 ForEach(detected, id: \.self) { cli in
-                    LogoToggle(cli: CoreLimitsCLI(cli), isLit: row.members[cli] != nil, mode: model.mode(row, cli: cli),
+                    LogoToggle(cli: cli, isLit: row.members[cli] != nil, mode: model.mode(row, cli: cli),
                                justChanged: model.changed.contains("\(row.key):\(cli.rawValue)")) { model.toggle(row, cli: cli) }
                 }
             }

@@ -135,8 +135,8 @@ enum SkillsFilterField: String, FilterFieldKind {
     var values: [FilterValue] {
         switch self {
         case .cli:
-            [FilterValue("claude", "In Claude Code", chip: "Claude Code"), FilterValue("codex", "In Codex", chip: "Codex"),
-             FilterValue("both", "In both", chip: "Both"), FilterValue("one", "In one only", chip: "One only")]
+            CLICatalog.current.inventoryCLIs.map { FilterValue($0.rawValue, "In \($0.label)", chip: $0.label) }
+                + [FilterValue("both", "In both", chip: "Both"), FilterValue("one", "In one only", chip: "One only")]
         case .owner: [FilterValue("mine", "Mine"), FilterValue("plugin", "Plugin")]
         case .rank:
             [FilterValue("top10", "Top 10 most used"), FilterValue("top25", "Top 25 most used"),
@@ -237,11 +237,10 @@ struct SkillsQuery: Equatable, Sendable {
                       ordered.filter { SkillStatus.of($0, marks: marks[$0.key] ?? []) == status })
             }
         case .cli:
-            groups = [
-                group("cli:both", "In both", ordered.filter { $0.presentCLIs.count == 2 }),
-                group("cli:claude", "Only Claude Code", ordered.filter { $0.presentCLIs == [.claude] }),
-                group("cli:codex", "Only Codex", ordered.filter { $0.presentCLIs == [.codex] }),
-            ].compactMap { $0 }
+            groups = ([group("cli:both", "In both", ordered.filter { $0.presentCLIs.count == 2 })]
+                + CLICatalog.current.inventoryCLIs.map { cli in
+                    group("cli:\(cli.rawValue)", "Only \(cli.label)", ordered.filter { $0.presentCLIs == [cli] })
+                }).compactMap { $0 }
         case .owner:
             groups = [group("owner:mine", "Mine", ordered.filter { $0.plugin == nil }), group("owner:plugin", "Plugin", ordered.filter { $0.plugin != nil })]
                 .compactMap { $0 }
@@ -272,10 +271,9 @@ struct SkillsQuery: Equatable, Sendable {
         case .cli:
             let present = row.presentCLIs
             switch value {
-            case "claude": return present.contains(.claude)
-            case "codex": return present.contains(.codex)
             case "both": return present.count == 2
-            default: return present.count == 1
+            case "one": return present.count == 1
+            default: return present.contains(CLIID(rawValue: value))
             }
         case .owner:
             return value == "plugin" ? row.plugin != nil : row.plugin == nil

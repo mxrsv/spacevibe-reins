@@ -3,7 +3,7 @@ import Testing
 @testable import SpaceVibe
 
 /// V5-A5: the Skills list as the head's Filter and View describe it, on rows built the way the app builds them.
-@Suite("Skills list")
+@Suite("Skills list", .fixtureCLIs)
 struct SkillsQueryTests {
     private typealias F = SkillRowsFixture
 

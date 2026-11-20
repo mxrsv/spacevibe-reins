@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/logs"
 )
@@ -27,9 +28,9 @@ type cachedFile struct {
 	// V is ScanVersion when the log was parsed.
 	V int `json:"v"`
 	// Stamp is "<size>:<floor(mtime ms)>": a changed log is parsed again.
-	Stamp   string `json:"stamp"`
-	CLI     CLI    `json:"cli"`
-	Session string `json:"session"`
+	Stamp   string  `json:"stamp"`
+	CLI     clis.ID `json:"cli"`
+	Session string  `json:"session"`
 	// First is the day of the first timestamp; the key is left out when there is none, as Swift's
 	// synthesized encoder leaves out a nil optional.
 	First *string    `json:"first,omitempty"`
@@ -76,8 +77,8 @@ func (r rawEntry) valid() (cachedFile, bool) {
 		r.Rec.Skill == nil || r.Rec.Agent == nil || r.Rec.Hook == nil {
 		return cachedFile{}, false
 	}
-	cli := CLI(*r.CLI)
-	if cli != Claude && cli != Codex {
+	cli := clis.ID(*r.CLI)
+	if _, err := parsers.For(cli); err != nil { // an entry of a CLI that is not scanned is dropped
 		return cachedFile{}, false
 	}
 	rec := fileRecord{Skill: *r.Rec.Skill, Agent: *r.Rec.Agent, Hook: make(map[string]HookTotals, len(*r.Rec.Hook))}

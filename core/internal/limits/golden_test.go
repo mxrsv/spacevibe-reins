@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/goldentest"
 	"spacevibe.dev/core/internal/hashes"
 )
@@ -139,7 +140,7 @@ func resolveAccounts(home tempHome, text string) string {
 		}
 		end := strings.Index(text[start:], ")")
 		parts := strings.Split(text[start+len(token):start+end], ",")
-		key := hashes.SHA256Hex([]byte(home.roots().Claude.Root + "\n" + parts[0] + "\n" + parts[1]))
+		key := hashes.SHA256Hex([]byte(home.roots().CLIs[clis.Claude].Root + "\n" + parts[0] + "\n" + parts[1]))
 		text = text[:start] + key + text[start+end+1:]
 	}
 }

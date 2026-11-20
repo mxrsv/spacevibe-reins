@@ -72,9 +72,9 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
     }
 
     static let usage = CoreUsageResult(
-        totals: CoreUsageTotals(claude: CoreCLITotals(skill: [:], agent: [:], hook: [:]), codex: CoreCLITotals(skill: [:], agent: [:], hook: [:])),
-        sessions: CoreUsageSessions(claude: 1_234, codex: 56),
-        windows: CoreUsageWindows(claude: CoreLogWindow(files: 3, oldest: "2026-10-01", newest: nil), codex: CoreLogWindow(files: 1, oldest: "2026-10-09", newest: nil)),
+        totals: [CoreCLITotals(cli: .claude, skill: [:], agent: [:], hook: [:]), CoreCLITotals(cli: .codex, skill: [:], agent: [:], hook: [:])],
+        sessions: .of([.claude: 1_234, .codex: 56]),
+        windows: [CoreLogWindow(cli: .claude, files: 3, oldest: "2026-10-01", newest: nil), CoreLogWindow(cli: .codex, files: 1, oldest: "2026-10-09", newest: nil)],
         files: 4
     )
 
@@ -101,8 +101,8 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
         return Self.usage
     }
 
-    override func loadoutCopyToOther(id: String) async throws -> CoreEntryResult {
-        record("copy \(id)")
+    override func loadoutCopyToOther(id: String, target: CLIID) async throws -> CoreEntryResult {
+        record("copy \(id) to \(target.rawValue)")
         if let gate = writeGate { await gate.wait() }
         if let failure = writeFailure { throw failure }
         return Self.entry("Copied skill one to Codex")
@@ -115,7 +115,7 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
         return Self.entry("Removed skill one from Claude Code")
     }
 
-    override func loadoutRemoveDeadHooks(cli: CoreCLI) async throws -> CoreEntryResult {
+    override func loadoutRemoveDeadHooks(cli: CLIID) async throws -> CoreEntryResult {
         record("removeDead \(cli.rawValue)")
         if let failure = writeFailure { throw failure }
         return Self.entry("Removed 2 dead hooks from Claude Code")
@@ -129,18 +129,18 @@ private final class FakeLoadoutCore: UnservedCore, @unchecked Sendable {
 }
 
 @MainActor
-@Suite("Loadout model")
+@Suite("Loadout model", .fixtureCLIs)
 struct LoadoutModelTests {
     // MARK: Rows
 
-    private static let events = ["claude": ["PreToolUse", "Stop"], "codex": ["Stop"]]
+    private static let events: [CLIID: [String]] = [.claude: ["PreToolUse", "Stop"], .codex: ["Stop"]]
 
-    private static func skill(_ name: String, cli: CoreCLI = .claude, inOther: Bool = false) -> CoreInventoryItem {
+    private static func skill(_ name: String, cli: CLIID = .claude) -> CoreInventoryItem {
         CoreInventoryItem(
             id: "\(cli.rawValue):skill:global:\(name)", cli: cli, kind: .skill, name: name, entry: name, description: "", owner: "user",
             path: "/home/demo/.\(cli.rawValue)/skills/\(name)", file: "/home/demo/.\(cli.rawValue)/skills/\(name)/SKILL.md", removable: true,
-            scope: .global, project: nil, inOther: inOther, key: "skill::\(name)",
-            cells: CoreCells(claude: cli == .claude ? .counted(runs: 3, last: nil, errors: nil) : .missing, codex: cli == .codex ? .counted(runs: 1, last: nil, errors: nil) : .missing)
+            scope: .global, project: nil, key: "skill::\(name)",
+            cells: CoreCells([.claude: cli == .claude ? .counted(runs: 3, last: nil, errors: nil) : .missing, .codex: cli == .codex ? .counted(runs: 1, last: nil, errors: nil) : .missing])
         )
     }
 
@@ -148,16 +148,16 @@ struct LoadoutModelTests {
         CoreInventoryHook(
             id: "claude:hook:\(hash)", cli: .claude, kind: .hook, event: "Stop", matcher: nil, command: "/home/demo/.claude/scripts/\(hash).sh", timeout: nil,
             async: false, owner: "user", removable: removable, dead: dead, paths: [], hash: hash, file: "/home/demo/.claude/settings.json",
-            scope: .global, project: nil, key: "hook::\(hash)", cells: CoreCells(claude: .counted(runs: 0, last: nil, errors: 0), codex: .missing), usage: nil
+            scope: .global, project: nil, key: "hook::\(hash)", cells: CoreCells([.claude: .counted(runs: 0, last: nil, errors: 0), .codex: .missing]), usage: nil
         )
     }
 
     private static func rows() -> CoreLoadoutRows {
         CoreLoadoutRows(
-            usage: .scanning, items: [skill("one"), skill("both", cli: .claude, inOther: true), skill("both", cli: .codex, inOther: true)],
+            usage: .scanning, items: [skill("one"), skill("both", cli: .claude), skill("both", cli: .codex)],
             hooks: [hook("h1", dead: true), hook("h2", dead: true), hook("h3", dead: false), hook("h4", dead: true, removable: false)],
-            problems: ["Could not read /home/demo/.claude/skills/x"], events: events, roots: ["claude": "/home/demo/.claude", "codex": "/home/demo/.codex"],
-            countsByScope: ["global": CoreFilterCounts(all: 6, only: .init(claude: 4, codex: 0), neverRan: 4, dead: 3)],
+            problems: ["Could not read /home/demo/.claude/skills/x"], events: .of(events), roots: .of([.claude: "/home/demo/.claude", .codex: "/home/demo/.codex"]),
+            countsByScope: ["global": CoreFilterCounts(all: 6, only: .of([.claude: 4, .codex: 0]), neverRan: 4, dead: 3)],
             rowFlags: [
                 "skill::one": CoreRowFlags(one: true, neverRan: false, dead: false), "skill::both": CoreRowFlags(one: false, neverRan: false, dead: false),
                 "hook::h1": CoreRowFlags(one: true, neverRan: true, dead: true), "hook::h2": CoreRowFlags(one: true, neverRan: true, dead: true),
@@ -261,7 +261,7 @@ struct LoadoutModelTests {
         plugin.owner = "demo-plugin"
         plugin.removable = false
         var beta = Self.skill("beta")
-        beta.cells = CoreCells(claude: .counted(runs: 100, last: nil, errors: nil), codex: .missing)
+        beta.cells = CoreCells([.claude: .counted(runs: 100, last: nil, errors: nil), .codex: .missing])
         var raw = Self.rows()
         raw.items = [beta, user, plugin]
         raw.hooks = []
@@ -343,7 +343,7 @@ struct LoadoutModelTests {
         let reads = core.rowsReads
         model.add(one, to: .codex)
         try await settle("the toast") { model.env.toasts.current != nil }
-        #expect(core.calls.contains("copy claude:skill:global:one"))
+        #expect(core.calls.contains("copy claude:skill:global:one to codex"))
         #expect(model.env.toasts.current?.message == "Added skill one to Codex" && model.env.toasts.current?.tone == .info)
         try await settle("the re-read") { core.rowsReads == reads + 1 && model.isSettled }
 

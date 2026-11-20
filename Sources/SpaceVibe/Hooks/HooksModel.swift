@@ -47,9 +47,9 @@ final class HooksModel {
     var isLoaded: Bool { loadout.data != nil }
 
     /// The CLIs the logo strip lists, Claude Code first (V5-R24): one that is not installed has no logo.
-    var detected: [CoreCLI] { LoadoutRows.detectedCLIs(limits: limitsResults(), rows: rows) }
+    var detected: [CLIID] { LoadoutRows.detectedCLIs(limits: limitsResults(), rows: rows) }
 
-    var events: [String: [String]] { loadout.data?.events ?? [:] }
+    var events: [CLIID: [String]] { loadout.data?.events ?? [:] }
 
     var home: String? { loadout.data?.home }
 
@@ -129,19 +129,19 @@ final class HooksModel {
     // MARK: Logos and writes (V5-R25, V5-R38, V5-R66)
 
     /// What pressing a logo does. A CLI that cannot take the hook has no toggle at all (the strip draws nothing there).
-    func mode(_ row: LoadoutRow, cli: CoreCLI) -> LogoToggleMode { LoadoutRows.logoMode(row, cli: cli, events: events) }
+    func mode(_ row: LoadoutRow, cli: CLIID) -> LogoToggleMode { LoadoutRows.logoMode(row, cli: cli, events: events) }
 
     /// Whether the strip draws a logo for `cli`: it has the hook, or the one rule lets it take it.
-    func showsToggle(_ row: LoadoutRow, cli: CoreCLI) -> Bool { row.members[cli] != nil || context.block(row, to: cli) == nil }
+    func showsToggle(_ row: LoadoutRow, cli: CLIID) -> Bool { row.members[cli] != nil || context.block(row, to: cli) == nil }
 
     /// Pressing a logo: a lit one removes that copy, a dim one copies the hook there.
-    func toggle(_ row: LoadoutRow, cli: CoreCLI) {
+    func toggle(_ row: LoadoutRow, cli: CLIID) {
         guard mode(row, cli: cli) == .toggles else { return }
         if row.members[cli] == nil { copy(row, to: cli) } else { remove(row, from: cli) }
     }
 
     /// Copies the hook into `cli`: one write, one toast with Undo.
-    func copy(_ row: LoadoutRow, to cli: CoreCLI) {
+    func copy(_ row: LoadoutRow, to cli: CLIID) {
         detailKey = nil
         if let block = context.block(row, to: cli) {
             env.toasts.show(HooksWording.long(block))
@@ -170,7 +170,7 @@ final class HooksModel {
     }
 
     /// Removes the hook from `cli`, or from every CLI that has it when `cli` is nil. A plugin's is never written.
-    func remove(_ row: LoadoutRow, from cli: CoreCLI? = nil) {
+    func remove(_ row: LoadoutRow, from cli: CLIID? = nil) {
         detailKey = nil
         let plan = LoadoutRows.removeWrites([row], from: cli)
         guard !plan.steps.isEmpty else {
@@ -195,6 +195,7 @@ final class HooksModel {
             env.toasts.show("\(row.hookTitle) is already in both CLIs")
             return
         }
-        copy(row, to: here.other)
+        guard let target = row.copyTarget(from: here) else { return }
+        copy(row, to: target)
     }
 }

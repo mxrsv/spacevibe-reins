@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/hashes"
 	"spacevibe.dev/core/internal/redact"
 	"spacevibe.dev/core/internal/textjs"
@@ -43,7 +44,7 @@ func failureTitle(cmd string) string {
 
 type failureGroup struct {
 	kind     FailureKind
-	cli      CLI
+	cli      clis.ID
 	key      string
 	title    string
 	hook     *HookRef
@@ -61,7 +62,7 @@ func groupFailures(logs []logEntry, limit int) []Failure {
 	var order []string
 	groups := map[string]*failureGroup{}
 	seen := map[string]bool{}
-	add := func(cli CLI, gkey string, base failureGroup, id string, at float64, exit *int, reason, session string, project string, hasProject bool) {
+	add := func(cli clis.ID, gkey string, base failureGroup, id string, at float64, exit *int, reason, session string, project string, hasProject bool) {
 		dedupe := string(cli) + "|" + id
 		if seen[dedupe] {
 			return // forked or resumed logs repeat earlier events
@@ -203,13 +204,18 @@ type fileGroup struct {
 	lastAt   float64
 }
 
-// groupFiles is the file history across logs; Label is the shortest suffix that still tells two files apart.
-func groupFiles(logs []logEntry, limit int) []FileRow {
+// groupFiles is the file history across logs; Label is the shortest suffix that still tells two files apart. Each
+// log's edits are read by its CLI's folder, so a log of a CLI with no Activity adapter is an error, never dropped.
+func groupFiles(logs []logEntry, limit int) ([]FileRow, error) {
 	var order []string
 	files := map[string]*fileGroup{}
 	seen := map[string]bool{}
 	for _, entry := range logs {
-		for _, e := range editsOf(entry.state) {
+		edits, err := editsOf(entry.state)
+		if err != nil {
+			return nil, err
+		}
+		for _, e := range edits {
 			if seen[e.id] {
 				continue
 			}
@@ -244,15 +250,13 @@ func groupFiles(logs []logEntry, limit int) []FileRow {
 	labels := shortestLabels(paths)
 	rows := make([]FileRow, len(ordered))
 	for i, f := range ordered {
-		clis := []CLI{}
+		ids := []clis.ID{}
 		for _, name := range textjs.SortedStrings(keysOf(f.clis)) {
-			if name == string(CLIClaude) || name == string(CLICodex) {
-				clis = append(clis, CLI(name))
-			}
+			ids = append(ids, clis.ID(name)) // every CLI here has an Activity adapter: editsOf checked it
 		}
-		rows[i] = FileRow{Path: f.path, Label: labels[i], Edits: f.edits, Sessions: len(f.sessions), Last: isoOrNil(f.lastAt), CLIs: clis, Projects: sortedKeys(f.projects)}
+		rows[i] = FileRow{Path: f.path, Label: labels[i], Edits: f.edits, Sessions: len(f.sessions), Last: isoOrNil(f.lastAt), CLIs: ids, Projects: sortedKeys(f.projects)}
 	}
-	return rows
+	return rows, nil
 }
 
 func keysOf(set map[string]bool) []string {

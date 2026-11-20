@@ -1,5 +1,6 @@
 // Package limits reads the usage limits the CLIs left on disk: Claude Code's usage cache and the status line
-// snapshots the collector writes, Codex's rollout logs, and whether Gemini CLI is installed. It makes no
+// snapshots the collector writes, Codex's rollout logs, and whether Gemini CLI is installed. Which CLIs are read
+// comes from the registry (clis.Limits); each one's reader is its adapter (adapters.go). It makes no
 // network request, starts no process and reads no credential (spec, Limits; S-R4, S-R5).
 // Ported from Sources/ReinsCore/Limits.swift, LimitsClaudeCache.swift, LimitsClaudeStatusline.swift (the read
 // side; the capture side belongs to internal/statusline) and LimitsCodexLogs.swift.
@@ -10,18 +11,10 @@ import (
 	"os"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/roots"
-)
-
-// CLI names a CLI Limits reports on. Gemini CLI appears on this surface only (spec, Limits).
-type CLI string
-
-const (
-	Claude CLI = "claude"
-	Codex  CLI = "codex"
-	Gemini CLI = "gemini"
 )
 
 // State says what one CLI's files tell about its limits.
@@ -69,8 +62,8 @@ type Window struct {
 
 // Entry is what one CLI's files say about its usage limits.
 type Entry struct {
-	CLI   CLI   `json:"cli"`
-	State State `json:"state"`
+	CLI   clis.ID `json:"cli"`
+	State State   `json:"state"`
 	// Plan is the plan the record names (Codex `plan_type`), null when it names none.
 	Plan   *string `json:"plan"`
 	Source *Source `json:"source"`
@@ -80,27 +73,28 @@ type Entry struct {
 	Windows []Window `json:"windows"`
 }
 
-// Result is the `limits.read` result: Claude Code, Codex and Gemini CLI, in that order.
+// Result is the `limits.read` result: one entry per CLI with the limits concept, in wire order (Claude Code, Codex,
+// Gemini CLI).
 type Result struct {
 	Limits []Entry `json:"limits"`
 }
 
-// Read reads the limits of all three CLIs; now decides each window's Current flag and which status line
-// snapshots are not from the future. The only error is ctx's. It blocks on file reads, so call it off the
-// UI path.
+// Read reads the limits of every CLI with a limits reader; now decides each window's Current flag and which status
+// line snapshots are not from the future. The only errors are ctx's and a CLI r has no folders for (a Roots not
+// built by roots.Resolve). It blocks on file reads, so call it off the UI path.
 func Read(ctx context.Context, cfg config.Config, r roots.Roots, now time.Time) (Result, error) {
 	nowSeconds := float64(now.UnixNano()) / 1e9
-	claude, err := readClaude(ctx, cfg, r, nowSeconds)
-	if err != nil {
-		return Result{}, err
-	}
-	codex, err := readCodex(ctx, r)
-	if err != nil {
-		return Result{}, err
-	}
-	entries := []Entry{claude, codex, readGemini(r)}
-	for i := range entries {
-		entries[i] = entries[i].settled(nowSeconds)
+	var entries []Entry
+	for _, a := range readers.InOrder() {
+		folders, err := r.CLI(a.ID)
+		if err != nil {
+			return Result{}, err
+		}
+		entry, err := a.Adapter.read(ctx, readInput{cfg: cfg, roots: r, cli: folders, now: nowSeconds})
+		if err != nil {
+			return Result{}, err
+		}
+		entries = append(entries, entry.settled(nowSeconds))
 	}
 	return Result{Limits: entries}, nil
 }
@@ -114,10 +108,6 @@ func (e Entry) settled(now float64) Entry {
 	}
 	e.Windows = windows
 	return e
-}
-
-func readGemini(r roots.Roots) Entry {
-	return Entry{CLI: Gemini, State: folderState(r.Gemini, NotMeasurable)}
 }
 
 // folderState is `found` for a folder, Unreadable when a denied parent hides whether it exists, and
@@ -135,7 +125,7 @@ func folderState(path string, found State) State {
 	return NotInstalled
 }
 
-func measured(cli CLI, at float64, windows []Window) Entry {
+func measured(cli clis.ID, at float64, windows []Window) Entry {
 	return Entry{CLI: cli, State: Measured, At: &at, Windows: windows}
 }
 

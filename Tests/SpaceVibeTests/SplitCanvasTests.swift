@@ -4,7 +4,7 @@ import Testing
 
 /// How the split canvas shares the window's height among the small cards (V5-R52, V5-A22): the result never depends on the
 /// order of the cards, and fills the room exactly unless the cards fit or cannot shrink enough.
-@Suite("Split canvas")
+@Suite("Split canvas", .fixtureCLIs)
 struct SplitCanvasTests {
     @Test("cards that fit keep their own heights")
     func fits() {

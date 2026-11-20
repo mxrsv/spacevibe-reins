@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"strings"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/hashes"
 	"spacevibe.dev/core/internal/inventory"
 	"spacevibe.dev/core/internal/roots"
 	"spacevibe.dev/core/internal/textjs"
-	"spacevibe.dev/core/internal/usage"
 )
 
 // Every Loadout write: add, remove and copy skills, agents and hooks (Mutate.swift, MutateItems.swift). Port of the
@@ -32,39 +32,13 @@ const (
 	msgRefreshList = "This item no longer exists. Refresh the list."
 )
 
-var cliLabels = map[usage.CLI]string{inventory.Claude: "Claude Code", inventory.Codex: "Codex"}
-
-func label(cli usage.CLI) string {
-	if l, ok := cliLabels[cli]; ok {
-		return l
-	}
-	return string(cli)
-}
-
-func labels(clis []usage.CLI) string {
-	parts := make([]string, len(clis))
-	for i, cli := range clis {
-		parts[i] = label(cli)
-	}
-	return strings.Join(parts, " and ")
-}
-
-func events(cli usage.CLI) []string { return inventory.Events()[string(cli)] }
-
-func (tx *Tx) cliRoots(cli usage.CLI) roots.CLIRoots {
-	if cli == inventory.Claude {
-		return tx.r.Claude
-	}
-	return tx.r.Codex
-}
-
 func itoa(n int) string { return strconv.Itoa(n) }
 
 // dedupe drops a repeated CLI, keeping the first of each: a list like [claude, claude] would otherwise create the same
 // path twice and word the label wrong (G-fix.7).
-func dedupe(clis []usage.CLI) []usage.CLI {
-	out := make([]usage.CLI, 0, len(clis))
-	for _, cli := range clis {
+func dedupe(targets []clis.ID) []clis.ID {
+	out := make([]clis.ID, 0, len(targets))
+	for _, cli := range targets {
 		if !slices.Contains(out, cli) {
 			out = append(out, cli)
 		}
@@ -72,7 +46,7 @@ func dedupe(clis []usage.CLI) []usage.CLI {
 	return out
 }
 
-func requireCLIs(clis []usage.CLI) error { return need(len(clis) > 0, "Pick at least one CLI.") }
+func requireCLIs(targets []clis.ID) error { return need(len(targets) > 0, "Pick at least one CLI.") }
 
 // validName is NAME_RE of the Node core: ^[a-z0-9][a-z0-9-]{0,63}$.
 func validName(name string) error {
@@ -143,41 +117,55 @@ func removeItem(ctx context.Context, r roots.Roots, id string) (Entry, error) {
 	})
 }
 
-// CopyToOther copies a skill, an agent or a hook to the other CLI. A plugin or project item may be copied; only
-// removal is refused. A hook is copied into Claude Code when it knows the event, never into Codex: Codex loading a hook
-// SpaceVibe wrote is unverified (spec, "To verify"), and the approved Loadout mock offers no such copy. The Node core throws
+// CopyTo copies a skill, an agent or a hook to the target CLI. The target must be another CLI SpaceVibe writes, with
+// the item's kind and the same copy format (copyAllowed; spec MC-R8). A plugin or project item may be copied; only
+// removal is refused. A hook is copied only into a CLI whose writer takes copied hooks (Claude Code) and only when it
+// knows the event, never into Codex: Codex loading a hook SpaceVibe wrote is unverified (spec, "To verify"), and the approved Loadout mock offers no such copy. The Node core throws
 // a TypeError for every hook copy, so there is nothing to mirror.
-func CopyToOther(r roots.Roots, id string) (Entry, error) {
-	return copyToOther(context.Background(), r, id)
+func CopyTo(r roots.Roots, id string, target clis.ID) (Entry, error) {
+	return copyTo(context.Background(), r, id, target)
 }
 
-func copyToOther(ctx context.Context, r roots.Roots, id string) (Entry, error) {
+func copyTo(ctx context.Context, r roots.Roots, id string, target clis.ID) (Entry, error) {
+	if err := requireCopyTarget(target); err != nil {
+		return Entry{}, err
+	}
 	return lockedContext(ctx, r, func(tx *Tx) (Entry, error) {
 		f, err := tx.find(id)
 		if err != nil {
 			return Entry{}, err
 		}
 		if f.hook != nil {
-			target := f.hook.CLI.Other()
-			if err := need(target == inventory.Claude, "SpaceVibe does not copy hooks into Codex."); err != nil {
+			if err := copyAllowed(f.hook.CLI, target, inventory.KindHook); err != nil {
 				return Entry{}, err
 			}
-			if err := need(slices.Contains(events(target), f.hook.Event), label(target)+" has no "+f.hook.Event+" event."); err != nil {
+			writer, err := writers.For(target)
+			if err != nil {
 				return Entry{}, err
 			}
-			return tx.addHook([]usage.CLI{target}, f.hook.Event, f.hook.Matcher, f.hook.Command, f.hook.Timeout)
+			if err := need(writer.takesCopiedHooks(), "SpaceVibe does not copy hooks into "+label(target)+"."); err != nil {
+				return Entry{}, err
+			}
+			events, err := inventory.EventsOf(target)
+			if err != nil {
+				return Entry{}, err
+			}
+			if err := need(slices.Contains(events, f.hook.Event), label(target)+" has no "+f.hook.Event+" event."); err != nil {
+				return Entry{}, err
+			}
+			return tx.addHook([]clis.ID{target}, f.hook.Event, f.hook.Matcher, f.hook.Command, f.hook.Timeout)
 		}
-		return tx.copyItem(*f.item)
+		return tx.copyItem(*f.item, target)
 	})
 }
 
 // AddSkill writes <skills>/<name>/SKILL.md in each CLI. It refuses a name that exists in any of them before writing
 // anything. Go API only (see the package comment).
-func AddSkill(r roots.Roots, clis []usage.CLI, name, description, body string) (Entry, error) {
-	return locked(r, func(tx *Tx) (Entry, error) { return tx.addSkill(clis, name, description, body) })
+func AddSkill(r roots.Roots, targets []clis.ID, name, description, body string) (Entry, error) {
+	return locked(r, func(tx *Tx) (Entry, error) { return tx.addSkill(targets, name, description, body) })
 }
 
-func (tx *Tx) addSkill(clis []usage.CLI, name, description, body string) (Entry, error) {
+func (tx *Tx) addSkill(targets []clis.ID, name, description, body string) (Entry, error) {
 	if err := tx.PrepareMutation(); err != nil {
 		return Entry{}, err
 	}
@@ -187,13 +175,20 @@ func (tx *Tx) addSkill(clis []usage.CLI, name, description, body string) (Entry,
 	if err := need(textjs.Trim(description) != "", "Say when the agent should use this skill."); err != nil {
 		return Entry{}, err
 	}
-	if err := requireCLIs(clis); err != nil {
+	if err := requireCLIs(targets); err != nil {
 		return Entry{}, err
 	}
-	clis = dedupe(clis)
+	targets = dedupe(targets)
 	text := skillText(name, description, body)
-	ops, err := tx.createAll(clis, func(cli usage.CLI) (createPlan, error) {
-		dir := filepath.Join(tx.cliRoots(cli).Skills, name)
+	ops, err := tx.createAll(targets, func(cli clis.ID) (createPlan, error) {
+		folders, err := tx.cliRoots(cli)
+		if err != nil {
+			return createPlan{}, err
+		}
+		if err := writableKind(cli, inventory.KindSkill); err != nil {
+			return createPlan{}, err
+		}
+		dir := filepath.Join(folders.Skills, name)
 		if err := need(!pathExists(dir), label(cli)+" already has a skill named "+name+".", coreerr.StatusConflict); err != nil {
 			return createPlan{}, err
 		}
@@ -202,15 +197,15 @@ func (tx *Tx) addSkill(clis []usage.CLI, name, description, body string) (Entry,
 	if err != nil {
 		return Entry{}, err
 	}
-	return tx.RecordMutation("Added skill "+name+" to "+labels(clis), ops)
+	return tx.RecordMutation("Added skill "+name+" to "+labels(targets), ops)
 }
 
 // AddAgent writes <agents>/<name>.md (Claude Code) or <name>.toml (Codex) in each CLI. Go API only.
-func AddAgent(r roots.Roots, clis []usage.CLI, name, description, instructions string) (Entry, error) {
-	return locked(r, func(tx *Tx) (Entry, error) { return tx.addAgent(clis, name, description, instructions) })
+func AddAgent(r roots.Roots, targets []clis.ID, name, description, instructions string) (Entry, error) {
+	return locked(r, func(tx *Tx) (Entry, error) { return tx.addAgent(targets, name, description, instructions) })
 }
 
-func (tx *Tx) addAgent(clis []usage.CLI, name, description, instructions string) (Entry, error) {
+func (tx *Tx) addAgent(targets []clis.ID, name, description, instructions string) (Entry, error) {
 	if err := tx.PrepareMutation(); err != nil {
 		return Entry{}, err
 	}
@@ -220,24 +215,30 @@ func (tx *Tx) addAgent(clis []usage.CLI, name, description, instructions string)
 	if err := need(textjs.Trim(description) != "", "Say when this agent should be used."); err != nil {
 		return Entry{}, err
 	}
-	if err := requireCLIs(clis); err != nil {
+	if err := requireCLIs(targets); err != nil {
 		return Entry{}, err
 	}
-	clis = dedupe(clis)
-	ops, err := tx.createAll(clis, func(cli usage.CLI) (createPlan, error) {
+	targets = dedupe(targets)
+	ops, err := tx.createAll(targets, func(cli clis.ID) (createPlan, error) {
 		return tx.agentPlan(cli, name, description, instructions, false)
 	})
 	if err != nil {
 		return Entry{}, err
 	}
-	return tx.RecordMutation("Added agent "+name+" to "+labels(clis), ops)
+	return tx.RecordMutation("Added agent "+name+" to "+labels(targets), ops)
 }
 
 func (tx *Tx) removeFile(item inventory.Item) (Entry, error) {
 	if err := tx.PrepareMutation(); err != nil {
 		return Entry{}, err
 	}
-	cli := tx.cliRoots(item.CLI)
+	cli, err := tx.cliRoots(item.CLI)
+	if err != nil {
+		return Entry{}, err
+	}
+	if err := writableKind(item.CLI, item.Kind); err != nil {
+		return Entry{}, err
+	}
 	base := cli.Agents
 	if item.Kind == inventory.KindSkill {
 		base = cli.Skills
@@ -259,13 +260,19 @@ func (tx *Tx) removeFile(item inventory.Item) (Entry, error) {
 	return tx.RecordMutation("Removed "+string(item.Kind)+" "+item.Name+" from "+label(item.CLI), []Op{op})
 }
 
-func (tx *Tx) copyItem(item inventory.Item) (Entry, error) {
-	target := item.CLI.Other()
+func (tx *Tx) copyItem(item inventory.Item, target clis.ID) (Entry, error) {
+	if err := copyAllowed(item.CLI, target, item.Kind); err != nil {
+		return Entry{}, err
+	}
 	if err := tx.PrepareMutation(); err != nil {
 		return Entry{}, err
 	}
+	folders, err := tx.cliRoots(target)
+	if err != nil {
+		return Entry{}, err
+	}
 	// The target CLI's own folder must exist: a copy never makes the folder of a CLI that is not installed.
-	if info, err := os.Stat(tx.cliRoots(target).Root); err != nil || !info.IsDir() {
+	if info, err := os.Stat(folders.Root); err != nil || !info.IsDir() {
 		return Entry{}, fail(label(target)+" is not installed on this Mac, so nothing was copied.", coreerr.StatusConflict)
 	}
 	name := hashes.Bare(item.Name)
@@ -280,12 +287,12 @@ func (tx *Tx) copyItem(item inventory.Item) (Entry, error) {
 		return Entry{}, fail("The "+string(item.Kind)+" \""+item.Name+"\" has a name SpaceVibe cannot use as a file name, so nothing was copied. Rename it in "+label(item.CLI)+" first.", coreerr.StatusConflict)
 	}
 	if item.Kind == inventory.KindSkill {
-		dir := filepath.Join(tx.cliRoots(target).Skills, name)
+		dir := filepath.Join(folders.Skills, name)
 		if err := need(!pathExists(dir), label(target)+" already has a skill named "+name+".", coreerr.StatusConflict); err != nil {
 			return Entry{}, err
 		}
 		source := realPath(item.Path)
-		ops, err := tx.createAll([]usage.CLI{target}, func(usage.CLI) (createPlan, error) {
+		ops, err := tx.createAll([]clis.ID{target}, func(clis.ID) (createPlan, error) {
 			tree, err := listSkillFolder(source)
 			if err != nil {
 				return createPlan{}, err
@@ -305,7 +312,7 @@ func (tx *Tx) copyItem(item inventory.Item) (Entry, error) {
 		return Entry{}, fail("Could not read "+item.Path+". Nothing was changed.", coreerr.StatusConflict)
 	}
 	description, instructions := agentFields(strings.HasSuffix(item.Path, ".toml"), textjs.Repair(string(data)))
-	ops, err := tx.createAll([]usage.CLI{target}, func(cli usage.CLI) (createPlan, error) {
+	ops, err := tx.createAll([]clis.ID{target}, func(cli clis.ID) (createPlan, error) {
 		return tx.agentPlan(cli, name, description, instructions, true)
 	})
 	if err != nil {
@@ -324,12 +331,16 @@ type createPlan struct {
 
 // agentPlan says where a new agent goes and how it is written. It is a 409 when the file exists. copying refuses an
 // agent with no instructions: an empty developer_instructions is a Codex file Codex rejects (G-fix.17).
-func (tx *Tx) agentPlan(cli usage.CLI, name, description, instructions string, copying bool) (createPlan, error) {
-	ext := "toml"
-	if cli == inventory.Claude {
-		ext = "md"
+func (tx *Tx) agentPlan(cli clis.ID, name, description, instructions string, copying bool) (createPlan, error) {
+	writer, folders, err := tx.writerOf(cli)
+	if err != nil {
+		return createPlan{}, err
 	}
-	file := filepath.Join(tx.cliRoots(cli).Agents, name+"."+ext)
+	if err := writableKind(cli, inventory.KindAgent); err != nil {
+		return createPlan{}, err
+	}
+	ext, text := writer.agentFile(name, description, instructions)
+	file := filepath.Join(folders.Agents, name+"."+ext)
 	if err := need(!pathExists(file), label(cli)+" already has an agent named "+name+".", coreerr.StatusConflict); err != nil {
 		return createPlan{}, err
 	}
@@ -338,15 +349,14 @@ func (tx *Tx) agentPlan(cli usage.CLI, name, description, instructions string, c
 			return createPlan{}, err
 		}
 	}
-	text := agentText(cli, name, description, instructions)
 	return createPlan{path: file, write: func() (bool, error) { return writeNewFile(file, text) }}, nil
 }
 
 // createAll runs plan for each CLI (every check before the first write), then the writes. A failed write sends what
 // was created to the trash, so nothing is left unrecorded.
-func (tx *Tx) createAll(clis []usage.CLI, plan func(usage.CLI) (createPlan, error)) ([]Op, error) {
-	plans := make([]createPlan, 0, len(clis))
-	for _, cli := range clis {
+func (tx *Tx) createAll(targets []clis.ID, plan func(clis.ID) (createPlan, error)) ([]Op, error) {
+	plans := make([]createPlan, 0, len(targets))
+	for _, cli := range targets {
 		p, err := plan(cli)
 		if err != nil {
 			return nil, err

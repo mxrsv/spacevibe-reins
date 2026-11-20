@@ -6,7 +6,7 @@ import Testing
 /// GW13, GW14, GW16, GW-R7: the glance widget's 8 slots, its list toward the centre, the nearest slot on drop and the saved
 /// placement. AppKit coordinates: origin bottom left, so the menu bar trims the top of the visible frame and the Dock the
 /// bottom.
-@Suite("Glance slots (GW13, GW14, GW16, GW-R7)")
+@Suite("Glance slots (GW13, GW14, GW16, GW-R7)", .fixtureCLIs)
 struct GlanceSlotsTests {
     /// A 1440 x 900 main screen: 24 of menu bar on top, 70 of Dock at the bottom.
     static let main = GlanceScreen(

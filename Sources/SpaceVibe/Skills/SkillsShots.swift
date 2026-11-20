@@ -158,8 +158,8 @@ enum SkillsShots {
         for entry in fixture {
             guard let row = rows.first(where: { $0.name == entry.name }) else { throw ShotHarness.Failure("no row for \(entry.name)") }
             let usageRow = row.skillUsage
-            for (cli, expected) in [(CoreCLI.claude, entry.claude as Int?), (CoreCLI.codex, entry.codex)] {
-                let scanned = (cli == .claude ? usage.totals.claude : usage.totals.codex).skill[entry.name]?.sessions ?? 0
+            for (cli, expected) in [(CLIID.claude, entry.claude as Int?), (CLIID.codex, entry.codex)] {
+                let scanned = usage.totals[cli: cli]?.skill[entry.name]?.sessions ?? 0
                 let cell = usageRow.cells[cli] ?? .missing
                 let meter = SkillsWording.meter(for: row, cli: cli, maxSessions: model.maxSessions, now: now)
                 let shown = meter.figure.map { "\($0)" } ?? "-"

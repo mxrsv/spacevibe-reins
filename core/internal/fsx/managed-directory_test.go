@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/coreerr"
 	"spacevibe.dev/core/internal/roots"
@@ -16,7 +17,7 @@ func testRoots(t *testing.T) (config.Config, roots.Roots) {
 	home := tempDir(t)
 	cfg := config.Config{
 		Test: true, UserHome: home, Home: filepath.Join(home, ".spacevibe"),
-		ClaudeConfigDir: filepath.Join(home, ".claude"), CodexHome: filepath.Join(home, ".codex"),
+		RootOverrides: map[clis.ID]string{clis.Claude: filepath.Join(home, ".claude"), clis.Codex: filepath.Join(home, ".codex")},
 	}
 	r, err := roots.Resolve(cfg, "/nonexistent-real-home")
 	if err != nil {

@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"spacevibe.dev/core/internal/clis"
 )
 
 // WriteGuardTests.swift: the three tests that go through RulesStore (a project .claude that is a link, a settings file
@@ -98,17 +100,17 @@ func TestControlsStillWork(t *testing.T) {
 		t.Error("the project files were not edited")
 	}
 	dotfiles := sb.write("dotfiles/claude-settings.json", "{}\n")
-	if err := os.MkdirAll(sb.r.Claude.Root, 0o755); err != nil {
+	if err := os.MkdirAll(sb.r.CLIs[clis.Claude].Root, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(dotfiles, sb.r.Claude.HookFile); err != nil {
+	if err := os.Symlink(dotfiles, sb.r.CLIs[clis.Claude].HookFile); err != nil {
 		t.Fatal(err)
 	}
 	must(store.AddRule(Global, Allow, "Read"))
 	if !strings.Contains(sb.read("dotfiles/claude-settings.json"), `"Read"`) {
 		t.Error("the link target was not edited")
 	}
-	if target, err := os.Readlink(sb.r.Claude.HookFile); err != nil || target != dotfiles {
+	if target, err := os.Readlink(sb.r.CLIs[clis.Claude].HookFile); err != nil || target != dotfiles {
 		t.Errorf("not a link to the dotfiles any more: %q %v", target, err)
 	}
 }

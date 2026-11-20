@@ -59,6 +59,11 @@ func TestGoldenUsage(t *testing.T) {
 	r, _ := fixtureRoots(t)
 	scanner := NewScanner(r)
 	cold := mustScan(t, scanner)
+	if goldentest.Updating() {
+		if err := goldentest.RewriteGolden("usage", jsonTree(t, cold)); err != nil {
+			t.Fatal(err)
+		}
+	}
 	want, err := goldentest.LoadGolden("usage")
 	if err != nil {
 		t.Fatal(err)

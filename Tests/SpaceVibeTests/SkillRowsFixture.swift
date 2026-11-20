@@ -14,12 +14,12 @@ enum SkillRowsFixture {
     static let noLogs = CoreUsageCell.pending(reason: "No logs scanned for this CLI yet")
 
     /// A skill: a nil cell means the CLI does not have it.
-    static func item(_ name: String, cli: CoreCLI, cells: CoreCells, owner: String = "user", project: String? = nil,
+    static func item(_ name: String, cli: CLIID, cells: CoreCells, owner: String = "user", project: String? = nil,
                      removable: Bool = true, description: String = "") -> CoreInventoryItem {
         CoreInventoryItem(
             id: "\(cli.rawValue):skill:\(project ?? "global"):\(name)", cli: cli, kind: .skill, name: name, entry: name, description: description,
             owner: owner, path: "/home/demo/.\(cli.rawValue)/skills/\(name)", file: "/home/demo/.\(cli.rawValue)/skills/\(name)/SKILL.md",
-            removable: removable, scope: project == nil ? .global : .project, project: project, inOther: false,
+            removable: removable, scope: project == nil ? .global : .project, project: project,
             key: "skill:\(project ?? ""):\(name)", cells: cells
         )
     }
@@ -27,12 +27,12 @@ enum SkillRowsFixture {
     static func snapshot(_ specs: [(name: String, claude: CoreUsageCell?, codex: CoreUsageCell?, owner: String, project: String?)]) -> CoreLoadoutRows {
         var items: [CoreInventoryItem] = []
         for spec in specs {
-            let cells = CoreCells(claude: spec.claude ?? .missing, codex: spec.codex ?? .missing)
+            let cells = CoreCells([.claude: spec.claude ?? .missing, .codex: spec.codex ?? .missing])
             if spec.claude != nil { items.append(item(spec.name, cli: .claude, cells: cells, owner: spec.owner, project: spec.project, removable: spec.owner == "user")) }
             if spec.codex != nil { items.append(item(spec.name, cli: .codex, cells: cells, owner: spec.owner, project: spec.project, removable: spec.owner == "user")) }
         }
-        return CoreLoadoutRows(usage: .ready, items: items, hooks: [], problems: [], events: ["claude": ["Stop"], "codex": ["Stop"]],
-                               roots: ["claude": "/home/demo/.claude", "codex": "/home/demo/.codex"], countsByScope: [:], rowFlags: [:])
+        return CoreLoadoutRows(usage: .ready, items: items, hooks: [], problems: [], events: .of([.claude: ["Stop"], .codex: ["Stop"]]),
+                               roots: .of([.claude: "/home/demo/.claude", .codex: "/home/demo/.codex"]), countsByScope: [:], rowFlags: [:])
     }
 
     /// Rows in the order given by `LoadoutRows.build` (sessions first), for a test to look up by name.

@@ -17,7 +17,7 @@ _Avoid_: frontend, client (the shell's `CoreClient` is one class inside it)
 ### Tools and pages
 
 **CLI**:
-Claude Code or Codex (Gemini CLI only where it is shown). Never called an agent.
+Any coding CLI SpaceVibe supports (today Claude Code and Codex, plus Gemini CLI where it is shown; the list is the core's registry, served by `clis.list`). Never called an agent.
 _Avoid_: agent, tool, provider
 
 **Agents**:
@@ -63,8 +63,12 @@ _Avoid_: unused, dead, pending, not counted yet (in labels)
 SpaceVibe cannot know it from what the CLI or model provides: Codex hooks, a session whose state is unreadable, a model with no price. Never shown as 0 or guessed.
 
 **Missing**:
-Not installed in that CLI. About installation, not usage.
-_Avoid_: absent, not found
+Not installed in that CLI, which has that kind of item. About installation, not usage.
+_Avoid_: not found
+
+**Absent**:
+The CLI has no such kind of item at all (a CLI without hooks). Never shown as 0, as missing or as a place to add to. A kind the CLI has but does not log is unmeasurable, not absent.
+_Avoid_: missing (for this), unsupported
 
 **Runs**:
 How many times a hook fired. Used for hooks only.

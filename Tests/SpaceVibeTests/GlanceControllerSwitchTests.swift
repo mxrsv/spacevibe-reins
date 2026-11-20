@@ -6,7 +6,7 @@ import Testing
 /// `docs/specs/2026-11-19-limit-reset-countdown.md`, LC-R8): turned off, the activity stream ends, the limit reads stop and
 /// the panels leave. The controller runs against a fake core and throwaway defaults, on one screen placed far off every
 /// display, so its panels never appear where anyone can see them.
-@Suite("Glance controller switch")
+@Suite("Glance controller switch", .fixtureCLIs)
 @MainActor
 struct GlanceControllerSwitchTests {
     /// Off every display: the panels order in there, not on a real screen.

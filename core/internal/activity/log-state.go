@@ -1,6 +1,9 @@
 package activity
 
-import "spacevibe.dev/core/internal/textjs"
+import (
+	"spacevibe.dev/core/internal/clis"
+	"spacevibe.dev/core/internal/textjs"
+)
 
 type failureEvent struct {
 	id     string
@@ -42,7 +45,7 @@ type codexTokens struct{ input, output, cacheRead float64 }
 
 // logState is the folded state of one session log. A pointer on purpose: logs reach hundreds of MB.
 type logState struct {
-	cli              CLI
+	cli              clis.ID
 	invalid          int
 	cwd              string
 	cwdSet           bool
@@ -72,7 +75,7 @@ type logState struct {
 	sawFileChange bool
 }
 
-func newLogState(cli CLI) *logState {
+func newLogState(cli clis.ID) *logState {
 	return &logState{
 		cli: cli, model: "unknown", claudeUsageSeen: map[string]usage{}, codexTotalsSeen: map[string]bool{},
 		questions: map[string]bool{}, bash: map[string]string{}, editsPending: map[string]pendingEdit{}, passes: map[string][]float64{},

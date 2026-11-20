@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/fsx"
 	"spacevibe.dev/core/internal/inventory"
 )
@@ -21,7 +22,7 @@ func TestCancelledWhileAnotherProcessHoldsTheFlockChangesNothing(t *testing.T) {
 	h := newHome(t)
 	r := h.roots()
 	skill := h.write(".claude/skills/wire/SKILL.md", skillMd("wire", "d"))
-	id := idOf(t, r, "wire", inventory.KindSkill, inventory.Claude)
+	id := idOf(t, r, "wire", inventory.KindSkill, clis.Claude)
 	svc := NewService(r)
 
 	if err := os.MkdirAll(r.Data, 0o700); err != nil {

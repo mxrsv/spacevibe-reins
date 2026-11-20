@@ -27,10 +27,11 @@ enum HooksWording {
                         offersRemove: false)
         }
         if row.isUnmeasurable {
-            let codexOnly = row.presentCLIs == [.codex]
+            // A hook only one CLI has, and that CLI logs no hook runs: say which.
+            let silent = row.presentCLIs.count == 1 ? row.presentCLIs.first.flatMap { $0.identity.logsHookRuns ? nil : $0 } : nil
             return Slot(mark: StateMark(.clock, label: "Unmeasurable"),
-                        sentence: codexOnly ? "Codex logs no hook runs, so SpaceVibe cannot count this hook's runs."
-                            : "There is no log to count this hook's runs from.", offersRemove: false)
+                        sentence: silent.map { "\($0.label) logs no hook runs, so SpaceVibe cannot count this hook's runs." }
+                            ?? "There is no log to count this hook's runs from.", offersRemove: false)
         }
         return nil
     }
@@ -47,6 +48,7 @@ enum HooksWording {
     static func short(_ block: LoadoutRows.HookCopyBlock) -> String {
         switch block {
         case .notInstalled(let cli): "\(cli.label) is not installed"
+        case .absent(let cli): "\(cli.label) has no hooks"
         case .noEvent(_, let event): "No \(event) event"
         case .scriptGone: "Script is gone"
         case .plugin: "Owned by a plugin"
@@ -58,6 +60,7 @@ enum HooksWording {
     static func long(_ block: LoadoutRows.HookCopyBlock) -> String {
         switch block {
         case .notInstalled(let cli): "\(cli.label) is not installed on this Mac."
+        case .absent(let cli): "\(cli.label) has no hooks, so there is nowhere to copy it."
         case .noEvent(let cli, let event): "\(cli.label) has no \(event) event."
         case .scriptGone: "Its script is gone, so there is nothing to copy."
         case .plugin(let name): "It is owned by the \(name) plugin. SpaceVibe cannot change it."
@@ -68,7 +71,7 @@ enum HooksWording {
     /// The order `HooksCantCopy` lists the reasons in.
     static func order(_ block: LoadoutRows.HookCopyBlock) -> Int {
         switch block {
-        case .notInstalled: 0
+        case .notInstalled, .absent: 0
         case .noEvent: 1
         case .scriptGone: 2
         case .plugin: 3
@@ -96,14 +99,14 @@ enum HooksWording {
         case .newlyAdded: "never ran yet, the settings file is new"
         case .unmeasurable: "runs Unmeasurable"
         case .loading: scanFailed ? "runs not counted" : "counting runs"
-        case .missing: ""
+        case .missing, .absent: ""
         }
     }
 
     /// One sentence per CLI: the handler kind, the matcher and the runs (or the reason it has none) where the hook is, and why not
     /// where it is not.
     static func lines(for row: LoadoutRow, context: HooksContext, home: String?, scanFailed: Bool = false) -> [String] {
-        CoreCLI.allCases.compactMap { cli -> String? in
+        CLICatalog.current.inventoryCLIs.compactMap { cli -> String? in
             guard context.detected.contains(cli) || row.members[cli] != nil else { return nil }
             if let hook = row.hookMembers[cli] {
                 let matcher = hook.matcher.flatMap { $0.isEmpty ? nil : "matcher \($0)" } ?? "no matcher"
@@ -113,6 +116,7 @@ enum HooksWording {
                 }
                 return "\(cli.label): command handler, \(matcher), \(runs(row.hookRun(in: cli), scanFailed: scanFailed))."
             }
+            if case .absent = context.block(row, to: cli) { return "\(cli.label) has no hooks." }
             if let block = context.block(row, to: cli) { return "\(cli.label): not there. \(long(block))" }
             return "\(cli.label): not there. Press A to copy it."
         }
@@ -120,15 +124,15 @@ enum HooksWording {
 
     // MARK: Toasts (V5-R38)
 
-    static func copyLabel(_ row: LoadoutRow, to cli: CoreCLI) -> String { "Copied \(row.hookTitle) to \(cli.label)" }
+    static func copyLabel(_ row: LoadoutRow, to cli: CLIID) -> String { "Copied \(row.hookTitle) to \(cli.label)" }
 
     /// A sentence only the success toast adds: a matcher names tools, and the two CLIs name their tools differently.
     static let matcherNote = "Tool names in a matcher can differ between the CLIs (unverified)."
 
-    static func copyAllLabel(_ count: Int, to cli: CoreCLI) -> String { "Copied \(count) \(count == 1 ? "hook" : "hooks") to \(cli.label)" }
+    static func copyAllLabel(_ count: Int, to cli: CLIID) -> String { "Copied \(count) \(count == 1 ? "hook" : "hooks") to \(cli.label)" }
 
     /// `cli` nil: every copy.
-    static func removeLabel(_ row: LoadoutRow, from cli: CoreCLI?) -> String {
+    static func removeLabel(_ row: LoadoutRow, from cli: CLIID?) -> String {
         cli.map { "Removed the \($0.label) copy of \(row.hookTitle)" } ?? "Removed \(row.hookTitle)"
     }
 

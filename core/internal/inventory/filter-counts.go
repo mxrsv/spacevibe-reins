@@ -1,18 +1,19 @@
 package inventory
 
+import "spacevibe.dev/core/internal/clis"
+
 // FilterRow is the fields FilterCountsOf needs from one row. Items and hooks convert to it; tests build it
 // directly.
 type FilterRow struct {
-	Key     string
-	CLI     CLI
-	InOther bool
-	Dead    bool
-	Cells   *Cells
+	Key   string
+	CLI   clis.ID
+	Dead  bool
+	Cells Cells
 }
 
 // ItemFilterRow converts an item.
 func ItemFilterRow(i Item) FilterRow {
-	return FilterRow{Key: i.Key(), CLI: i.CLI, InOther: i.InOther, Cells: i.Cells}
+	return FilterRow{Key: i.Key(), CLI: i.CLI, Cells: i.Cells}
 }
 
 // HookFilterRow converts a hook.
@@ -34,11 +35,13 @@ func FilterCountsOf(items []Item, hooks []Hook) FilterCounts {
 	return FilterCountsOfRows(rows)
 }
 
-// FilterCountsOfRows is FilterCountsOf over rows.
+// FilterCountsOfRows is FilterCountsOf over rows. A row with cells is present in every CLI whose cell is neither
+// missing nor absent; a row without cells (not attached yet) is present in its own CLI, and rows sharing a key are
+// one row present in each of their CLIs.
 func FilterCountsOfRows(rows []FilterRow) FilterCounts {
 	type group struct {
-		clis    map[CLI]bool
-		counted map[CLI]Cell
+		clis    map[clis.ID]bool
+		counted map[clis.ID]Cell
 		dead    bool
 	}
 	var order []string
@@ -46,33 +49,30 @@ func FilterCountsOfRows(rows []FilterRow) FilterCounts {
 	for _, row := range rows {
 		g := groups[row.Key]
 		if g == nil {
-			g = &group{clis: map[CLI]bool{}, counted: map[CLI]Cell{}}
+			g = &group{clis: map[clis.ID]bool{}, counted: map[clis.ID]Cell{}}
 			groups[row.Key] = g
 			order = append(order, row.Key)
 		}
-		for _, cli := range [...]CLI{Claude, Codex} {
-			if row.Cells != nil {
-				cell := row.Cells.For(cli)
-				if !cell.IsMissing() {
-					g.clis[cli] = true
-					if _, have := g.counted[cli]; !have {
-						g.counted[cli] = cell
-					}
+		if row.Cells == nil {
+			g.clis[row.CLI] = true
+		}
+		for _, cell := range row.Cells {
+			if cell.IsPresent() {
+				g.clis[cell.CLI] = true
+				if _, have := g.counted[cell.CLI]; !have {
+					g.counted[cell.CLI] = cell
 				}
-			} else if cli == row.CLI || row.InOther {
-				g.clis[cli] = true
 			}
 		}
 		g.dead = g.dead || row.Dead
 	}
 	out := FilterCounts{All: len(order)}
+	only := map[clis.ID]int{}
 	for _, key := range order {
 		g := groups[key]
 		if len(g.clis) == 1 {
-			if g.clis[Claude] {
-				out.Only.Claude++
-			} else {
-				out.Only.Codex++
+			for cli := range g.clis {
+				only[cli]++
 			}
 		}
 		counted, allZero := 0, true
@@ -88,6 +88,10 @@ func FilterCountsOfRows(rows []FilterRow) FilterCounts {
 		if g.dead {
 			out.Dead++
 		}
+	}
+	out.Only = OnlyCLIs{}
+	for _, a := range adapters.InOrder() {
+		out.Only = append(out.Only, OnlyCount{CLI: a.ID, Count: only[a.ID]})
 	}
 	return out
 }

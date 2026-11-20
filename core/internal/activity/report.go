@@ -14,16 +14,8 @@ package activity
 import (
 	"math"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/pricing"
-)
-
-// CLI is one of the two command line tools whose logs are read.
-type CLI string
-
-// The CLIs, ordered as their raw values sort ("claude" before "codex").
-const (
-	CLIClaude CLI = "claude"
-	CLICodex  CLI = "codex"
 )
 
 // SessionState is what a session is doing now.
@@ -90,7 +82,7 @@ type Cost struct {
 
 // Session is one live (or recently ended) CLI session.
 type Session struct {
-	CLI CLI `json:"cli"`
+	CLI clis.ID `json:"cli"`
 	// ID is Claude: the session id. Codex: the thread id, or `pid:<n>:<start-ms>` before the first prompt.
 	// An unknown process start uses `pid:<n>:unknown` and cannot authorize Stop.
 	ID      string       `json:"id"`
@@ -114,9 +106,9 @@ type Session struct {
 
 // Limit is something that cannot be measured, listed even when no session is live.
 type Limit struct {
-	CLI  CLI    `json:"cli"`
-	Code Reason `json:"code"`
-	Text string `json:"text"`
+	CLI  clis.ID `json:"cli"`
+	Code Reason  `json:"code"`
+	Text string  `json:"text"`
 }
 
 // Stats counts the logs of one read.
@@ -145,7 +137,7 @@ type HookRef struct {
 // Failure is a repeated failed command (or failing hook), grouped across sessions.
 type Failure struct {
 	Kind FailureKind `json:"kind"`
-	CLI  CLI         `json:"cli"`
+	CLI  clis.ID     `json:"cli"`
 	// Key is, for a command, the sha of the normalized command; for a hook, the inventory hash sha(event|command).
 	Key string `json:"key"`
 	// Title is the command, one form for every failure (a long one is cut at 120 characters).
@@ -165,13 +157,13 @@ type Failure struct {
 
 // FileRow is the edits of one file across sessions, with the shortest path suffix that tells it from the others.
 type FileRow struct {
-	Path     string   `json:"path"`
-	Label    string   `json:"label"`
-	Edits    int      `json:"edits"`
-	Sessions int      `json:"sessions"`
-	Last     *string  `json:"last"`
-	CLIs     []CLI    `json:"clis"`
-	Projects []string `json:"projects"`
+	Path     string    `json:"path"`
+	Label    string    `json:"label"`
+	Edits    int       `json:"edits"`
+	Sessions int       `json:"sessions"`
+	Last     *string   `json:"last"`
+	CLIs     []clis.ID `json:"clis"`
+	Projects []string  `json:"projects"`
 }
 
 // Report is everything the Activity tab shows.
@@ -209,14 +201,6 @@ func DefaultOptions() Options {
 		ToolQuietMs:      30_000,
 		EndedKeepMs:      15 * 60_000,
 	}
-}
-
-// limitCodes are the unmeasurable limits listed in every report, in this order.
-var limitCodes = []struct {
-	cli  CLI
-	code Reason
-}{
-	{CLIClaude, ReasonClaudePromptVsBusy}, {CLICodex, ReasonCodexToolSilent}, {CLICodex, ReasonCodexNoRollout}, {CLICodex, ReasonCodexHookRuns},
 }
 
 // usage is the token counts of one model, as the log folding sums them.

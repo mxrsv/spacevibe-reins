@@ -3,11 +3,11 @@ import Testing
 @testable import SpaceVibe
 
 /// GL-T3: a `CoreActivityReport` becomes the glance widget's entries (GW-R2 to GW-R5, GW8 to GW12). Synthetic sessions only.
-@Suite("Glance entries")
+@Suite("Glance entries", .fixtureCLIs)
 struct GlanceEntriesTests {
     private static let minute = 60_000.0
 
-    private func session(_ id: String, cli: CoreCLI = .claude, state: CoreSessionState = .running, lastWrite: Double? = 1_000,
+    private func session(_ id: String, cli: CLIID = .claude, state: CoreSessionState = .running, lastWrite: Double? = 1_000,
                          tool: CoreActivityTool? = nil, pid: Int = 4100, reason: String = "log written 1 s ago") -> CoreActivitySession {
         CoreActivitySession(cli: cli, id: id, title: "Task \(id)", project: nil, pid: pid, state: state, stateReason: reason, reasonCode: nil,
                             currentTool: tool, ageMs: 3_600_000, lastWriteAgoMs: lastWrite, cost: nil, costNote: nil)

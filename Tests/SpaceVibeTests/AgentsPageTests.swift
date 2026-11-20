@@ -5,12 +5,12 @@ import Testing
 
 /// The Agents page's own logic (tabs and counts) and the sidebar's CLI status derivation, with synthetic data only.
 @MainActor
-@Suite("Agents page and sidebar facts")
+@Suite("Agents page and sidebar facts", .fixtureCLIs)
 struct AgentsPageTests {
     private func row(_ name: String, _ kind: LoadoutKind, project: String? = nil) -> LoadoutRow {
         LoadoutRow(
             key: "\(kind):\(project ?? ""):\(name)", kind: kind, project: project, members: [:],
-            cells: CoreCells(claude: .missing, codex: .missing), flags: CoreRowFlags(one: false, neverRan: false, dead: false),
+            cells: CoreCells([.claude: .missing, .codex: .missing]), flags: CoreRowFlags(one: false, neverRan: false, dead: false),
             name: name, detail: "", plugin: nil, errors: 0, runs: 0, addedNote: nil
         )
     }
@@ -19,7 +19,7 @@ struct AgentsPageTests {
         LoadoutData(rows: rows, scopes: [LoadoutScope(value: "global", label: "Global")], countsByScope: [:], problems: [], events: [:], globalCount: globalCount)
     }
 
-    private func entry(_ cli: CoreLimitsCLI, _ state: CoreLimitsState) -> CoreLimitsEntry {
+    private func entry(_ cli: CLIID, _ state: CoreLimitsState) -> CoreLimitsEntry {
         CoreLimitsEntry(cli: cli, state: state, plan: nil, source: nil, at: nil, windows: [])
     }
 
@@ -120,15 +120,15 @@ struct AgentsPageTests {
     @Test("the rows of a failed scan keep every cell that was counted as not counted yet")
     func withoutCounts() {
         var counted = row("a", .skill)
-        counted.cells = CoreCells(claude: .counted(runs: 3, last: nil, errors: nil), codex: .missing)
+        counted.cells = CoreCells([.claude: .counted(runs: 3, last: nil, errors: nil), .codex: .missing])
         let shown = data([counted], globalCount: 1).withoutCounts()
-        #expect(shown.rows[0].cells.claude == .pending(reason: "Usage scan has not finished") && shown.rows[0].cells.codex == .missing)
+        #expect(shown.rows[0].cells[.claude] == .pending(reason: "Usage scan has not finished") && shown.rows[0].cells[.codex] == .missing)
         // Without a scan result the core says "has not finished" for every cell: "Added in the last 24 hours" needs a count of zero.
         var added = row("b", .skill)
-        added.cells = CoreCells(claude: .pending(reason: "Added in the last 24 hours"), codex: .unmeasurable(reason: "x"))
+        added.cells = CoreCells([.claude: .pending(reason: "Added in the last 24 hours"), .codex: .unmeasurable(reason: "x")])
         let uncounted = data([added], globalCount: 1).withoutCounts()
-        #expect(uncounted.rows[0].cells.claude == .pending(reason: "Usage scan has not finished"))
-        #expect(uncounted.rows[0].cells.codex == .unmeasurable(reason: "x"))
+        #expect(uncounted.rows[0].cells[.claude] == .pending(reason: "Usage scan has not finished"))
+        #expect(uncounted.rows[0].cells[.codex] == .unmeasurable(reason: "x"))
     }
 
     @Test("a failed scan with no earlier result says so in the status bar, never that the sessions were counted")
@@ -238,17 +238,17 @@ private final class CountingAgentsCore: UnservedCore, @unchecked Sendable {
     override func loadoutRows() async throws -> CoreLoadoutRows {
         let scanned = lock.withLock { () -> Bool in _counts.rows += 1; return _counts.scans > 0 }
         return CoreLoadoutRows(
-            usage: scanned ? .ready : .scanning, items: [], hooks: [], problems: [], events: [:], roots: ["claude": "/home/demo/.claude", "codex": "/home/demo/.codex"],
-            countsByScope: ["global": CoreFilterCounts(all: 0, only: .init(claude: 0, codex: 0), neverRan: 0, dead: 0)], rowFlags: [:]
+            usage: scanned ? .ready : .scanning, items: [], hooks: [], problems: [], events: [], roots: .of([.claude: "/home/demo/.claude", .codex: "/home/demo/.codex"]),
+            countsByScope: ["global": CoreFilterCounts(all: 0, only: .of([.claude: 0, .codex: 0]), neverRan: 0, dead: 0)], rowFlags: [:]
         )
     }
 
     override func usageScan(progress: (@Sendable (CoreUsageProgress) -> Void)?) async throws -> CoreUsageResult {
         lock.withLock { _counts.scans += 1 }
         return CoreUsageResult(
-            totals: CoreUsageTotals(claude: CoreCLITotals(skill: [:], agent: [:], hook: [:]), codex: CoreCLITotals(skill: [:], agent: [:], hook: [:])),
-            sessions: CoreUsageSessions(claude: 1, codex: 1),
-            windows: CoreUsageWindows(claude: CoreLogWindow(files: 1, oldest: "2026-10-01", newest: nil), codex: CoreLogWindow(files: 1, oldest: "2026-10-09", newest: nil)),
+            totals: [CoreCLITotals(cli: .claude, skill: [:], agent: [:], hook: [:]), CoreCLITotals(cli: .codex, skill: [:], agent: [:], hook: [:])],
+            sessions: .of([.claude: 1, .codex: 1]),
+            windows: [CoreLogWindow(cli: .claude, files: 1, oldest: "2026-10-01", newest: nil), CoreLogWindow(cli: .codex, files: 1, oldest: "2026-10-09", newest: nil)],
             files: 2
         )
     }

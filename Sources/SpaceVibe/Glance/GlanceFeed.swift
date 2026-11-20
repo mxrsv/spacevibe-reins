@@ -17,9 +17,12 @@ final class GlanceFeed {
     /// Shown for an error that is not the core's own (S-R3: never an error's description).
     static let unreadable = "The session logs could not be read."
 
-    private(set) var entries: GlanceEntries = .empty
-    /// The latest report as the core sent it; the click fallback needs its session ids.
-    private(set) var report: CoreActivityReport?
+    /// The sessions the widget shows, from `report`.
+    var entries: GlanceEntries { report.map(GlanceEntries.init(report:)) ?? .empty }
+    /// The latest report as the core sent it.
+    private(set) var rawReport: CoreActivityReport?
+    /// The latest report, for the CLIs the catalog shows (MC-R16); the click fallback needs its session ids.
+    var report: CoreActivityReport? { rawReport.map { CLICatalog.current.shown($0) } }
     /// The core's sentence, or `unreadable`. Cleared by the next report. While it is set, `entries` are the last read, and
     /// the views say so (`GlanceStripView.failure`, `GlanceListView.failure`).
     private(set) var failure: String?
@@ -62,14 +65,12 @@ final class GlanceFeed {
         loop?.cancel()
         loop = nil
         isRunning = false
-        entries = .empty
-        report = nil
+        rawReport = nil
         failure = nil
     }
 
     private func apply(_ fresh: CoreActivityReport) {
-        report = fresh
-        entries = GlanceEntries(report: fresh)
+        rawReport = fresh
         failure = nil
     }
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"slices"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/logs"
 	"spacevibe.dev/core/internal/ojson"
 	"spacevibe.dev/core/internal/roots"
@@ -22,13 +23,22 @@ const (
 	codexFilesTried = 3
 )
 
-func readCodex(ctx context.Context, r roots.Roots) (Entry, error) {
-	switch state := folderState(r.Codex.Root, NotRecorded); state {
+// codexReader is Codex: the newest token_count event of its rollouts.
+type codexReader struct{}
+
+func (codexReader) kind() ReadingKind { return LastTurn }
+
+func (codexReader) read(ctx context.Context, in readInput) (Entry, error) {
+	return readCodex(ctx, in.cli)
+}
+
+func readCodex(ctx context.Context, cli roots.CLIRoots) (Entry, error) {
+	switch state := folderState(cli.Root, NotRecorded); state {
 	case NotInstalled, Unreadable:
-		return Entry{CLI: Codex, State: state}, nil
+		return Entry{CLI: clis.Codex, State: state}, nil
 	}
 	failed := false
-	for _, path := range newestLogs(r.Codex.Logs) {
+	for _, path := range newestLogs(cli.Logs) {
 		if err := ctx.Err(); err != nil {
 			return Entry{}, err
 		}
@@ -44,7 +54,7 @@ func readCodex(ctx context.Context, r roots.Roots) (Entry, error) {
 	if failed {
 		state = Unreadable
 	}
-	return Entry{CLI: Codex, State: state}, nil
+	return Entry{CLI: clis.Codex, State: state}, nil
 }
 
 // newestLogs lists logs by modification time, newest first: a resumed session appends to its old file in an
@@ -108,7 +118,7 @@ func lastEvent(path string) ([]byte, eventOutcome) {
 // codexReading reads `{ timestamp, payload: { rate_limits: { primary, secondary, plan_type } } }`. A window in a
 // shape this code does not know makes the reading unreadable rather than showing the other window alone.
 func codexReading(line []byte) Entry {
-	unreadable := Entry{CLI: Codex, State: Unreadable}
+	unreadable := Entry{CLI: clis.Codex, State: Unreadable}
 	document, err := ojson.Parse(line)
 	if err != nil {
 		return unreadable
@@ -147,9 +157,9 @@ func codexReading(line []byte) Entry {
 		plan = &p
 	}
 	if len(windows) == 0 {
-		return Entry{CLI: Codex, State: NotRecorded, Plan: plan}
+		return Entry{CLI: clis.Codex, State: NotRecorded, Plan: plan}
 	}
-	entry := measured(Codex, observed, windows)
+	entry := measured(clis.Codex, observed, windows)
 	entry.Plan = plan
 	return entry
 }

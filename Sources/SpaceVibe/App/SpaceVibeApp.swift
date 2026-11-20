@@ -15,6 +15,8 @@ struct SpaceVibeApp: App {
         let shell = ShellModel(tabs: TabRegistry.makeTabs(), appearance: AppearanceStore(live: true))
         _shell = State(initialValue: shell)
         AppEnvironment.shared.updates.start(mode: mode)
+        // The CLIs every page shows come from the core's `clis.list`; it is the first read, so pages rarely wait for it.
+        AppEnvironment.shared.startCLIs()
         // A click on the glance widget with no host app opens Activity in this shell (GW6); the app delegate starts the widget.
         GlanceController.shared.shell = shell
     }

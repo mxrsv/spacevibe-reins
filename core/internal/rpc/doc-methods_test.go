@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"spacevibe.dev/core/internal/clis"
 	"spacevibe.dev/core/internal/config"
 	"spacevibe.dev/core/internal/proc"
 	"spacevibe.dev/core/internal/roots"
@@ -63,8 +64,8 @@ func TestDocMethodTable(t *testing.T) {
 
 	// The wired registry must equal AllMethods and the doc table: nothing missing, nothing extra.
 	dir := t.TempDir()
-	cfg := config.Config{Test: true, UserHome: dir, ClaudeConfigDir: filepath.Join(dir, ".claude"),
-		CodexHome: filepath.Join(dir, ".codex"), Home: filepath.Join(dir, ".spacevibe")}
+	cfg := config.Config{Test: true, UserHome: dir, RootOverrides: map[clis.ID]string{clis.Claude: filepath.Join(dir, ".claude"),
+		clis.Codex: filepath.Join(dir, ".codex")}, Home: filepath.Join(dir, ".spacevibe")}
 	r, err := roots.Resolve(cfg, t.TempDir())
 	if err != nil {
 		t.Fatal(err)
